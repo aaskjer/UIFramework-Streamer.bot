@@ -7,8 +7,8 @@
       "key": "freeGame",
       "default": true,
       "page": "table",
-      "label": "Free Game",
       "section": "Betting",
+      "label": "Free Game",
       "help": "Hands are played for nothing: no stake is taken, no winnings are paid, and every message about points\nswitches to its Free Game wording. House Mode refuses to open a table while this is on.",
       "aliases": [
         "FreeGame"
@@ -19,8 +19,8 @@
       "default": 1234,
       "kind": "long",
       "page": "table",
-      "label": "Default bet",
       "section": "Betting",
+      "label": "Default bet",
       "help": "Used when the blackjack command arrives without an amount, or with a word that is not one of the shortcuts.",
       "aliases": [
         "DefaultBet"
@@ -31,8 +31,8 @@
       "default": 1,
       "kind": "long",
       "page": "table",
-      "label": "Minimum bet",
       "section": "Betting",
+      "label": "Minimum bet",
       "help": "Anything lower is raised to this. The player still needs the balance to cover it.",
       "aliases": [
         "MinBet"
@@ -43,10 +43,10 @@
       "default": 0,
       "kind": "long",
       "page": "table",
-      "label": "Maximum bet",
       "section": "Betting",
-      "unlimitedAtZero": true,
+      "label": "Maximum bet",
       "help": "Anything higher is cut down to this.\n0 = no ceiling.",
+      "unlimitedAtZero": true,
       "aliases": [
         "MaxBet"
       ]
@@ -56,8 +56,9 @@
       "default": 17,
       "kind": "int",
       "page": "table",
-      "label": "Stands on",
       "section": "The dealer",
+      "label": "Stands on",
+      "help": "The dealer keeps drawing until the hand reaches this total, then stops. 17 is the casino standard.",
       "options": [
         "16",
         "17",
@@ -66,7 +67,6 @@
         "20",
         "21"
       ],
-      "help": "The dealer keeps drawing until the hand reaches this total, then stops. 17 is the casino standard.",
       "aliases": [
         "DealerStandsOn"
       ]
@@ -76,8 +76,9 @@
       "default": 1,
       "kind": "int",
       "page": "table",
-      "label": "Decks in the shoe",
       "section": "The dealer",
+      "label": "Decks in the shoe",
+      "help": "How many 52-card decks are shuffled together.",
       "options": [
         "1",
         "2",
@@ -88,7 +89,6 @@
         "7",
         "8"
       ],
-      "help": "How many 52-card decks are shuffled together.",
       "aliases": [
         "NumDecks"
       ]
@@ -98,12 +98,12 @@
       "default": 0.25,
       "kind": "percent",
       "page": "table",
-      "label": "Reshuffle at",
       "section": "The dealer",
-      "factor": 0.01,
+      "label": "Reshuffle at",
+      "help": "How little of the shoe may be left before the played cards are shuffled back in.\nLow means long runs between shuffles and a count worth keeping; high means it is reshuffled so often\nthat counting gets nobody anywhere.",
       "min": 1.0,
       "max": 90.0,
-      "help": "How little of the shoe may be left before the played cards are shuffled back in.\nLow means long runs between shuffles and a count worth keeping; high means it is reshuffled so often\nthat counting gets nobody anywhere.",
+      "factor": 0.01,
       "aliases": [
         "ReshuffleThreshold"
       ]
@@ -113,8 +113,8 @@
       "default": 500,
       "kind": "int",
       "page": "table",
-      "label": "Reveal delay",
       "section": "The dealer",
+      "label": "Reveal delay",
       "help": "Pause between the dealer's cards, in milliseconds, so chat can follow along. 0 = all at once.",
       "aliases": [
         "DealerDrawDelayMs"
@@ -125,8 +125,8 @@
       "default": false,
       "kind": "bool",
       "page": "table",
-      "label": "Break a tie with one card only",
       "section": "The dealer",
+      "label": "Break a tie with one card only",
       "help": "On: the dealer draws exactly one card on a tie, and a tie that survives it counts as a dealer win.\nOff: the dealer keeps drawing until the tie breaks one way or the other.",
       "aliases": [
         "TieDrawOnlyOneCard"
@@ -137,8 +137,8 @@
       "default": true,
       "kind": "bool",
       "page": "table",
-      "label": "Say when an Ace drops to 1",
       "section": "The dealer",
+      "label": "Say when an Ace drops to 1",
       "help": "Posts a line whenever an Ace counts as 1 instead of 11 to keep a hand under 22.",
       "aliases": [
         "ShowAceMsg"
@@ -149,8 +149,8 @@
       "default": true,
       "kind": "bool",
       "page": "table",
-      "label": "Double down",
       "section": "Optional rules",
+      "label": "Double down",
       "help": "Doubles the stake for exactly one more card, then stands. Only on a fresh two-card hand, before anything else.",
       "aliases": [
         "AllowDoubleDown"
@@ -161,8 +161,8 @@
       "default": true,
       "kind": "bool",
       "page": "table",
-      "label": "Split",
       "section": "Optional rules",
+      "label": "Split",
       "help": "Splits a starting pair of equal-value cards into two hands, each played out for the same stake.",
       "aliases": [
         "AllowSplit"
@@ -173,8 +173,8 @@
       "default": false,
       "kind": "bool",
       "page": "table",
-      "label": "Resplit",
       "section": "Optional rules",
+      "label": "Resplit",
       "help": "Lets a split hand split again when it draws another matching pair. Applies to split Aces too.",
       "aliases": [
         "AllowResplit"
@@ -185,8 +185,9 @@
       "default": 4,
       "kind": "int",
       "page": "table",
-      "label": "Hands from splitting",
       "section": "Optional rules",
+      "label": "Hands from splitting",
+      "help": "The total number of hands one round may reach through splitting. Four is the casino standard.",
       "options": [
         "2",
         "3",
@@ -196,7 +197,6 @@
         "7",
         "8"
       ],
-      "help": "The total number of hands one round may reach through splitting. Four is the casino standard.",
       "aliases": [
         "MaxSplitHands"
       ]
@@ -206,8 +206,8 @@
       "default": false,
       "kind": "bool",
       "page": "table",
-      "label": "Insurance",
       "section": "Optional rules",
+      "label": "Insurance",
       "help": "When the dealer shows an Ace, a player may stake half their bet against a dealer blackjack. Pays 2:1.\nOver time it is a losing side bet for the player, which is why it is off by default.",
       "aliases": [
         "AllowInsurance"
@@ -218,8 +218,8 @@
       "default": false,
       "kind": "bool",
       "page": "table",
-      "label": "Surrender",
       "section": "Optional rules",
+      "label": "Surrender",
       "help": "Lets a player fold a fresh two-card hand and keep half the stake, before hitting, doubling, splitting or insuring.",
       "aliases": [
         "AllowSurrender"
@@ -230,8 +230,8 @@
       "default": false,
       "kind": "bool",
       "page": "table",
-      "label": "Dealer peeks for blackjack",
       "section": "Optional rules",
+      "label": "Dealer peeks for blackjack",
       "help": "On: the dealer takes a face-down card at the deal and checks it as soon as the upcard is an Ace or a ten.",
       "aliases": [
         "DealerPeeks"
@@ -242,8 +242,8 @@
       "default": 180,
       "kind": "int",
       "page": "table",
-      "label": "Turn timeout",
       "section": "Pace",
+      "label": "Turn timeout",
       "help": "How long a player has to act before the hand is closed out for them, in seconds. 0 = no limit.\nThe clock restarts on every action, so it only catches someone who really walked away.",
       "aliases": [
         "TurnTimeoutSec"
@@ -253,8 +253,8 @@
       "key": "maxGamesPerHour",
       "default": 0,
       "page": "table",
-      "label": "Games per hour",
       "section": "Pace",
+      "label": "Games per hour",
       "help": "How many hands one player may start within a rolling 60 minutes. 0 = no limit.",
       "aliases": [
         "MaxGamesPerHour"
@@ -265,8 +265,8 @@
       "default": true,
       "kind": "bool",
       "page": "table",
-      "label": "Refund a hand nobody played",
       "section": "Pace",
+      "label": "Refund a hand nobody played",
       "help": "On: a player who never hit, stood, doubled or split gets the stake back, exactly as if they had quit.",
       "aliases": [
         "TimeoutRefundIfNoAction"
@@ -277,8 +277,9 @@
       "default": 1.5,
       "kind": "double",
       "page": "table",
-      "label": "Blackjack pays",
       "section": "Commands",
+      "label": "Blackjack pays",
+      "help": "The bonus on a natural blackjack - 21 on the first two cards - paid on top of the returned stake.\nA regular win always pays 1:1.",
       "options": [
         {
           "value": "1.5",
@@ -297,7 +298,6 @@
           "label": "1:1 - no bonus"
         }
       ],
-      "help": "The bonus on a natural blackjack - 21 on the first two cards - paid on top of the returned stake.\nA regular win always pays 1:1.",
       "aliases": [
         "BlackjackPayout"
       ]
@@ -307,8 +307,8 @@
       "default": true,
       "kind": "bool",
       "page": "duel",
-      "label": "Duels",
       "section": "Duel Mode",
+      "label": "Duels",
       "help": "Off: the duel command only ever replies that duels are disabled.",
       "aliases": [
         "DuelEnabled"
@@ -319,8 +319,8 @@
       "default": true,
       "kind": "bool",
       "page": "duel",
-      "label": "Duels count towards games per hour",
       "section": "Duel Mode",
+      "label": "Duels count towards games per hour",
       "help": "Counts a duel as a game for both players against the Games per hour limit on the Table page.",
       "aliases": [
         "DuelCountsTowardGamesPerHour"
@@ -331,8 +331,8 @@
       "default": false,
       "kind": "bool",
       "page": "duel",
-      "label": "Cut an addicted player's duel winnings",
       "section": "Duel Mode",
+      "label": "Cut an addicted player's duel winnings",
       "help": "Off by default. The points in a duel come from the other player, not the house, so the cut would delete them\nfrom circulation rather than move them.",
       "aliases": [
         "DuelApplyAddictedCut"
@@ -343,8 +343,8 @@
       "default": 1,
       "kind": "long",
       "page": "duel",
-      "label": "Minimum duel stake",
       "section": "Stakes",
+      "label": "Minimum duel stake",
       "help": "Anything lower is raised to this. Separate from the table minimum, so duels can have a floor of their own.",
       "aliases": [
         "DuelMinBet"
@@ -355,10 +355,10 @@
       "default": 0,
       "kind": "long",
       "page": "duel",
-      "label": "Maximum duel stake",
       "section": "Stakes",
-      "unlimitedAtZero": true,
+      "label": "Maximum duel stake",
       "help": "Anything higher is cut down to this.\n0 = no ceiling.",
+      "unlimitedAtZero": true,
       "aliases": [
         "DuelMaxBet"
       ]
@@ -368,8 +368,8 @@
       "default": 60,
       "kind": "int",
       "page": "duel",
-      "label": "Answer a challenge",
       "section": "Deadlines",
+      "label": "Answer a challenge",
       "help": "How long the challenged player has before the challenge expires and the stake goes back, in seconds.\nAt least 10.",
       "aliases": [
         "DuelAcceptTimeoutSec"
@@ -380,8 +380,8 @@
       "default": 90,
       "kind": "int",
       "page": "duel",
-      "label": "Take a turn",
       "section": "Deadlines",
+      "label": "Take a turn",
       "help": "How long a player has to act before they stand automatically, in seconds. 0 = no limit.",
       "aliases": [
         "DuelTurnTimeoutSec"
@@ -392,8 +392,8 @@
       "default": 45,
       "kind": "int",
       "page": "duel",
-      "label": "Answer a raise",
       "section": "Deadlines",
+      "label": "Answer a raise",
       "help": "How long the opponent has to answer a split or double, and how long both have to answer a sudden-death offer.\nAt least 5.",
       "aliases": [
         "DuelConsentTimeoutSec"
@@ -404,8 +404,8 @@
       "default": true,
       "kind": "bool",
       "page": "duel",
-      "label": "Double down",
       "section": "Raises",
+      "label": "Double down",
       "help": "Lets a player double their stake for one more card, once the opponent agrees.",
       "aliases": [
         "DuelAllowDoubleDown"
@@ -416,8 +416,8 @@
       "default": true,
       "kind": "bool",
       "page": "duel",
-      "label": "Split",
       "section": "Raises",
+      "label": "Split",
       "help": "Lets a player split a pair, once the opponent agrees. Each hand then plays for its own equally funded side pot,\nand a player with fewer hands defends every pot with the single one they have.",
       "aliases": [
         "DuelAllowSplit"
@@ -428,8 +428,8 @@
       "default": false,
       "kind": "bool",
       "page": "duel",
-      "label": "Offer it on a tie",
       "section": "Sudden death",
+      "label": "Offer it on a tie",
       "help": "Only on an unsplit duel - a single pot - that ends in a genuine tie. Duels with splits always push.",
       "aliases": [
         "DuelSuddenDeathEnabled"
@@ -440,8 +440,9 @@
       "default": 3,
       "kind": "int",
       "page": "duel",
-      "label": "Rounds at most",
       "section": "Sudden death",
+      "label": "Rounds at most",
+      "help": "How often sudden death may repeat while the players keep tying. After the last one the pot is split.",
       "options": [
         "1",
         "2",
@@ -454,7 +455,6 @@
         "9",
         "10"
       ],
-      "help": "How often sudden death may repeat while the players keep tying. After the last one the pot is split.",
       "aliases": [
         "DuelMaxSuddenDeathRounds"
       ]
@@ -464,8 +464,8 @@
       "default": true,
       "kind": "bool",
       "page": "house",
-      "label": "House Mode",
       "section": "House Mode",
+      "label": "House Mode",
       "help": "Off: the house command only ever replies that House Mode is disabled.",
       "aliases": [
         "HouseEnabled"
@@ -476,8 +476,8 @@
       "default": true,
       "kind": "bool",
       "page": "house",
-      "label": "Seats count towards games per hour",
       "section": "House Mode",
+      "label": "Seats count towards games per hour",
       "help": "Counts taking a seat as a game for that player against the Games per hour limit on the Table page.",
       "aliases": [
         "HouseCountsTowardGamesPerHour"
@@ -488,8 +488,9 @@
       "default": 6,
       "kind": "int",
       "page": "house",
-      "label": "Seats",
       "section": "The table",
+      "label": "Seats",
+      "help": "How many players can sit down. The table deals as soon as the last seat is taken, without waiting out the join window.",
       "options": [
         "2",
         "3",
@@ -497,7 +498,6 @@
         "5",
         "6"
       ],
-      "help": "How many players can sit down. The table deals as soon as the last seat is taken, without waiting out the join window.",
       "aliases": [
         "HouseMaxSeats"
       ]
@@ -507,8 +507,8 @@
       "default": 30,
       "kind": "int",
       "page": "house",
-      "label": "Rule pick",
       "section": "The table",
+      "label": "Rule pick",
       "help": "How long the moderator has to answer the rule set menu, in seconds. Nothing is staked yet, so the table is simply dropped.\nAt least 10.",
       "aliases": [
         "HouseRulePickTimeoutSec"
@@ -519,8 +519,8 @@
       "default": 60,
       "kind": "int",
       "page": "house",
-      "label": "Join window",
       "section": "The table",
+      "label": "Join window",
       "help": "How long viewers have to take a seat before the table deals itself, in seconds. With nobody seated it closes again.\nAt least 15.",
       "aliases": [
         "HouseJoinWindowSec"
@@ -531,8 +531,8 @@
       "default": 20,
       "kind": "int",
       "page": "house",
-      "label": "Insurance window",
       "section": "The table",
+      "label": "Insurance window",
       "help": "How long seats have to insure when the dealer shows an Ace, before the dealer looks at the hole card, in seconds.\nOnly used by rule sets that offer insurance. At least 5.",
       "aliases": [
         "HouseInsuranceWindowSec"
@@ -543,8 +543,8 @@
       "default": 60,
       "kind": "int",
       "page": "house",
-      "label": "Seat turn timeout",
       "section": "The table",
+      "label": "Seat turn timeout",
       "help": "How long one seat may think before it stands automatically and play moves on, in seconds. 0 = no limit.",
       "aliases": [
         "HouseTurnTimeoutSec"
@@ -555,8 +555,8 @@
       "default": 1,
       "kind": "long",
       "page": "house",
-      "label": "Minimum seat stake",
       "section": "Stakes",
+      "label": "Minimum seat stake",
       "help": "Anything lower is raised to this. The player still needs the balance to cover it.",
       "aliases": [
         "HouseMinBet"
@@ -567,10 +567,10 @@
       "default": 0,
       "kind": "long",
       "page": "house",
-      "label": "Maximum seat stake",
       "section": "Stakes",
-      "unlimitedAtZero": true,
+      "label": "Maximum seat stake",
       "help": "Anything higher is cut down to this.\n0 = no ceiling.",
+      "unlimitedAtZero": true,
       "aliases": [
         "HouseMaxBet"
       ]
@@ -580,43 +580,43 @@
       "default": true,
       "kind": "bool",
       "page": "house",
-      "aliases": [
-        "HouseRuleVegasEnabled"
-      ],
       "section": "Rule sets on offer",
       "label": "Vegas Strip",
-      "help": "4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2."
+      "help": "4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2.",
+      "aliases": [
+        "HouseRuleVegasEnabled"
+      ]
     },
     {
       "key": "houseRuleAtlanticEnabled",
       "default": true,
       "kind": "bool",
       "page": "house",
-      "aliases": [
-        "HouseRuleAtlanticEnabled"
-      ],
       "section": "Rule sets on offer",
       "label": "Atlantic City",
-      "help": "8 deck shoe, dealer stands on soft 17, late surrender, resplit to three hands."
+      "help": "8 deck shoe, dealer stands on soft 17, late surrender, resplit to three hands.",
+      "aliases": [
+        "HouseRuleAtlanticEnabled"
+      ]
     },
     {
       "key": "houseRuleEuropeanEnabled",
       "default": true,
       "kind": "bool",
       "page": "house",
-      "aliases": [
-        "HouseRuleEuropeanEnabled"
-      ],
       "section": "Rule sets on offer",
       "label": "European",
-      "help": "2 deck shoe, no hole card, double on 9 to 11 only, no surrender."
+      "help": "2 deck shoe, no hole card, double on 9 to 11 only, no surrender.",
+      "aliases": [
+        "HouseRuleEuropeanEnabled"
+      ]
     },
     {
       "key": "pointsVariable",
       "default": "points",
       "page": "access",
-      "label": "Points variable",
       "section": "Currency",
+      "label": "Points variable",
       "help": "The name of the Streamer.bot user variable your currency is kept in.",
       "aliases": [
         "PointsVariable"
@@ -626,8 +626,8 @@
       "key": "pointsName",
       "default": "Points",
       "page": "access",
-      "label": "Points name",
       "section": "Currency",
+      "label": "Points name",
       "help": "What the currency is called in chat messages. Overwritten automatically when Currency Core or LOYALTY POINTS is detected.",
       "aliases": [
         "PointsVarName"
@@ -638,8 +638,9 @@
       "default": "emojivalue",
       "kind": "options",
       "page": "access",
-      "label": "Cards in chat",
       "section": "Currency",
+      "label": "Cards in chat",
+      "help": "How cards are written in chat, in every mode. Worth moving off the card characters if your chat renders them as boxes.",
       "options": [
         {
           "value": "emojivalue",
@@ -654,7 +655,6 @@
           "label": "Number only - 11"
         }
       ],
-      "help": "How cards are written in chat, in every mode. Worth moving off the card characters if your chat renders them as boxes.",
       "aliases": [
         "CardDisplayMode"
       ]
@@ -662,8 +662,8 @@
     {
       "key": "blockedUsers",
       "default": "",
-      "label": "Blocked viewers",
       "section": "Kept out",
+      "label": "Blocked viewers",
       "help": "Names matched without regard to case, and a leading @ is ignored. A blocked viewer's commands are dropped\nwithout a reply, so retrying cannot spam chat.",
       "aliases": [
         "BlockedUsers"
@@ -672,8 +672,8 @@
     {
       "key": "blockedGroups",
       "default": "ExampleGroup, TooAddictedToPlay, YourCustomBlockedGroup",
-      "label": "Blocked groups",
       "section": "Kept out",
+      "label": "Blocked groups",
       "help": "Streamer.bot user groups, matched exactly. Being in any one of them is enough.",
       "aliases": [
         "BlockedGroups"
@@ -682,8 +682,8 @@
     {
       "key": "addictedUsers",
       "default": "",
-      "label": "Addicted viewers",
       "section": "Addicted list",
+      "label": "Addicted viewers",
       "help": "Names matched without regard to case. Being on this list or in one of the groups below is enough.",
       "aliases": [
         "AddictedUsers"
@@ -692,8 +692,8 @@
     {
       "key": "addictedGroups",
       "default": "",
-      "label": "Addicted groups",
       "section": "Addicted list",
+      "label": "Addicted groups",
       "help": "Streamer.bot user groups, matched exactly.",
       "aliases": [
         "AddictedGroups"
@@ -702,22 +702,22 @@
     {
       "key": "addictedPayoutCut",
       "default": 50,
-      "label": "Payout cut",
       "section": "Addicted list",
+      "label": "Payout cut",
       "help": "How much of an addicted player's winnings is withheld. Capped at 99%, so a win can never turn into a loss.",
       "aliases": [
         "AddictedPayoutCut"
       ],
       "aliasFactors": {
-        "AddictedPayoutCut": 100
+        "AddictedPayoutCut": 100.0
       }
     },
     {
       "key": "globalCooldown",
       "default": 0,
       "page": "access",
-      "label": "Table, everyone",
       "section": "Cooldowns",
+      "label": "Table, everyone",
       "help": "How long after any hand before anyone can start another, in seconds.",
       "aliases": [
         "GlobalCooldown"
@@ -727,8 +727,8 @@
       "key": "userCooldown",
       "default": 0,
       "page": "access",
-      "label": "Table, per player",
       "section": "Cooldowns",
+      "label": "Table, per player",
       "help": "How long one player waits between their own hands, in seconds.",
       "aliases": [
         "UserCooldown"
@@ -739,8 +739,8 @@
       "default": 0,
       "kind": "int",
       "page": "access",
-      "label": "Duel, everyone",
       "section": "Cooldowns",
+      "label": "Duel, everyone",
       "help": "How long after any challenge before anyone can issue another, in seconds.",
       "aliases": [
         "DuelGlobalCooldown"
@@ -751,8 +751,8 @@
       "default": 0,
       "kind": "int",
       "page": "access",
-      "label": "Duel, per player",
       "section": "Cooldowns",
+      "label": "Duel, per player",
       "help": "How long one player waits between issuing challenges, in seconds.\nAnswering a challenge is never blocked, so a duel can always be finished.",
       "aliases": [
         "DuelUserCooldown"
@@ -763,8 +763,8 @@
       "default": 0,
       "kind": "int",
       "page": "access",
-      "label": "House, everyone",
       "section": "Cooldowns",
+      "label": "House, everyone",
       "help": "How long after a table is opened before anyone can open another, in seconds.",
       "aliases": [
         "HouseGlobalCooldown"
@@ -775,8 +775,8 @@
       "default": 0,
       "kind": "int",
       "page": "access",
-      "label": "House, per player",
       "section": "Cooldowns",
+      "label": "House, per player",
       "help": "How long one player waits between opening tables, in seconds.\nTaking a seat at someone else's table is never blocked.",
       "aliases": [
         "HouseUserCooldown"
@@ -784,37 +784,41 @@
     },
     {
       "key": "overlayScale",
-      "default": 1.0,
-      "label": "Overlay",
+      "default": 100,
       "section": "Size",
-      "factor": 0.01,
+      "label": "Overlay",
+      "help": "Resizes cards, text and layout together. 100 is the built-in size, 150 is half again as big.",
       "min": 25.0,
       "max": 400.0,
-      "help": "Resizes cards, text and layout together. 100 is the built-in size, 150 is half again as big.",
       "aliases": [
         "OverlayScale"
-      ]
+      ],
+      "aliasFactors": {
+        "OverlayScale": 100.0
+      }
     },
     {
       "key": "overlayFontScale",
-      "default": 1.0,
-      "label": "Text",
+      "default": 100,
       "section": "Size",
-      "factor": 0.01,
+      "label": "Text",
+      "help": "Resizes names, totals and badges on their own, leaving the cards as they are.",
       "min": 25.0,
       "max": 400.0,
-      "help": "Resizes names, totals and badges on their own, leaving the cards as they are.",
       "aliases": [
         "OverlayFontScale"
-      ]
+      ],
+      "aliasFactors": {
+        "OverlayFontScale": 100.0
+      }
     },
     {
       "key": "overlayShowPoints",
       "default": true,
       "kind": "bool",
       "page": "overlay",
-      "label": "Points and stakes",
       "section": "What is shown",
+      "label": "Points and stakes",
       "help": "Shows the stake and insurance amounts. Turn it off to keep numbers off stream.",
       "aliases": [
         "OverlayShowPoints"
@@ -825,8 +829,8 @@
       "default": true,
       "kind": "bool",
       "page": "overlay",
-      "label": "Hand totals",
       "section": "What is shown",
+      "label": "Hand totals",
       "help": "Shows the running total beside each hand and the dealer's.",
       "aliases": [
         "OverlayShowHandValues"
@@ -837,8 +841,8 @@
       "default": true,
       "kind": "bool",
       "page": "overlay",
-      "label": "Outcome badges",
       "section": "What is shown",
+      "label": "Outcome badges",
       "help": "Shows BLACKJACK, BUST, WIN, LOSE and PUSH beside a hand once it has been settled.",
       "aliases": [
         "OverlayShowOutcomeBadges"
@@ -849,8 +853,8 @@
       "default": true,
       "kind": "bool",
       "page": "overlay",
-      "label": "Insurance line",
       "section": "What is shown",
+      "label": "Insurance line",
       "help": "Shows a line under the dealer's cards while a player holds insurance.",
       "aliases": [
         "OverlayShowInsurance"
@@ -859,8 +863,8 @@
     {
       "key": "overlayAnimations",
       "default": true,
-      "label": "Deal animation",
       "section": "What is shown",
+      "label": "Deal animation",
       "help": "Slides each card in as it is dealt. Off, the cards simply appear.",
       "aliases": [
         "OverlayAnimationsEnabled"
@@ -869,8 +873,8 @@
     {
       "key": "overlayHideOnFreeGame",
       "default": false,
-      "label": "Hide during Free Game",
       "section": "What is shown",
+      "label": "Hide during Free Game",
       "help": "Keeps the overlay off screen entirely while Free Game is on.",
       "aliases": [
         "OverlayHideOnFreeGame"
@@ -881,8 +885,8 @@
       "default": "Dealer",
       "kind": "string",
       "page": "overlay",
-      "label": "Dealer is called",
       "section": "Labels and timing",
+      "label": "Dealer is called",
       "help": "The label above the dealer's cards.",
       "aliases": [
         "OverlayDealerName"
@@ -892,8 +896,8 @@
       "key": "overlayResultSeconds",
       "default": 8,
       "kind": "int",
-      "label": "Hold the result",
       "section": "Labels and timing",
+      "label": "Hold the result",
       "help": "How long a finished hand stays on screen before it fades, in seconds.\nWorth raising if a full table settles faster than viewers can read it. At least 1.",
       "aliases": [
         "OverlayGameOverFadeSec"
@@ -904,8 +908,8 @@
       "default": "#d3283a",
       "kind": "colour",
       "page": "overlay",
-      "label": "Red suits",
       "section": "Colours",
+      "label": "Red suits",
       "help": "Hearts and diamonds.",
       "aliases": [
         "OverlayCardRedColor"
@@ -916,8 +920,8 @@
       "default": "#1a1a1a",
       "kind": "colour",
       "page": "overlay",
-      "label": "Black suits",
       "section": "Colours",
+      "label": "Black suits",
       "help": "Spades and clubs.",
       "aliases": [
         "OverlayCardBlackColor"
@@ -926,8 +930,8 @@
     {
       "key": "overlayBackgroundColour",
       "default": "#000000",
-      "label": "Backdrop",
       "section": "Colours",
+      "label": "Backdrop",
       "help": "A panel behind the table. Only visible once the opacity below is above 0.",
       "aliases": [
         "OverlayBackgroundColor"
@@ -936,12 +940,12 @@
     {
       "key": "overlayBackgroundOpacity",
       "default": 0.0,
-      "label": "Backdrop opacity",
       "section": "Colours",
-      "factor": 1.0,
+      "label": "Backdrop opacity",
+      "help": "0 leaves the cards floating on your scene, 100 paints a solid panel behind them.",
       "min": 0.0,
       "max": 100.0,
-      "help": "0 leaves the cards floating on your scene, 100 paints a solid panel behind them.",
+      "factor": 1.0,
       "aliases": [
         "OverlayBackgroundOpacity"
       ]
@@ -951,8 +955,8 @@
       "default": 0,
       "kind": "int",
       "page": "overlay",
-      "label": "Connection",
       "section": "Set it up in OBS",
+      "label": "Connection",
       "help": "Which Streamer.bot OBS connection to use. 0 is the first one.",
       "aliases": [
         "ObsConnectionId"
@@ -963,8 +967,8 @@
       "default": "Blackjack",
       "kind": "string",
       "page": "overlay",
-      "label": "Scene",
       "section": "Set it up in OBS",
+      "label": "Scene",
       "help": "The scene the source is added to. Created if it does not exist yet.",
       "aliases": [
         "ObsSceneName"
@@ -975,24 +979,34 @@
       "default": "Blackjack Overlay",
       "kind": "string",
       "page": "overlay",
-      "label": "Source",
       "section": "Set it up in OBS",
+      "label": "Source",
       "help": "The browser source created inside that scene. Nothing is changed if a source of this name is already there.",
       "aliases": [
         "ObsSourceName"
       ]
     },
     {
+      "key": "setupObsOverlay",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Create the browser source in OBS",
+      "help": "Creates the scene above if it is missing and adds a browser source pointing at the overlay file. Needs OBS connected in Streamer.bot.",
+      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?"
+    },
+    {
       "key": "overlayFolder",
       "default": "Overlay",
       "kind": "path",
       "page": "overlay",
-      "aliases": [
-        "OverlayFolder"
-      ],
       "section": "Files",
       "label": "Overlay folder",
-      "help": "A subfolder name kept under Chat Games\\Blackjack Game, or a full path, so the overlay can live anywhere. Empty uses 'Overlay'."
+      "help": "A subfolder name kept under Chat Games\\Blackjack Game, or a full path, so the overlay can live anywhere. Empty uses 'Overlay'.",
+      "aliases": [
+        "OverlayFolder"
+      ]
     },
     {
       "key": "msgGameStart",
@@ -3667,6 +3681,7 @@
       "default": ".",
       "page": "messages",
       "label": "Numbers",
+      "help": "The thousands separator used in every amount the game posts.",
       "options": [
         {
           "value": ".",
@@ -3685,7 +3700,6 @@
           "label": "12345"
         }
       ],
-      "help": "The thousands separator used in every amount the game posts.",
       "aliases": [
         "NumberSeparator"
       ]
@@ -3694,12 +3708,8 @@
       "key": "globalCooldownMessage",
       "default": "On cooldown for everyone - {0} seconds to go.",
       "page": "messages",
-      "group": "Cooldown",
       "label": "Everyone",
       "help": "Sent while the cooldown for everyone is still running. This one numbers its placeholder instead of naming it.",
-      "placeholders": [
-        "0"
-      ],
       "aliases": [
         "GlobalCooldownMsg"
       ]
@@ -3708,13 +3718,8 @@
       "key": "userCooldownMessage",
       "default": "{0}, your cooldown has {1} seconds left.",
       "page": "messages",
-      "group": "Cooldown",
       "label": "Per player",
       "help": "Sent while that viewer's own cooldown is still running. Numbered placeholders, and the order matters.",
-      "placeholders": [
-        "0",
-        "1"
-      ],
       "aliases": [
         "UserCooldownMsg"
       ]
@@ -3722,14 +3727,8 @@
     {
       "key": "reasonInsufficientFunds",
       "default": "Not enough {points} - you have {available} and need {required}.",
-      "group": "Table refusals",
       "label": "Not enough points",
       "help": "Sent when the bet is bigger than the balance, typed out or from a shortcut.",
-      "placeholders": [
-        "points",
-        "available",
-        "required"
-      ],
       "aliases": [
         "MsgNotEnoughPoints"
       ]
@@ -3738,12 +3737,8 @@
       "key": "leaderboardEmpty",
       "default": "{user}, nothing on record yet - play a hand first.",
       "page": "messages",
-      "group": "System",
       "label": "No stats yet",
       "help": "Sent by the Stats action when a viewer checks their record before playing a hand.",
-      "placeholders": [
-        "user"
-      ],
       "aliases": [
         "MsgNoStatsFound"
       ]
@@ -3752,8 +3747,9 @@
       "key": "leaderboardSize",
       "default": 5,
       "page": "stats",
-      "label": "Places",
       "section": "The leaderboard",
+      "label": "Places",
+      "help": "How many players the allstats command lists.",
       "options": [
         "1",
         "2",
@@ -3766,7 +3762,6 @@
         "9",
         "10"
       ],
-      "help": "How many players the allstats command lists.",
       "aliases": [
         "LeaderboardSize"
       ]
@@ -3775,8 +3770,8 @@
       "key": "leaderboardShowMedals",
       "default": true,
       "page": "stats",
-      "label": "Medals for the top three",
       "section": "The leaderboard",
+      "label": "Medals for the top three",
       "help": "🥇 🥈 🥉 for the first three places instead of 1. 2. 3. Fourth place down always gets numbers.",
       "aliases": [
         "LeaderboardShowMedals"
@@ -3786,8 +3781,8 @@
       "key": "leaderboardExcludeBroadcaster",
       "default": true,
       "page": "stats",
-      "label": "Hide the broadcaster",
       "section": "Who shows up",
+      "label": "Hide the broadcaster",
       "help": "Keeps your own account off the board. Matched by user id, so renaming yourself does not put you back on it.\nThe stats are still tracked - only the listing leaves you out.",
       "aliases": [
         "LeaderboardExcludeBroadcaster"
@@ -3797,8 +3792,8 @@
       "key": "leaderboardExcludeBot",
       "default": true,
       "page": "stats",
-      "label": "Hide the bot account",
       "section": "Who shows up",
+      "label": "Hide the bot account",
       "help": "Keeps your Streamer.bot bot account off the board.\n(Platforms > Any platform > Accounts > Bot)",
       "aliases": [
         "LeaderboardExcludeBot"
@@ -3808,8 +3803,8 @@
       "key": "leaderboardUseBot",
       "default": true,
       "page": "stats",
-      "label": "Bot account",
       "section": "How the leaderboard is sent",
+      "label": "Bot account",
       "help": "Sends the leaderboard from your bot account instead of the broadcaster account.",
       "aliases": [
         "LeaderboardUseBot"
@@ -3819,8 +3814,8 @@
       "key": "leaderboardSendAction",
       "default": false,
       "page": "stats",
-      "label": "Send as /me",
       "section": "How the leaderboard is sent",
+      "label": "Send as /me",
       "help": "Twitch only: YouTube and Kick have no /me.",
       "aliases": [
         "LeaderboardSendAction"
@@ -3830,8 +3825,9 @@
       "key": "leaderboardResetScope",
       "default": "totals",
       "page": "stats",
-      "label": "A reset clears",
       "section": "Starting a new season",
+      "label": "A reset clears",
+      "help": "The totals only: the money the ranking runs on - bets, winnings, net, duel points, biggest win and loss. Games played, blackjacks, busts, streaks and duel records stay. Right for a monthly season.",
       "options": [
         {
           "value": "totals",
@@ -3842,7 +3838,6 @@
           "label": "Every stat there is"
         }
       ],
-      "help": "The totals only: the money the ranking runs on - bets, winnings, net, duel points, biggest win and loss. Games played, blackjacks, busts, streaks and duel records stay. Right for a monthly season.",
       "aliases": [
         "LeaderboardResetScope"
       ]
@@ -3851,8 +3846,9 @@
       "key": "leaderboardAutoReset",
       "default": "off",
       "page": "stats",
-      "label": "Automatically",
       "section": "Starting a new season",
+      "label": "Automatically",
+      "help": "Clears the leaderboard on its own when the period rolls over, using the scope above.",
       "options": [
         {
           "value": "off",
@@ -3867,18 +3863,19 @@
           "label": "On the 1st of the month"
         }
       ],
-      "help": "Clears the leaderboard on its own when the period rolls over, using the scope above.",
       "aliases": [
         "LeaderboardAutoReset"
       ]
     },
     {
       "key": "resetLeaderboard",
+      "default": null,
       "kind": "action",
       "page": "stats",
       "section": "Starting a new season",
       "label": "Reset the leaderboard now",
-      "help": "Applies the reset scope to every viewer on every platform, and asks first."
+      "help": "Applies the reset scope to every viewer on every platform, and asks first.",
+      "confirm": "This permanently clears the leaderboard for every viewer according to the reset scope above. It cannot be undone. Go ahead?"
     },
     {
       "key": "logToFile",

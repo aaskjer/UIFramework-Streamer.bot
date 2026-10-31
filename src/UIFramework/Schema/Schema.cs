@@ -106,6 +106,8 @@ namespace UIFramework
         public List<SettingOption> Options;
         public List<string> Placeholders;
         public string Requires;
+        /// <summary>For an action: the question asked before the host is called. Null asks nothing.</summary>
+        public string Confirm;
         public bool Advanced;
         public bool ReadOnly;
         public bool Hidden;
@@ -147,6 +149,7 @@ namespace UIFramework
                 Factor = (double?)item["factor"],
                 UnlimitedAtZero = item["unlimitedAtZero"]?.Type == JTokenType.Boolean && (bool)item["unlimitedAtZero"],
                 Requires = (string)item["requires"],
+                Confirm = (string)item["confirm"],
                 Advanced = item["advanced"]?.Type == JTokenType.Boolean && (bool)item["advanced"],
                 ReadOnly = item["readonly"]?.Type == JTokenType.Boolean && (bool)item["readonly"],
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"]
@@ -183,6 +186,7 @@ namespace UIFramework
             if (Options != null) item["options"] = new JArray(Options.Select(o => o.ToJson()));
             if (Placeholders != null) item["placeholders"] = new JArray(Placeholders);
             if (Requires != null) item["requires"] = Requires;
+            if (Confirm != null) item["confirm"] = Confirm;
             if (Advanced) item["advanced"] = true;
             if (ReadOnly) item["readonly"] = true;
             if (Hidden) item["hidden"] = true;

@@ -3,7 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Globalization;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Newtonsoft.Json.Linq;
 
 // UIFramework for streamer.bot: the settings action of a host.
@@ -12,33 +14,17 @@ using Newtonsoft.Json.Linq;
 // UIFramework.dll at run time and hands it three things: the spec (how this window is called and laid out),
 // the schema (what the game knows, asked from the game action) and a Host object the DLL talks back to.
 //
-// Fill in the HOST section. Everything under LOADER and BRIDGE is the same in every host; keep it identical
-// to stub/Stub.cs in the UIFramework repository.
+// Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
+// hosts/<host>/host-section.cs and its spec from hosts/<host>/spec.json into this template. Everything outside
+// the markers is the same in every host; tools/check-stub.ps1 checks that.
 
 public class CPHInline
 {
-    // ================================================================================================
-    // HOST: what differs per project
-    // ================================================================================================
+    // ==== HOST ====
+    private const string GameActionName = "Demo Game";
+    private const string LogPrefix = "[Demo/Settings]";
+    private static readonly string SettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Demo", "settings.json");
 
-    private const string HostName = "Blackjack Game";
-    private const string GameActionName = "Blackjack Game";          // answers uiframework.describe
-    private const string LogPrefix = "[Blackjack Game/Settings]";
-    private static readonly string SettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Chat Games", "Blackjack Game", "BJG-Settings.json");
-    private static readonly string LogsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Chat Games", "Logs");
-
-    // Command ids the cooldown settings are applied to, by setting key.
-    private static readonly (string GlobalKey, string UserKey, string CommandId)[] Cooldowns =
-    {
-        ("globalCooldown", "userCooldown", "c6497fbd-c4b0-4c96-a398-e52d573cfe85"),
-        ("duelGlobalCooldown", "duelUserCooldown", "8ba7b2b7-f9f9-4b70-8cca-ee2aaebe4892"),
-        ("houseGlobalCooldown", "houseUserCooldown", "57cccfe6-3ece-428e-8567-b99823a12dac"),
-    };
-
-    // The spec: see docs/Spec.md. Generated from hosts/<host>/spec.json by tools/embed-spec.ps1; edit the JSON.
-    private const string Spec = @"__SPEC_JSON__";
-
-    /// <summary>What the DLL calls. Public methods, string arguments, no framework types: found by reflection.</summary>
     public sealed class Host
     {
         private readonly CPHInline _owner;
@@ -51,53 +37,31 @@ public class CPHInline
             else _owner.CPH.LogInfo(message);
         }
 
-        // Runs on the window's thread. Queue what needs Streamer.bot's thread; Pump applies it.
-        public void OnSaved(string settingsJson)
-        {
-            var settings = JObject.Parse(settingsJson);
-            var pending = new List<(string, int, int)>();
-            foreach (var (globalKey, userKey, commandId) in Cooldowns)
-                pending.Add((commandId, Math.Max(0, (int?)settings[globalKey] ?? 0), Math.Max(0, (int?)settings[userKey] ?? 0)));
-            Interlocked.Exchange(ref _owner._pendingCooldowns, pending);
-        }
-
-        public string Test(string name, string settingsJson)
-        {
-            if (name == "resetLeaderboard")
-            {
-                _owner.CPH.SetGlobalVar("bjg_ResetLeaderboard", "True", false);
-                return "Leaderboard reset queued.";
-            }
-            return null;
-        }
-
+        public void OnSaved(string settingsJson) { }
+        public string Test(string name, string settingsJson) => null;
         public string ReadTable(string key) => null;
-
-        public IEnumerable<string> ReadLogLines()
-        {
-            if (!Directory.Exists(LogsDir))
-                return new string[0];
-            return Directory.GetFiles(LogsDir, "BJG-log*.txt").OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
-                .SelectMany(ReadLinesSafe).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
-        }
-
-        private static IEnumerable<string> ReadLinesSafe(string file)
-        {
-            try { return File.ReadAllLines(file); } catch (Exception) { return new string[0]; }
-        }
+        public IEnumerable<string> ReadLogLines() => null;
     }
+    // ==== END HOST ====
 
-    private List<(string CommandId, int Global, int User)> _pendingCooldowns;
+    // The spec: see docs/Spec.md. Written in by tools/embed-spec.ps1 from hosts/<host>/spec.json; edit the JSON.
+    private const string Spec = @"__SPEC_JSON__";
 
-    // Called every 100 ms on Streamer.bot's thread while the window is open, and once after it closed.
+    // ================================================================================================
+    // JOBS: the window runs on its own thread; anything that needs CPH is queued here and run by Pump,
+    // which the DLL calls every 100 ms on Streamer.bot's thread while the window is open, and once after.
+    // ================================================================================================
+
+    private readonly ConcurrentQueue<Action> _jobs = new ConcurrentQueue<Action>();
+
+    private void Enqueue(Action job) => _jobs.Enqueue(job);
+
     private void Pump()
     {
-        var pending = Interlocked.Exchange(ref _pendingCooldowns, null);
-        if (pending == null) return;
-        foreach (var (commandId, global, user) in pending)
+        while (_jobs.TryDequeue(out var job))
         {
-            CPH.CommandSetGlobalCooldownDuration(commandId, global);
-            CPH.CommandSetUserCooldownDuration(commandId, user);
+            try { job(); }
+            catch (Exception ex) { CPH.LogError(LogPrefix + " A queued step failed: " + ex.Message); }
         }
     }
 
@@ -176,6 +140,7 @@ public class CPHInline
             }
             string schema = AskSchema();
             _show.Invoke(null, new object[] { Spec, schema, SettingsPath, new Host(this), new Action(Pump) });
+            Pump();
             return true;
         }
         catch (TargetInvocationException ex)

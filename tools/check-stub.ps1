@@ -54,7 +54,9 @@ else { Write-Host '  FAIL stub/Stub.cs:' -ForegroundColor Red; $output | Where-O
 
 # HostSchema.cs sits beside a game's CPHInline; a minimal one stands in for it here.
 $schemaSrc = Join-Path $out 'HostSchema.patched.cs'
-$hostCode = [IO.File]::ReadAllText((Join-Path $root 'stub\HostSchema.cs'), [Text.Encoding]::UTF8) + @'
+# The block has no usings of its own; the action file it is pasted into supplies these.
+$hostUsings = "using System;`nusing System.IO;`nusing System.Linq;`nusing System.Threading;`nusing System.Globalization;`nusing System.Collections.Generic;`nusing Newtonsoft.Json;`nusing Newtonsoft.Json.Linq;`n"
+$hostCode = $hostUsings + [IO.File]::ReadAllText((Join-Path $root 'stub\HostSchema.cs'), [Text.Encoding]::UTF8) + @'
 
 public class CPHInline
 {
