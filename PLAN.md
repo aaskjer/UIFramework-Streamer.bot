@@ -222,8 +222,8 @@ in der Preview geprüft, Stub und Host-Block kompilieren als Streamer.bot-Aktion
 mit den alten Clamps, `uiframework.describe`, die Settings-Aktion ist der Stub mit Blackjack-Host-Sektion
 (Cooldowns, Leaderboard-Reset, OBS-Setup als Jobs auf Streamer.bots Thread). Die alte GUI (4.800 Zeilen WPF) und
 ihre Harnesse sind weg; `run-window-tests.ps1` öffnet das echte Fenster über den Stub und schreibt
-`hosts/blackjack/schema.json`. Ungetestet: der Import in ein laufendes Streamer.bot; die DLL liegt dafür unter
-`Streamer.bot-x64-1.0.7\UIFramework\lib\0.1.0\`.
+`hosts/blackjack/schema.json`. Phase 3 (01.11.): Loader mit Erststart-Dialog, Download über `lib/v1/latest.json` mit SHA-256,
+Hintergrund-Update in `Init`, Release-Workflow. Das erste Release v0.1.0 muss per Tag angestoßen werden.
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
