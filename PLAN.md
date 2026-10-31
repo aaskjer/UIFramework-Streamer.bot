@@ -217,9 +217,13 @@ freien Typen gereicht; der Stub implementiert sie als innere Klasse.
 
 Stand 31.10.2026: Phase 0 und 1 fertig, Phase 2 auf Framework-Seite fertig (Schema, Konventionen eingebettet,
 Resolve, Spec-JSON, Reflection-Host, Alias-Migration, Blackjack-Schema und -Spec aus der alten GUI erzeugt und
-in der Preview geprüft, Stub und Host-Block kompilieren als Streamer.bot-Aktion). Offen aus Phase 2: der
-Blackjack-Host selbst (Settings-Tabelle ins Spiel, `uiframework.describe`, Stub als Settings-Aktion, alte GUI
-weg, check-settings.ps1 weg). Das ist der nächste Schritt und findet im Blackjack-Projekt statt.
+in der Preview geprüft, Stub und Host-Block kompilieren als Streamer.bot-Aktion). Blackjack ist umgestellt
+(31.10.): `UiSchema.Table` mit 262 Settings im Spiel und in der Stats-Aktion, `Settings`-Fassade über `UiSettings`
+mit den alten Clamps, `uiframework.describe`, die Settings-Aktion ist der Stub mit Blackjack-Host-Sektion
+(Cooldowns, Leaderboard-Reset, OBS-Setup als Jobs auf Streamer.bots Thread). Die alte GUI (4.800 Zeilen WPF) und
+ihre Harnesse sind weg; `run-window-tests.ps1` öffnet das echte Fenster über den Stub und schreibt
+`hosts/blackjack/schema.json`. Ungetestet: der Import in ein laufendes Streamer.bot; die DLL liegt dafür unter
+`Streamer.bot-x64-1.0.7\UIFramework\lib\0.1.0\`.
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
