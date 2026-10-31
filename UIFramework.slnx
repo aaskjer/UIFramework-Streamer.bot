@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/UIFramework.Preview/UIFramework.Preview.csproj" />
+    <Project Path="src/UIFramework.Tests/UIFramework.Tests.csproj" />
+    <Project Path="src/UIFramework/UIFramework.csproj" />
+  </Folder>
+</Solution>

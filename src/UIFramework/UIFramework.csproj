@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The DLL hosts load at run time. .NET Framework 4.8, because Streamer.bot 1.0.x runs on 4.8.1, and only
+       Newtonsoft.Json as a dependency: Streamer.bot has it loaded already (13.0.3, assembly version 13.0.0.0), so
+       the CLR resolves it by name. No reference to Streamer.bot's own assemblies: the host passes an IHostLog and
+       IHostHooks, which keeps the DLL buildable, testable and previewable without Streamer.bot. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>UIFramework</RootNamespace>
+    <AssemblyName>UIFramework</AssemblyName>
+    <Version>0.1.0</Version>
+    <Authors>aaskjer</Authors>
+    <Product>UIFramework for streamer.bot</Product>
+    <Description>Settings-window framework for Streamer.bot extensions.</Description>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>
