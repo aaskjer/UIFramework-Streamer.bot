@@ -228,6 +228,9 @@ namespace UIFramework
             button.ToolTip = help;
             button.Click += (sender, e) =>
             {
+                if (s.Confirm != null &&
+                    MessageBox.Show(s.Confirm, label, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                    return;
                 try
                 {
                     string result = ctx.Hooks.Test(s.Key, ctx.Settings);

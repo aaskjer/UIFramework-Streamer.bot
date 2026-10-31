@@ -35,6 +35,7 @@ Settings-Datei.
 | `aliases`      | nein    | alte Keys; der Store liest sie und schreibt den kanonischen Key zurück                     |
 | `aliasFactors` | nein    | je Alias ein Faktor für den Wert beim Umzug (Bruch zu Prozent: 100)                        |
 | `hidden`       | nein    | true: hat kein Feld, bleibt aber in der Datei                                              |
+| `confirm`      | nein    | für `action`: Frage (Ja/Nein), bevor der Host gerufen wird                                 |
 | `requires`     | nein    | Key eines `bool`; Feld ist ausgegraut, solange der false ist                               |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
