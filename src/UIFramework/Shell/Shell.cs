@@ -39,7 +39,7 @@ namespace UIFramework
             _hooks = hooks ?? new NoHooks();
             if (string.IsNullOrWhiteSpace(spec.SettingsPath))
                 throw new ArgumentException("WindowSpec.SettingsPath is required.");
-            _store = new SettingsStore(spec.SettingsPath, spec.Defaults);
+            _store = new SettingsStore(spec.SettingsPath, spec.Defaults).WithAliases(spec.Aliases, spec.AliasFactors);
             _gateKey = Path.GetFullPath(spec.SettingsPath);
         }
 
@@ -242,6 +242,11 @@ namespace UIFramework
             }
             if (pages.Count == 0)
                 pages.Add((new PageSpec("empty", "Settings", "⚙️", null), Ui.Scroll(Ui.Note("This window has no pages."))));
+            foreach (var wire in ctx.AfterBuild)
+            {
+                try { wire(); }
+                catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Page wiring failed: " + ex.Message); }
+            }
 
             var pageHost = new Grid();
             foreach (var page in pages)

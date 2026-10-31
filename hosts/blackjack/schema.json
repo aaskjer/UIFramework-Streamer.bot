@@ -1,0 +1,3895 @@
+{
+  "host": "blackjack",
+  "version": "v16.3.1",
+  "settingsFile": "Chat Games/Blackjack Game/BJG-Settings.json",
+  "settings": [
+    {
+      "key": "freeGame",
+      "default": true,
+      "page": "table",
+      "label": "Free Game",
+      "section": "Betting",
+      "help": "Hands are played for nothing: no stake is taken, no winnings are paid, and every message about points\nswitches to its Free Game wording. House Mode refuses to open a table while this is on.",
+      "aliases": [
+        "FreeGame"
+      ]
+    },
+    {
+      "key": "defaultBet",
+      "default": 1234,
+      "kind": "long",
+      "page": "table",
+      "label": "Default bet",
+      "section": "Betting",
+      "help": "Used when the blackjack command arrives without an amount, or with a word that is not one of the shortcuts.",
+      "aliases": [
+        "DefaultBet"
+      ]
+    },
+    {
+      "key": "minBet",
+      "default": 1,
+      "kind": "long",
+      "page": "table",
+      "label": "Minimum bet",
+      "section": "Betting",
+      "help": "Anything lower is raised to this. The player still needs the balance to cover it.",
+      "aliases": [
+        "MinBet"
+      ]
+    },
+    {
+      "key": "maxBet",
+      "default": 0,
+      "kind": "long",
+      "page": "table",
+      "label": "Maximum bet",
+      "section": "Betting",
+      "unlimitedAtZero": true,
+      "help": "Anything higher is cut down to this.\n0 = no ceiling.",
+      "aliases": [
+        "MaxBet"
+      ]
+    },
+    {
+      "key": "dealerStandsOn",
+      "default": 17,
+      "kind": "int",
+      "page": "table",
+      "label": "Stands on",
+      "section": "The dealer",
+      "options": [
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21"
+      ],
+      "help": "The dealer keeps drawing until the hand reaches this total, then stops. 17 is the casino standard.",
+      "aliases": [
+        "DealerStandsOn"
+      ]
+    },
+    {
+      "key": "numDecks",
+      "default": 1,
+      "kind": "int",
+      "page": "table",
+      "label": "Decks in the shoe",
+      "section": "The dealer",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "help": "How many 52-card decks are shuffled together.",
+      "aliases": [
+        "NumDecks"
+      ]
+    },
+    {
+      "key": "reshuffleThreshold",
+      "default": 0.25,
+      "kind": "percent",
+      "page": "table",
+      "label": "Reshuffle at",
+      "section": "The dealer",
+      "factor": 0.01,
+      "min": 1.0,
+      "max": 90.0,
+      "help": "How little of the shoe may be left before the played cards are shuffled back in.\nLow means long runs between shuffles and a count worth keeping; high means it is reshuffled so often\nthat counting gets nobody anywhere.",
+      "aliases": [
+        "ReshuffleThreshold"
+      ]
+    },
+    {
+      "key": "dealerDrawDelayMs",
+      "default": 500,
+      "kind": "int",
+      "page": "table",
+      "label": "Reveal delay",
+      "section": "The dealer",
+      "help": "Pause between the dealer's cards, in milliseconds, so chat can follow along. 0 = all at once.",
+      "aliases": [
+        "DealerDrawDelayMs"
+      ]
+    },
+    {
+      "key": "tieDrawOnlyOneCard",
+      "default": false,
+      "kind": "bool",
+      "page": "table",
+      "label": "Break a tie with one card only",
+      "section": "The dealer",
+      "help": "On: the dealer draws exactly one card on a tie, and a tie that survives it counts as a dealer win.\nOff: the dealer keeps drawing until the tie breaks one way or the other.",
+      "aliases": [
+        "TieDrawOnlyOneCard"
+      ]
+    },
+    {
+      "key": "showAceMsg",
+      "default": true,
+      "kind": "bool",
+      "page": "table",
+      "label": "Say when an Ace drops to 1",
+      "section": "The dealer",
+      "help": "Posts a line whenever an Ace counts as 1 instead of 11 to keep a hand under 22.",
+      "aliases": [
+        "ShowAceMsg"
+      ]
+    },
+    {
+      "key": "allowDoubleDown",
+      "default": true,
+      "kind": "bool",
+      "page": "table",
+      "label": "Double down",
+      "section": "Optional rules",
+      "help": "Doubles the stake for exactly one more card, then stands. Only on a fresh two-card hand, before anything else.",
+      "aliases": [
+        "AllowDoubleDown"
+      ]
+    },
+    {
+      "key": "allowSplit",
+      "default": true,
+      "kind": "bool",
+      "page": "table",
+      "label": "Split",
+      "section": "Optional rules",
+      "help": "Splits a starting pair of equal-value cards into two hands, each played out for the same stake.",
+      "aliases": [
+        "AllowSplit"
+      ]
+    },
+    {
+      "key": "allowResplit",
+      "default": false,
+      "kind": "bool",
+      "page": "table",
+      "label": "Resplit",
+      "section": "Optional rules",
+      "help": "Lets a split hand split again when it draws another matching pair. Applies to split Aces too.",
+      "aliases": [
+        "AllowResplit"
+      ]
+    },
+    {
+      "key": "maxSplitHands",
+      "default": 4,
+      "kind": "int",
+      "page": "table",
+      "label": "Hands from splitting",
+      "section": "Optional rules",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "help": "The total number of hands one round may reach through splitting. Four is the casino standard.",
+      "aliases": [
+        "MaxSplitHands"
+      ]
+    },
+    {
+      "key": "allowInsurance",
+      "default": false,
+      "kind": "bool",
+      "page": "table",
+      "label": "Insurance",
+      "section": "Optional rules",
+      "help": "When the dealer shows an Ace, a player may stake half their bet against a dealer blackjack. Pays 2:1.\nOver time it is a losing side bet for the player, which is why it is off by default.",
+      "aliases": [
+        "AllowInsurance"
+      ]
+    },
+    {
+      "key": "allowSurrender",
+      "default": false,
+      "kind": "bool",
+      "page": "table",
+      "label": "Surrender",
+      "section": "Optional rules",
+      "help": "Lets a player fold a fresh two-card hand and keep half the stake, before hitting, doubling, splitting or insuring.",
+      "aliases": [
+        "AllowSurrender"
+      ]
+    },
+    {
+      "key": "dealerPeeks",
+      "default": false,
+      "kind": "bool",
+      "page": "table",
+      "label": "Dealer peeks for blackjack",
+      "section": "Optional rules",
+      "help": "On: the dealer takes a face-down card at the deal and checks it as soon as the upcard is an Ace or a ten.",
+      "aliases": [
+        "DealerPeeks"
+      ]
+    },
+    {
+      "key": "turnTimeout",
+      "default": 180,
+      "kind": "int",
+      "page": "table",
+      "label": "Turn timeout",
+      "section": "Pace",
+      "help": "How long a player has to act before the hand is closed out for them, in seconds. 0 = no limit.\nThe clock restarts on every action, so it only catches someone who really walked away.",
+      "aliases": [
+        "TurnTimeoutSec"
+      ]
+    },
+    {
+      "key": "maxGamesPerHour",
+      "default": 0,
+      "page": "table",
+      "label": "Games per hour",
+      "section": "Pace",
+      "help": "How many hands one player may start within a rolling 60 minutes. 0 = no limit.",
+      "aliases": [
+        "MaxGamesPerHour"
+      ]
+    },
+    {
+      "key": "timeoutRefundIfNoAction",
+      "default": true,
+      "kind": "bool",
+      "page": "table",
+      "label": "Refund a hand nobody played",
+      "section": "Pace",
+      "help": "On: a player who never hit, stood, doubled or split gets the stake back, exactly as if they had quit.",
+      "aliases": [
+        "TimeoutRefundIfNoAction"
+      ]
+    },
+    {
+      "key": "blackjackPayout",
+      "default": 1.5,
+      "kind": "double",
+      "page": "table",
+      "label": "Blackjack pays",
+      "section": "Commands",
+      "options": [
+        {
+          "value": "1.5",
+          "label": "3:2 - casino standard"
+        },
+        {
+          "value": "1.2",
+          "label": "6:5 - house edge"
+        },
+        {
+          "value": "2.0",
+          "label": "2:1 - generous"
+        },
+        {
+          "value": "1.0",
+          "label": "1:1 - no bonus"
+        }
+      ],
+      "help": "The bonus on a natural blackjack - 21 on the first two cards - paid on top of the returned stake.\nA regular win always pays 1:1.",
+      "aliases": [
+        "BlackjackPayout"
+      ]
+    },
+    {
+      "key": "duelEnabled",
+      "default": true,
+      "kind": "bool",
+      "page": "duel",
+      "label": "Duels",
+      "section": "Duel Mode",
+      "help": "Off: the duel command only ever replies that duels are disabled.",
+      "aliases": [
+        "DuelEnabled"
+      ]
+    },
+    {
+      "key": "duelCountsTowardGamesPerHour",
+      "default": true,
+      "kind": "bool",
+      "page": "duel",
+      "label": "Duels count towards games per hour",
+      "section": "Duel Mode",
+      "help": "Counts a duel as a game for both players against the Games per hour limit on the Table page.",
+      "aliases": [
+        "DuelCountsTowardGamesPerHour"
+      ]
+    },
+    {
+      "key": "duelApplyAddictedCut",
+      "default": false,
+      "kind": "bool",
+      "page": "duel",
+      "label": "Cut an addicted player's duel winnings",
+      "section": "Duel Mode",
+      "help": "Off by default. The points in a duel come from the other player, not the house, so the cut would delete them\nfrom circulation rather than move them.",
+      "aliases": [
+        "DuelApplyAddictedCut"
+      ]
+    },
+    {
+      "key": "duelMinBet",
+      "default": 1,
+      "kind": "long",
+      "page": "duel",
+      "label": "Minimum duel stake",
+      "section": "Stakes",
+      "help": "Anything lower is raised to this. Separate from the table minimum, so duels can have a floor of their own.",
+      "aliases": [
+        "DuelMinBet"
+      ]
+    },
+    {
+      "key": "duelMaxBet",
+      "default": 0,
+      "kind": "long",
+      "page": "duel",
+      "label": "Maximum duel stake",
+      "section": "Stakes",
+      "unlimitedAtZero": true,
+      "help": "Anything higher is cut down to this.\n0 = no ceiling.",
+      "aliases": [
+        "DuelMaxBet"
+      ]
+    },
+    {
+      "key": "duelAcceptTimeoutSec",
+      "default": 60,
+      "kind": "int",
+      "page": "duel",
+      "label": "Answer a challenge",
+      "section": "Deadlines",
+      "help": "How long the challenged player has before the challenge expires and the stake goes back, in seconds.\nAt least 10.",
+      "aliases": [
+        "DuelAcceptTimeoutSec"
+      ]
+    },
+    {
+      "key": "duelTurnTimeoutSec",
+      "default": 90,
+      "kind": "int",
+      "page": "duel",
+      "label": "Take a turn",
+      "section": "Deadlines",
+      "help": "How long a player has to act before they stand automatically, in seconds. 0 = no limit.",
+      "aliases": [
+        "DuelTurnTimeoutSec"
+      ]
+    },
+    {
+      "key": "duelConsentTimeoutSec",
+      "default": 45,
+      "kind": "int",
+      "page": "duel",
+      "label": "Answer a raise",
+      "section": "Deadlines",
+      "help": "How long the opponent has to answer a split or double, and how long both have to answer a sudden-death offer.\nAt least 5.",
+      "aliases": [
+        "DuelConsentTimeoutSec"
+      ]
+    },
+    {
+      "key": "duelAllowDoubleDown",
+      "default": true,
+      "kind": "bool",
+      "page": "duel",
+      "label": "Double down",
+      "section": "Raises",
+      "help": "Lets a player double their stake for one more card, once the opponent agrees.",
+      "aliases": [
+        "DuelAllowDoubleDown"
+      ]
+    },
+    {
+      "key": "duelAllowSplit",
+      "default": true,
+      "kind": "bool",
+      "page": "duel",
+      "label": "Split",
+      "section": "Raises",
+      "help": "Lets a player split a pair, once the opponent agrees. Each hand then plays for its own equally funded side pot,\nand a player with fewer hands defends every pot with the single one they have.",
+      "aliases": [
+        "DuelAllowSplit"
+      ]
+    },
+    {
+      "key": "duelSuddenDeathEnabled",
+      "default": false,
+      "kind": "bool",
+      "page": "duel",
+      "label": "Offer it on a tie",
+      "section": "Sudden death",
+      "help": "Only on an unsplit duel - a single pot - that ends in a genuine tie. Duels with splits always push.",
+      "aliases": [
+        "DuelSuddenDeathEnabled"
+      ]
+    },
+    {
+      "key": "duelMaxSuddenDeathRounds",
+      "default": 3,
+      "kind": "int",
+      "page": "duel",
+      "label": "Rounds at most",
+      "section": "Sudden death",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "help": "How often sudden death may repeat while the players keep tying. After the last one the pot is split.",
+      "aliases": [
+        "DuelMaxSuddenDeathRounds"
+      ]
+    },
+    {
+      "key": "houseEnabled",
+      "default": true,
+      "kind": "bool",
+      "page": "house",
+      "label": "House Mode",
+      "section": "House Mode",
+      "help": "Off: the house command only ever replies that House Mode is disabled.",
+      "aliases": [
+        "HouseEnabled"
+      ]
+    },
+    {
+      "key": "houseCountsTowardGamesPerHour",
+      "default": true,
+      "kind": "bool",
+      "page": "house",
+      "label": "Seats count towards games per hour",
+      "section": "House Mode",
+      "help": "Counts taking a seat as a game for that player against the Games per hour limit on the Table page.",
+      "aliases": [
+        "HouseCountsTowardGamesPerHour"
+      ]
+    },
+    {
+      "key": "houseMaxSeats",
+      "default": 6,
+      "kind": "int",
+      "page": "house",
+      "label": "Seats",
+      "section": "The table",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "help": "How many players can sit down. The table deals as soon as the last seat is taken, without waiting out the join window.",
+      "aliases": [
+        "HouseMaxSeats"
+      ]
+    },
+    {
+      "key": "houseRulePickTimeoutSec",
+      "default": 30,
+      "kind": "int",
+      "page": "house",
+      "label": "Rule pick",
+      "section": "The table",
+      "help": "How long the moderator has to answer the rule set menu, in seconds. Nothing is staked yet, so the table is simply dropped.\nAt least 10.",
+      "aliases": [
+        "HouseRulePickTimeoutSec"
+      ]
+    },
+    {
+      "key": "houseJoinWindowSec",
+      "default": 60,
+      "kind": "int",
+      "page": "house",
+      "label": "Join window",
+      "section": "The table",
+      "help": "How long viewers have to take a seat before the table deals itself, in seconds. With nobody seated it closes again.\nAt least 15.",
+      "aliases": [
+        "HouseJoinWindowSec"
+      ]
+    },
+    {
+      "key": "houseInsuranceWindowSec",
+      "default": 20,
+      "kind": "int",
+      "page": "house",
+      "label": "Insurance window",
+      "section": "The table",
+      "help": "How long seats have to insure when the dealer shows an Ace, before the dealer looks at the hole card, in seconds.\nOnly used by rule sets that offer insurance. At least 5.",
+      "aliases": [
+        "HouseInsuranceWindowSec"
+      ]
+    },
+    {
+      "key": "houseTurnTimeoutSec",
+      "default": 60,
+      "kind": "int",
+      "page": "house",
+      "label": "Seat turn timeout",
+      "section": "The table",
+      "help": "How long one seat may think before it stands automatically and play moves on, in seconds. 0 = no limit.",
+      "aliases": [
+        "HouseTurnTimeoutSec"
+      ]
+    },
+    {
+      "key": "houseMinBet",
+      "default": 1,
+      "kind": "long",
+      "page": "house",
+      "label": "Minimum seat stake",
+      "section": "Stakes",
+      "help": "Anything lower is raised to this. The player still needs the balance to cover it.",
+      "aliases": [
+        "HouseMinBet"
+      ]
+    },
+    {
+      "key": "houseMaxBet",
+      "default": 0,
+      "kind": "long",
+      "page": "house",
+      "label": "Maximum seat stake",
+      "section": "Stakes",
+      "unlimitedAtZero": true,
+      "help": "Anything higher is cut down to this.\n0 = no ceiling.",
+      "aliases": [
+        "HouseMaxBet"
+      ]
+    },
+    {
+      "key": "houseRuleVegasEnabled",
+      "default": true,
+      "kind": "bool",
+      "page": "house",
+      "aliases": [
+        "HouseRuleVegasEnabled"
+      ],
+      "section": "Rule sets on offer",
+      "label": "Vegas Strip",
+      "help": "4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2."
+    },
+    {
+      "key": "houseRuleAtlanticEnabled",
+      "default": true,
+      "kind": "bool",
+      "page": "house",
+      "aliases": [
+        "HouseRuleAtlanticEnabled"
+      ],
+      "section": "Rule sets on offer",
+      "label": "Atlantic City",
+      "help": "8 deck shoe, dealer stands on soft 17, late surrender, resplit to three hands."
+    },
+    {
+      "key": "houseRuleEuropeanEnabled",
+      "default": true,
+      "kind": "bool",
+      "page": "house",
+      "aliases": [
+        "HouseRuleEuropeanEnabled"
+      ],
+      "section": "Rule sets on offer",
+      "label": "European",
+      "help": "2 deck shoe, no hole card, double on 9 to 11 only, no surrender."
+    },
+    {
+      "key": "pointsVariable",
+      "default": "points",
+      "page": "access",
+      "label": "Points variable",
+      "section": "Currency",
+      "help": "The name of the Streamer.bot user variable your currency is kept in.",
+      "aliases": [
+        "PointsVariable"
+      ]
+    },
+    {
+      "key": "pointsName",
+      "default": "Points",
+      "page": "access",
+      "label": "Points name",
+      "section": "Currency",
+      "help": "What the currency is called in chat messages. Overwritten automatically when Currency Core or LOYALTY POINTS is detected.",
+      "aliases": [
+        "PointsVarName"
+      ]
+    },
+    {
+      "key": "cardDisplayMode",
+      "default": "emojivalue",
+      "kind": "options",
+      "page": "access",
+      "label": "Cards in chat",
+      "section": "Currency",
+      "options": [
+        {
+          "value": "emojivalue",
+          "label": "Card and number - 🂡(11)"
+        },
+        {
+          "value": "emoji",
+          "label": "Card only - 🂡"
+        },
+        {
+          "value": "value",
+          "label": "Number only - 11"
+        }
+      ],
+      "help": "How cards are written in chat, in every mode. Worth moving off the card characters if your chat renders them as boxes.",
+      "aliases": [
+        "CardDisplayMode"
+      ]
+    },
+    {
+      "key": "blockedUsers",
+      "default": "",
+      "label": "Blocked viewers",
+      "section": "Kept out",
+      "help": "Names matched without regard to case, and a leading @ is ignored. A blocked viewer's commands are dropped\nwithout a reply, so retrying cannot spam chat.",
+      "aliases": [
+        "BlockedUsers"
+      ]
+    },
+    {
+      "key": "blockedGroups",
+      "default": "ExampleGroup, TooAddictedToPlay, YourCustomBlockedGroup",
+      "label": "Blocked groups",
+      "section": "Kept out",
+      "help": "Streamer.bot user groups, matched exactly. Being in any one of them is enough.",
+      "aliases": [
+        "BlockedGroups"
+      ]
+    },
+    {
+      "key": "addictedUsers",
+      "default": "",
+      "label": "Addicted viewers",
+      "section": "Addicted list",
+      "help": "Names matched without regard to case. Being on this list or in one of the groups below is enough.",
+      "aliases": [
+        "AddictedUsers"
+      ]
+    },
+    {
+      "key": "addictedGroups",
+      "default": "",
+      "label": "Addicted groups",
+      "section": "Addicted list",
+      "help": "Streamer.bot user groups, matched exactly.",
+      "aliases": [
+        "AddictedGroups"
+      ]
+    },
+    {
+      "key": "addictedPayoutCut",
+      "default": 50,
+      "label": "Payout cut",
+      "section": "Addicted list",
+      "help": "How much of an addicted player's winnings is withheld. Capped at 99%, so a win can never turn into a loss.",
+      "aliases": [
+        "AddictedPayoutCut"
+      ],
+      "aliasFactors": {
+        "AddictedPayoutCut": 100
+      }
+    },
+    {
+      "key": "globalCooldown",
+      "default": 0,
+      "page": "access",
+      "label": "Table, everyone",
+      "section": "Cooldowns",
+      "help": "How long after any hand before anyone can start another, in seconds.",
+      "aliases": [
+        "GlobalCooldown"
+      ]
+    },
+    {
+      "key": "userCooldown",
+      "default": 0,
+      "page": "access",
+      "label": "Table, per player",
+      "section": "Cooldowns",
+      "help": "How long one player waits between their own hands, in seconds.",
+      "aliases": [
+        "UserCooldown"
+      ]
+    },
+    {
+      "key": "duelGlobalCooldown",
+      "default": 0,
+      "kind": "int",
+      "page": "access",
+      "label": "Duel, everyone",
+      "section": "Cooldowns",
+      "help": "How long after any challenge before anyone can issue another, in seconds.",
+      "aliases": [
+        "DuelGlobalCooldown"
+      ]
+    },
+    {
+      "key": "duelUserCooldown",
+      "default": 0,
+      "kind": "int",
+      "page": "access",
+      "label": "Duel, per player",
+      "section": "Cooldowns",
+      "help": "How long one player waits between issuing challenges, in seconds.\nAnswering a challenge is never blocked, so a duel can always be finished.",
+      "aliases": [
+        "DuelUserCooldown"
+      ]
+    },
+    {
+      "key": "houseGlobalCooldown",
+      "default": 0,
+      "kind": "int",
+      "page": "access",
+      "label": "House, everyone",
+      "section": "Cooldowns",
+      "help": "How long after a table is opened before anyone can open another, in seconds.",
+      "aliases": [
+        "HouseGlobalCooldown"
+      ]
+    },
+    {
+      "key": "houseUserCooldown",
+      "default": 0,
+      "kind": "int",
+      "page": "access",
+      "label": "House, per player",
+      "section": "Cooldowns",
+      "help": "How long one player waits between opening tables, in seconds.\nTaking a seat at someone else's table is never blocked.",
+      "aliases": [
+        "HouseUserCooldown"
+      ]
+    },
+    {
+      "key": "overlayScale",
+      "default": 1.0,
+      "label": "Overlay",
+      "section": "Size",
+      "factor": 0.01,
+      "min": 25.0,
+      "max": 400.0,
+      "help": "Resizes cards, text and layout together. 100 is the built-in size, 150 is half again as big.",
+      "aliases": [
+        "OverlayScale"
+      ]
+    },
+    {
+      "key": "overlayFontScale",
+      "default": 1.0,
+      "label": "Text",
+      "section": "Size",
+      "factor": 0.01,
+      "min": 25.0,
+      "max": 400.0,
+      "help": "Resizes names, totals and badges on their own, leaving the cards as they are.",
+      "aliases": [
+        "OverlayFontScale"
+      ]
+    },
+    {
+      "key": "overlayShowPoints",
+      "default": true,
+      "kind": "bool",
+      "page": "overlay",
+      "label": "Points and stakes",
+      "section": "What is shown",
+      "help": "Shows the stake and insurance amounts. Turn it off to keep numbers off stream.",
+      "aliases": [
+        "OverlayShowPoints"
+      ]
+    },
+    {
+      "key": "overlayShowHandValues",
+      "default": true,
+      "kind": "bool",
+      "page": "overlay",
+      "label": "Hand totals",
+      "section": "What is shown",
+      "help": "Shows the running total beside each hand and the dealer's.",
+      "aliases": [
+        "OverlayShowHandValues"
+      ]
+    },
+    {
+      "key": "overlayShowOutcomeBadges",
+      "default": true,
+      "kind": "bool",
+      "page": "overlay",
+      "label": "Outcome badges",
+      "section": "What is shown",
+      "help": "Shows BLACKJACK, BUST, WIN, LOSE and PUSH beside a hand once it has been settled.",
+      "aliases": [
+        "OverlayShowOutcomeBadges"
+      ]
+    },
+    {
+      "key": "overlayShowInsurance",
+      "default": true,
+      "kind": "bool",
+      "page": "overlay",
+      "label": "Insurance line",
+      "section": "What is shown",
+      "help": "Shows a line under the dealer's cards while a player holds insurance.",
+      "aliases": [
+        "OverlayShowInsurance"
+      ]
+    },
+    {
+      "key": "overlayAnimations",
+      "default": true,
+      "label": "Deal animation",
+      "section": "What is shown",
+      "help": "Slides each card in as it is dealt. Off, the cards simply appear.",
+      "aliases": [
+        "OverlayAnimationsEnabled"
+      ]
+    },
+    {
+      "key": "overlayHideOnFreeGame",
+      "default": false,
+      "label": "Hide during Free Game",
+      "section": "What is shown",
+      "help": "Keeps the overlay off screen entirely while Free Game is on.",
+      "aliases": [
+        "OverlayHideOnFreeGame"
+      ]
+    },
+    {
+      "key": "overlayDealerName",
+      "default": "Dealer",
+      "kind": "string",
+      "page": "overlay",
+      "label": "Dealer is called",
+      "section": "Labels and timing",
+      "help": "The label above the dealer's cards.",
+      "aliases": [
+        "OverlayDealerName"
+      ]
+    },
+    {
+      "key": "overlayResultSeconds",
+      "default": 8,
+      "kind": "int",
+      "label": "Hold the result",
+      "section": "Labels and timing",
+      "help": "How long a finished hand stays on screen before it fades, in seconds.\nWorth raising if a full table settles faster than viewers can read it. At least 1.",
+      "aliases": [
+        "OverlayGameOverFadeSec"
+      ]
+    },
+    {
+      "key": "overlayCardRedColor",
+      "default": "#d3283a",
+      "kind": "colour",
+      "page": "overlay",
+      "label": "Red suits",
+      "section": "Colours",
+      "help": "Hearts and diamonds.",
+      "aliases": [
+        "OverlayCardRedColor"
+      ]
+    },
+    {
+      "key": "overlayCardBlackColor",
+      "default": "#1a1a1a",
+      "kind": "colour",
+      "page": "overlay",
+      "label": "Black suits",
+      "section": "Colours",
+      "help": "Spades and clubs.",
+      "aliases": [
+        "OverlayCardBlackColor"
+      ]
+    },
+    {
+      "key": "overlayBackgroundColour",
+      "default": "#000000",
+      "label": "Backdrop",
+      "section": "Colours",
+      "help": "A panel behind the table. Only visible once the opacity below is above 0.",
+      "aliases": [
+        "OverlayBackgroundColor"
+      ]
+    },
+    {
+      "key": "overlayBackgroundOpacity",
+      "default": 0.0,
+      "label": "Backdrop opacity",
+      "section": "Colours",
+      "factor": 1.0,
+      "min": 0.0,
+      "max": 100.0,
+      "help": "0 leaves the cards floating on your scene, 100 paints a solid panel behind them.",
+      "aliases": [
+        "OverlayBackgroundOpacity"
+      ]
+    },
+    {
+      "key": "obsConnectionId",
+      "default": 0,
+      "kind": "int",
+      "page": "overlay",
+      "label": "Connection",
+      "section": "Set it up in OBS",
+      "help": "Which Streamer.bot OBS connection to use. 0 is the first one.",
+      "aliases": [
+        "ObsConnectionId"
+      ]
+    },
+    {
+      "key": "obsSceneName",
+      "default": "Blackjack",
+      "kind": "string",
+      "page": "overlay",
+      "label": "Scene",
+      "section": "Set it up in OBS",
+      "help": "The scene the source is added to. Created if it does not exist yet.",
+      "aliases": [
+        "ObsSceneName"
+      ]
+    },
+    {
+      "key": "obsSourceName",
+      "default": "Blackjack Overlay",
+      "kind": "string",
+      "page": "overlay",
+      "label": "Source",
+      "section": "Set it up in OBS",
+      "help": "The browser source created inside that scene. Nothing is changed if a source of this name is already there.",
+      "aliases": [
+        "ObsSourceName"
+      ]
+    },
+    {
+      "key": "overlayFolder",
+      "default": "Overlay",
+      "kind": "path",
+      "page": "overlay",
+      "aliases": [
+        "OverlayFolder"
+      ],
+      "section": "Files",
+      "label": "Overlay folder",
+      "help": "A subfolder name kept under Chat Games\\Blackjack Game, or a full path, so the overlay can live anywhere. Empty uses 'Overlay'."
+    },
+    {
+      "key": "msgGameStart",
+      "default": "🃏 {user} is dealt in. ",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Hand dealt",
+      "help": "Opens a round. The hand and the dealer's upcard are appended to it.",
+      "placeholders": [
+        "user",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgGameStart"
+      ]
+    },
+    {
+      "key": "msgDrawCard",
+      "default": "{user} draws {card}. Hand: {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Hit",
+      "help": "Sent every time the player draws, bust or not.",
+      "placeholders": [
+        "user",
+        "card",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgDrawCard"
+      ]
+    },
+    {
+      "key": "msgDoubleDown",
+      "default": "{user} doubles down and draws {card}. Hand: {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Double down",
+      "help": "Sent when the stake is doubled for exactly one more card.",
+      "placeholders": [
+        "user",
+        "card",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgDoubleDown"
+      ]
+    },
+    {
+      "key": "msgSplit",
+      "default": "{user} splits. Hand 1: {cards} ({value}) - hit, double or stand.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Split",
+      "help": "Sent on a split or resplit, describing the first of the two hands.",
+      "placeholders": [
+        "user",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgSplit"
+      ]
+    },
+    {
+      "key": "msgMovingToHand",
+      "default": "On to hand {handnum}: {cards} ({value}) - hit, double or stand.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Next split hand",
+      "help": "Sent when play moves on to the next hand. Hands that stand on their own, like split Aces, are skipped.",
+      "placeholders": [
+        "handnum",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgMovingToHand"
+      ]
+    },
+    {
+      "key": "msgAceReduced",
+      "default": "An Ace drops to 1 to keep that under 22.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Ace dropped to 1",
+      "help": "Only sent while 'Say when an Ace drops to 1' is on, and only when it actually happened.",
+      "placeholders": [],
+      "aliases": [
+        "MsgAceReduced"
+      ]
+    },
+    {
+      "key": "msgQuitRefund",
+      "default": "Hand cancelled, {amount} {points} back in your pocket.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Playing a hand",
+      "label": "Quit",
+      "help": "Sent when a player quits before acting. Everything staked comes back, split bets included.",
+      "placeholders": [
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgQuitRefund"
+      ]
+    },
+    {
+      "key": "msgBlackjackWin",
+      "default": " 🃏 B L A C K J A C K 🃏 - {amount} {points} to you!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wins",
+      "label": "Blackjack",
+      "help": "Sent on a natural blackjack - 21 on the first two cards - paid at the Blackjack pays ratio rather than 1:1.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgBlackjackWin"
+      ]
+    },
+    {
+      "key": "msgRegularWin",
+      "default": "You take {amount} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wins",
+      "label": "Win",
+      "help": "Sent on an ordinary 1:1 win: the player's hand beats the dealer's, neither being a blackjack.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgRegularWin"
+      ]
+    },
+    {
+      "key": "msgHandWin",
+      "default": "Hand {handnum} wins!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wins",
+      "label": "Split hand won",
+      "help": "Added when one hand out of a split wins its own comparison against the dealer.",
+      "placeholders": [
+        "handnum"
+      ],
+      "aliases": [
+        "MsgHandWin"
+      ]
+    },
+    {
+      "key": "msgSpecialWin5Card",
+      "default": "Five cards without busting - 5-card Charlie!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wins",
+      "label": "5-card Charlie",
+      "help": "Sent the moment a hand reaches five cards without busting. Pays the stake back plus a 1.5x bonus, whatever the dealer holds.",
+      "placeholders": [],
+      "aliases": [
+        "MsgSpecialWin5Card"
+      ]
+    },
+    {
+      "key": "msgSpecialWin3Sevens",
+      "default": "Three sevens on the table!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wins",
+      "label": "Three 7s",
+      "help": "Sent the moment a hand holds three 7s without busting. Pays the stake back plus a 2x bonus, whatever the dealer holds.",
+      "placeholders": [],
+      "aliases": [
+        "MsgSpecialWin3Sevens"
+      ]
+    },
+    {
+      "key": "msgLoss",
+      "default": "{amount} {points} to the house.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Losses",
+      "label": "Loss",
+      "help": "Sent when the player's hand simply comes up short - no bust, no tie.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgLoss"
+      ]
+    },
+    {
+      "key": "msgBust",
+      "default": "Bust! 💔",
+      "kind": "template",
+      "page": "messages",
+      "group": "Losses",
+      "label": "Bust",
+      "help": "Sent the moment a hand goes over 21 on a hit or a double. The stake is gone before the dealer plays.",
+      "placeholders": [],
+      "aliases": [
+        "MsgBust"
+      ]
+    },
+    {
+      "key": "msgHandBust",
+      "default": "Hand {handnum} busts. 💔",
+      "kind": "template",
+      "page": "messages",
+      "group": "Losses",
+      "label": "Split hand busted",
+      "help": "Sent instead of Bust when the hand that went over was part of a split.",
+      "placeholders": [
+        "handnum"
+      ],
+      "aliases": [
+        "MsgHandBust"
+      ]
+    },
+    {
+      "key": "msgHandLost",
+      "default": "{user}, hand {handnum} goes to the dealer.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Losses",
+      "label": "Split hand lost",
+      "help": "Added when one hand out of a split loses its own comparison against the dealer.",
+      "placeholders": [
+        "user",
+        "handnum"
+      ],
+      "aliases": [
+        "MsgHandLost"
+      ]
+    },
+    {
+      "key": "msgHandTie",
+      "default": "Hand {handnum} is level.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Losses",
+      "label": "Split hand tied",
+      "help": "Goes into the tie-break announcement as the {hands} part, naming the hand that tied.",
+      "placeholders": [
+        "handnum"
+      ],
+      "aliases": [
+        "MsgHandTie"
+      ]
+    },
+    {
+      "key": "msgDealerDraws",
+      "default": "Dealer draws {card} → {cards}",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Dealer draws",
+      "help": "Sent for each dealer card, both while drawing to the stand total and while breaking a tie.",
+      "placeholders": [
+        "card",
+        "cards"
+      ],
+      "aliases": [
+        "MsgDealerDraws"
+      ]
+    },
+    {
+      "key": "msgDealerReveal",
+      "default": "🃏 Dealer turns over {card} → {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Hole card turned over",
+      "help": "Only ever seen with 'Dealer peeks for blackjack' on, since that is the only time a face-down card exists.",
+      "placeholders": [
+        "card",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgDealerReveal"
+      ]
+    },
+    {
+      "key": "msgDealerBusts",
+      "default": "Dealer busts on {total} with {cards}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Dealer busts",
+      "help": "Sent when a tie-break card puts the dealer over 21, so the hand that had tied wins after all.",
+      "placeholders": [
+        "cards",
+        "total"
+      ],
+      "aliases": [
+        "MsgDealerBusts"
+      ]
+    },
+    {
+      "key": "msgDealerWins",
+      "default": "Dealer stands on {total} with {cards} and takes it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Dealer wins untouched",
+      "help": "Sent when every player hand had already busted, so the dealer never needs to draw.",
+      "placeholders": [
+        "cards",
+        "total"
+      ],
+      "aliases": [
+        "MsgDealerWins"
+      ]
+    },
+    {
+      "key": "msgDealerDrawCard",
+      "default": "{hands} One more card for the dealer...",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Breaking a tie",
+      "help": "Announces the extra card. {hands} is the Split hand tied line above.",
+      "placeholders": [
+        "hands"
+      ],
+      "aliases": [
+        "MsgDealerDrawCard"
+      ]
+    },
+    {
+      "key": "msgDealerTieWin",
+      "default": "Still level, so the dealer takes it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Tie survived",
+      "help": "Sent when the tie-break leaves the dealer level with the player, which the dealer wins.",
+      "placeholders": [],
+      "aliases": [
+        "MsgDealerTieWin"
+      ]
+    },
+    {
+      "key": "msgDealerBeatsYou",
+      "default": "The dealer has it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Tie broken for the dealer",
+      "help": "Sent when the tie-break puts the dealer genuinely ahead.",
+      "placeholders": [],
+      "aliases": [
+        "MsgDealerBeatsYou"
+      ]
+    },
+    {
+      "key": "msgDealerPeekBlackjack",
+      "default": "🃏 Dealer checks and has Blackjack: {cards}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Peek found a blackjack",
+      "help": "Sent when the dealer checks the hole card on an Ace or a ten and holds blackjack, which ends the hand there.",
+      "placeholders": [
+        "cards"
+      ],
+      "aliases": [
+        "MsgDealerPeekBlackjack"
+      ]
+    },
+    {
+      "key": "msgDealerBlackjackPush",
+      "default": "🤝 Blackjack both ways - push. {amount} {points} returned.",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Both have blackjack",
+      "help": "Sent when dealer and player both hold blackjack: a push, and the stake comes straight back.",
+      "placeholders": [
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgDealerBlackjackPush"
+      ]
+    },
+    {
+      "key": "msgFinalSummary",
+      "default": "Final - {user}: {playercards} ({playervalue}) vs dealer {dealercards} ({dealervalue})",
+      "kind": "template",
+      "page": "messages",
+      "group": "The dealer",
+      "label": "Final summary",
+      "help": "Sent just ahead of most results, laying both final hands side by side.",
+      "placeholders": [
+        "user",
+        "playercards",
+        "playervalue",
+        "dealercards",
+        "dealervalue"
+      ],
+      "aliases": [
+        "MsgFinalSummary"
+      ]
+    },
+    {
+      "key": "msgInsuranceOffer",
+      "default": "{user}, the dealer shows an Ace. Type insurance to cover half your bet against a dealer blackjack - it pays 2:1.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Insurance offered",
+      "help": "Sent right after the deal, only with Insurance on and the dealer showing an Ace. The one chance to take it.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgInsuranceOffer"
+      ]
+    },
+    {
+      "key": "msgInsuranceTaken",
+      "default": "{user} insures for {amount} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Insurance taken",
+      "help": "Sent when the player insures. Half the original stake is set aside.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgInsuranceTaken"
+      ]
+    },
+    {
+      "key": "msgInsuranceWin",
+      "default": "🛡️ Dealer had blackjack after all - insurance pays {amount} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Insurance paid",
+      "help": "Sent when the dealer does hold blackjack. Pays 2:1 on the insurance stake, whatever the main hand does.",
+      "placeholders": [
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgInsuranceWin"
+      ]
+    },
+    {
+      "key": "msgInsuranceLose",
+      "default": "No dealer blackjack, so the insurance goes.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Insurance lost",
+      "help": "Sent when the dealer has no blackjack after all. Only the insurance stake is gone; the hand plays on.",
+      "placeholders": [],
+      "aliases": [
+        "MsgInsuranceLose"
+      ]
+    },
+    {
+      "key": "msgInsuranceNotAvailable",
+      "default": "{user}, insurance isn't available right now.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Insurance refused",
+      "help": "Sent when insurance does not apply: the rule is off, it was not offered, it is already taken, or the player has acted.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgInsuranceNotAvailable"
+      ]
+    },
+    {
+      "key": "msgInsuranceInsufficientFunds",
+      "default": "{user}, insurance needs {amount} more {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Insurance too dear",
+      "help": "Sent when the player cannot cover half their stake.",
+      "placeholders": [
+        "user",
+        "points",
+        "amount"
+      ],
+      "aliases": [
+        "MsgInsuranceInsufficientFunds"
+      ]
+    },
+    {
+      "key": "msgSurrenderResult",
+      "default": "{user} folds and keeps half the bet - {amount} {points} back. Balance: {balance} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Surrendered",
+      "help": "Sent when a player folds a fresh hand and keeps half the stake.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points",
+        "balance"
+      ],
+      "aliases": [
+        "MsgSurrenderResult"
+      ]
+    },
+    {
+      "key": "msgSurrenderNotAvailable",
+      "default": "{user}, you can't surrender right now.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Insurance and surrender",
+      "label": "Surrender refused",
+      "help": "Sent when surrender does not apply: the rule is off, insurance is already taken, or the hand is no longer two cards.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgSurrenderNotAvailable"
+      ]
+    },
+    {
+      "key": "msgBettingAll",
+      "default": "{user} shoves the lot in: {FormatNumber(bet)} {pointsVarName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "all / allin",
+      "help": "Confirms a bet of the whole balance. The figure is already cut to the Maximum bet.",
+      "placeholders": [
+        "user",
+        "FormatNumber(bet)",
+        "pointsVarName"
+      ],
+      "aliases": [
+        "MsgBettingAll"
+      ]
+    },
+    {
+      "key": "msgBettingHalf",
+      "default": "{user} puts up half the stack: {FormatNumber(bet)} {pointsVarName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "half",
+      "help": "Confirms a bet of half the balance.",
+      "placeholders": [
+        "user",
+        "FormatNumber(bet)",
+        "pointsVarName"
+      ],
+      "aliases": [
+        "MsgBettingHalf"
+      ]
+    },
+    {
+      "key": "msgBettingQuarter",
+      "default": "{user} puts up a quarter: {FormatNumber(bet)} {pointsVarName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "quarter / 25%",
+      "help": "Confirms a bet of a quarter of the balance.",
+      "placeholders": [
+        "user",
+        "FormatNumber(bet)",
+        "pointsVarName"
+      ],
+      "aliases": [
+        "MsgBettingQuarter"
+      ]
+    },
+    {
+      "key": "msgBettingRandom",
+      "default": "{user} leaves it to chance: {FormatNumber(bet)} {pointsVarName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "random / rand",
+      "help": "Confirms a random bet between a tenth of the balance and whatever the player can afford.",
+      "placeholders": [
+        "user",
+        "FormatNumber(bet)",
+        "pointsVarName"
+      ],
+      "aliases": [
+        "MsgBettingRandom"
+      ]
+    },
+    {
+      "key": "msgBettingDouble",
+      "default": "{user} doubles the minimum: {FormatNumber(bet)} {pointsVarName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "double / 2x",
+      "help": "Confirms a bet of twice the minimum.",
+      "placeholders": [
+        "user",
+        "FormatNumber(bet)",
+        "pointsVarName"
+      ],
+      "aliases": [
+        "MsgBettingDouble"
+      ]
+    },
+    {
+      "key": "msgBettingMax",
+      "default": "{user} goes to the limit: {FormatNumber(bet)} {pointsVarName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "max / maximum",
+      "help": "Confirms the largest bet allowed, held down by the balance and the Maximum bet.",
+      "placeholders": [
+        "user",
+        "FormatNumber(bet)",
+        "pointsVarName"
+      ],
+      "aliases": [
+        "MsgBettingMax"
+      ]
+    },
+    {
+      "key": "msgBetMinApplied",
+      "default": "{user}, that works out below the minimum, so {min} it is.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bet shortcuts",
+      "label": "Minimum used instead",
+      "help": "Sent when a shortcut works out below the Minimum bet, so the minimum is played.",
+      "placeholders": [
+        "user",
+        "min"
+      ],
+      "aliases": [
+        "MsgBetMinApplied"
+      ]
+    },
+    {
+      "key": "msgBlackjackWinFree",
+      "default": " 🃏 B L A C K J A C K 🃏 - that's the hand!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Blackjack",
+      "help": "Replaces the Blackjack line while Free Game is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgBlackjackWinFree"
+      ]
+    },
+    {
+      "key": "msgRegularWinFree",
+      "default": "You take it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Win",
+      "help": "Replaces the Win line while Free Game is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgRegularWinFree"
+      ]
+    },
+    {
+      "key": "msgLossFree",
+      "default": "The dealer takes it. 💔",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Loss",
+      "help": "Replaces the Loss line while Free Game is on, since nothing was staked.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgLossFree"
+      ]
+    },
+    {
+      "key": "msgQuitRefundFree",
+      "default": "Hand cancelled.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Quit",
+      "help": "Replaces the Quit line while Free Game is on - there is nothing to give back.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgQuitRefundFree"
+      ]
+    },
+    {
+      "key": "msgSurrenderResultFree",
+      "default": "{user} folds.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Surrendered",
+      "help": "Replaces the Surrendered line while Free Game is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgSurrenderResultFree"
+      ]
+    },
+    {
+      "key": "msgDealerTieWinFree",
+      "default": "Still level, so the dealer takes it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Tie survived",
+      "help": "Replaces the Tie survived line while Free Game is on.",
+      "placeholders": [],
+      "aliases": [
+        "MsgDealerTieWinFree"
+      ]
+    },
+    {
+      "key": "msgDealerBeatsYouFree",
+      "default": "The dealer has it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Tie broken for the dealer",
+      "help": "Replaces the Tie broken line while Free Game is on.",
+      "placeholders": [],
+      "aliases": [
+        "MsgDealerBeatsYouFree"
+      ]
+    },
+    {
+      "key": "msgTurnTimeoutRefundFree",
+      "default": "⏰ @{user} ran out of time. Hand cancelled.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Timed out",
+      "help": "Replaces the refund line while Free Game is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgTurnTimeoutRefundFree"
+      ]
+    },
+    {
+      "key": "msgInsufficientSplit",
+      "default": "Splitting needs {amount} more {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Cannot afford a split",
+      "help": "Sent when a split would need more than the player has left.",
+      "placeholders": [
+        "points",
+        "amount"
+      ],
+      "aliases": [
+        "MsgInsufficientSplit"
+      ]
+    },
+    {
+      "key": "msgInsufficientDouble",
+      "default": "Doubling needs {amount} more {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Cannot afford a double",
+      "help": "Sent when a double would need more than the player has left.",
+      "placeholders": [
+        "points",
+        "amount"
+      ],
+      "aliases": [
+        "MsgInsufficientDouble"
+      ]
+    },
+    {
+      "key": "msgAlreadyActiveGame",
+      "default": "You have a hand on the table - hit, stand, double or split.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Already in a hand",
+      "help": "Sent when a player starts a hand while still holding one.",
+      "placeholders": [],
+      "aliases": [
+        "MsgAlreadyActiveGame"
+      ]
+    },
+    {
+      "key": "msgNoActiveGame",
+      "default": "{user}, nothing on the table. Deal in with !blackjack <bet>.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "No hand running",
+      "help": "Sent when hit, stand, double, split, insurance, surrender, repeat or quit arrives with no hand on the table.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgNoActiveGame"
+      ]
+    },
+    {
+      "key": "msgGameAlreadyOver",
+      "default": "{user}, that hand is already settled.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Hand already over",
+      "help": "Sent when a player acts on a hand that has already been settled.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgGameAlreadyOver"
+      ]
+    },
+    {
+      "key": "msgQuitOnlyBefore",
+      "default": "You can only quit before your first move.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Too late to quit",
+      "help": "Sent when quit arrives after hitting, standing or doubling. By then there is a real hand on the table.",
+      "placeholders": [],
+      "aliases": [
+        "MsgQuitOnlyBefore"
+      ]
+    },
+    {
+      "key": "msgCannotSplitValue",
+      "default": "{card1} and {card2} aren't worth the same, so they don't split.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Cards do not match",
+      "help": "Sent when the two cards are not worth the same.",
+      "placeholders": [
+        "card1",
+        "card2"
+      ],
+      "aliases": [
+        "MsgCannotSplitValue"
+      ]
+    },
+    {
+      "key": "msgCannotSplitCount",
+      "default": "Splitting needs exactly two cards, and you hold {cards}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Not two cards",
+      "help": "Sent when a split is tried on a hand that is no longer two cards, after a hit for instance.",
+      "placeholders": [
+        "cards"
+      ],
+      "aliases": [
+        "MsgCannotSplitCount"
+      ]
+    },
+    {
+      "key": "msgAlreadySplit",
+      "default": "One split per hand.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Already split",
+      "help": "Sent when a split is tried again while Resplit is off - one split per round by default.",
+      "placeholders": [],
+      "aliases": [
+        "MsgAlreadySplit"
+      ]
+    },
+    {
+      "key": "msgSplitDisabled",
+      "default": "Splitting is off at this table.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Splitting off",
+      "help": "Sent when split is used at all while the rule is off on the Table page.",
+      "placeholders": [],
+      "aliases": [
+        "MsgSplitDisabled"
+      ]
+    },
+    {
+      "key": "msgMaxSplitHandsReached",
+      "default": "{max} hands is the limit.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "No more hands",
+      "help": "Sent when a resplit would pass the Hands from splitting limit.",
+      "placeholders": [
+        "max"
+      ],
+      "aliases": [
+        "MsgMaxSplitHandsReached"
+      ]
+    },
+    {
+      "key": "msgCannotDoubleCount",
+      "default": "Doubling needs exactly two cards, and you hold {cards}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Not two cards",
+      "help": "Sent when a double is tried on a hand that is no longer two cards.",
+      "placeholders": [
+        "cards"
+      ],
+      "aliases": [
+        "MsgCannotDoubleCount"
+      ]
+    },
+    {
+      "key": "msgMustDoubleFirst",
+      "default": "Too late to double on {cards} - it has to be your first move.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Too late to double",
+      "help": "Sent when a double is tried after hitting or standing on that hand. Doubling is a first move only.",
+      "placeholders": [
+        "cards"
+      ],
+      "aliases": [
+        "MsgMustDoubleFirst"
+      ]
+    },
+    {
+      "key": "msgAlreadyDoubledDown",
+      "default": "This hand is already doubled.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Already doubled",
+      "help": "Sent when the same hand is doubled twice.",
+      "placeholders": [],
+      "aliases": [
+        "MsgAlreadyDoubledDown"
+      ]
+    },
+    {
+      "key": "msgDoubleDownDisabled",
+      "default": "Doubling is off at this table.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Doubling off",
+      "help": "Sent when double is used at all while the rule is off on the Table page.",
+      "placeholders": [],
+      "aliases": [
+        "MsgDoubleDownDisabled"
+      ]
+    },
+    {
+      "key": "msgMaxGamesReached",
+      "default": "That's your {max} hands for this hour.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Hourly limit reached",
+      "help": "Sent when a player passes the Games per hour limit.",
+      "placeholders": [
+        "max"
+      ],
+      "aliases": [
+        "MsgMaxGamesReached"
+      ]
+    },
+    {
+      "key": "msgPointsVarNotFound",
+      "default": "Couldn't read the points variable '{var}'. Check the name, or turn Free Game on.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Points variable missing",
+      "help": "Sent when Free Game is off and the points variable cannot be read for that viewer - usually a wrong name, or no currency set up yet.",
+      "placeholders": [
+        "var"
+      ],
+      "aliases": [
+        "MsgPointsVarNotFound"
+      ]
+    },
+    {
+      "key": "msgPointsNotRefunded",
+      "default": "{user}, {amount} could not be returned: the points variable '{var}' is unreadable.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Refund failed",
+      "help": "Sent when a refund cannot be paid because the points variable is unreadable. The stake is not restored in that case.",
+      "placeholders": [
+        "user",
+        "amount",
+        "var"
+      ],
+      "aliases": [
+        "MsgPointsNotRefunded"
+      ]
+    },
+    {
+      "key": "msgCardError",
+      "default": "{user}, the deck couldn't deal a hand. Try again.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Deck problem",
+      "help": "Sent in the rare case a starting hand cannot be dealt at all. Worth reporting if you ever see it.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgCardError"
+      ]
+    },
+    {
+      "key": "msgTurnTimeoutStand",
+      "default": "⏰ @{user} ran out of time and stands on {value}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Timed out, hand stands",
+      "help": "Sent when the Turn timeout runs out after the player has acted: the hand stands and the dealer plays it out.",
+      "placeholders": [
+        "user",
+        "value"
+      ],
+      "aliases": [
+        "MsgTurnTimeoutStand"
+      ]
+    },
+    {
+      "key": "msgTurnTimeoutRefund",
+      "default": "⏰ @{user} ran out of time. Hand cancelled, {amount} {points} returned.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Table refusals",
+      "label": "Timed out, stake back",
+      "help": "Sent when the Turn timeout runs out before the player acted at all and 'Refund a hand nobody played' is on.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgTurnTimeoutRefund"
+      ]
+    },
+    {
+      "key": "msgBalance",
+      "default": "Balance: {balance} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "System",
+      "label": "Balance",
+      "help": "Added after most results to show where the viewer now stands.",
+      "placeholders": [
+        "balance",
+        "points"
+      ],
+      "aliases": [
+        "MsgBalance"
+      ]
+    },
+    {
+      "key": "msgTutorial",
+      "default": "Blackjack: !blackjack <bet> to deal in, then hit, stand, double or split.",
+      "kind": "template",
+      "page": "messages",
+      "group": "System",
+      "label": "How to play",
+      "help": "Sent once per Streamer.bot session, the first time anyone plays.",
+      "placeholders": [],
+      "aliases": [
+        "MsgTutorial"
+      ]
+    },
+    {
+      "key": "msgRepeatNothing",
+      "default": "There's nothing to repeat.",
+      "kind": "template",
+      "page": "messages",
+      "group": "System",
+      "label": "Nothing to repeat",
+      "help": "Sent when repeat is used before the round has said anything.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgRepeatNothing"
+      ]
+    },
+    {
+      "key": "msgAddictedFee",
+      "default": "⚠️ Addiction fee: {addictedCutPercent}% of that win was withheld.",
+      "kind": "template",
+      "page": "messages",
+      "group": "System",
+      "label": "Addiction fee",
+      "help": "Added to a win when the winner is on the Addicted list.",
+      "placeholders": [
+        "addictedCutPercent"
+      ],
+      "aliases": [
+        "MsgAddictedFee"
+      ]
+    },
+    {
+      "key": "msgDuelChallenge",
+      "default": "⚔️ {challenger} calls out @{opponent} for {bet} {points}. @{opponent}, accept or decline within {seconds}s.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "Challenge issued",
+      "help": "Opens a duel and tells the challenged player to answer.",
+      "placeholders": [
+        "challenger",
+        "opponent",
+        "bet",
+        "points",
+        "seconds"
+      ],
+      "aliases": [
+        "MsgDuelChallenge"
+      ]
+    },
+    {
+      "key": "msgDuelAccepted",
+      "default": "⚔️ {opponent} is in. {challenger} vs {opponent} for {pot} {points} - {challenger} plays first.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "Accepted",
+      "help": "Sent when the challenge is taken and the cards go out.",
+      "placeholders": [
+        "challenger",
+        "opponent",
+        "pot",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelAccepted"
+      ]
+    },
+    {
+      "key": "msgDuelDeclined",
+      "default": "🚫 {opponent} passes. {challenger} gets the {bet} {points} back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "Declined",
+      "help": "Sent when the challenged player says no. The challenger's stake goes back.",
+      "placeholders": [
+        "challenger",
+        "opponent",
+        "bet",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelDeclined"
+      ]
+    },
+    {
+      "key": "msgDuelExpired",
+      "default": "⏰ No word from {opponent}. {challenger} gets the {bet} {points} back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "No answer",
+      "help": "Sent when nobody answered inside the accept deadline.",
+      "placeholders": [
+        "challenger",
+        "opponent",
+        "bet",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelExpired"
+      ]
+    },
+    {
+      "key": "msgDuelAcceptedFree",
+      "default": "⚔️ {opponent} is in. {challenger} vs {opponent} - {challenger} plays first.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "Accepted (Free Game)",
+      "help": "Replaces Accepted while Free Game is on.",
+      "placeholders": [
+        "challenger",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelAcceptedFree"
+      ]
+    },
+    {
+      "key": "msgDuelDeclinedFree",
+      "default": "🚫 {opponent} passes.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "Declined (Free Game)",
+      "help": "Replaces Declined while Free Game is on.",
+      "placeholders": [
+        "challenger",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelDeclinedFree"
+      ]
+    },
+    {
+      "key": "msgDuelExpiredFree",
+      "default": "⏰ No word from {opponent}, so the duel is off.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: the challenge",
+      "label": "No answer (Free Game)",
+      "help": "Replaces No answer while Free Game is on - there is no stake to return.",
+      "placeholders": [
+        "challenger",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelExpiredFree"
+      ]
+    },
+    {
+      "key": "msgDuelHandDealt",
+      "default": "{user}: {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Hand dealt",
+      "help": "Sent once per player right after the deal.",
+      "placeholders": [
+        "user",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelHandDealt"
+      ]
+    },
+    {
+      "key": "msgDuelTurn",
+      "default": "{user}, you're up - hit, stand{extra}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Your turn",
+      "help": "Sent when it becomes a player's turn.",
+      "placeholders": [
+        "user",
+        "extra"
+      ],
+      "aliases": [
+        "MsgDuelTurn"
+      ]
+    },
+    {
+      "key": "msgDuelDrawCard",
+      "default": "{user} draws {card}. Hand: {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Hit",
+      "help": "Sent when a duellist draws.",
+      "placeholders": [
+        "user",
+        "card",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelDrawCard"
+      ]
+    },
+    {
+      "key": "msgDuelStand",
+      "default": "🛑 {user} stands on {value}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Stand",
+      "help": "Sent when a duellist stops.",
+      "placeholders": [
+        "user",
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelStand"
+      ]
+    },
+    {
+      "key": "msgDuelBust",
+      "default": "💥 {user} busts on {value}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Bust",
+      "help": "Sent when a duellist goes over 21.",
+      "placeholders": [
+        "user",
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelBust"
+      ]
+    },
+    {
+      "key": "msgDuelTurnTimeout",
+      "default": "⏰ {user} ran out of time and stands.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Turn timed out",
+      "help": "Sent when a player runs out the turn clock and stands automatically.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelTurnTimeout"
+      ]
+    },
+    {
+      "key": "msgDuelForfeit",
+      "default": "🏳️ {user} walks away from it.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Forfeit",
+      "help": "Sent when a duellist quits mid-duel. The opponent takes the whole pot.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelForfeit"
+      ]
+    },
+    {
+      "key": "msgDuelHandLabel",
+      "default": "{user} - Hand {handnum}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Next split hand",
+      "help": "Used as the prefix when play moves to a player's next split hand; the cards follow it.",
+      "placeholders": [
+        "user",
+        "handnum"
+      ],
+      "aliases": [
+        "MsgDuelHandLabel"
+      ]
+    },
+    {
+      "key": "msgDuelRepeat",
+      "default": "⚔️ {challenger}: {challengercards} | {opponent}: {opponentcards} | Pot: {pot} {points} - waiting on {turn}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Repeat",
+      "help": "Sent when either duellist uses repeat. Read-only, and it never touches the turn clock.",
+      "placeholders": [
+        "challenger",
+        "opponent",
+        "challengercards",
+        "opponentcards",
+        "pot",
+        "points",
+        "turn"
+      ],
+      "aliases": [
+        "MsgDuelRepeat"
+      ]
+    },
+    {
+      "key": "msgDuelRepeatFree",
+      "default": "⚔️ {challenger}: {challengercards} | {opponent}: {opponentcards} - waiting on {turn}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: play",
+      "label": "Repeat (Free Game)",
+      "help": "Replaces Repeat while Free Game is on - there is no pot to report.",
+      "placeholders": [
+        "challenger",
+        "opponent",
+        "challengercards",
+        "opponentcards",
+        "turn"
+      ],
+      "aliases": [
+        "MsgDuelRepeatFree"
+      ]
+    },
+    {
+      "key": "msgDuelRaiseOffer",
+      "default": "💰 {user} {raise}, which puts {newbet} {points} on each side. @{opponent}, accept or decline within {seconds}s.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: raises",
+      "label": "Raise offered",
+      "help": "Sent when a player splits or doubles, asking the opponent to agree to the higher stake.",
+      "placeholders": [
+        "user",
+        "raise",
+        "opponent",
+        "newbet",
+        "points",
+        "seconds"
+      ],
+      "aliases": [
+        "MsgDuelRaiseOffer"
+      ]
+    },
+    {
+      "key": "msgDuelRaiseAccepted",
+      "default": "✅ {opponent} is good for it. {newbet} {points} a side.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: raises",
+      "label": "Raise accepted",
+      "help": "Sent when the opponent agrees and both stakes go up.",
+      "placeholders": [
+        "opponent",
+        "newbet",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelRaiseAccepted"
+      ]
+    },
+    {
+      "key": "msgDuelRaiseDeclined",
+      "default": "❌ {opponent} won't go up. {user} plays the hand as it stands.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: raises",
+      "label": "Raise declined",
+      "help": "Sent when the opponent says no. The raise is dropped and the raiser plays the hand as it stands.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelRaiseDeclined"
+      ]
+    },
+    {
+      "key": "msgDuelRaiseTimeout",
+      "default": "⏰ No answer, so {user} plays the hand as it stands.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: raises",
+      "label": "Raise unanswered",
+      "help": "Sent when the opponent never answered the raise.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelRaiseTimeout"
+      ]
+    },
+    {
+      "key": "msgDuelRaiseUnaffordable",
+      "default": "❌ {opponent} can't cover it. {user} plays the hand as it stands.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: raises",
+      "label": "Raise too dear",
+      "help": "Sent when the opponent wanted to agree but no longer has the balance for it.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelRaiseUnaffordable"
+      ]
+    },
+    {
+      "key": "msgDuelShowdown",
+      "default": "🃏 Showdown - {challenger}: {challengervalue} vs {opponent}: {opponentvalue}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Showdown",
+      "help": "Sent just ahead of the result, with both totals.",
+      "placeholders": [
+        "challenger",
+        "challengervalue",
+        "opponent",
+        "opponentvalue"
+      ],
+      "aliases": [
+        "MsgDuelShowdown"
+      ]
+    },
+    {
+      "key": "msgDuelWin",
+      "default": "🏆 {winner} takes the {pot} {points} pot off {loser} - {amount} up. Balance: {balance} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Win",
+      "help": "Sent when one duellist takes it.",
+      "placeholders": [
+        "winner",
+        "loser",
+        "pot",
+        "amount",
+        "points",
+        "balance"
+      ],
+      "aliases": [
+        "MsgDuelWin"
+      ]
+    },
+    {
+      "key": "msgDuelPush",
+      "default": "🤝 Level at {value} - both stakes back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Draw",
+      "help": "Sent when the duel ends level and both stakes go back.",
+      "placeholders": [
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelPush"
+      ]
+    },
+    {
+      "key": "msgDuelPotResult",
+      "default": "Hand {handnum}: {winner} takes {pot} {points}, {amount} up.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Side pot won",
+      "help": "Sent once per side pot when splits were involved.",
+      "placeholders": [
+        "handnum",
+        "winner",
+        "pot",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelPotResult"
+      ]
+    },
+    {
+      "key": "msgDuelPotPush",
+      "default": "Hand {handnum}: level, both stakes back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Side pot drawn",
+      "help": "Sent for a side pot that ended level.",
+      "placeholders": [
+        "handnum"
+      ],
+      "aliases": [
+        "MsgDuelPotPush"
+      ]
+    },
+    {
+      "key": "msgDuelAddictedFee",
+      "default": "⚠️ Addiction fee: {addictedCutPercent}% of {user}'s payout stayed behind - {amount} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Addiction fee",
+      "help": "Sent after a duel result when the winner is on the Addicted list and the duel cut is on. Without it the winner would just see a smaller number than the pot.",
+      "placeholders": [
+        "user",
+        "addictedCutPercent",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelAddictedFee"
+      ]
+    },
+    {
+      "key": "msgDuelWinFree",
+      "default": "🏆 {winner} beats {loser}!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Win (Free Game)",
+      "help": "Replaces Win while Free Game is on.",
+      "placeholders": [
+        "winner",
+        "loser"
+      ],
+      "aliases": [
+        "MsgDuelWinFree"
+      ]
+    },
+    {
+      "key": "msgDuelPushFree",
+      "default": "🤝 Level at {value}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: result",
+      "label": "Draw (Free Game)",
+      "help": "Replaces Draw while Free Game is on.",
+      "placeholders": [
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelPushFree"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathOffer",
+      "default": "⚡ Level at {value}. Double or nothing: both accept for one more card each, or decline and split the pot. ({seconds}s)",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Offered",
+      "help": "Sent on a tie with sudden death on. Both players have to accept.",
+      "placeholders": [
+        "value",
+        "seconds"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathOffer"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathWaiting",
+      "default": "⚡ {user} is in. Waiting on {opponent}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "One in, one to go",
+      "help": "Sent when the first player accepts and the other still has to answer.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathWaiting"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathDeclined",
+      "default": "🤝 {user} passes. Pot split, both stakes back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Declined",
+      "help": "Sent when a player says no. Everything goes back.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathDeclined"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathTimeout",
+      "default": "⏰ No answer. Pot split, both stakes back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Unanswered",
+      "help": "Sent when nobody answered the offer. Everything goes back.",
+      "placeholders": [],
+      "aliases": [
+        "MsgDuelSuddenDeathTimeout"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathStart",
+      "default": "⚡ SUDDEN DEATH round {round}! One card each, stakes doubled to {newbet} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Round starts",
+      "help": "Sent once both have accepted and the extra stake is taken.",
+      "placeholders": [
+        "round",
+        "newbet",
+        "points"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathStart"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathCard",
+      "default": "{user} draws {card} → {value}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "The extra card",
+      "help": "Sent once per player for the extra card.",
+      "placeholders": [
+        "user",
+        "card",
+        "value"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathCard"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathMaxRounds",
+      "default": "🤝 Still level after {max} rounds. Pot split, everything back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Rounds used up",
+      "help": "Sent when the players kept tying to the round limit. Everything goes back.",
+      "placeholders": [
+        "max"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathMaxRounds"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathBothBust",
+      "default": "💥 Both over - {challenger} {challengervalue}, {opponent} {opponentvalue}. Nothing left to settle it with, so the pot is split and everything goes back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Both busted",
+      "help": "Sent when the extra card puts both over 21. Neither can win from there, so the duel stops rather than drawing on, and everything goes back.",
+      "placeholders": [
+        "challenger",
+        "challengervalue",
+        "opponent",
+        "opponentvalue"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathBothBust"
+      ]
+    },
+    {
+      "key": "msgDuelSuddenDeathStartFree",
+      "default": "⚡ SUDDEN DEATH round {round}! One card each.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: sudden death",
+      "label": "Round starts (Free Game)",
+      "help": "Replaces Round starts while Free Game is on.",
+      "placeholders": [
+        "round"
+      ],
+      "aliases": [
+        "MsgDuelSuddenDeathStartFree"
+      ]
+    },
+    {
+      "key": "msgDuelDisabled",
+      "default": "{user}, duels are off right now.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Duels off",
+      "help": "Sent when the duel command is used while Duels is off.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelDisabled"
+      ]
+    },
+    {
+      "key": "msgDuelNoTarget",
+      "default": "{user}, tag who you want: !bjduel @username <bet>",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Nobody tagged",
+      "help": "Sent when the duel command arrives without a name.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelNoTarget"
+      ]
+    },
+    {
+      "key": "msgDuelSelfChallenge",
+      "default": "{user}, you can't duel yourself.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Challenged yourself",
+      "help": "Sent when someone tags their own name.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelSelfChallenge"
+      ]
+    },
+    {
+      "key": "msgDuelChallengerBusy",
+      "default": "{user}, finish what you're in first.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "You are busy",
+      "help": "Sent when the challenger already has a hand, a duel, a seat or an outstanding challenge.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelChallengerBusy"
+      ]
+    },
+    {
+      "key": "msgDuelTargetBusy",
+      "default": "{user}, {opponent} is mid-hand already.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "They are busy",
+      "help": "Sent when the tagged player is already in a hand, a duel or a seat.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelTargetBusy"
+      ]
+    },
+    {
+      "key": "msgDuelAlreadyPending",
+      "default": "{user}, {opponent} already has a challenge waiting.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "They were already challenged",
+      "help": "Sent when the tagged player already has a challenge waiting.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelAlreadyPending"
+      ]
+    },
+    {
+      "key": "msgDuelTargetInsufficient",
+      "default": "{user}, that duel needs {required} {points} and you have {available}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Not enough points",
+      "help": "Sent when either side cannot cover the stake.",
+      "placeholders": [
+        "user",
+        "points",
+        "required",
+        "available"
+      ],
+      "aliases": [
+        "MsgDuelTargetInsufficient"
+      ]
+    },
+    {
+      "key": "msgDuelNoPending",
+      "default": "{user}, nothing is waiting on you.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Nothing to answer",
+      "help": "Sent when accept or decline arrives with no prompt waiting on that player.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelNoPending"
+      ]
+    },
+    {
+      "key": "msgDuelNotYourTurn",
+      "default": "{user}, it's {opponent}'s turn.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Not your turn",
+      "help": "Sent when a duellist acts out of turn.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgDuelNotYourTurn"
+      ]
+    },
+    {
+      "key": "msgDuelSplitDisabled",
+      "default": "{user}, duels don't allow splitting.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Splitting off in duels",
+      "help": "Sent when split is used in a duel while the duel rule is off.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelSplitDisabled"
+      ]
+    },
+    {
+      "key": "msgDuelDoubleDisabled",
+      "default": "{user}, duels don't allow doubling.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Doubling off in duels",
+      "help": "Sent when double is used in a duel while the duel rule is off.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgDuelDoubleDisabled"
+      ]
+    },
+    {
+      "key": "msgDuelActionNotAvailable",
+      "default": "{user}, there's no {action} in a duel.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Duel: refusals",
+      "label": "Not a duel command",
+      "help": "Sent when insurance or surrender is used during a duel.",
+      "placeholders": [
+        "user",
+        "action"
+      ],
+      "aliases": [
+        "MsgDuelActionNotAvailable"
+      ]
+    },
+    {
+      "key": "msgHouseRulePrompt",
+      "default": "🏠 @{user}, pick the rules: {menu}. Run the house command again with the number - !house 1 - within {seconds}s.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Rule set menu",
+      "help": "Sent when a table is opened without naming a rule set, listing the ones ticked on the House page.",
+      "placeholders": [
+        "user",
+        "menu",
+        "seconds"
+      ],
+      "aliases": [
+        "MsgHouseRulePrompt"
+      ]
+    },
+    {
+      "key": "msgHouseRuleTimeout",
+      "default": "⏰ No rules picked, so the table closes.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "No rules picked",
+      "help": "Sent when nobody answered the menu. Nothing was staked, so nothing needs returning.",
+      "placeholders": [],
+      "aliases": [
+        "MsgHouseRuleTimeout"
+      ]
+    },
+    {
+      "key": "msgHouseTableOpen",
+      "default": "🏠 {user} opens a {rules} table, {seats} seats. Type join <bet> within {seconds}s. ({rulesdetail})",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Table open",
+      "help": "Sent when the table opens and the join window starts.",
+      "placeholders": [
+        "user",
+        "rules",
+        "seats",
+        "seconds",
+        "rulesdetail"
+      ],
+      "aliases": [
+        "MsgHouseTableOpen"
+      ]
+    },
+    {
+      "key": "msgHouseSeatTaken",
+      "default": "💺 {user} takes seat {seatnum}/{seats} for {bet} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Seat taken",
+      "help": "Sent each time someone sits down.",
+      "placeholders": [
+        "user",
+        "seatnum",
+        "seats",
+        "bet",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseSeatTaken"
+      ]
+    },
+    {
+      "key": "msgHouseSeatLeft",
+      "default": "🚪 {user} leaves the table with {amount} {points} back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Seat left",
+      "help": "Sent when a seated player quits while their stake can still come back.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseSeatLeft"
+      ]
+    },
+    {
+      "key": "msgHouseNoPlayers",
+      "default": "🏠 Nobody sat down, so the table closes.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Nobody sat down",
+      "help": "Sent when the join window ran out with every seat empty, so the table closes again.",
+      "placeholders": [],
+      "aliases": [
+        "MsgHouseNoPlayers"
+      ]
+    },
+    {
+      "key": "msgHouseDealt",
+      "default": "🏠 {rules} table, {seated} playing. Dealer shows {dealer}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Cards out",
+      "help": "Sent as the cards go out, ahead of the individual hands.",
+      "placeholders": [
+        "rules",
+        "seated",
+        "dealer"
+      ],
+      "aliases": [
+        "MsgHouseDealt"
+      ]
+    },
+    {
+      "key": "msgHouseHandDealt",
+      "default": "{user}: {cards} ({value}) on {bet} {points}",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Hand dealt",
+      "help": "Sent once per seat right after the deal.",
+      "placeholders": [
+        "user",
+        "cards",
+        "value",
+        "bet",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseHandDealt"
+      ]
+    },
+    {
+      "key": "msgHouseSeatBlackjack",
+      "default": "🃏 {user} has Blackjack!",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: the table",
+      "label": "Seat has blackjack",
+      "help": "Sent when a seat is dealt a natural blackjack.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseSeatBlackjack"
+      ]
+    },
+    {
+      "key": "msgHouseTurn",
+      "default": "▶️ {user}, you're up on {cards} ({value}) - hit or stand{extra}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Your turn",
+      "help": "Sent when the table moves on to a seat.",
+      "placeholders": [
+        "user",
+        "cards",
+        "value",
+        "extra"
+      ],
+      "aliases": [
+        "MsgHouseTurn"
+      ]
+    },
+    {
+      "key": "msgHouseDrawCard",
+      "default": "{user} draws {card}. Hand: {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Hit",
+      "help": "Sent when a seat draws.",
+      "placeholders": [
+        "user",
+        "card",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgHouseDrawCard"
+      ]
+    },
+    {
+      "key": "msgHouseStand",
+      "default": "🛑 {user} stands on {value}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Stand",
+      "help": "Sent when a seat stops.",
+      "placeholders": [
+        "user",
+        "value"
+      ],
+      "aliases": [
+        "MsgHouseStand"
+      ]
+    },
+    {
+      "key": "msgHouseBust",
+      "default": "💥 {user} busts on {value}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Bust",
+      "help": "Sent when a seat goes over 21.",
+      "placeholders": [
+        "user",
+        "value"
+      ],
+      "aliases": [
+        "MsgHouseBust"
+      ]
+    },
+    {
+      "key": "msgHouseNextHand",
+      "default": "{user} - hand {handnum}: {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Next split hand",
+      "help": "Sent when play moves on to a seat's next split hand.",
+      "placeholders": [
+        "user",
+        "handnum",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgHouseNextHand"
+      ]
+    },
+    {
+      "key": "msgHouseTurnTimeout",
+      "default": "⏰ {user} ran out of time and stands.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Turn timed out",
+      "help": "Sent when a seat runs out the turn clock and stands automatically.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseTurnTimeout"
+      ]
+    },
+    {
+      "key": "msgHouseSurrender",
+      "default": "🏳️ {user} folds for {amount} {points} back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Surrendered",
+      "help": "Sent when a seat folds, at a rule set that allows it.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseSurrender"
+      ]
+    },
+    {
+      "key": "msgHouseInsuranceOffer",
+      "default": "🛡️ Dealer shows an Ace. Type insurance within {seconds}s to cover your hand.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Insurance offered",
+      "help": "Sent to the whole table when the dealer shows an Ace, before the hole card is checked.",
+      "placeholders": [
+        "seconds"
+      ],
+      "aliases": [
+        "MsgHouseInsuranceOffer"
+      ]
+    },
+    {
+      "key": "msgHouseInsuranceTaken",
+      "default": "🛡️ {user} takes insurance for {amount} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Insurance taken",
+      "help": "Sent when a seat insures.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseInsuranceTaken"
+      ]
+    },
+    {
+      "key": "msgHouseInsuranceWin",
+      "default": "🛡️ {user}'s insurance pays {amount} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Insurance paid",
+      "help": "Sent when the dealer does hold blackjack and that seat's insurance pays.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseInsuranceWin"
+      ]
+    },
+    {
+      "key": "msgHouseInsuranceLose",
+      "default": "🛡️ {user}'s insurance goes.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: play",
+      "label": "Insurance lost",
+      "help": "Sent when the dealer has no blackjack and the insurance stake is gone.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseInsuranceLose"
+      ]
+    },
+    {
+      "key": "msgHouseDealerReveal",
+      "default": "🃏 Dealer turns over {card} → {cards} ({value})",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Hole card turned over",
+      "help": "Sent as the dealer's turn begins.",
+      "placeholders": [
+        "card",
+        "cards",
+        "value"
+      ],
+      "aliases": [
+        "MsgHouseDealerReveal"
+      ]
+    },
+    {
+      "key": "msgHousePeekBlackjack",
+      "default": "🃏 Dealer checks and has Blackjack: {cards}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Peek found a blackjack",
+      "help": "Sent when the dealer peeks on an Ace or a ten and holds blackjack, which ends the table there.",
+      "placeholders": [
+        "cards"
+      ],
+      "aliases": [
+        "MsgHousePeekBlackjack"
+      ]
+    },
+    {
+      "key": "msgHouseDealerBlackjack",
+      "default": "🃏 Dealer turns over Blackjack: {cards}. The whole table loses what it staked.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Dealer blackjack",
+      "help": "Sent at a table where the dealer does not peek and turns one over, taking everything staked at every seat.",
+      "placeholders": [
+        "cards"
+      ],
+      "aliases": [
+        "MsgHouseDealerBlackjack"
+      ]
+    },
+    {
+      "key": "msgHouseSeatWin",
+      "default": "🏆 {user} takes {amount} {points} on {value}. Balance: {balance} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Seat wins",
+      "help": "Sent for each winning seat as the table is settled.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points",
+        "value",
+        "balance"
+      ],
+      "aliases": [
+        "MsgHouseSeatWin"
+      ]
+    },
+    {
+      "key": "msgHouseSeatPush",
+      "default": "🤝 {user} is level on {value} - {amount} {points} back.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Seat pushes",
+      "help": "Sent for each seat level with the dealer, which gets its stake back.",
+      "placeholders": [
+        "user",
+        "value",
+        "amount",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseSeatPush"
+      ]
+    },
+    {
+      "key": "msgHouseSeatLoss",
+      "default": "❌ {user} drops {amount} {points}: {value} against {dealervalue}. Balance: {balance} {points}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Seat loses",
+      "help": "Sent for each losing seat as the table is settled.",
+      "placeholders": [
+        "user",
+        "amount",
+        "points",
+        "value",
+        "dealervalue",
+        "balance"
+      ],
+      "aliases": [
+        "MsgHouseSeatLoss"
+      ]
+    },
+    {
+      "key": "msgHouseTableSummary",
+      "default": "🏠 Dealer {dealer} ({dealervalue}) - {seats}",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: result",
+      "label": "Table summary",
+      "help": "Sent once at the end, and again on repeat: the dealer's hand and every seat's result.",
+      "placeholders": [
+        "dealer",
+        "dealervalue",
+        "seats"
+      ],
+      "aliases": [
+        "MsgHouseTableSummary"
+      ]
+    },
+    {
+      "key": "msgHouseDisabled",
+      "default": "@{user}, House Mode is off.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "House Mode off",
+      "help": "Sent when the house command is used while House Mode is off.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseDisabled"
+      ]
+    },
+    {
+      "key": "msgHouseNeedsCurrency",
+      "default": "@{user}, House Mode is played for real {points} - turn Free Game off first.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Needs real currency",
+      "help": "Sent when a table is opened while Free Game is on.",
+      "placeholders": [
+        "user",
+        "points"
+      ],
+      "aliases": [
+        "MsgHouseNeedsCurrency"
+      ]
+    },
+    {
+      "key": "msgHouseNoRuleSets",
+      "default": "@{user}, no rule set is on offer.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "No rule sets",
+      "help": "Sent when nothing is ticked on the House page, so there is nothing to open a table with.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseNoRuleSets"
+      ]
+    },
+    {
+      "key": "msgHouseAlreadyRunning",
+      "default": "@{user}, a table is already running.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Table already running",
+      "help": "Sent when someone opens a second table while one is going.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseAlreadyRunning"
+      ]
+    },
+    {
+      "key": "msgHouseTableFull",
+      "default": "@{user}, the table is full.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Table full",
+      "help": "Sent when every seat is taken.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseTableFull"
+      ]
+    },
+    {
+      "key": "msgHouseAlreadySeated",
+      "default": "@{user}, you already have a seat.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Already seated",
+      "help": "Sent when a player takes a second seat.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseAlreadySeated"
+      ]
+    },
+    {
+      "key": "msgHouseNoTable",
+      "default": "@{user}, there's no table open right now.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "No table open",
+      "help": "Sent when a table command arrives with no table open.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseNoTable"
+      ]
+    },
+    {
+      "key": "msgHouseJoinClosed",
+      "default": "@{user}, the cards are already dealt.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Join window closed",
+      "help": "Sent when someone joins after the cards are out.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseJoinClosed"
+      ]
+    },
+    {
+      "key": "msgHouseNotYourTurn",
+      "default": "@{user}, it's {opponent}'s turn.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Not your turn",
+      "help": "Sent when a seat acts out of turn.",
+      "placeholders": [
+        "user",
+        "opponent"
+      ],
+      "aliases": [
+        "MsgHouseNotYourTurn"
+      ]
+    },
+    {
+      "key": "msgHouseNotPlaying",
+      "default": "@{user}, the table isn't playing hands right now.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Not playing hands",
+      "help": "Sent when a play command arrives while the table is not playing - during the join window, say.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseNotPlaying"
+      ]
+    },
+    {
+      "key": "msgHouseNotSeated",
+      "default": "@{user}, you're not seated at this table.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Not seated",
+      "help": "Written for someone who never took a seat trying to play the table's hand. The game currently answers that with 'No hand running' instead, so this line is not sent.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgHouseNotSeated"
+      ]
+    },
+    {
+      "key": "msgHouseActionNotAvailable",
+      "default": "@{user}, {action} isn't allowed at a {rules} table.",
+      "kind": "template",
+      "page": "messages",
+      "group": "House: refusals",
+      "label": "Not allowed here",
+      "help": "Sent when a command is not part of the table's rule set - surrender at a European table, for instance.",
+      "placeholders": [
+        "user",
+        "action",
+        "rules"
+      ],
+      "aliases": [
+        "MsgHouseActionNotAvailable"
+      ]
+    },
+    {
+      "key": "useBot",
+      "default": true,
+      "page": "messages",
+      "label": "Bot account",
+      "help": "Sends the game's messages from your Streamer.bot bot account instead of the broadcaster account.\n(Platforms > Any platform > Accounts > Bot)",
+      "aliases": [
+        "UseBot"
+      ]
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "page": "messages",
+      "label": "Send as /me",
+      "help": "Twitch only: YouTube and Kick have no /me, so there the messages always go out as plain chat.",
+      "aliases": [
+        "SendAction"
+      ]
+    },
+    {
+      "key": "cooldownUseBot",
+      "default": true,
+      "page": "messages",
+      "label": "Bot account",
+      "help": "Sends the cooldown replies from your bot account, separately from the game's own messages.",
+      "aliases": [
+        "UseBotCD"
+      ]
+    },
+    {
+      "key": "cooldownSendAction",
+      "default": false,
+      "page": "messages",
+      "label": "Send as /me",
+      "help": "Twitch only, and separate from the game's messages.",
+      "aliases": [
+        "SendActionCD"
+      ]
+    },
+    {
+      "key": "numberSeparator",
+      "default": ".",
+      "page": "messages",
+      "label": "Numbers",
+      "options": [
+        {
+          "value": ".",
+          "label": "12.345"
+        },
+        {
+          "value": ",",
+          "label": "12,345"
+        },
+        {
+          "value": " ",
+          "label": "12 345"
+        },
+        {
+          "value": "",
+          "label": "12345"
+        }
+      ],
+      "help": "The thousands separator used in every amount the game posts.",
+      "aliases": [
+        "NumberSeparator"
+      ]
+    },
+    {
+      "key": "globalCooldownMessage",
+      "default": "On cooldown for everyone - {0} seconds to go.",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Everyone",
+      "help": "Sent while the cooldown for everyone is still running. This one numbers its placeholder instead of naming it.",
+      "placeholders": [
+        "0"
+      ],
+      "aliases": [
+        "GlobalCooldownMsg"
+      ]
+    },
+    {
+      "key": "userCooldownMessage",
+      "default": "{0}, your cooldown has {1} seconds left.",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Per player",
+      "help": "Sent while that viewer's own cooldown is still running. Numbered placeholders, and the order matters.",
+      "placeholders": [
+        "0",
+        "1"
+      ],
+      "aliases": [
+        "UserCooldownMsg"
+      ]
+    },
+    {
+      "key": "reasonInsufficientFunds",
+      "default": "Not enough {points} - you have {available} and need {required}.",
+      "group": "Table refusals",
+      "label": "Not enough points",
+      "help": "Sent when the bet is bigger than the balance, typed out or from a shortcut.",
+      "placeholders": [
+        "points",
+        "available",
+        "required"
+      ],
+      "aliases": [
+        "MsgNotEnoughPoints"
+      ]
+    },
+    {
+      "key": "leaderboardEmpty",
+      "default": "{user}, nothing on record yet - play a hand first.",
+      "page": "messages",
+      "group": "System",
+      "label": "No stats yet",
+      "help": "Sent by the Stats action when a viewer checks their record before playing a hand.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgNoStatsFound"
+      ]
+    },
+    {
+      "key": "leaderboardSize",
+      "default": 5,
+      "page": "stats",
+      "label": "Places",
+      "section": "The leaderboard",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "help": "How many players the allstats command lists.",
+      "aliases": [
+        "LeaderboardSize"
+      ]
+    },
+    {
+      "key": "leaderboardShowMedals",
+      "default": true,
+      "page": "stats",
+      "label": "Medals for the top three",
+      "section": "The leaderboard",
+      "help": "🥇 🥈 🥉 for the first three places instead of 1. 2. 3. Fourth place down always gets numbers.",
+      "aliases": [
+        "LeaderboardShowMedals"
+      ]
+    },
+    {
+      "key": "leaderboardExcludeBroadcaster",
+      "default": true,
+      "page": "stats",
+      "label": "Hide the broadcaster",
+      "section": "Who shows up",
+      "help": "Keeps your own account off the board. Matched by user id, so renaming yourself does not put you back on it.\nThe stats are still tracked - only the listing leaves you out.",
+      "aliases": [
+        "LeaderboardExcludeBroadcaster"
+      ]
+    },
+    {
+      "key": "leaderboardExcludeBot",
+      "default": true,
+      "page": "stats",
+      "label": "Hide the bot account",
+      "section": "Who shows up",
+      "help": "Keeps your Streamer.bot bot account off the board.\n(Platforms > Any platform > Accounts > Bot)",
+      "aliases": [
+        "LeaderboardExcludeBot"
+      ]
+    },
+    {
+      "key": "leaderboardUseBot",
+      "default": true,
+      "page": "stats",
+      "label": "Bot account",
+      "section": "How the leaderboard is sent",
+      "help": "Sends the leaderboard from your bot account instead of the broadcaster account.",
+      "aliases": [
+        "LeaderboardUseBot"
+      ]
+    },
+    {
+      "key": "leaderboardSendAction",
+      "default": false,
+      "page": "stats",
+      "label": "Send as /me",
+      "section": "How the leaderboard is sent",
+      "help": "Twitch only: YouTube and Kick have no /me.",
+      "aliases": [
+        "LeaderboardSendAction"
+      ]
+    },
+    {
+      "key": "leaderboardResetScope",
+      "default": "totals",
+      "page": "stats",
+      "label": "A reset clears",
+      "section": "Starting a new season",
+      "options": [
+        {
+          "value": "totals",
+          "label": "The leaderboard totals only"
+        },
+        {
+          "value": "all",
+          "label": "Every stat there is"
+        }
+      ],
+      "help": "The totals only: the money the ranking runs on - bets, winnings, net, duel points, biggest win and loss. Games played, blackjacks, busts, streaks and duel records stay. Right for a monthly season.",
+      "aliases": [
+        "LeaderboardResetScope"
+      ]
+    },
+    {
+      "key": "leaderboardAutoReset",
+      "default": "off",
+      "page": "stats",
+      "label": "Automatically",
+      "section": "Starting a new season",
+      "options": [
+        {
+          "value": "off",
+          "label": "Never"
+        },
+        {
+          "value": "weekly",
+          "label": "Every new ISO week"
+        },
+        {
+          "value": "monthly",
+          "label": "On the 1st of the month"
+        }
+      ],
+      "help": "Clears the leaderboard on its own when the period rolls over, using the scope above.",
+      "aliases": [
+        "LeaderboardAutoReset"
+      ]
+    },
+    {
+      "key": "resetLeaderboard",
+      "kind": "action",
+      "page": "stats",
+      "section": "Starting a new season",
+      "label": "Reset the leaderboard now",
+      "help": "Applies the reset scope to every viewer on every platform, and asks first."
+    },
+    {
+      "key": "logToFile",
+      "default": true,
+      "kind": "bool",
+      "page": "log",
+      "label": "Write a log file per day",
+      "help": "Writes every settled hand - win, loss, blackjack, bust, surrender, insurance, quit, timeout, and the duel and House results - to a dated 'BJG-log-yyyy-MM-dd.txt' in the Logs folder, one file per day.",
+      "aliases": [
+        "LogToFile"
+      ]
+    }
+  ]
+}

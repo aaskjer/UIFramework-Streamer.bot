@@ -28,4 +28,10 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
+  <!-- The conventions ship inside the DLL: a host never needs the JSON files next to it. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\conventions\keys.json" LogicalName="UIFramework.conventions.keys.json" />
+    <EmbeddedResource Include="..\..\conventions\lang\*.json" LogicalName="UIFramework.conventions.lang.%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

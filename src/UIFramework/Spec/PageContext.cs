@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows.Media;
 using Newtonsoft.Json.Linq;
 
@@ -23,6 +24,10 @@ namespace UIFramework
 
         /// <summary>Redraws the refreshers registered for a page, by page id.</summary>
         public Action<string> RefreshPage { get; internal set; } = id => { };
+
+        /// <summary>Runs once every page is built, for wiring that reaches across pages (a field that follows a
+        /// switch elsewhere).</summary>
+        public List<Action> AfterBuild { get; } = new List<Action>();
 
         public void OpenUrl(string url) => Web.OpenUrl(url, Log, Spec?.LogPrefix);
     }

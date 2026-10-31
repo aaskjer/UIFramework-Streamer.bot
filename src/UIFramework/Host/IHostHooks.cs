@@ -24,6 +24,10 @@ namespace UIFramework
 
         /// <summary>The host's own log entries for the Log page, newest first. Null hides the page.</summary>
         IEnumerable<LogEntry> ReadLog();
+
+        /// <summary>Rows for a setting of kind "table", as a JSON array of objects keyed by the schema's columns.
+        /// Null or empty shows the table's empty text.</summary>
+        string ReadTable(string key);
     }
 
     /// <summary>A hooks implementation that does nothing, for previews and hosts without extras.</summary>
@@ -33,5 +37,6 @@ namespace UIFramework
         public virtual string Test(string name, JObject settings) => null;
         public virtual FrameworkElement BuildPage(string pageId, PageContext context) => null;
         public virtual IEnumerable<LogEntry> ReadLog() => null;
+        public virtual string ReadTable(string key) => null;
     }
 }

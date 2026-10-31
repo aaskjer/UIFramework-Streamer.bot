@@ -28,6 +28,13 @@ Settings-Datei.
 | `unit`         | nein    | Anzeige hinter dem Feld (`s`, `%`, `px`)                                                   |
 | `options`      | nein    | Liste für `options`: `["a", "b"]` oder `[{"value": "a", "label": "A"}]`                    |
 | `placeholders` | nein    | für `template`: Namen ohne Klammern, werden als Chips gezeigt                              |
+| `section`      | nein    | Überschrift; wo sie wechselt, beginnt ein neuer Abschnitt auf der Seite                     |
+| `group`        | nein    | für `template`: die Gruppe im Nachrichten-Picker                                           |
+| `factor`       | nein    | für `percent`: gespeicherter Wert = getippt × Faktor (0.01 speichert einen Bruch; Standard 1) |
+| `unlimitedAtZero` | nein | für `int`/`long`: 0 im Feld heißt "keine Grenze" und wird als MaxValue gespeichert         |
+| `aliases`      | nein    | alte Keys; der Store liest sie und schreibt den kanonischen Key zurück                     |
+| `aliasFactors` | nein    | je Alias ein Faktor für den Wert beim Umzug (Bruch zu Prozent: 100)                        |
+| `hidden`       | nein    | true: hat kein Feld, bleibt aber in der Datei                                              |
 | `requires`     | nein    | Key eines `bool`; Feld ist ausgegraut, solange der false ist                               |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
@@ -37,8 +44,8 @@ Settings-Datei.
 | Kind        | Default-Typ | Control                                    | Hinweise                                              |
 |-------------|-------------|--------------------------------------------|-------------------------------------------------------|
 | `bool`      | bool        | Toggle                                     |                                                       |
-| `int`       | int         | Zahlenfeld mit Spinner                     | `min`, `max`, `unit`                                  |
-| `double`    | double      | Zahlenfeld                                 | `min`, `max`, `step`; Dezimaltrenner nach Systemkultur |
+| `int`       | int         | Zahlenfeld; mit `options` ein Dropdown     | `min`, `max`, `unit`, `unlimitedAtZero`                |
+| `double`    | double      | Zahlenfeld; mit `options` ein Dropdown     | `min`, `max`, `step`; Punkt oder Komma                |
 | `percent`   | int/double  | Zahlenfeld 0 bis 100 mit `%`               | gespeichert als Zahl, nicht als Bruch                 |
 | `duration`  | int         | Zahlenfeld mit Einheit                     | gespeichert in Sekunden; Anzeige wählt s/min/h        |
 | `string`    | string      | einzeiliges Textfeld                       |                                                       |
@@ -52,7 +59,10 @@ Settings-Datei.
 | `emote`     | string      | Textfeld mit Emote-Vorschau                | Plattform-Emotes als Text                             |
 | `list`      | array       | Tabelle mit Zeilen-Editor                  | `columns: [{key, kind, label}]` Pflicht               |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
-| `action`    | –           | Button                                     | kein Wert; ruft `hooks.Test(key)`; Rückgabe = Status  |
+| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status |
+
+`table` und `action` haben keinen Wert in der Datei. `table` holt seine Zeilen mit `ReadTable(key)` vom Host als
+JSON-Array von Objekten, deren Felder die `columns` nennen.
 
 Ableitung ohne `kind`: bool → `bool`, ganze Zahl → `int`, Kommazahl → `double`, string → `string`, Array → `list`
 (braucht dann `columns`). Keys aus den Konventionen bringen ihr Kind mit.
@@ -86,5 +96,7 @@ static readonly Setting[] Schema =
 bool UseBot => Get<bool>("useBot");
 ```
 
-`Get<T>` liest aus der geladenen Settings-Datei, nimmt den Default aus `Schema`, kennt die Aliase aus den
-Konventionen. `Schema.ToJson()` ist die Antwort auf `uiframework.describe`.
+Die fertige Fassung dieses Blocks ist `stub/HostSchema.cs`: `UiSchema.Table`, `UiSchema.ToJson(...)` als
+Antwort auf `uiframework.describe`, und `UiSettings.Load(path)` mit `Bool`, `Int`, `Long`, `Double`, `String`,
+`Ceiling`, `Names`, die Aliase tolerieren. Er kompiliert ohne Referenz auf die DLL in jeder Streamer.bot-Aktion
+(`tools\check-stub.ps1`).

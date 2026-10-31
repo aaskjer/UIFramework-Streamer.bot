@@ -32,9 +32,19 @@ namespace UIFramework.Preview
                 layout.Save();
             }
 
-            var spec = SampleSpec.Blackjack(settings);
             var log = new ConsoleLog();
             var hooks = new SampleHooks(settings);
+            WindowSpec spec;
+            string specFile = Arg(args, "-spec"), schemaFile = Arg(args, "-schema");
+            if (specFile != null && schemaFile != null)
+            {
+                // The schema-driven path a stub takes: spec JSON plus the host's describe answer.
+                spec = SpecJson.Parse(File.ReadAllText(specFile), settings);
+                Entry.Prepare(spec, Schema.Parse(File.ReadAllText(schemaFile)));
+                Console.WriteLine($"resolved {spec.Pages.Count} pages, {spec.ResolvedSettings.Count} settings, {spec.Messages.Count} messages, {spec.Aliases.Count} aliases");
+            }
+            else
+                spec = SampleSpec.Blackjack(settings);
 
             if (shots != null)
                 return Screenshots.Take(spec, log, hooks, shots, page) ? 0 : 1;
@@ -69,6 +79,11 @@ namespace UIFramework.Preview
         }
 
         public override void OnSaved(JObject settings) => Interlocked.Exchange(ref _pending, settings);
+
+        public override string Test(string name, JObject settings) => name + ": the preview would run this now.";
+
+        public override string ReadTable(string key) =>
+            "[{\"rank\":\"1\",\"user\":\"alice\",\"net\":\"12,500\"},{\"rank\":\"2\",\"user\":\"bob\",\"net\":\"3,000\"}]";
 
         public void Pump(IHostLog log)
         {
