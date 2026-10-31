@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Opens the window without Streamer.bot, on a sample spec modelled on Blackjack. For looking at pages while
+       working on the framework, and for the screenshots in the docs.
+         dotnet run - -settings <path> -shots <folder> -theme light|dark -page table -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>UIFramework.Preview</RootNamespace>
+    <AssemblyName>UIFramework.Preview</AssemblyName>
+    <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UIFramework\UIFramework.csproj" />
+  </ItemGroup>
+
+</Project>
