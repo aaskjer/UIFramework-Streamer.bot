@@ -4,7 +4,9 @@ A settings-window framework for Streamer.bot extensions. One DLL that fetches an
 every project that uses it, pages built from data the project declares, and a customise mode that lets users
 rename, move and hide things without touching code.
 
-Status: planning. See [PLAN.md](PLAN.md) for the architecture and phases, [docs/Schema.md](docs/Schema.md) for
+Status: phase 1 (framework core) done, phase 2 (schema and spec) next. `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 21 tests; `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window (`-theme dark` or `light`, `-shots <folder>` renders every page to PNG).
+
+See [PLAN.md](PLAN.md) for the architecture and phases, [docs/Schema.md](docs/Schema.md) for
 how a host declares its settings, and [docs/Phase0-Konventionen.md](docs/Phase0-Konventionen.md) for the
 conventions drawn from the seven game GUIs this replaces.
 
