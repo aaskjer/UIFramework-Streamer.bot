@@ -1,7 +1,7 @@
 {
-  "version": "0.0.0",
-  "url": "",
-  "sha256": "",
-  "minHostStub": "0.0.0",
-  "note": "Written by .github/workflows/release.yml on a tag vX.Y.Z. Empty until the first release."
+  "version": "0.1.0",
+  "url": "https://github.com/aaskjer/UIFramework-Streamer.bot/releases/download/v0.1.0/UIFramework.dll",
+  "sha256": "0ed8ce7d9cc744e8448952a772e89ef93b2aa2d5fdaf8a2a7c42c91120daf7bf",
+  "minHostStub": "0.1.0",
+  "note": "Read by the loader in every host's settings action. Written by .github/workflows/release.yml on a tag vX.Y.Z."
 }
