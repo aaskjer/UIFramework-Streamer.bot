@@ -4,7 +4,7 @@ A settings-window framework for Streamer.bot extensions. One DLL that fetches an
 every project that uses it, pages built from data the project declares, and a customise mode that lets users
 rename, move and hide things without touching code.
 
-Status: phases 0 to 2 done on the framework side (core, schema, conventions, spec, stub); Blackjack is the first host on it (its game declares the schema, its settings action is the stub in `hosts/blackjack`). Next: phase 3, the loader that fetches the DLL. `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 21 tests; `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window (`-theme dark` or `light`, `-shots <folder>` renders every page to PNG; `-spec hosts/blackjack/spec.json -schema hosts/blackjack/schema.json` takes the schema-driven path a stub takes).
+Status: phases 0 to 2 done on the framework side (core, schema, conventions, spec, stub); Blackjack is the first host on it (its game declares the schema, its settings action is the stub in `hosts/blackjack`). The loader in the stub fetches the DLL on first use and keeps it current (see docs/Loader.md). `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 21 tests; `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window (`-theme dark` or `light`, `-shots <folder>` renders every page to PNG; `-spec hosts/blackjack/spec.json -schema hosts/blackjack/schema.json` takes the schema-driven path a stub takes).
 
 See [PLAN.md](PLAN.md) for the architecture and phases, [docs/Schema.md](docs/Schema.md) for
 how a host declares its settings, and [docs/Phase0-Konventionen.md](docs/Phase0-Konventionen.md) for the
@@ -28,7 +28,7 @@ hosts/<name>/            schema.json, spec.json and the generated Stub.cs of eac
 conventions/             keys.json and lang/<code>.json, embedded into the DLL
 tools/                   embed-spec.ps1 (spec into stub), check-stub.ps1 (compile both the Streamer.bot way)
 lib/v1/latest.json       what the loader reads: version, download url, sha256
-docs/                    Schema, Spec, Layout, Hooks, Customize
+docs/                    Schema, Spec, Loader, Phase0-Konventionen
 ```
 
 ## Licence
