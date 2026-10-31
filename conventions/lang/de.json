@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "pages": {
+    "general": "Allgemein", "game": "Spiel", "points": "Punkte & Einsätze", "cooldowns": "Abklingzeiten", "access": "Zugriff",
+    "messages": "Nachrichten", "leaderboard": "Bestenliste", "overlay": "Overlay", "log": "Protokoll", "help": "Hilfe", "about": "Über"
+  },
+  "framework": {
+    "darkMode": { "label": "Dunkles Design" },
+    "rainbow":  { "label": "Regenbogen-Akzent", "help": "Die Akzentfarbe wandert durch den Regenbogen." },
+    "language": { "label": "Sprache" },
+    "accent":   { "label": "Akzentfarbe", "help": "Leer verwendet das Standardblau." }
+  },
+  "keys": {
+    "useBot":            { "label": "Als Bot-Konto senden", "help": "Aus: das Broadcaster-Konto sendet die Nachrichten." },
+    "sendAction":        { "label": "Als /me-Aktion senden" },
+    "numberSeparator":   { "label": "Tausendertrennzeichen", "help": "Wird verwendet, wenn Punkte in den Chat geschrieben werden." },
+    "isChannelPointsTrigger": { "label": "Auslösung über Kanalpunkte", "help": "An: der Einsatz kommt aus der Einlösung, nicht aus der Chat-Eingabe." },
+
+    "pointsVariable":    { "label": "Punkte-Variable", "help": "Die Streamer.bot-Nutzervariable, die die Punkte hält." },
+    "pointsName":        { "label": "Name der Punkte", "help": "So heißen die Punkte in Chat-Nachrichten." },
+    "defaultBet":        { "label": "Standardeinsatz", "help": "Wenn ein Spieler keinen Betrag nennt." },
+    "minBet":            { "label": "Mindesteinsatz" },
+    "maxBet":            { "label": "Höchsteinsatz", "help": "0 bedeutet keine Grenze." },
+    "fixedBetAmount":    { "label": "Fester Einsatz" },
+    "cpBetMode":         { "label": "Einsatz bei Kanalpunkten", "help": "input: der Zuschauer tippt den Betrag. fixed: der feste Einsatz gilt." },
+    "freeGame":          { "label": "Freispiel", "help": "Es werden keine Punkte abgezogen oder ausgezahlt." },
+
+    "globalCooldown":    { "label": "Globale Abklingzeit", "help": "Zeit, bis irgendjemand wieder spielen kann." },
+    "userCooldown":      { "label": "Abklingzeit pro Nutzer" },
+    "maxGamesPerHour":   { "label": "Spiele pro Stunde", "help": "Pro Nutzer. 0 bedeutet keine Grenze." },
+    "turnTimeout":       { "label": "Zugzeit", "help": "Wie lange ein Spieler überlegen darf, bevor das Spiel für ihn entscheidet." },
+    "cooldownUseBot":    { "label": "Abklingzeit-Nachrichten als Bot" },
+    "cooldownSendAction":{ "label": "Abklingzeit-Nachrichten als /me" },
+    "globalCooldownMessage": { "label": "Nachricht globale Abklingzeit" },
+    "userCooldownMessage":   { "label": "Nachricht Nutzer-Abklingzeit" },
+
+    "blockedUsers":      { "label": "Gesperrte Nutzer", "help": "Diese Zuschauer können nicht spielen." },
+    "blockedGroups":     { "label": "Gesperrte Gruppen", "help": "Streamer.bot-Gruppen, deren Mitglieder nicht spielen können." },
+    "addictedUsers":     { "label": "Süchtige Nutzer", "help": "Diese Zuschauer gewinnen weniger, siehe Auszahlungskürzung." },
+    "addictedGroups":    { "label": "Süchtige Gruppen" },
+    "addictedPayoutCut": { "label": "Auszahlungskürzung Süchtige", "help": "Wie viel eines Gewinns süchtige Zuschauer verlieren." },
+    "botAllowed":        { "label": "Bot-Konto darf spielen" },
+    "broadcasterAllowed":{ "label": "Broadcaster darf spielen" },
+
+    "reasonNegativeAmount":    { "label": "Negativer Betrag" },
+    "reasonInsufficientFunds": { "label": "Nicht genug Punkte" },
+    "reasonBelowMinimum":      { "label": "Unter Mindesteinsatz" },
+    "reasonAboveMaximum":      { "label": "Über Höchsteinsatz" },
+    "reasonNoInput":           { "label": "Kein Betrag angegeben" },
+    "messageMaxGamesPerHour":  { "label": "Spiele pro Stunde erreicht" },
+
+    "leaderboardSize":               { "label": "Angezeigte Einträge" },
+    "leaderboardShowMedals":         { "label": "Medaillen für die ersten drei" },
+    "leaderboardExcludeBroadcaster": { "label": "Broadcaster ausblenden" },
+    "leaderboardExcludeBot":         { "label": "Bot-Konto ausblenden" },
+    "leaderboardUseBot":             { "label": "Als Bot-Konto senden" },
+    "leaderboardSendAction":         { "label": "Als /me-Aktion senden" },
+    "leaderboardAutoReset":          { "label": "Automatisch zurücksetzen" },
+    "leaderboardResetScope":         { "label": "Umfang des Zurücksetzens", "help": "all: eine Liste. platform: eine Liste pro Plattform." },
+    "leaderboardHeader":             { "label": "Kopfzeile" },
+    "leaderboardEntry":              { "label": "Eintragszeile" },
+    "leaderboardEmpty":              { "label": "Leere Liste" },
+
+    "overlayEnabled":        { "label": "Overlay aktiv" },
+    "overlayFolder":         { "label": "Overlay-Ordner", "help": "Wohin die Overlay-Dateien geschrieben werden. Leer verwendet den Standard neben Streamer.bot." },
+    "overlayPort":           { "label": "Overlay-Port", "help": "0 verwendet den WebSocket-Port von Streamer.bot." },
+    "overlayPosition":       { "label": "Position" },
+    "overlayScale":          { "label": "Größe" },
+    "overlayFontScale":      { "label": "Schriftgröße" },
+    "overlayAnimations":     { "label": "Animationen" },
+    "overlayResultSeconds":  { "label": "Ergebnis anzeigen für" },
+    "overlayHideOnFreeGame": { "label": "Bei Freispielen ausblenden" },
+    "overlayTextColour":     { "label": "Textfarbe" },
+    "overlayBackgroundColour": { "label": "Hintergrundfarbe" },
+    "overlayBackgroundOpacity":{ "label": "Deckkraft Hintergrund" },
+    "overlayAccentColour":   { "label": "Akzentfarbe" }
+  },
+  "placeholders": {
+    "user": "Anzeigename des Zuschauers", "target": "Der Mitspieler", "pointsName": "Name der Punkte",
+    "currentPoints": "Aktuelle Punkte des Zuschauers", "amount": "Der Einsatz", "min": "Mindesteinsatz", "max": "Höchstwert",
+    "remaining": "Restsekunden der Abklingzeit", "reason": "Warum es nicht geklappt hat", "rank": "Platz in der Liste",
+    "score": "Wert des Eintrags", "medal": "Medaillen-Emoji für die ersten drei, sonst leer", "count": "Anzahl Einträge",
+    "addictedCut": "Auszahlungskürzung in Prozent", "latestTag": "Neueste Release-Version", "error": "Fehlertext"
+  }
+}

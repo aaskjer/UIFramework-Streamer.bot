@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "$comment": "Bekannte Settings-Keys. Ein Host, der einen dieser Keys deklariert, bekommt Seite, Kind, Label und Hilfetext von hier. Aliase sind die bisherigen Namen in den Spielen; der Store liest sie und schreibt den kanonischen Key zurück. Labels und Hilfetexte stehen in lang/<code>.json unter demselben Key.",
+
+  "pages": {
+    "general":     { "order": 10, "icon": "gear" },
+    "game":        { "order": 20, "icon": "dice" },
+    "points":      { "order": 30, "icon": "coins" },
+    "cooldowns":   { "order": 40, "icon": "clock" },
+    "access":      { "order": 50, "icon": "shield" },
+    "messages":    { "order": 60, "icon": "chat" },
+    "leaderboard": { "order": 70, "icon": "trophy" },
+    "overlay":     { "order": 80, "icon": "monitor" },
+    "log":         { "order": 90, "icon": "list" },
+    "help":        { "order": 95, "icon": "book" },
+    "about":       { "order": 99, "icon": "info" }
+  },
+
+  "framework": {
+    "$comment": "Diese Keys gehören dem Fenster, nicht dem Host. Sie liegen in uiframework.layout.json und gelten für alle Hosts. Trägt eine Host-Datei sie noch, übernimmt der Store den Wert einmalig und entfernt ihn dort.",
+    "darkMode": { "kind": "bool",    "default": true,  "aliases": ["DarkMode"] },
+    "rainbow":  { "kind": "bool",    "default": false, "aliases": ["Egg"] },
+    "language": { "kind": "options", "default": "en",  "aliases": ["Language"] },
+    "accent":   { "kind": "colour",  "default": "" }
+  },
+
+  "keys": {
+    "useBot":            { "kind": "bool",     "default": true,  "page": "general",  "aliases": ["UseBot", "IsBot"] },
+    "sendAction":        { "kind": "bool",     "default": false, "page": "general",  "aliases": ["SendAction"] },
+    "numberSeparator":   { "kind": "options",  "default": ",",   "page": "general",  "options": [",", ".", " ", ""], "aliases": ["NumberSeparator"] },
+    "isChannelPointsTrigger": { "kind": "bool", "default": false, "page": "general", "aliases": ["IsChannelPointsTrigger"] },
+
+    "pointsVariable":    { "kind": "string",   "default": "points", "page": "points", "aliases": ["PointsVariable", "PointsVar"] },
+    "pointsName":        { "kind": "string",   "default": "Points", "page": "points", "aliases": ["PointsName", "PointsVarName"] },
+    "defaultBet":        { "kind": "int",      "default": 100,   "page": "points",   "min": 1, "aliases": ["DefaultBet"] },
+    "minBet":            { "kind": "int",      "default": 1,     "page": "points",   "min": 0, "aliases": ["MinBet", "MinimumBet"] },
+    "maxBet":            { "kind": "int",      "default": 0,     "page": "points",   "min": 0, "aliases": ["MaxBet", "MaximumBet"] },
+    "fixedBetAmount":    { "kind": "int",      "default": 0,     "page": "points",   "min": 0, "aliases": ["FixedBetAmount"] },
+    "cpBetMode":         { "kind": "options",  "default": "input", "page": "points", "options": ["input", "fixed"], "aliases": ["CPBetMode"] },
+    "freeGame":          { "kind": "bool",     "default": false, "page": "points",   "aliases": ["FreeGame"] },
+
+    "globalCooldown":    { "kind": "duration", "default": 10,    "page": "cooldowns", "min": 0, "aliases": ["CooldownGlobalSeconds", "GlobalCooldown"] },
+    "userCooldown":      { "kind": "duration", "default": 30,    "page": "cooldowns", "min": 0, "aliases": ["CooldownUserSeconds", "UserCooldown"] },
+    "maxGamesPerHour":   { "kind": "int",      "default": 0,     "page": "cooldowns", "min": 0, "aliases": ["MaxGamesPerHour"] },
+    "turnTimeout":       { "kind": "duration", "default": 60,    "page": "cooldowns", "min": 5, "aliases": ["TurnTimeoutSec"] },
+    "cooldownUseBot":    { "kind": "bool",     "default": true,  "page": "cooldowns", "aliases": ["UseBotCD"] },
+    "cooldownSendAction":{ "kind": "bool",     "default": false, "page": "cooldowns", "aliases": ["SendActionCD"] },
+    "globalCooldownMessage": { "kind": "template", "default": "", "page": "cooldowns", "placeholders": ["user", "remaining"], "aliases": ["GlobalCooldownMsg", "GlobalCooldownMessage"] },
+    "userCooldownMessage":   { "kind": "template", "default": "", "page": "cooldowns", "placeholders": ["user", "remaining"], "aliases": ["UserCooldownMsg", "UserCooldownMessage"] },
+
+    "blockedUsers":      { "kind": "namelist", "default": "",    "page": "access",   "aliases": ["BlockedUsers"] },
+    "blockedGroups":     { "kind": "grouplist","default": "",    "page": "access",   "aliases": ["BlockedGroups"] },
+    "addictedUsers":     { "kind": "namelist", "default": "",    "page": "access",   "aliases": ["AddictedUsers"] },
+    "addictedGroups":    { "kind": "grouplist","default": "",    "page": "access",   "aliases": ["AddictedGroups"] },
+    "addictedPayoutCut": { "kind": "percent",  "default": 50,    "page": "access",   "min": 0, "max": 100, "aliases": ["AddictedPayoutCut", "AddictedPointsPenaltyPercent"] },
+    "botAllowed":        { "kind": "bool",     "default": false, "page": "access",   "aliases": ["BotAllowed"] },
+    "broadcasterAllowed":{ "kind": "bool",     "default": true,  "page": "access",   "aliases": ["BroadcasterAllowed"] },
+
+    "reasonNegativeAmount":    { "kind": "template", "default": "", "page": "messages", "placeholders": ["user", "amount", "pointsName"], "aliases": ["ReasonNegativeAmount"] },
+    "reasonInsufficientFunds": { "kind": "template", "default": "", "page": "messages", "placeholders": ["user", "amount", "currentPoints", "pointsName"], "aliases": ["ReasonInsufficientFunds", "MsgNotEnoughPoints"] },
+    "reasonBelowMinimum":      { "kind": "template", "default": "", "page": "messages", "placeholders": ["user", "amount", "min", "pointsName"], "aliases": ["ReasonBelowMinimum"] },
+    "reasonAboveMaximum":      { "kind": "template", "default": "", "page": "messages", "placeholders": ["user", "amount", "max", "pointsName"], "aliases": ["ReasonAboveMaximum"] },
+    "reasonNoInput":           { "kind": "template", "default": "", "page": "messages", "placeholders": ["user"], "aliases": ["ReasonNoInput"] },
+    "messageMaxGamesPerHour":  { "kind": "template", "default": "", "page": "messages", "placeholders": ["user", "max"], "aliases": ["MsgMaxGamesPerHour"] },
+
+    "leaderboardSize":               { "kind": "int",  "default": 5,     "page": "leaderboard", "min": 1, "max": 25, "aliases": ["LeaderboardSize", "ScoreboardTopN"] },
+    "leaderboardShowMedals":         { "kind": "bool", "default": true,  "page": "leaderboard", "aliases": ["LeaderboardShowMedals"] },
+    "leaderboardExcludeBroadcaster": { "kind": "bool", "default": false, "page": "leaderboard", "aliases": ["LeaderboardExcludeBroadcaster"] },
+    "leaderboardExcludeBot":         { "kind": "bool", "default": true,  "page": "leaderboard", "aliases": ["LeaderboardExcludeBot"] },
+    "leaderboardUseBot":             { "kind": "bool", "default": true,  "page": "leaderboard", "aliases": ["LeaderboardUseBot"] },
+    "leaderboardSendAction":         { "kind": "bool", "default": false, "page": "leaderboard", "aliases": ["LeaderboardSendAction"] },
+    "leaderboardAutoReset":          { "kind": "options", "default": "never", "page": "leaderboard", "options": ["never", "weekly", "monthly"], "aliases": ["LeaderboardAutoReset"] },
+    "leaderboardResetScope":         { "kind": "options", "default": "all", "page": "leaderboard", "options": ["all", "platform"], "aliases": ["LeaderboardResetScope"] },
+    "leaderboardHeader":             { "kind": "template", "default": "", "page": "leaderboard", "placeholders": ["pointsName", "count"], "aliases": ["MsgScoreboardHeader", "ScoreboardHeader"] },
+    "leaderboardEntry":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": ["rank", "user", "score", "medal"], "aliases": ["MsgScoreboardEntry", "ScoreboardEntry"] },
+    "leaderboardEmpty":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": [], "aliases": ["MsgScoreboardEmpty", "ScoreboardEmpty", "MsgNoLeaderboard", "MsgNoStatsFound"] },
+
+    "overlayEnabled":        { "kind": "bool",     "default": false, "page": "overlay", "aliases": ["OverlayEnabled"] },
+    "overlayFolder":         { "kind": "path",     "default": "",    "page": "overlay", "aliases": ["OverlayFolder"] },
+    "overlayPort":           { "kind": "int",      "default": 0,     "page": "overlay", "min": 0, "max": 65535, "aliases": ["OverlayPort"] },
+    "overlayPosition":       { "kind": "options",  "default": "bottom-left", "page": "overlay", "options": ["top-left", "top-right", "bottom-left", "bottom-right", "center"], "aliases": ["OverlayPosition"] },
+    "overlayScale":          { "kind": "percent",  "default": 100,   "page": "overlay", "min": 25, "max": 300, "aliases": ["OverlayScale", "OverlayScalePercent"] },
+    "overlayFontScale":      { "kind": "percent",  "default": 100,   "page": "overlay", "min": 50, "max": 200, "aliases": ["OverlayFontScale", "OverlayFontScalePercent"] },
+    "overlayAnimations":     { "kind": "bool",     "default": true,  "page": "overlay", "aliases": ["OverlayAnimations", "OverlayAnimationsEnabled"] },
+    "overlayResultSeconds":  { "kind": "duration", "default": 8,     "page": "overlay", "min": 1, "aliases": ["OverlayResultSeconds", "OverlayGameOverFadeSec"] },
+    "overlayHideOnFreeGame": { "kind": "bool",     "default": false, "page": "overlay", "aliases": ["OverlayHideOnFreeGame"] },
+    "overlayTextColour":     { "kind": "colour",   "default": "",    "page": "overlay", "aliases": ["OverlayTextColor"] },
+    "overlayBackgroundColour": { "kind": "colour", "default": "",    "page": "overlay", "aliases": ["OverlayBackgroundColor"] },
+    "overlayBackgroundOpacity":{ "kind": "percent","default": 100,   "page": "overlay", "min": 0, "max": 100, "aliases": ["OverlayBackgroundOpacity"] },
+    "overlayAccentColour":   { "kind": "colour",   "default": "",    "page": "overlay", "aliases": ["OverlayAccentColor"] }
+  },
+
+  "placeholders": {
+    "$comment": "Bekannte Platzhalter in Templates; Hilfetexte in lang/<code>.json unter placeholders.<name>. Hosts dürfen weitere nennen.",
+    "known": ["user", "target", "pointsName", "currentPoints", "amount", "min", "max", "remaining", "reason", "rank", "score", "medal", "count", "addictedCut", "latestTag", "error"]
+  }
+}
