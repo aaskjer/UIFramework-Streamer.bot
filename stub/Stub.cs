@@ -14,7 +14,8 @@ using Newtonsoft.Json.Linq;
 // UIFramework.dll at run time and hands it three things: the spec (how this window is called and laid out),
 // the schema (what the game knows, asked from the game action) and a Host object the DLL talks back to.
 //
-// Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
+// The action needs PresentationFramework, PresentationCore and WindowsBase in its references for the first-run
+// dialog (an export made from a WPF settings action has them). Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
 // hosts/<host>/host-section.cs and its spec from hosts/<host>/spec.json into this template. Everything outside
 // the markers is the same in every host; tools/check-stub.ps1 checks that.
 
@@ -80,9 +81,14 @@ public class CPHInline
     }
 
     // ================================================================================================
-    // LOADER: finds UIFramework.dll. Phase 3 adds the download; until then the DLL has to be present.
+    // LOADER: finds UIFramework.dll under <Streamer.bot>\UIFramework\lib\<version>\. The first time, it asks
+    // whether to download the DLL from GitHub or to show the folder it belongs in; after that, Init checks for a
+    // newer release in the background and fetches it into a new version folder for the next start.
     // ================================================================================================
 
+    private const string FrameworkName = "UIFramework for streamer.bot";
+    private const string LatestUrl = "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/v1/latest.json";
+    private const string FrameworkReleasesUrl = "https://github.com/aaskjer/UIFramework-Streamer.bot/releases";
     private static readonly string LibRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
 
     private static string FindFramework()
@@ -101,6 +107,166 @@ public class CPHInline
     {
         text = (text ?? "").TrimStart('v', 'V');
         return Version.TryParse(text.Contains(".") ? text : text + ".0", out var v) ? v : null;
+    }
+
+    /// <summary>The DLL, or null after the user was told what to do.</summary>
+    private string EnsureFramework()
+    {
+        string dll = FindFramework();
+        if (dll != null)
+            return dll;
+
+        var answer = Ask(
+            "The settings window is built by UIFramework.dll, which is not installed in this Streamer.bot yet.\n\n" +
+            "Yes: download it now from GitHub into\n" + LibRoot + "\n\n" +
+            "No: I already have the file; show me the folder it belongs in.",
+            System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Question);
+        if (answer == System.Windows.MessageBoxResult.Yes)
+        {
+            try
+            {
+                dll = Download(null);
+                CPH.LogInfo(LogPrefix + " Downloaded " + dll);
+                return dll;
+            }
+            catch (Exception ex)
+            {
+                CPH.LogError(LogPrefix + " UIFramework.dll could not be downloaded: " + ex.Message);
+                Ask("The download failed:\n\n" + ex.Message + "\n\nGet UIFramework.dll by hand from\n" + FrameworkReleasesUrl +
+                    "\nand put it into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll, then open the settings again.",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                OpenFolder(LibRoot);
+                return null;
+            }
+        }
+        if (answer == System.Windows.MessageBoxResult.No)
+        {
+            Ask("Put UIFramework.dll into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll\n\n" +
+                "The folder opens now. Then open the settings again.\nDownloads: " + FrameworkReleasesUrl,
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            OpenFolder(LibRoot);
+        }
+        return null;
+    }
+
+    private static void OpenFolder(string folder)
+    {
+        try
+        {
+            Directory.CreateDirectory(folder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch (Exception) { }
+    }
+
+    // A message box on a thread of its own: the action runs on Streamer.bot's thread, which is no place for a dialog.
+    private static System.Windows.MessageBoxResult Ask(string text, System.Windows.MessageBoxButton buttons, System.Windows.MessageBoxImage image)
+    {
+        var result = System.Windows.MessageBoxResult.None;
+        var thread = new Thread(() => { result = System.Windows.MessageBox.Show(text, FrameworkName, buttons, image); });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        return result;
+    }
+
+    /// <summary>What lib/v1/latest.json says: version, download url, sha256.</summary>
+    private static JObject FetchLatest()
+    {
+        System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
+        using (var client = new System.Net.WebClient())
+        {
+            client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
+            string json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
+            var latest = JObject.Parse(json);
+            if (string.IsNullOrWhiteSpace((string)latest["version"]) || string.IsNullOrWhiteSpace((string)latest["url"]))
+                throw new InvalidOperationException("latest.json names no version or url; no release has been published yet.");
+            return latest;
+        }
+    }
+
+    /// <summary>Downloads the release latest.json names into lib\<version>\, checks its hash, returns the path.
+    /// With <paramref name="latest"/> null it is fetched first. One download at a time across every host.</summary>
+    private static string Download(JObject latest)
+    {
+        using (var mutex = new Mutex(false, @"Global\UIFramework.Loader"))
+        {
+            mutex.WaitOne(TimeSpan.FromSeconds(60));
+            try
+            {
+                latest = latest ?? FetchLatest();
+                string version = ((string)latest["version"]).TrimStart('v', 'V');
+                string target = Path.Combine(LibRoot, version, "UIFramework.dll");
+                if (File.Exists(target))
+                    return target;
+                Directory.CreateDirectory(Path.GetDirectoryName(target));
+                string temp = target + ".download";
+                System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
+                using (var client = new System.Net.WebClient())
+                {
+                    client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
+                    client.DownloadFile((string)latest["url"], temp);
+                }
+                string expected = ((string)latest["sha256"] ?? "").Trim().ToLowerInvariant();
+                if (expected.Length > 0)
+                {
+                    string actual;
+                    using (var sha = System.Security.Cryptography.SHA256.Create())
+                    using (var stream = File.OpenRead(temp))
+                        actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                    if (actual != expected)
+                    {
+                        File.Delete(temp);
+                        throw new InvalidOperationException("the downloaded file does not match the published hash (" + actual + " vs " + expected + ").");
+                    }
+                }
+                File.Move(temp, target);
+                return target;
+            }
+            finally
+            {
+                try { mutex.ReleaseMutex(); } catch (Exception) { }
+            }
+        }
+    }
+
+    private static bool AutoUpdateEnabled()
+    {
+        try
+        {
+            string layout = Path.Combine(Path.GetDirectoryName(SettingsPath), "uiframework.layout.json");
+            if (!File.Exists(layout)) return true;
+            var token = JObject.Parse(File.ReadAllText(layout))["autoUpdate"];
+            return token == null || token.Type != JTokenType.Boolean || (bool)token;
+        }
+        catch (Exception) { return true; }
+    }
+
+    // Streamer.bot calls this once the action is compiled: a newer release goes into its own folder for next time.
+    public void Init()
+    {
+        if (FindFramework() == null || !AutoUpdateEnabled())
+            return;
+        var check = new Thread(() =>
+        {
+            try
+            {
+                var latest = FetchLatest();
+                var newest = ParseVersion((string)latest["version"]);
+                var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(FindFramework())));
+                if (newest != null && have != null && newest > have)
+                {
+                    string path = Download(latest);
+                    CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + "; it is used from the next start of Streamer.bot.");
+                }
+            }
+            catch (Exception ex)
+            {
+                CPH.LogWarn(LogPrefix + " UIFramework update check skipped: " + ex.Message);
+            }
+        });
+        check.IsBackground = true;
+        check.Start();
     }
 
     // ================================================================================================
@@ -125,10 +291,16 @@ public class CPHInline
 
     public bool Execute()
     {
-        string dll = FindFramework();
+        string dll;
+        try { dll = EnsureFramework(); }
+        catch (Exception ex)
+        {
+            CPH.LogError(LogPrefix + " UIFramework.dll could not be set up: " + ex.Message);
+            return false;
+        }
         if (dll == null)
         {
-            CPH.LogError(LogPrefix + " UIFramework.dll was not found under " + LibRoot + ". The settings window needs it; see the README.");
+            CPH.LogWarn(LogPrefix + " UIFramework.dll is not installed yet; the settings window stays closed until it is.");
             return false;
         }
         try

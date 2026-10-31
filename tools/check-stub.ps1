@@ -43,12 +43,16 @@ $refs = @('Streamer.bot.Plugin.Interface.dll', 'Streamer.bot.Common.dll', 'Newto
     ForEach-Object { '-r:' + (Join-Path $StreamerBotPath $_) }
 $refs += '-r:' + [object].Assembly.Location
 $refs += '-r:' + [System.Linq.Enumerable].Assembly.Location
+# The stub's first-run dialog is a WPF message box; the settings action ships these references.
+$wpf = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\WPF'
+$stubRefs = @($refs) + @('PresentationFramework.dll', 'PresentationCore.dll', 'WindowsBase.dll' | ForEach-Object { '-r:' + (Join-Path $wpf $_) })
+$stubRefs += '-r:' + [Reflection.Assembly]::Load('System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089').Location
 $utf8 = New-Object Text.UTF8Encoding $false
 $failed = 0
 
 $stubSrc = Join-Path $out 'Stub.patched.cs'
 [IO.File]::WriteAllText($stubSrc, (Get-PatchedSource ([IO.File]::ReadAllText((Join-Path $out 'Stub.cs'), [Text.Encoding]::UTF8))), $utf8)
-$output = & $hostExe (Join-Path $out 'Stub.dll') '-t:library' @refs $stubSrc
+$output = & $hostExe (Join-Path $out 'Stub.dll') '-t:library' @stubRefs $stubSrc
 if ($LASTEXITCODE -eq 0) { Write-Host "  ok   stub/Stub.cs compiles as a Streamer.bot action ($HostName spec embedded)" -ForegroundColor Green }
 else { Write-Host '  FAIL stub/Stub.cs:' -ForegroundColor Red; $output | Where-Object { $_ -match 'error' } | Select-Object -First 10 | ForEach-Object { Write-Host "         $_" -ForegroundColor Red }; $failed++ }
 
