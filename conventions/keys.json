@@ -52,7 +52,7 @@
     "blockedGroups":     { "kind": "grouplist","default": "",    "page": "access",   "aliases": ["BlockedGroups"] },
     "addictedUsers":     { "kind": "namelist", "default": "",    "page": "access",   "aliases": ["AddictedUsers"] },
     "addictedGroups":    { "kind": "grouplist","default": "",    "page": "access",   "aliases": ["AddictedGroups"] },
-    "addictedPayoutCut": { "kind": "percent",  "default": 50,    "page": "access",   "min": 0, "max": 100, "aliases": ["AddictedPayoutCut", "AddictedPointsPenaltyPercent"] },
+    "addictedPayoutCut": { "kind": "percent",  "default": 50,    "page": "access",   "min": 0, "max": 100, "aliases": ["AddictedPayoutCut", "AddictedPointsPenaltyPercent"], "aliasFactors": { "AddictedPayoutCut": 100 } },
     "botAllowed":        { "kind": "bool",     "default": false, "page": "access",   "aliases": ["BotAllowed"] },
     "broadcasterAllowed":{ "kind": "bool",     "default": true,  "page": "access",   "aliases": ["BroadcasterAllowed"] },
 

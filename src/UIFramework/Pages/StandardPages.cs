@@ -193,26 +193,35 @@ namespace UIFramework
                 Child = preview
             };
 
-            var useBot = f.Toggle("Bot account", keys.UseBot,
-                "Sends the messages from your Streamer.bot bot account instead of the broadcaster account.\n(Platforms > Any platform > Accounts > Bot)");
-            var sendAction = f.Toggle("Send as /me", keys.SendAction,
-                "Twitch only: YouTube and Kick have no /me, so there the messages always go out as plain chat.");
-            CheckBox useBotCd = null, sendActionCd = null;
-            bool hasCooldownSenders = !string.IsNullOrEmpty(keys.CooldownUseBot) && defs.Any(d => d.Group == keys.CooldownGroup);
-            Fields.TwitchOnly(sendAction);
-            sendAction.Margin = new Thickness(18, 0, 0, 0);
+            CheckBox useBot = null, sendAction = null, useBotCd = null, sendActionCd = null;
             var gameSender = new StackPanel { Orientation = Orientation.Horizontal };
-            gameSender.Children.Add(useBot);
-            gameSender.Children.Add(sendAction);
+            if (keys.UseBot != null)
+            {
+                useBot = f.Toggle("Bot account", keys.UseBot,
+                    "Sends the messages from your Streamer.bot bot account instead of the broadcaster account.\n(Platforms > Any platform > Accounts > Bot)");
+                gameSender.Children.Add(useBot);
+            }
+            if (keys.SendAction != null)
+            {
+                sendAction = f.Toggle("Send as /me", keys.SendAction,
+                    "Twitch only: YouTube and Kick have no /me, so there the messages always go out as plain chat.");
+                Fields.TwitchOnly(sendAction);
+                sendAction.Margin = new Thickness(18, 0, 0, 0);
+                gameSender.Children.Add(sendAction);
+            }
+            bool hasCooldownSenders = keys.CooldownUseBot != null && defs.Any(d => d.Group == keys.CooldownGroup);
             var cooldownSender = new StackPanel { Orientation = Orientation.Horizontal };
             if (hasCooldownSenders)
             {
                 useBotCd = f.Toggle("Bot account", keys.CooldownUseBot, "Sends the cooldown replies from your bot account, separately from the other messages.");
-                sendActionCd = f.Toggle("Send as /me", keys.CooldownSendAction, "Twitch only, and separate from the other messages.");
-                Fields.TwitchOnly(sendActionCd);
-                sendActionCd.Margin = new Thickness(18, 0, 0, 0);
                 cooldownSender.Children.Add(useBotCd);
-                cooldownSender.Children.Add(sendActionCd);
+                if (keys.CooldownSendAction != null)
+                {
+                    sendActionCd = f.Toggle("Send as /me", keys.CooldownSendAction, "Twitch only, and separate from the other messages.");
+                    Fields.TwitchOnly(sendActionCd);
+                    sendActionCd.Margin = new Thickness(18, 0, 0, 0);
+                    cooldownSender.Children.Add(sendActionCd);
+                }
             }
             var scope = new TextBlock { FontSize = 12, Foreground = Theme.MutedFg, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
             var senders = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
@@ -233,8 +242,10 @@ namespace UIFramework
                 var picked = new Dictionary<string, string>(StringComparer.Ordinal);
                 foreach (var token in current.Tokens)
                     picked[token] = samples.TryGetValue(token, out var value) ? value : "";
-                bool bot = f.LiveSwitch(cooldown ? keys.CooldownUseBot : keys.UseBot);
-                bool action = f.LiveSwitch(cooldown ? keys.CooldownSendAction : keys.SendAction);
+                string botKey = cooldown ? keys.CooldownUseBot : keys.UseBot;
+                string actionKey = cooldown ? keys.CooldownSendAction : keys.SendAction;
+                bool bot = botKey == null || f.LiveSwitch(botKey);
+                bool action = actionKey != null && f.LiveSwitch(actionKey);
                 RenderChat(preview, FillTemplate(text, picked), bot, action);
             }
 

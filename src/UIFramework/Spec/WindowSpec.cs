@@ -36,6 +36,26 @@ namespace UIFramework
 
         public readonly List<PageSpec> Pages = new List<PageSpec>();
 
+        /// <summary>Pages as the spec JSON names them; <see cref="Resolve"/> turns them into <see cref="Pages"/>.</summary>
+        public readonly List<SpecPage> SpecPages = new List<SpecPage>();
+
+        /// <summary>What the spec changes about single settings, by key.</summary>
+        public readonly Dictionary<string, FieldOverride> Overrides = new Dictionary<string, FieldOverride>(StringComparer.Ordinal);
+
+        /// <summary>Fixed sample values for the chat preview, by placeholder. Live ones (points name, amounts)
+        /// are added by <see cref="Resolve"/>.</summary>
+        public readonly Dictionary<string, string> Samples = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>Language code for the conventions' labels; null takes the layout file's, then "en".</summary>
+        public string Language;
+
+        /// <summary>Every setting after <see cref="Resolve"/>, completed and overridden.</summary>
+        public readonly List<Setting> ResolvedSettings = new List<Setting>();
+
+        /// <summary>Old key to canonical key, for the store's migration on load.</summary>
+        public readonly Dictionary<string, string> Aliases = new Dictionary<string, string>(StringComparer.Ordinal);
+        public readonly Dictionary<string, double> AliasFactors = new Dictionary<string, double>(StringComparer.Ordinal);
+
         /// <summary>The message templates for the Messages page, in picker order. Empty: no Messages page.</summary>
         public readonly List<MessageDef> Messages = new List<MessageDef>();
 

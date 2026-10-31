@@ -64,6 +64,12 @@ namespace UIFramework
             set { if (string.IsNullOrWhiteSpace(value)) ThemeObject.Remove("accent"); else ThemeObject["accent"] = value.Trim(); }
         }
 
+        public string Language
+        {
+            get => Root["language"]?.Type == JTokenType.String ? (string)Root["language"] : null;
+            set { if (string.IsNullOrWhiteSpace(value)) Root.Remove("language"); else Root["language"] = value.Trim(); }
+        }
+
         public bool AutoUpdate
         {
             get => !(Root["autoUpdate"]?.Type == JTokenType.Boolean) || (bool)Root["autoUpdate"];

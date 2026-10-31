@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Newtonsoft.Json;
@@ -29,10 +30,29 @@ namespace UIFramework
         public string BackupPath => Path + ".bak";
         public string BrokenPath => Path + ".broken";
 
+        /// <summary>Old key to canonical key. A file still carrying an old key has it moved on load; the next
+        /// save writes the canonical one. Nobody has to touch a file by hand.</summary>
+        public Dictionary<string, string> Aliases { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>Old key to the factor its value is multiplied with on the move: a fraction becomes a percent
+        /// with 100.</summary>
+        public Dictionary<string, double> AliasFactors { get; } = new Dictionary<string, double>(StringComparer.Ordinal);
+
         public SettingsStore(string path, JObject defaults)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Defaults = defaults ?? new JObject();
+        }
+
+        public SettingsStore WithAliases(IDictionary<string, string> aliases, IDictionary<string, double> factors = null)
+        {
+            if (aliases != null)
+                foreach (var pair in aliases)
+                    Aliases[pair.Key] = pair.Value;
+            if (factors != null)
+                foreach (var pair in factors)
+                    AliasFactors[pair.Key] = pair.Value;
+            return this;
         }
 
         /// <summary>Throws IOException/UnauthorizedAccessException when the file cannot be opened, so the caller
@@ -98,9 +118,34 @@ namespace UIFramework
         public JObject Merged(JObject fromFile)
         {
             var merged = (JObject)Defaults.DeepClone();
+            var moved = new HashSet<string>(StringComparer.Ordinal);
             foreach (var property in fromFile.Properties())
+            {
+                if (Aliases.TryGetValue(property.Name, out string canonical))
+                {
+                    // The canonical key in the file wins over an old one left behind.
+                    if (fromFile[canonical] != null || moved.Contains(canonical))
+                        continue;
+                    merged[canonical] = Convert(property.Value, AliasFactors.TryGetValue(property.Name, out double factor) ? factor : 1.0, Defaults[canonical]);
+                    moved.Add(canonical);
+                    continue;
+                }
                 merged[property.Name] = property.Value?.DeepClone();
+            }
             return merged;
+        }
+
+        private static JToken Convert(JToken value, double factor, JToken shape)
+        {
+            if (value == null) return JValue.CreateNull();
+            if (factor != 1.0 && (value.Type == JTokenType.Integer || value.Type == JTokenType.Float))
+            {
+                double scaled = System.Convert.ToDouble(((JValue)value).Value, System.Globalization.CultureInfo.InvariantCulture) * factor;
+                if (shape?.Type == JTokenType.Integer && Math.Abs(scaled - Math.Round(scaled)) < 1e-9)
+                    return (long)Math.Round(scaled);
+                return scaled;
+            }
+            return value.DeepClone();
         }
 
         public void Save(JObject settings)

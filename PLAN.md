@@ -215,6 +215,12 @@ freien Typen gereicht; der Stub implementiert sie als innere Klasse.
 
 ## 8. Phasen
 
+Stand 31.10.2026: Phase 0 und 1 fertig, Phase 2 auf Framework-Seite fertig (Schema, Konventionen eingebettet,
+Resolve, Spec-JSON, Reflection-Host, Alias-Migration, Blackjack-Schema und -Spec aus der alten GUI erzeugt und
+in der Preview geprüft, Stub und Host-Block kompilieren als Streamer.bot-Aktion). Offen aus Phase 2: der
+Blackjack-Host selbst (Settings-Tabelle ins Spiel, `uiframework.describe`, Stub als Settings-Aktion, alte GUI
+weg, check-settings.ps1 weg). Das ist der nächste Schritt und findet im Blackjack-Projekt statt.
+
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
 - Schema-Kinds festlegen: bool, int, double, string, text (mehrzeilig), options, namelist, path, colour, emote,
