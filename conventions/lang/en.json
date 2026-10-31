@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "pages": {
+    "general": "General", "game": "Game", "points": "Points & Bets", "cooldowns": "Cooldowns", "access": "Access",
+    "messages": "Messages", "leaderboard": "Leaderboard", "overlay": "Overlay", "log": "Log", "help": "Help", "about": "About"
+  },
+  "framework": {
+    "darkMode": { "label": "Dark mode" },
+    "rainbow":  { "label": "Rainbow accent", "help": "Lets the accent colour cycle through the rainbow." },
+    "language": { "label": "Language" },
+    "accent":   { "label": "Accent colour", "help": "Empty uses the default blue." }
+  },
+  "keys": {
+    "useBot":            { "label": "Send as bot account", "help": "Off: the broadcaster account sends the messages." },
+    "sendAction":        { "label": "Send as /me action" },
+    "numberSeparator":   { "label": "Thousands separator", "help": "Used when points are written into chat." },
+    "isChannelPointsTrigger": { "label": "Triggered by channel points", "help": "On: the bet comes from the redemption, not from the chat input." },
+
+    "pointsVariable":    { "label": "Points variable", "help": "The Streamer.bot user variable that holds the points." },
+    "pointsName":        { "label": "Points name", "help": "How the points are called in chat messages." },
+    "defaultBet":        { "label": "Default bet", "help": "Used when a player gives no amount." },
+    "minBet":            { "label": "Minimum bet" },
+    "maxBet":            { "label": "Maximum bet", "help": "0 means no limit." },
+    "fixedBetAmount":    { "label": "Fixed bet amount" },
+    "cpBetMode":         { "label": "Channel point bet", "help": "input: the viewer types the amount. fixed: the fixed bet amount is used." },
+    "freeGame":          { "label": "Free game", "help": "No points are taken or paid." },
+
+    "globalCooldown":    { "label": "Global cooldown", "help": "Time before anyone can play again." },
+    "userCooldown":      { "label": "Per-user cooldown" },
+    "maxGamesPerHour":   { "label": "Games per hour", "help": "Per user. 0 means no limit." },
+    "turnTimeout":       { "label": "Turn timeout", "help": "How long a player may think before the game acts for them." },
+    "cooldownUseBot":    { "label": "Cooldown messages as bot" },
+    "cooldownSendAction":{ "label": "Cooldown messages as /me" },
+    "globalCooldownMessage": { "label": "Global cooldown message" },
+    "userCooldownMessage":   { "label": "User cooldown message" },
+
+    "blockedUsers":      { "label": "Blocked users", "help": "These viewers cannot play." },
+    "blockedGroups":     { "label": "Blocked groups", "help": "Streamer.bot groups whose members cannot play." },
+    "addictedUsers":     { "label": "Addicted users", "help": "These viewers win less, see the payout cut." },
+    "addictedGroups":    { "label": "Addicted groups" },
+    "addictedPayoutCut": { "label": "Addicted payout cut", "help": "How much of a win addicted viewers lose." },
+    "botAllowed":        { "label": "Bot account may play" },
+    "broadcasterAllowed":{ "label": "Broadcaster may play" },
+
+    "reasonNegativeAmount":    { "label": "Negative amount" },
+    "reasonInsufficientFunds": { "label": "Not enough points" },
+    "reasonBelowMinimum":      { "label": "Below minimum bet" },
+    "reasonAboveMaximum":      { "label": "Above maximum bet" },
+    "reasonNoInput":           { "label": "No amount given" },
+    "messageMaxGamesPerHour":  { "label": "Games per hour reached" },
+
+    "leaderboardSize":               { "label": "Entries shown" },
+    "leaderboardShowMedals":         { "label": "Medals for the top three" },
+    "leaderboardExcludeBroadcaster": { "label": "Hide broadcaster" },
+    "leaderboardExcludeBot":         { "label": "Hide bot account" },
+    "leaderboardUseBot":             { "label": "Send as bot account" },
+    "leaderboardSendAction":         { "label": "Send as /me action" },
+    "leaderboardAutoReset":          { "label": "Automatic reset" },
+    "leaderboardResetScope":         { "label": "Reset scope", "help": "all: one board. platform: one board per platform." },
+    "leaderboardHeader":             { "label": "Header line" },
+    "leaderboardEntry":              { "label": "Entry line" },
+    "leaderboardEmpty":              { "label": "Empty board" },
+
+    "overlayEnabled":        { "label": "Overlay enabled" },
+    "overlayFolder":         { "label": "Overlay folder", "help": "Where the overlay files are written. Empty uses the default next to Streamer.bot." },
+    "overlayPort":           { "label": "Overlay port", "help": "0 uses the Streamer.bot WebSocket port." },
+    "overlayPosition":       { "label": "Position" },
+    "overlayScale":          { "label": "Scale" },
+    "overlayFontScale":      { "label": "Font scale" },
+    "overlayAnimations":     { "label": "Animations" },
+    "overlayResultSeconds":  { "label": "Result shown for" },
+    "overlayHideOnFreeGame": { "label": "Hide in free games" },
+    "overlayTextColour":     { "label": "Text colour" },
+    "overlayBackgroundColour": { "label": "Background colour" },
+    "overlayBackgroundOpacity":{ "label": "Background opacity" },
+    "overlayAccentColour":   { "label": "Accent colour" }
+  },
+  "placeholders": {
+    "user": "The viewer's display name", "target": "The other player", "pointsName": "Name of the points",
+    "currentPoints": "The viewer's points right now", "amount": "The bet", "min": "Minimum bet", "max": "Maximum",
+    "remaining": "Seconds left on the cooldown", "reason": "Why it did not work", "rank": "Place on the board",
+    "score": "The entry's score", "medal": "Medal emoji for the top three, else empty", "count": "Number of entries",
+    "addictedCut": "Payout cut in percent", "latestTag": "Newest release version", "error": "Error text"
+  }
+}

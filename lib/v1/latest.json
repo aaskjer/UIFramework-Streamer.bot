@@ -1,0 +1,7 @@
+{
+  "version": "0.0.0",
+  "url": "",
+  "sha256": "",
+  "minHostStub": "0.0.0",
+  "note": "Written by .github/workflows/release.yml on a tag vX.Y.Z. Empty until the first release."
+}
