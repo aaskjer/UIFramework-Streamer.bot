@@ -46,6 +46,7 @@ Nach jeder Änderung baut sich das Fenster neu auf und zeigt dieselbe Seite wied
 | `language`                    | Sprachcode für Labels und Hilfetexte der Konventionen; fehlt: `en`         |
 | `autoUpdate`                  | `false`: der Loader fragt nicht mehr nach neuen Versionen                   |
 | `skipVersion`                 | vom Update-Dialog mit *Abbrechen* gesetzt: diese Version wird nicht mehr angeboten |
+| `frameworkVersion`, `frameworkPending`, `frameworkAvailable` | Notizen von Loader und Fenster für die Pille im Kopf: zuletzt gelaufene Version, heruntergeladene Version, die auf den Neustart wartet, neueste gesehene Version |
 | `pages.<id>.title`, `.icon`   | Anzeige der Seite                                                          |
 | `pages.<id>.order`            | Reihenfolge in der oberen Gruppe; Seiten mit `order` kommen zuerst         |
 | `pages.<id>.hidden`           | Seite weg (außer `about`)                                                  |

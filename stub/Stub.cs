@@ -269,12 +269,17 @@ public class CPHInline
     // "Cancel" in the update dialog: that version is not offered again.
     private static string SkippedVersion() => (string)ReadLayout()["skipVersion"];
 
-    private static void SkipVersion(string version)
+    private static void SkipVersion(string version) => WriteLayout(layout => layout["skipVersion"] = version);
+
+    // Notes for the window's header pill: the newest release seen, and a download that waits for the next start.
+    private static void NoteLayout(string key, string value) => WriteLayout(layout => { if (value == null) layout.Remove(key); else layout[key] = value; });
+
+    private static void WriteLayout(Action<JObject> change)
     {
         try
         {
             var layout = ReadLayout();
-            layout["skipVersion"] = version;
+            change(layout);
             Directory.CreateDirectory(Path.GetDirectoryName(LayoutPath));
             File.WriteAllText(LayoutPath, layout.ToString(Newtonsoft.Json.Formatting.Indented));
         }
@@ -302,8 +307,10 @@ public class CPHInline
         if (newest == null || have == null || newest <= have)
         {
             CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
+            NoteLayout("frameworkAvailable", null);
             return installed;
         }
+        NoteLayout("frameworkAvailable", newest.ToString());
         if (string.Equals(SkippedVersion(), newest.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in uiframework.layout.json).");
@@ -334,6 +341,7 @@ public class CPHInline
         {
             string path = Download(latest);
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + (loaded ? "; it is used from the next start of Streamer.bot." : "."));
+            if (loaded) NoteLayout("frameworkPending", newest.ToString());
             return loaded ? installed : path;
         }
         catch (Exception ex)

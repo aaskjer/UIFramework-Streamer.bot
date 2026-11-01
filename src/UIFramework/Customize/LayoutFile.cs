@@ -78,6 +78,24 @@ namespace UIFramework
             set => Root["autoUpdate"] = value;
         }
 
+        // The framework's own bookkeeping, written by the loader in the stub and by the window: the version the
+        // window last ran on (a change shows the "installed" pill once), a version downloaded but not loaded yet
+        // (waits for the next start of Streamer.bot), and the newest release the loader saw.
+        public string FrameworkVersion { get => Text("frameworkVersion"); set => SetText("frameworkVersion", value); }
+        public string FrameworkPending { get => Text("frameworkPending"); set => SetText("frameworkPending", value); }
+        public string FrameworkAvailable { get => Text("frameworkAvailable"); set => SetText("frameworkAvailable", value); }
+
+        private string Text(string key) => Root[key]?.Type == JTokenType.String ? (string)Root[key] : null;
+        private void SetText(string key, string value) { if (string.IsNullOrWhiteSpace(value)) Root.Remove(key); else Root[key] = value.Trim(); }
+
+        /// <summary>"0.3.0" or "v0.3.0" as a Version; null when it is neither.</summary>
+        public static Version ParseVersion(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            Version v;
+            return Version.TryParse(text.Trim().TrimStart('v', 'V'), out v) ? v : null;
+        }
+
         /// <summary>Takes the theme from a host's settings file when the layout has none yet (the first open after
         /// the host moved to the framework). Returns true when the host settings changed and should be saved.</summary>
         public bool AdoptFromHost(JObject hostSettings, params string[] darkKeys)
