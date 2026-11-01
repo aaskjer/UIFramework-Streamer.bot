@@ -54,7 +54,8 @@ schreibt `hosts/<host>/spec.json` hinein). Was sie nicht nennt, füllen Schema u
 2. Jedes Setting, das keine Seite beansprucht hat, geht auf seine Seite (Spec-Override, dann Schema, dann
    Konvention, dann `game`). Fehlt die Seite in `pages`, wird sie angelegt: Titel aus den Sprachdateien,
    Icon aus den Konventionen, einsortiert nach Konventions-Reihenfolge vor `log`, `help`, `about`.
-3. Die Nachrichten-Seite erscheint, sobald es Vorlagen gibt; `about` immer.
+3. Die Nachrichten-Seite erscheint, sobald es Vorlagen gibt; `about` immer. `help` und `about` bilden die
+   Gruppe am unteren Ende der Leiste (`bottom`), getrennt von den Einstellungsseiten.
 4. Innerhalb einer Seite: Deklarationsreihenfolge des Schemas (`order` im Override verschiebt), eine
    Überschrift, wo `section` wechselt; Zahlen zu dritt in einer Zeile, Schalter zu zweit, der Rest einzeln.
 5. Settings, die eine Spec auf eine Standardseite legt (etwa einen Schalter auf `log`), stehen oben über dem
