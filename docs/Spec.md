@@ -61,5 +61,5 @@ schreibt `hosts/<host>/spec.json` hinein). Was sie nicht nennt, füllen Schema u
 5. Settings, die eine Spec auf eine Standardseite legt (etwa einen Schalter auf `log`), stehen oben über dem
    Inhalt der Seite.
 
-Die vierte Schicht, die Layout-Datei des Nutzers, kommt in Phase 4 und überschreibt Titel, Icons, Seiten
-und Sichtbarkeit zuletzt.
+Die vierte Schicht, die Layout-Datei des Nutzers (`docs/Customize.md`), überschreibt Titel, Icons, Reihenfolge,
+Zuordnung und Sichtbarkeit zuletzt.
