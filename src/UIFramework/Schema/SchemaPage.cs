@@ -186,7 +186,7 @@ namespace UIFramework
                 {
                     var editor = new ListEditor(s.Key, label, s.Columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help);
                     editor.Margin = new Thickness(0, 8, 0, 0);
-                    element = string.IsNullOrEmpty(help) ? (FrameworkElement)editor : Stack(editor, Ui.Note(help));
+                    element = string.IsNullOrEmpty(help) ? (FrameworkElement)editor : Stack(Ui.Note(help), editor);
                     break;
                 }
                 default:

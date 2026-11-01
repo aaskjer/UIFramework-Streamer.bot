@@ -1,0 +1,174 @@
+{
+  "title": "RhymeTime",
+  "version": "v2.0.0",
+  "releases": "aaskjer/RhymeTime",
+  "logPrefix": "[RhymeTime/Settings]",
+  "pages": [
+    {
+      "id": "game",
+      "title": "Game",
+      "icon": "🎮"
+    },
+    {
+      "id": "battle",
+      "title": "Battle",
+      "icon": "⚔️"
+    },
+    {
+      "id": "words",
+      "title": "Word banks",
+      "icon": "📚"
+    },
+    {
+      "id": "access",
+      "title": "Access",
+      "icon": "👥"
+    },
+    {
+      "id": "overlay",
+      "title": "Overlay",
+      "icon": "📺"
+    },
+    {
+      "id": "messages",
+      "title": "Messages",
+      "icon": "💬"
+    },
+    {
+      "id": "help",
+      "title": "How to play",
+      "icon": "📖"
+    },
+    {
+      "id": "about",
+      "title": "About",
+      "icon": "ℹ️"
+    }
+  ],
+  "senders": {
+    "useBot": "useBot",
+    "sendAction": "sendAction",
+    "cooldownUseBot": "cooldownUseBot",
+    "cooldownSendAction": "cooldownSendAction",
+    "numberSeparator": "numberSeparator",
+    "cooldownGroup": "Cooldown"
+  },
+  "samples": {
+    "word": "STREAM",
+    "guess": "DREAM",
+    "timeLimit": "30",
+    "winAmount": "3,000",
+    "attempts": "1",
+    "maxAttempts": "3",
+    "examples": "DREAM, TEAM, THEME, CREAM, BEAM",
+    "difficulty": "medium",
+    "reward": "500",
+    "winner": "bob",
+    "seconds": "12",
+    "reason": "minimum bet is 10 Points."
+  },
+  "help": [
+    {
+      "heading": "A single-player round",
+      "lines": [
+        {
+          "note": "A chatter runs !Rhyme and gets one word. They answer in ordinary chat; only the last word of their message is read, so \"hmm maybe DREAM\" works. A rhyme you listed for that word always counts; anything else counts when it ends the same way as the listed rhymes and, with the dictionary check on, is a real word. Getting it right pays the stake times the bank's multiplier; running out of time or attempts costs the stake."
+        },
+        {
+          "command": "!Rhyme",
+          "what": "starts a round at the default bet."
+        },
+        {
+          "command": "!Rhyme 250",
+          "what": "starts one at 250, within the minimum and maximum."
+        },
+        {
+          "command": "!Rhyme all",
+          "what": "also half, third, quarter and random."
+        }
+      ]
+    },
+    {
+      "heading": "Lines to finish",
+      "lines": [
+        {
+          "note": "A target with spaces in it is a line to finish rather than a word to rhyme: \"ROSES ARE RED VIOLETS ARE BLUE ...\" expects the whole answer. There the chatter's entire message is read, punctuation ignored, and it has to match one of the answers you listed."
+        }
+      ]
+    },
+    {
+      "heading": "A battle",
+      "lines": [
+        {
+          "note": "A moderator runs !RhymeBattle and the whole chat races for one word. The first valid rhyme takes the prize and the battle closes; nobody else pays anything. Each platform can have one battle going at a time."
+        },
+        {
+          "command": "!RhymeBattle",
+          "what": "opens a battle. Moderators only, set on the command itself."
+        },
+        {
+          "command": "!RhymeBattle 500",
+          "what": "opens one and stakes 500 of your own; the winner takes the stake."
+        },
+        {
+          "note": "Permissions and cooldowns belong to the commands themselves, in Streamer.bot's Commands tab. The two cooldowns on the Game page are written onto !Rhyme when you save."
+        }
+      ]
+    },
+    {
+      "heading": "Where things are kept",
+      "lines": [
+        {
+          "command": "RT-settings.json",
+          "what": "everything on these pages."
+        },
+        {
+          "command": "RT-wordbank.json",
+          "what": "the three word banks."
+        },
+        {
+          "command": "uiframework.layout.json",
+          "what": "your layout of this window: theme, renamed or hidden pages and fields."
+        },
+        {
+          "command": "Overlay\\",
+          "what": "the OBS overlay page, written when you copy its URL or open the demo."
+        },
+        {
+          "note": "All of it sits in Streamer.bot's folder under Chat Games\\RhymeTime. A damaged file falls back to the .bak beside it and the broken one is kept as .broken."
+        }
+      ]
+    }
+  ],
+  "about": {
+    "credits": "RhymeTime by aaskjer",
+    "sections": [
+      {
+        "heading": "Good to know",
+        "lines": [
+          {
+            "note": "Rhyme lookups use wordotron.com. Turn the dictionary check off on the Game page if you would rather the game never called out."
+          }
+        ]
+      }
+    ],
+    "links": [
+      {
+        "text": "Repository",
+        "url": "https://github.com/aaskjer/RhymeTime"
+      },
+      {
+        "text": "Releases",
+        "url": "https://github.com/aaskjer/RhymeTime/releases"
+      },
+      {
+        "text": "StreamUP - Currency Core",
+        "url": "https://streamup.tips/product/currency-core"
+      },
+      {
+        "text": "tawmae - LOYALTY POINTS",
+        "url": "https://tawmae.xyz/loyalty-points"
+      }
+    ]
+  }
+}

@@ -48,6 +48,16 @@ namespace UIFramework
             }
         }
 
+        /// <summary>The settings without the sidecar keys, for a write of the settings file that must not touch
+        /// the sidecar files (the theme moving on open, a reset of the settings alone).</summary>
+        public static JObject Strip(JObject settings, IEnumerable<Setting> schema)
+        {
+            var main = (JObject)settings.DeepClone();
+            foreach (var setting in Of(schema))
+                main.Remove(setting.Key);
+            return main;
+        }
+
         /// <summary>Writes every sidecar value into its file (keeping whatever else the file holds) and returns the
         /// settings without those keys, for the settings file.</summary>
         public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath)

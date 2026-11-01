@@ -223,7 +223,7 @@ namespace UIFramework
             string pointsName = keys.Contains("pointsName") ? f.LiveText("pointsName", "Points").Trim() : "Points";
             var samples = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                { "user", "alice" }, { "target", "bob" }, { "pointsName", pointsName }, { "points", pointsName },
+                { "user", "alice" }, { "target", "bob" }, { "pointsName", pointsName }, { "points", pointsName }, { "currency", pointsName },
                 { "amount", Amount(1500) }, { "currentPoints", Amount(11500) },
                 { "min", Amount(keys.Contains("minBet") ? f.LiveNumber("minBet", 50) : 50) },
                 { "max", Amount(keys.Contains("maxBet") ? Math.Max(1, f.LiveNumber("maxBet", 10000)) : 10000) },
