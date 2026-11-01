@@ -366,6 +366,9 @@ namespace UIFramework
 
         private readonly ColourPicker _picker = new ColourPicker();
 
+        /// <summary>A colour picker of these fields is open and still writing into its box.</summary>
+        public bool PickerOpen => _picker.IsOpen;
+
         public FrameworkElement ColourField(string label, string key, string tooltip)
         {
             var box = SettingBox(label, key, tooltip + "\nType a hex code, or click the swatch to pick one.");

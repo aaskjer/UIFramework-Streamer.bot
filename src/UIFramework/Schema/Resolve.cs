@@ -169,7 +169,8 @@ namespace UIFramework
                 else
                 {
                     var captured = fields;
-                    build = ctx => SchemaPage.Build(ctx, captured);
+                    string pageId = page.Id;
+                    build = ctx => SchemaPage.Build(ctx, captured, pageId);
                 }
                 // Fields the spec put on a standard page sit above its own content.
                 if (build != null && fields.Count > 0 && (page.Id == "messages" || page.Id == "log" || page.Id == "help" || page.Id == "about"))

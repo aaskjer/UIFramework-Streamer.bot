@@ -18,14 +18,18 @@ namespace UIFramework
     {
         private static readonly HashSet<string> NumberKinds = new HashSet<string> { "int", "long", "double", "percent", "duration" };
 
-        public static UIElement Build(PageContext ctx, List<Setting> settings)
+        public static UIElement Build(PageContext ctx, List<Setting> settings, string pageId = null)
         {
             var page = Ui.PageStack();
+            var scroll = Ui.Scroll(page);
             if (ctx.Customizing)
+            {
                 FillCustomizing(ctx, page, settings);
+                Customize.AcceptDrops(ctx, scroll, page, pageId ?? (settings.Count > 0 ? settings[0].Page : null));
+            }
             else
                 Fill(ctx, page, settings, true);
-            return Ui.Scroll(page);
+            return scroll;
         }
 
         /// <summary>The customise mode: one field per line, each in a draggable frame with its menu; hidden ones

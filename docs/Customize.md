@@ -6,16 +6,18 @@ Script anzufassen; jede Änderung landet sofort in `uiframework.layout.json` neb
 
 ## Im Modus
 
-- **Felder** haben einen Griff `⋮⋮`. Ziehen auf ein anderes Feld sortiert innerhalb der Seite; Ziehen auf eine
-  Seite in der Leiste verschiebt dorthin. Rechtsklick: *Rename*, *Hide* / *Show*, *Move to page*, *Reset this field*.
-  Werte sind im Modus nicht editierbar.
+- **Felder** haben einen Griff `⋮⋮`. Ziehen und irgendwo auf der Seite loslassen sortiert: über der oberen Hälfte
+  eines Felds landet es davor, über der unteren dahinter, unter dem letzten Feld ans Ende; nahe am Rand scrollt die
+  Seite mit. Ziehen auf eine Seite in der Leiste verschiebt dorthin. Rechtsklick: *Rename*, *Hide* / *Show*,
+  *Move to page*, *Reset this field*. Werte sind im Modus nicht editierbar.
 - **Seiten** in der Leiste: Ziehen sortiert die obere Gruppe; Rechtsklick: *Rename*, *Change icon* (Emoji oder
   Konventionsname wie `gear`, `dice`, `coins`), *Hide* / *Show*, *Reset this page*. `About` lässt sich nicht
   ausblenden; `Help` und `About` bleiben unten.
 - **Ausgeblendetes** wird im Modus halbtransparent mit dem Vermerk `hidden` gezeigt, damit es sich wieder
   einblenden lässt. Ein ausgeblendetes Feld behält seinen Wert in der Settings-Datei.
-- **Leiste oben:** Akzentfarbe (gilt für jedes UIFramework-Fenster dieses Streamer.bot), Sprache (`en`, `de`),
-  *Reset layout* (alles außer Theme), *Open file*, *Done*.
+- **Leiste oben:** Akzentfarbe (blaue Knöpfe, eingeschaltete Schalter, aktive Seite in der Leiste, Links, die
+  Leiste selbst; gilt für jedes UIFramework-Fenster dieses Streamer.bot; übernommen, sobald der Picker zu ist oder
+  das Tippen pausiert), Sprache (`en`, `de`), *Reset layout* (alles außer Theme), *Open file*, *Done*.
 
 - **Messages:** die Vorlagen lassen sich auf ihrer Seite umsortieren, umbenennen und ausblenden; auf eine andere
   Seite ziehen lassen sie sich nicht.
