@@ -6,9 +6,9 @@ Script anzufassen; jede Änderung landet sofort in `uiframework.layout.json` neb
 
 ## Im Modus
 
-- **Felder** haben einen Griff `⋮⋮`. Ziehen und irgendwo auf der Seite loslassen sortiert: über der oberen Hälfte
-  eines Felds landet es davor, über der unteren dahinter, unter dem letzten Feld ans Ende; nahe am Rand scrollt die
-  Seite mit. Ziehen auf eine Seite in der Leiste verschiebt dorthin. Rechtsklick: *Rename*, *Hide* / *Show*,
+- **Felder** haben einen Griff `⋮⋮`. Ziehen und irgendwo auf der Seite loslassen sortiert: über einem anderen
+  Feld nimmt es dessen Platz ein (von oben kommend dahinter, von unten kommend davor), über einer Überschrift
+  oder Lücke landet es dazwischen, unter dem letzten Feld ans Ende; am Rand scrollt die Seite langsam mit. Ziehen auf eine Seite in der Leiste verschiebt dorthin. Rechtsklick: *Rename*, *Hide* / *Show*,
   *Move to page*, *Reset this field*. Werte sind im Modus nicht editierbar.
 - **Seiten** in der Leiste: Ziehen sortiert die obere Gruppe; Rechtsklick: *Rename*, *Change icon* (Emoji oder
   Konventionsname wie `gear`, `dice`, `coins`), *Hide* / *Show*, *Reset this page*. `About` lässt sich nicht

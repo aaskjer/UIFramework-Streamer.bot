@@ -3,6 +3,14 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.3.4] - 2026-11-02
+
+- Customise mode: a field let go over another field takes that field's place, after it when it came from above
+  and before it when it came from below, wherever on the field the mouse is. Before, only the lower half of the
+  field below counted, and that half often sat in the auto-scroll zone at the bottom edge, where the page slid
+  away under the mouse; a section of two fields could hardly be turned around. The auto-scroll zone is smaller
+  and slower.
+
 ## [0.3.3] - 2026-11-01
 
 - Customise mode: a dragged field can be let go anywhere on the page. Over the upper half of a field it lands
