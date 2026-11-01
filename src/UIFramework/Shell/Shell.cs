@@ -344,6 +344,53 @@ namespace UIFramework
                 updatePill.MouseLeftButtonUp += (s, e) => Web.OpenUrl(_spec.ReleasesUrl, _log, _spec.LogPrefix);
                 pills.Children.Insert(0, updatePill);
             }
+            // The framework's own state, from the loader's notes in the layout file: updated since the last open,
+            // a download waiting for the next start, or a release the user has not taken yet.
+            {
+                var running = LayoutFile.ParseVersion(Entry.FrameworkVersion);
+                var last = LayoutFile.ParseVersion(layout.FrameworkVersion);
+                var pending = LayoutFile.ParseVersion(layout.FrameworkPending);
+                var available = LayoutFile.ParseVersion(layout.FrameworkAvailable);
+                string text = null, tip = null;
+                var style = PillStyle.Muted;
+                if (running != null && last != null && running != last)
+                {
+                    text = "UIFramework " + running + (running > last ? " installed" : " in use");
+                    tip = running > last ? "The settings window was updated from " + last + " to " + running + "." : "An older UIFramework is loaded than last time (" + last + ").";
+                    style = PillStyle.Success;
+                }
+                else if (running != null && pending != null && pending > running)
+                {
+                    text = "UIFramework " + pending + " ready";
+                    tip = "Downloaded; it is used from the next start of Streamer.bot. Running: " + running + ".";
+                    style = PillStyle.Warning;
+                }
+                else if (running != null && available != null && available > running)
+                {
+                    text = "UIFramework " + available + " available";
+                    tip = "A newer settings window is published; the next open of the window offers it again. Running: " + running + ". Click for the releases.";
+                    style = PillStyle.Accent;
+                }
+                if (running != null && (last == null || running != last || (pending != null && pending <= running) || (available != null && available <= running)))
+                {
+                    layout.FrameworkVersion = Entry.FrameworkVersion;
+                    if (pending != null && pending <= running) layout.FrameworkPending = null;
+                    if (available != null && available <= running) layout.FrameworkAvailable = null;
+                    try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Layout file not written: " + ex.Message); }
+                }
+                if (text != null)
+                {
+                    var colours = Ui.PillColours(style);
+                    var frameworkPill = Ui.Pill(text, colours.Background, colours.Foreground);
+                    frameworkPill.ToolTip = tip;
+                    if (style == PillStyle.Accent)
+                    {
+                        frameworkPill.Cursor = Cursors.Hand;
+                        frameworkPill.MouseLeftButtonUp += (s, e) => Web.OpenUrl("https://github.com/aaskjer/UIFramework-Streamer.bot/releases", _log, _spec.LogPrefix);
+                    }
+                    pills.Children.Add(frameworkPill);
+                }
+            }
             if (update.Status == TaskStatus.RanToCompletion)
                 ShowUpdate(update.Result);
             else
