@@ -17,6 +17,11 @@ Fenster gleich mit der neuen, sonst ab dem nächsten Start. **Nein** fragt beim 
 **Abbrechen** schreibt `skipVersion` in die Layout-Datei; diese Version wird nicht mehr angeboten, die nächste
 schon. Die laufende DLL wird nie überschrieben (sie ist gesperrt und .NET Framework entlädt nicht).
 
+**Woher `latest.json` kommt:** zuerst über die GitHub-API (`contents/lib/v1/latest.json`, ungecacht, 60 Abrufe je
+Stunde und IP); schlägt das fehl, über raw.githubusercontent.com, dessen CDN die Datei bis zu fünf Minuten alt
+liefert. Jede Prüfung schreibt eine Zeile ins Streamer.bot-Log: installierte Version, was `latest.json` sagt, ob
+gefragt, übersprungen oder abgeschaltet wurde.
+
 **Schutz:** HTTPS, SHA-256 aus `latest.json`, ein globaler Mutex, damit mehrere Hosts nicht gleichzeitig laden.
 Die Major-Linie steckt im Pfad (`lib/v1/`): ein inkompatibles v2 landet nie in einem v1-Host.
 

@@ -87,6 +87,9 @@ public class CPHInline
     // ================================================================================================
 
     private const string FrameworkName = "UIFramework for streamer.bot";
+    // The API answers with the file as it is on main right now; the raw CDN keeps a copy for up to five minutes and
+    // ignores a cache-busting query, so it is the fallback only (rate limit on the API, or the API unreachable).
+    private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/v1/latest.json?ref=main";
     private const string LatestUrl = "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/v1/latest.json";
     private const string FrameworkReleasesUrl = "https://github.com/aaskjer/UIFramework-Streamer.bot/releases";
     private static readonly string LibRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
@@ -186,15 +189,22 @@ public class CPHInline
     private static JObject FetchLatest()
     {
         System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
+        string json;
         using (var client = new QuickWebClient())
         {
             client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
-            string json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
-            var latest = JObject.Parse(json);
-            if (string.IsNullOrWhiteSpace((string)latest["version"]) || string.IsNullOrWhiteSpace((string)latest["url"]))
-                throw new InvalidOperationException("latest.json names no version or url; no release has been published yet.");
-            return latest;
+            client.Headers.Add("Accept", "application/vnd.github.raw");
+            try { json = client.DownloadString(LatestApiUrl); }
+            catch (Exception)
+            {
+                client.Headers.Remove("Accept");
+                json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
+            }
         }
+        var latest = JObject.Parse(json);
+        if (string.IsNullOrWhiteSpace((string)latest["version"]) || string.IsNullOrWhiteSpace((string)latest["url"]))
+            throw new InvalidOperationException("latest.json names no version or url; no release has been published yet.");
+        return latest;
     }
 
     /// <summary>Downloads the release latest.json names into lib\<version>\, checks its hash, returns the path.
@@ -275,21 +285,31 @@ public class CPHInline
     /// the new one when it could be loaded now, else the one that is there.</summary>
     private string OfferUpdate(string installed)
     {
+        var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (!AutoUpdateEnabled())
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in uiframework.layout.json).");
             return installed;
+        }
         JObject latest;
         try { latest = FetchLatest(); }
         catch (Exception ex)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework update check skipped: " + ex.Message);
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; the release check failed: " + ex.Message);
             return installed;
         }
         var newest = ParseVersion((string)latest["version"]);
-        var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (newest == null || have == null || newest <= have)
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
             return installed;
+        }
         if (string.Equals(SkippedVersion(), newest.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in uiframework.layout.json).");
             return installed;
+        }
+        CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
 
         bool loaded;
         lock (BridgeGate) loaded = _show != null;
@@ -302,10 +322,14 @@ public class CPHInline
         if (answer == System.Windows.MessageBoxResult.Cancel)
         {
             SkipVersion(newest.ToString());
+            CPH.LogInfo(LogPrefix + " UIFramework " + newest + " skipped; the next release will be offered again.");
             return installed;
         }
         if (answer != System.Windows.MessageBoxResult.Yes)
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + newest + " not downloaded now; asked again next time.");
             return installed;
+        }
         try
         {
             string path = Download(latest);
