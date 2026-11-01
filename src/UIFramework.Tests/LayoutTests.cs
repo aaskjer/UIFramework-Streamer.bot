@@ -57,17 +57,16 @@ namespace UIFramework.Tests
         public void FrameworkNotesRoundTripAndParse()
         {
             var layout = LayoutFile.Load(SettingsPath);
-            Assert.Null(layout.FrameworkVersion);
-            layout.FrameworkVersion = "v0.3.0";
-            layout.FrameworkPending = "0.3.1";
-            layout.FrameworkAvailable = " ";
+            Assert.Null(layout.FrameworkAvailable);
+            layout.FrameworkAvailable = "v0.3.1";
             layout.Save();
             var again = LayoutFile.Load(SettingsPath);
-            Assert.Equal("v0.3.0", again.FrameworkVersion);
-            Assert.Equal("0.3.1", again.FrameworkPending);
-            Assert.Null(again.FrameworkAvailable);
-            Assert.Equal(new Version(0, 3, 0), LayoutFile.ParseVersion(again.FrameworkVersion));
-            Assert.True(LayoutFile.ParseVersion(again.FrameworkPending) > LayoutFile.ParseVersion(again.FrameworkVersion));
+            Assert.Equal("v0.3.1", again.FrameworkAvailable);
+            Assert.Equal(new Version(0, 3, 1), LayoutFile.ParseVersion(again.FrameworkAvailable));
+            Assert.True(LayoutFile.ParseVersion(again.FrameworkAvailable) > LayoutFile.ParseVersion("0.3.0"));
+            again.FrameworkAvailable = " ";
+            again.Save();
+            Assert.Null(LayoutFile.Load(SettingsPath).FrameworkAvailable);
             Assert.Null(LayoutFile.ParseVersion("later"));
         }
 

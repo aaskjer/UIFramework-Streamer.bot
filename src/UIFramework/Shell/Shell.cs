@@ -122,44 +122,38 @@ namespace UIFramework
         private void RunLoop(Action pump)
         {
             var update = Task.Run(() => Web.LatestRelease(_spec.GitHubRepo, _spec.Version, _log, _spec.LogPrefix));
-            bool reopen = true;
-            while (reopen)
+            var thread = new Thread(() =>
             {
-                bool reopenRequested = false;
-                var thread = new Thread(() =>
+                try
                 {
                     try
                     {
-                        try
-                        {
-                            ShowWindow(update, () => reopenRequested = true);
-                        }
-                        finally
-                        {
-                            Dispatcher.CurrentDispatcher.InvokeShutdown();
-                        }
+                        ShowWindow(update);
                     }
-                    catch (Exception ex)
+                    finally
                     {
-                        _log.Error(_spec.LogPrefix + " GUI thread error: " + ex.Message);
+                        Dispatcher.CurrentDispatcher.InvokeShutdown();
                     }
-                });
-                thread.SetApartmentState(ApartmentState.STA);
-                thread.IsBackground = true;
-                thread.Start();
-
-                while (thread.IsAlive)
-                {
-                    pump?.Invoke();
-                    Thread.Sleep(100);
                 }
-                thread.Join();
+                catch (Exception ex)
+                {
+                    _log.Error(_spec.LogPrefix + " GUI thread error: " + ex.Message);
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
+            thread.Start();
+
+            while (thread.IsAlive)
+            {
                 pump?.Invoke();
-                reopen = reopenRequested;
+                Thread.Sleep(100);
             }
+            thread.Join();
+            pump?.Invoke();
         }
 
-        private void ShowWindow(Task<string> update, Action requestReopen)
+        private void ShowWindow(Task<string> update)
         {
             string fileName = Path.GetFileName(_spec.SettingsPath);
             SettingsLoad loaded;
@@ -183,7 +177,7 @@ namespace UIFramework
                     "Settings Damaged", MessageBoxButton.OK, MessageBoxImage.Warning);
 
             var settings = loaded.Settings;
-            // Every open resolves afresh, so a layout change made in the customise mode shows up after the reopen.
+            // Every open resolves afresh, so a layout change made in the customise mode shows up after the rebuild.
             if (_spec.Schema != null)
                 Entry.Prepare(_spec, _spec.Schema);
             var layout = _spec.Layout ?? LayoutFile.Load(_spec.SettingsPath);
@@ -214,6 +208,37 @@ namespace UIFramework
 
             var iconHolder = new Image();
             Web.LoadImageAsync(iconHolder, _spec.LogoUrl, source => window.Icon = source);
+
+            // What the content hands up to the window: the window stays, its content is rebuilt in place after a
+            // layout change in the customise mode, a theme switch or a reset, on the same page and scroll position.
+            bool closeConfirmed = false;
+            Func<int> changes = () => 0;
+            Func<(string Id, double Offset)> currentPage = () => (null, 0);
+            double? keepOffset = null;
+            DispatcherTimer rainbowTimer = null;
+            KeyEventHandler keyHandler = null;
+
+            void Rebuild(string pageId)
+            {
+                var shown = currentPage();
+                if (pageId == null) pageId = shown.Id;
+                keepOffset = pageId == shown.Id ? shown.Offset : (double?)null;
+                if (_spec.Schema != null)
+                    Entry.Prepare(_spec, _spec.Schema);
+                layout = _spec.Layout ?? LayoutFile.Load(_spec.SettingsPath);
+                _spec.Layout = layout;
+                layout.ApplyTheme();
+                _spec.ReopenPageId = pageId;
+                Build();
+            }
+
+            void Build()
+            {
+            rainbowTimer?.Stop();
+            rainbowTimer = null;
+            Theme.IsRainbow = false;
+            window.Title = _spec.Title + " – Settings";
+            window.Background = new SolidColorBrush(Theme.ContentBg);
 
             var parts = new WindowParts();
             var defaults = _spec.Defaults;
@@ -344,51 +369,23 @@ namespace UIFramework
                 updatePill.MouseLeftButtonUp += (s, e) => Web.OpenUrl(_spec.ReleasesUrl, _log, _spec.LogPrefix);
                 pills.Children.Insert(0, updatePill);
             }
-            // The framework's own state, from the loader's notes in the layout file: updated since the last open,
-            // a download waiting for the next start, or a release the user has not taken yet.
+            // A framework release the user answered "No" to in the loader's dialog: a pill until it is taken.
             {
                 var running = LayoutFile.ParseVersion(Entry.FrameworkVersion);
-                var last = LayoutFile.ParseVersion(layout.FrameworkVersion);
-                var pending = LayoutFile.ParseVersion(layout.FrameworkPending);
                 var available = LayoutFile.ParseVersion(layout.FrameworkAvailable);
-                string text = null, tip = null;
-                var style = PillStyle.Muted;
-                if (running != null && last != null && running != last)
+                if (running != null && available != null && available > running)
                 {
-                    text = "UIFramework " + running + (running > last ? " installed" : " in use");
-                    tip = running > last ? "The settings window was updated from " + last + " to " + running + "." : "An older UIFramework is loaded than last time (" + last + ").";
-                    style = PillStyle.Success;
-                }
-                else if (running != null && pending != null && pending > running)
-                {
-                    text = "UIFramework " + pending + " ready";
-                    tip = "Downloaded; it is used from the next start of Streamer.bot. Running: " + running + ".";
-                    style = PillStyle.Warning;
-                }
-                else if (running != null && available != null && available > running)
-                {
-                    text = "UIFramework " + available + " available";
-                    tip = "A newer settings window is published; the next open of the window offers it again. Running: " + running + ". Click for the releases.";
-                    style = PillStyle.Accent;
-                }
-                if (running != null && (last == null || running != last || (pending != null && pending <= running) || (available != null && available <= running)))
-                {
-                    layout.FrameworkVersion = Entry.FrameworkVersion;
-                    if (pending != null && pending <= running) layout.FrameworkPending = null;
-                    if (available != null && available <= running) layout.FrameworkAvailable = null;
-                    try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Layout file not written: " + ex.Message); }
-                }
-                if (text != null)
-                {
-                    var colours = Ui.PillColours(style);
-                    var frameworkPill = Ui.Pill(text, colours.Background, colours.Foreground);
-                    frameworkPill.ToolTip = tip;
-                    if (style == PillStyle.Accent)
-                    {
-                        frameworkPill.Cursor = Cursors.Hand;
-                        frameworkPill.MouseLeftButtonUp += (s, e) => Web.OpenUrl("https://github.com/aaskjer/UIFramework-Streamer.bot/releases", _log, _spec.LogPrefix);
-                    }
+                    var colours = Ui.PillColours(PillStyle.Accent);
+                    var frameworkPill = Ui.Pill("UIFramework " + available + " available", colours.Background, colours.Foreground);
+                    frameworkPill.ToolTip = "A newer settings window is published (running: " + running + "). The next open of the window offers it again; click for the releases.";
+                    frameworkPill.Cursor = Cursors.Hand;
+                    frameworkPill.MouseLeftButtonUp += (s, e) => Web.OpenUrl("https://github.com/aaskjer/UIFramework-Streamer.bot/releases", _log, _spec.LogPrefix);
                     pills.Children.Add(frameworkPill);
+                }
+                else if (available != null)
+                {
+                    layout.FrameworkAvailable = null;   // a stale note from an older loader
+                    try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Layout file not written: " + ex.Message); }
                 }
             }
             if (update.Status == TaskStatus.RanToCompletion)
@@ -439,6 +436,8 @@ namespace UIFramework
             var baseline = new Dictionary<object, string>();
             FieldBinding.Snapshot(pageHost, baseline);
             int Changes() => FieldBinding.CountChanged(pageHost, baseline);
+            changes = Changes;
+            currentPage = () => (pages[current].Spec.Id, (pages[current].Page as ScrollViewer)?.VerticalOffset ?? 0);
             void ShowChanges()
             {
                 int n = Changes();
@@ -474,18 +473,8 @@ namespace UIFramework
                 return true;
             }
 
-            bool closeConfirmed = false;
-            bool reopenForThemeChange = false;
-
-            // A layout change or the mode switch: remember the page, close, let the loop open a fresh window.
-            void ReopenOn(string pageId)
-            {
-                _spec.ReopenPageId = pageId ?? pages[current].Spec.Id;
-                reopenForThemeChange = true;
-                closeConfirmed = true;
-                window.Close();
-            }
-            ctx.Reopen = ReopenOn;
+            // A layout change or the mode switch: the content is rebuilt in place on the given page.
+            ctx.Reopen = Rebuild;
 
             var btnCustomize = Ui.IconButton(Icons.Edit, Icons.Font, customizing ? "Leave the customise mode" : "Customise: rename, move and hide pages and fields");
             btnCustomize.Margin = new Thickness(6, 0, 0, 0);
@@ -497,13 +486,13 @@ namespace UIFramework
                 if (!customizing && Changes() > 0)
                 {
                     var answer = MessageBox.Show(
-                        "Save your changes before customising?\nThe window reopens, and anything unsaved is lost.",
+                        "Save your changes before customising?\nThe pages are rebuilt, and anything unsaved is lost.",
                         "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                     if (answer == MessageBoxResult.Cancel) return;
                     if (answer == MessageBoxResult.Yes && !SaveNow()) return;
                 }
                 _spec.Customizing = !customizing;
-                ReopenOn(null);
+                Rebuild(null);
             };
 
             btnSave.Click += (s, e) => SaveNow();
@@ -549,9 +538,9 @@ namespace UIFramework
                     return;
                 }
                 SafeHook(() => _hooks.OnSaved(fresh));
-                reopenForThemeChange = true;
-                closeConfirmed = true;
-                window.Close();
+                settings = fresh;
+                Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
+                Rebuild(null);
             };
             btnTheme.Click += (s, e) =>
             {
@@ -559,7 +548,7 @@ namespace UIFramework
                 if (Changes() > 0)
                 {
                     var answer = MessageBox.Show(
-                        "Save your changes before switching?\nThe window reopens, and anything unsaved is lost.",
+                        "Save your changes before switching?\nThe pages are rebuilt, and anything unsaved is lost.",
                         "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                     if (answer == MessageBoxResult.Cancel) return;
                     if (answer == MessageBoxResult.Yes && !SaveNow()) return;
@@ -575,13 +564,13 @@ namespace UIFramework
                     SetStatus("Not switched", Theme.DangerText, ex.Message);
                     return;
                 }
-                reopenForThemeChange = true;
-                closeConfirmed = true;
-                window.Close();
+                Rebuild(null);
             };
 
             // Ctrl+S saves, Ctrl+1 to Ctrl+9 jump to the first nine pages in the rail's order.
-            window.PreviewKeyDown += (s, e) =>
+            if (keyHandler != null)
+                window.PreviewKeyDown -= keyHandler;
+            keyHandler = (s, e) =>
             {
                 if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
                     return;
@@ -596,6 +585,7 @@ namespace UIFramework
                     e.Handled = true;
                 }
             };
+            window.PreviewKeyDown += keyHandler;
 
             var leftButtons = new StackPanel { Orientation = Orientation.Horizontal };
             leftButtons.Children.Add(btnTheme);
@@ -635,7 +625,7 @@ namespace UIFramework
             root.Children.Add(headerBorder);
             if (customizing)
             {
-                var bar = Customize.Bar(ctx, () => { _spec.Customizing = false; ReopenOn(null); });
+                var bar = Customize.Bar(ctx, () => { _spec.Customizing = false; Rebuild(null); });
                 DockPanel.SetDock(bar, Dock.Top);
                 root.Children.Add(bar);
                 window.Title = _spec.Title + " – Settings  ·  Customise";
@@ -647,12 +637,24 @@ namespace UIFramework
             int startPage = _spec.ReopenPageId == null ? -1 : pages.FindIndex(p => p.Spec.Id == _spec.ReopenPageId);
             _spec.ReopenPageId = null;
             ShowPage(startPage < 0 ? 0 : startPage);
+            if (keepOffset != null && pages[current].Page is ScrollViewer scroller)
+            {
+                double offset = keepOffset.Value;
+                keepOffset = null;
+                window.Dispatcher.BeginInvoke(new Action(() => scroller.ScrollToVerticalOffset(offset)), DispatcherPriority.Loaded);
+            }
+
+            if (layout.Rainbow)
+                rainbowTimer = Rainbow.Start(root, headerBorder, rail.Items);
+            }
+
+            Build();
 
             window.Closing += (s, e) =>
             {
                 if (closeConfirmed || _shuttingDown)
                     return;
-                int n = Changes();
+                int n = changes();
                 if (n == 0)
                     return;
                 var confirm = MessageBox.Show(
@@ -662,19 +664,13 @@ namespace UIFramework
                     e.Cancel = true;
             };
 
-            DispatcherTimer rainbowTimer = null;
-            if (layout.Rainbow)
-                rainbowTimer = Rainbow.Start(root, headerBorder, rail.Items);
-
             window.Closed += (s, e) =>
             {
                 _window = null;
                 rainbowTimer?.Stop();
                 Theme.IsRainbow = false;
 
-                if (reopenForThemeChange)
-                    requestReopen?.Invoke();
-                else if (layout.Rainbow)
+                if (layout.Rainbow)
                 {
                     // Rainbow is a one-off, like the games' Egg: off again once the window closes.
                     try { layout.Rainbow = false; layout.Save(); }

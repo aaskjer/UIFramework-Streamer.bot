@@ -17,7 +17,11 @@ Script anzufassen; jede Änderung landet sofort in `uiframework.layout.json` neb
 - **Leiste oben:** Akzentfarbe (gilt für jedes UIFramework-Fenster dieses Streamer.bot), Sprache (`en`, `de`),
   *Reset layout* (alles außer Theme), *Open file*, *Done*.
 
-Nach jeder Änderung baut sich das Fenster neu auf und zeigt dieselbe Seite wieder.
+- **Messages:** die Vorlagen lassen sich auf ihrer Seite umsortieren, umbenennen und ausblenden; auf eine andere
+  Seite ziehen lassen sie sich nicht.
+
+Nach jeder Änderung baut sich der Inhalt des Fensters an Ort und Stelle neu auf, auf derselben Seite und
+an derselben Scrollposition; das Fenster selbst bleibt, wo es ist.
 
 ## Die Datei
 
@@ -46,7 +50,7 @@ Nach jeder Änderung baut sich das Fenster neu auf und zeigt dieselbe Seite wied
 | `language`                    | Sprachcode für Labels und Hilfetexte der Konventionen; fehlt: `en`         |
 | `autoUpdate`                  | `false`: der Loader fragt nicht mehr nach neuen Versionen                   |
 | `skipVersion`                 | vom Update-Dialog mit *Abbrechen* gesetzt: diese Version wird nicht mehr angeboten |
-| `frameworkVersion`, `frameworkPending`, `frameworkAvailable` | Notizen von Loader und Fenster für die Pille im Kopf: zuletzt gelaufene Version, heruntergeladene Version, die auf den Neustart wartet, neueste gesehene Version |
+| `frameworkAvailable`          | vom Update-Dialog mit *Nein* gesetzt: diese Version zeigt das Fenster als Pille im Kopf, bis sie genommen oder übersprungen ist |
 | `pages.<id>.title`, `.icon`   | Anzeige der Seite                                                          |
 | `pages.<id>.order`            | Reihenfolge in der oberen Gruppe; Seiten mit `order` kommen zuerst         |
 | `pages.<id>.hidden`           | Seite weg (außer `about`)                                                  |

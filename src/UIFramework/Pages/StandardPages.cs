@@ -128,6 +128,8 @@ namespace UIFramework
 
         public static UIElement BuildMessages(PageContext ctx)
         {
+            if (ctx.Customizing)
+                return Customize.MessagesPage(ctx);
             var spec = ctx.Spec;
             var defs = spec.Messages;
             if (defs.Count == 0)
