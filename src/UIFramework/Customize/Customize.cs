@@ -129,9 +129,10 @@ namespace UIFramework
             return box;
         }
 
-        /// <summary>Makes a customise page take a dragged field anywhere: let go over the upper half of a field
-        /// puts it before that field, over the lower half after it, over a heading or the space below the last
-        /// field at that spot; the page scrolls while the drag is near its top or bottom edge.</summary>
+        /// <summary>Makes a customise page take a dragged field anywhere. Let go over another field, the dragged
+        /// one takes that field's place: after it when it came from above, before it when it came from below.
+        /// Let go over a heading or a gap, it goes between the fields there; below the last field, to the end.
+        /// The page scrolls slowly while the drag is at its top or bottom edge.</summary>
         public static void AcceptDrops(PageContext ctx, ScrollViewer scroll, StackPanel page, string pageId)
         {
             if (string.IsNullOrEmpty(pageId)) return;
@@ -142,8 +143,8 @@ namespace UIFramework
             {
                 if (!e.Data.GetDataPresent(FieldFormat)) return;
                 double y = e.GetPosition(scroll).Y;
-                if (y < 36) scroll.ScrollToVerticalOffset(scroll.VerticalOffset - 14);
-                else if (y > scroll.ActualHeight - 36) scroll.ScrollToVerticalOffset(scroll.VerticalOffset + 14);
+                if (y < 20) scroll.ScrollToVerticalOffset(scroll.VerticalOffset - 5);
+                else if (y > scroll.ActualHeight - 20) scroll.ScrollToVerticalOffset(scroll.VerticalOffset + 5);
             };
             scroll.DragOver += (s, e) =>
             {
@@ -155,17 +156,35 @@ namespace UIFramework
                 if (!e.Data.GetDataPresent(FieldFormat)) return;
                 string dragged = (string)e.Data.GetData(FieldFormat);
                 double y = e.GetPosition(page).Y;
-                string before = null;
-                foreach (var box in page.Children.OfType<Border>().Where(b => b.Tag is string))
+                e.Handled = true;
+                var boxes = page.Children.OfType<Border>().Where(b => b.Tag is string).ToList();
+                int from = boxes.FindIndex(b => (string)b.Tag == dragged);
+                int over = boxes.FindIndex(b =>
                 {
-                    double top = box.TranslatePoint(new Point(0, 0), page).Y;
-                    if (y < top + box.ActualHeight / 2)
+                    double top = b.TranslatePoint(new Point(0, 0), page).Y;
+                    return y >= top && y < top + b.ActualHeight;
+                });
+                if (over >= 0 && over == from) return;
+                string before = null;
+                if (over >= 0 && from >= 0)
+                {
+                    // Over another field of this page: take its place, after it from above, before it from below.
+                    int at = over > from ? over + 1 : over;
+                    before = at < boxes.Count ? (string)boxes[at].Tag : null;
+                }
+                else
+                {
+                    // Over a heading, a gap or a field dragged in from another page: between the fields by height.
+                    foreach (var box in boxes)
                     {
-                        before = (string)box.Tag;
-                        break;
+                        double top = box.TranslatePoint(new Point(0, 0), page).Y;
+                        if (y < top + box.ActualHeight / 2)
+                        {
+                            before = (string)box.Tag;
+                            break;
+                        }
                     }
                 }
-                e.Handled = true;
                 ReorderFields(ctx, pageId, dragged, before);
             };
         }
