@@ -17,7 +17,7 @@ namespace UIFramework
     public static class StandardPages
     {
         public static PageSpec About(string title = "About", string glyph = "ℹ️") => new PageSpec("about", title, glyph, BuildAbout, bottom: true);
-        public static PageSpec Help(string title = "Help", string glyph = "📖") => new PageSpec("help", title, glyph, BuildHelp);
+        public static PageSpec Help(string title = "Help", string glyph = "📖") => new PageSpec("help", title, glyph, BuildHelp, bottom: true);
         public static PageSpec Log(string title = "Log", string glyph = "📜") => new PageSpec("log", title, glyph, BuildLog);
         public static PageSpec Messages(string title = "Messages", string glyph = "💬") => new PageSpec("messages", title, glyph, BuildMessages);
 

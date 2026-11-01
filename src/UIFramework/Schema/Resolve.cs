@@ -133,7 +133,8 @@ namespace UIFramework
             {
                 string title = page.Title ?? lang.Page(page.Id) ?? Conventions.Humanize(page.Id);
                 string icon = page.Icon ?? (conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•");
-                bool bottom = page.Bottom || page.Id == "about";
+                // Help and About sit in their own group at the bottom of the rail, apart from the settings pages.
+                bool bottom = page.Bottom || page.Id == "about" || page.Id == "help";
                 var fields = pageFields.TryGetValue(page.Id, out var list) ? list : new List<Setting>();
 
                 Func<PageContext, System.Windows.UIElement> build;
