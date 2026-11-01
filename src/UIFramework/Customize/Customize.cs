@@ -120,40 +120,77 @@ namespace UIFramework
                 DragDrop.DoDragDrop(box, new DataObject(FieldFormat, setting.Key), DragDropEffects.Move);
             };
             box.PreviewMouseLeftButtonUp += (s, e) => pressed = null;
+            // The drop itself is taken by the page (see AcceptDrops), so it lands wherever the mouse is let go.
             box.DragOver += (s, e) =>
             {
                 e.Effects = e.Data.GetDataPresent(FieldFormat) ? DragDropEffects.Move : DragDropEffects.None;
                 e.Handled = true;
             };
-            box.Drop += (s, e) =>
-            {
-                if (!e.Data.GetDataPresent(FieldFormat)) return;
-                string dragged = (string)e.Data.GetData(FieldFormat);
-                if (dragged == setting.Key) return;
-                ReorderFields(ctx, pageId, dragged, setting.Key);
-                e.Handled = true;
-            };
             return box;
         }
 
-        /// <summary>Puts the dragged field in front of the target and writes an order for every field on the page.</summary>
+        /// <summary>Makes a customise page take a dragged field anywhere: let go over the upper half of a field
+        /// puts it before that field, over the lower half after it, over a heading or the space below the last
+        /// field at that spot; the page scrolls while the drag is near its top or bottom edge.</summary>
+        public static void AcceptDrops(PageContext ctx, ScrollViewer scroll, StackPanel page, string pageId)
+        {
+            if (string.IsNullOrEmpty(pageId)) return;
+            page.Background = Brushes.Transparent;
+            page.AllowDrop = true;
+            scroll.AllowDrop = true;
+            scroll.PreviewDragOver += (s, e) =>
+            {
+                if (!e.Data.GetDataPresent(FieldFormat)) return;
+                double y = e.GetPosition(scroll).Y;
+                if (y < 36) scroll.ScrollToVerticalOffset(scroll.VerticalOffset - 14);
+                else if (y > scroll.ActualHeight - 36) scroll.ScrollToVerticalOffset(scroll.VerticalOffset + 14);
+            };
+            scroll.DragOver += (s, e) =>
+            {
+                e.Effects = e.Data.GetDataPresent(FieldFormat) ? DragDropEffects.Move : DragDropEffects.None;
+                e.Handled = true;
+            };
+            scroll.Drop += (s, e) =>
+            {
+                if (!e.Data.GetDataPresent(FieldFormat)) return;
+                string dragged = (string)e.Data.GetData(FieldFormat);
+                double y = e.GetPosition(page).Y;
+                string before = null;
+                foreach (var box in page.Children.OfType<Border>().Where(b => b.Tag is string))
+                {
+                    double top = box.TranslatePoint(new Point(0, 0), page).Y;
+                    if (y < top + box.ActualHeight / 2)
+                    {
+                        before = (string)box.Tag;
+                        break;
+                    }
+                }
+                e.Handled = true;
+                ReorderFields(ctx, pageId, dragged, before);
+            };
+        }
+
+        /// <summary>Puts the dragged field in front of the target (null: at the end) and writes an order for every
+        /// field on the page. Nothing is written when that leaves the page as it is.</summary>
         private static void ReorderFields(PageContext ctx, string pageId, string dragged, string before)
         {
             var onPage = ctx.Spec.ResolvedSettings
                 .Where(s => s.Page == pageId)
                 .OrderBy(s => s.Order).Select(s => s.Key).ToList();
             var draggedSetting = ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == dragged);
-            if (draggedSetting == null) return;
+            if (draggedSetting == null || dragged == before) return;
             // A message template stays on the Messages page, and nothing else is dropped between the messages.
             if ((draggedSetting.Kind == "template" && draggedSetting.Page == "messages") != (pageId == "messages")) return;
-            onPage.Remove(dragged);
-            int at = onPage.IndexOf(before);
-            if (at < 0) at = onPage.Count;
-            onPage.Insert(at, dragged);
+            var wanted = new List<string>(onPage);
+            wanted.Remove(dragged);
+            int at = before == null ? wanted.Count : wanted.IndexOf(before);
+            if (at < 0) at = wanted.Count;
+            wanted.Insert(at, dragged);
+            if (draggedSetting.Page == pageId && wanted.SequenceEqual(onPage)) return;
             if (draggedSetting.Page != pageId)
                 ctx.Layout.SetField(dragged, "page", pageId);
-            for (int i = 0; i < onPage.Count; i++)
-                ctx.Layout.SetField(onPage[i], "order", i * 10);
+            for (int i = 0; i < wanted.Count; i++)
+                ctx.Layout.SetField(wanted[i], "order", i * 10);
             Commit(ctx, pageId);
         }
 
@@ -185,7 +222,9 @@ namespace UIFramework
             }
             if (templates.Count == 0)
                 page.Children.Add(Ui.Note("This host has no message templates."));
-            return Ui.Scroll(page);
+            var scroll = Ui.Scroll(page);
+            AcceptDrops(ctx, scroll, page, "messages");
+            return scroll;
         }
 
         // ---- Rail --------------------------------------------------------------------------------------
@@ -286,19 +325,30 @@ namespace UIFramework
             }
             DrawText();
 
-            var accent = new Fields(ctx.Parts, new JObject { ["accent"] = ctx.Layout.Accent }, new JObject { ["accent"] = "" }, ctx.OpenUrl)
-                .ColourField("Accent colour", "accent", "The highlight colour of this window and every other UIFramework window. Empty: the default blue.");
+            var accentFields = new Fields(ctx.Parts, new JObject { ["accent"] = ctx.Layout.Accent }, new JObject { ["accent"] = "" }, ctx.OpenUrl);
+            var accent = accentFields.ColourField("Accent colour", "accent",
+                "The highlight colour of this and every other UIFramework window: the blue buttons, switches that are on, the active page in the rail, links and this bar. Empty: the default blue.");
             if (ctx.Parts.Boxes.TryGetValue("accent", out var accentBox))
             {
                 accentBox.Tag = null;   // not a setting; never saved into the host's file
-                accentBox.LostFocus += (s, e) =>
+                var fields = accentFields;
+                // The picker writes into the box while it is open, and the box never had the focus then: the colour
+                // is taken once the picker has closed, when typing pauses, on Enter and on leaving the box.
+                var settle = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+                void CommitAccent()
                 {
+                    if (fields != null && fields.PickerOpen) { settle.Stop(); settle.Start(); return; }
+                    settle.Stop();
                     string hex = accentBox.Text.Trim();
                     if (hex == (ctx.Layout.Accent ?? "")) return;
                     if (hex.Length > 0 && !Colours.TryParseHex(hex, out _)) return;
                     ctx.Layout.Accent = hex;
                     Commit(ctx, null);
-                };
+                }
+                settle.Tick += (s, e) => CommitAccent();
+                accentBox.TextChanged += (s, e) => { settle.Stop(); settle.Start(); };
+                accentBox.LostFocus += (s, e) => CommitAccent();
+                accentBox.KeyDown += (s, e) => { if (e.Key == Key.Enter) CommitAccent(); };
                 ctx.Parts.Boxes.Remove("accent");
             }
 

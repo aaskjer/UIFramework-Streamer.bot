@@ -22,6 +22,9 @@ namespace UIFramework
 
         private Popup _popup;
 
+        /// <summary>The picker is on screen and still writing into its box.</summary>
+        public bool IsOpen => _popup != null && _popup.IsOpen;
+
         public void Open(TextBox target, FrameworkElement anchor)
         {
             if (_popup != null)
