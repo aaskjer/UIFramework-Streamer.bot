@@ -78,11 +78,8 @@ namespace UIFramework
             set => Root["autoUpdate"] = value;
         }
 
-        // The framework's own bookkeeping, written by the loader in the stub and by the window: the version the
-        // window last ran on (a change shows the "installed" pill once), a version downloaded but not loaded yet
-        // (waits for the next start of Streamer.bot), and the newest release the loader saw.
-        public string FrameworkVersion { get => Text("frameworkVersion"); set => SetText("frameworkVersion", value); }
-        public string FrameworkPending { get => Text("frameworkPending"); set => SetText("frameworkPending", value); }
+        // The loader's note for the window's header pill: a framework release the user answered "No" to in the
+        // update dialog. Set by the stub on "No", removed once the release is taken, skipped or overtaken.
         public string FrameworkAvailable { get => Text("frameworkAvailable"); set => SetText("frameworkAvailable", value); }
 
         private string Text(string key) => Root[key]?.Type == JTokenType.String ? (string)Root[key] : null;

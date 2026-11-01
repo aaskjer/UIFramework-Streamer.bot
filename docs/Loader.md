@@ -17,10 +17,10 @@ Fenster gleich mit der neuen, sonst ab dem nächsten Start. **Nein** fragt beim 
 **Abbrechen** schreibt `skipVersion` in die Layout-Datei; diese Version wird nicht mehr angeboten, die nächste
 schon. Die laufende DLL wird nie überschrieben (sie ist gesperrt und .NET Framework entlädt nicht).
 
-**Pille im Kopf des Fensters:** nach einem Update steht beim ersten Öffnen einmal `UIFramework 0.3.1 installed`;
-liegt eine heruntergeladene Version auf den Neustart wartend bereit, `UIFramework 0.3.1 ready`; wurde eine neue
-Version angeboten und noch nicht genommen, `UIFramework 0.3.1 available` (Klick öffnet die Releases). Grundlage
-sind `frameworkVersion`, `frameworkPending` und `frameworkAvailable` in `uiframework.layout.json`.
+**Pille im Kopf des Fensters:** wer im Update-Dialog *Nein* drückt, sieht im Fenster die Pille
+`UIFramework 0.3.2 available` (Klick öffnet die Releases), bis die Version genommen oder mit *Abbrechen*
+übersprungen ist. Grundlage ist `frameworkAvailable` in `uiframework.layout.json`; *Ja* und *Abbrechen* löschen
+die Notiz wieder.
 
 **Woher `latest.json` kommt:** zuerst über die GitHub-API (`contents/lib/v1/latest.json`, ungecacht, 60 Abrufe je
 Stunde und IP); schlägt das fehl, über raw.githubusercontent.com, dessen CDN die Datei bis zu fünf Minuten alt

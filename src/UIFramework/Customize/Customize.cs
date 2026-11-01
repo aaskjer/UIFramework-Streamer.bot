@@ -79,20 +79,29 @@ namespace UIFramework
                 ctx.Layout.SetField(setting.Key, "hidden", setting.Hidden ? null : (JToken)true);
                 Commit(ctx, pageId);
             }));
-            var move = new MenuItem { Header = "Move to page" };
-            foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "messages"))
+            bool message = setting.Kind == "template" && setting.Page == "messages";
+            if (message)
             {
-                string targetId = page.Id;
-                var entry = Item(page.Title, () =>
-                {
-                    ctx.Layout.SetField(setting.Key, "page", targetId);
-                    ctx.Layout.SetField(setting.Key, "order", null);
-                    Commit(ctx, targetId);
-                });
-                entry.IsEnabled = targetId != pageId;
-                move.Items.Add(entry);
+                grip.ToolTip = "Drag to another place in the list";
+                menu.Items.Add(new MenuItem { Header = "Stays on the Messages page", IsEnabled = false });
             }
-            menu.Items.Add(move);
+            else
+            {
+                var move = new MenuItem { Header = "Move to page" };
+                foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "messages"))
+                {
+                    string targetId = page.Id;
+                    var entry = Item(page.Title, () =>
+                    {
+                        ctx.Layout.SetField(setting.Key, "page", targetId);
+                        ctx.Layout.SetField(setting.Key, "order", null);
+                        Commit(ctx, targetId);
+                    });
+                    entry.IsEnabled = targetId != pageId;
+                    move.Items.Add(entry);
+                }
+                menu.Items.Add(move);
+            }
             menu.Items.Add(new Separator());
             var reset = Item("Reset this field", () => { ctx.Layout.ResetField(setting.Key); Commit(ctx, pageId); });
             reset.IsEnabled = ctx.Layout.Field(setting.Key) != null;
@@ -131,10 +140,12 @@ namespace UIFramework
         private static void ReorderFields(PageContext ctx, string pageId, string dragged, string before)
         {
             var onPage = ctx.Spec.ResolvedSettings
-                .Where(s => s.Page == pageId && s.Kind != "template")
+                .Where(s => s.Page == pageId)
                 .OrderBy(s => s.Order).Select(s => s.Key).ToList();
             var draggedSetting = ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == dragged);
             if (draggedSetting == null) return;
+            // A message template stays on the Messages page, and nothing else is dropped between the messages.
+            if ((draggedSetting.Kind == "template" && draggedSetting.Page == "messages") != (pageId == "messages")) return;
             onPage.Remove(dragged);
             int at = onPage.IndexOf(before);
             if (at < 0) at = onPage.Count;
@@ -144,6 +155,37 @@ namespace UIFramework
             for (int i = 0; i < onPage.Count; i++)
                 ctx.Layout.SetField(onPage[i], "order", i * 10);
             Commit(ctx, pageId);
+        }
+
+        /// <summary>The Messages page in the customise mode: one line per template, in groups, each draggable and
+        /// with the field menu, so messages can be reordered, renamed and hidden like any other field.</summary>
+        public static UIElement MessagesPage(PageContext ctx)
+        {
+            var page = Ui.PageStack();
+            page.Children.Add(Ui.Note("Drag a message to another place in the list; right-click it to rename, hide or reset it. Messages stay on this page."));
+            string group = null;
+            var templates = ctx.Spec.ResolvedSettings.Where(s => s.Kind == "template" && s.Page == "messages").OrderBy(s => s.Order).ToList();
+            foreach (var setting in templates)
+            {
+                string mine = setting.Group ?? "Messages";
+                if (mine != group)
+                {
+                    group = mine;
+                    page.Children.Add(Ui.Section(group, false));
+                }
+                string text = (ctx.Settings?[setting.Key]?.Type == JTokenType.String ? (string)ctx.Settings[setting.Key] : "") ?? "";
+                text = text.Replace("\r", " ").Replace("\n", " ").Trim();
+                var line = new DockPanel();
+                var label = new TextBlock { Text = setting.Label ?? setting.Key, FontSize = 13, Foreground = Theme.LabelFg, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0), MinWidth = 180 };
+                var value = new TextBlock { Text = text, FontSize = 12, Foreground = Theme.MutedFg, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+                DockPanel.SetDock(label, Dock.Left);
+                line.Children.Add(label);
+                line.Children.Add(value);
+                page.Children.Add(Wrap(ctx, setting, line, "messages"));
+            }
+            if (templates.Count == 0)
+                page.Children.Add(Ui.Note("This host has no message templates."));
+            return Ui.Scroll(page);
         }
 
         // ---- Rail --------------------------------------------------------------------------------------

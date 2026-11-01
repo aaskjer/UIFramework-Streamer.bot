@@ -271,7 +271,7 @@ public class CPHInline
 
     private static void SkipVersion(string version) => WriteLayout(layout => layout["skipVersion"] = version);
 
-    // Notes for the window's header pill: the newest release seen, and a download that waits for the next start.
+    // The note for the window's header pill: a release the user answered "No" to; removed again otherwise.
     private static void NoteLayout(string key, string value) => WriteLayout(layout => { if (value == null) layout.Remove(key); else layout[key] = value; });
 
     private static void WriteLayout(Action<JObject> change)
@@ -310,10 +310,10 @@ public class CPHInline
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
-        NoteLayout("frameworkAvailable", newest.ToString());
         if (string.Equals(SkippedVersion(), newest.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in uiframework.layout.json).");
+            NoteLayout("frameworkAvailable", null);
             return installed;
         }
         CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
@@ -329,23 +329,26 @@ public class CPHInline
         if (answer == System.Windows.MessageBoxResult.Cancel)
         {
             SkipVersion(newest.ToString());
+            NoteLayout("frameworkAvailable", null);
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " skipped; the next release will be offered again.");
             return installed;
         }
         if (answer != System.Windows.MessageBoxResult.Yes)
         {
+            NoteLayout("frameworkAvailable", newest.ToString());   // the window shows a pill until it is taken
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " not downloaded now; asked again next time.");
             return installed;
         }
         try
         {
             string path = Download(latest);
+            NoteLayout("frameworkAvailable", null);
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + (loaded ? "; it is used from the next start of Streamer.bot." : "."));
-            if (loaded) NoteLayout("frameworkPending", newest.ToString());
             return loaded ? installed : path;
         }
         catch (Exception ex)
         {
+            NoteLayout("frameworkAvailable", newest.ToString());
             CPH.LogError(LogPrefix + " UIFramework " + newest + " could not be downloaded: " + ex.Message);
             Ask("The download failed:\n\n" + ex.Message + "\n\nThe installed version " + have + " is used. Releases: " + FrameworkReleasesUrl,
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);

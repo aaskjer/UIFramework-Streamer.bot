@@ -56,7 +56,10 @@ namespace UIFramework
                 return inner;
             var top = Ui.PageStack();
             top.Margin = new Thickness(16, 2, 16, 0);
-            Fill(ctx, top, settings, true);
+            if (ctx.Customizing)
+                FillCustomizing(ctx, top, settings);
+            else
+                Fill(ctx, top, settings, true);
             var dock = new DockPanel();
             DockPanel.SetDock(top, Dock.Top);
             dock.Children.Add(top);
