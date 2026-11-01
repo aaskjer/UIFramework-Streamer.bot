@@ -183,8 +183,12 @@ namespace UIFramework
                     element = Table(ctx, s, label, help);
                     break;
                 case "list":
-                    element = Stack(Ui.SmallLabel(label, 6), Ui.Note("The list editor for '" + label + "' comes with a later version; the values stay as they are."));
+                {
+                    var editor = new ListEditor(s.Key, label, s.Columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help);
+                    editor.Margin = new Thickness(0, 8, 0, 0);
+                    element = string.IsNullOrEmpty(help) ? (FrameworkElement)editor : Stack(editor, Ui.Note(help));
                     break;
+                }
                 default:
                     element = f.TextField(label, s.Key, help);
                     break;

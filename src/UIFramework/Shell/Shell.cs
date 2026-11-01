@@ -194,6 +194,8 @@ namespace UIFramework
                 catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Theme not moved to the layout file: " + ex.Message); }
             }
             layout.ApplyTheme();
+            // Values kept in files of their own (a word bank, a question list) come in after the settings file.
+            Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
 
             var window = new Window
             {
@@ -493,7 +495,7 @@ namespace UIFramework
                 if (confirm != MessageBoxResult.Yes) return;
 
                 var fresh = (JObject)defaults.DeepClone();
-                try { _store.Save(fresh); }
+                try { _store.Save(Sidecars.Split(fresh, _spec.ResolvedSettings, _spec.SettingsPath)); }
                 catch (Exception ex)
                 {
                     SetStatus("Not reset", Theme.DangerText, ex.Message);
@@ -665,7 +667,7 @@ namespace UIFramework
                         return false;
                 }
 
-                _store.Save(settings);
+                _store.Save(Sidecars.Split(settings, _spec.ResolvedSettings, _spec.SettingsPath));
                 SafeHook(() => _hooks.OnSaved(settings));
                 _log.Info(_spec.LogPrefix + " Settings saved.");
                 return true;

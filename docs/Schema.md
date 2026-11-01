@@ -39,6 +39,9 @@ Settings-Datei.
 | `requires`     | nein    | Key eines `bool`; Feld ist ausgegraut, solange der false ist                               |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
+| `columns`      | für `list`, `table` | `[{key, kind, label}]`; Kinds `string`, `text` (mehrzeilig, doppelt breit), `int`, `double`, `bool` |
+| `file`         | nein    | Datei neben der Settings-Datei, in der dieser Wert liegt statt in ihr (Wortbank, Fragenliste); relativ oder absolut |
+| `field`        | nein    | mit `file`: die Property in dieser Datei, die den Wert hält; ohne `field` ist die Datei selbst der Wert |
 
 ## Kinds
 
@@ -58,12 +61,17 @@ Settings-Datei.
 | `path`      | string      | Textfeld + Ordner-/Datei-Dialog            | relativ zum Streamer.bot-Ordner erlaubt               |
 | `colour`    | string      | Farbfeld + Picker                          | `#rrggbb` oder `#aarrggbb`                            |
 | `emote`     | string      | Textfeld mit Emote-Vorschau                | Plattform-Emotes als Text                             |
-| `list`      | array       | Tabelle mit Zeilen-Editor                  | `columns: [{key, kind, label}]` Pflicht               |
+| `list`      | array       | Zeilen-Editor: je Zeile eine Zelle pro Spalte, Entfernen, *Add row*, *Restore defaults* | `columns` Pflicht; leere Zeilen fallen beim Speichern weg; mit `file`/`field` in eigener Datei |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
 | `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status |
 
 `table` und `action` haben keinen Wert in der Datei. `table` holt seine Zeilen mit `ReadTable(key)` vom Host als
 JSON-Array von Objekten, deren Felder die `columns` nennen.
+
+**Eigene Datei (`file`, `field`):** der Wert wird beim Öffnen aus `<Ordner der Settings-Datei>\<file>` gelesen
+(Property `field`, oder die Datei selbst) und beim Speichern dorthin geschrieben, atomar mit `.bak`; alles andere
+in der Datei bleibt stehen. In die Settings-Datei kommt der Key nie. Fehlt die Datei, zeigt das Fenster den
+`default`; so bleibt die Datei, die das Spiel ohnehin liest (`RT-wordbank.json`), das einzige Exemplar.
 
 Ableitung ohne `kind`: bool → `bool`, ganze Zahl → `int`, Kommazahl → `double`, string → `string`, Array → `list`
 (braucht dann `columns`). Keys aus den Konventionen bringen ihr Kind mit.

@@ -2,7 +2,7 @@ using System;
 
 namespace UIFramework
 {
-    public enum FieldKind { Bool, Int, Long, Double, String, Template }
+    public enum FieldKind { Bool, Int, Long, Double, String, Template, List }
 
     /// <summary>
     /// What a control's Tag carries: the setting key and how its text becomes a value. Saving, resetting and
