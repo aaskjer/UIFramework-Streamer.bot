@@ -29,6 +29,15 @@ namespace UIFramework
         /// switch elsewhere).</summary>
         public List<Action> AfterBuild { get; } = new List<Action>();
 
+        /// <summary>The customise mode is on: fields are wrapped, values are not editable.</summary>
+        public bool Customizing => Spec?.Customizing == true;
+
+        /// <summary>The user's layout file, to write to in the customise mode.</summary>
+        public LayoutFile Layout => Spec?.Layout;
+
+        /// <summary>Closes and reopens the window on the given page (null: the current one), after a layout change.</summary>
+        public Action<string> Reopen { get; internal set; }
+
         public void OpenUrl(string url) => Web.OpenUrl(url, Log, Spec?.LogPrefix);
     }
 }

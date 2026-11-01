@@ -223,7 +223,10 @@ mit den alten Clamps, `uiframework.describe`, die Settings-Aktion ist der Stub m
 (Cooldowns, Leaderboard-Reset, OBS-Setup als Jobs auf Streamer.bots Thread). Die alte GUI (4.800 Zeilen WPF) und
 ihre Harnesse sind weg; `run-window-tests.ps1` öffnet das echte Fenster über den Stub und schreibt
 `hosts/blackjack/schema.json`. Phase 3 (01.11.): Loader mit Erststart-Dialog, Download über `lib/v1/latest.json` mit SHA-256,
-Hintergrund-Update in `Init`, Release-Workflow. Das erste Release v0.1.0 muss per Tag angestoßen werden.
+Hintergrund-Update in `Init`, Release-Workflow; v0.1.0 und v0.1.1 sind veröffentlicht. Phase 4 (01.11.):
+Layout-Datei als vierte Schicht (Seiten: Titel, Icon, Reihenfolge, ausblenden; Felder: Seite, Reihenfolge, Label,
+Abschnitt, ausblenden), Anpassen-Modus im Fenster mit Griff, Drag auf Felder und Seiten, Kontextmenüs, Dialogen,
+Akzentfarbe, Sprache, Reset; `docs/Customize.md`. Offen aus Phase 4: Screenshots für die Docs.
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.

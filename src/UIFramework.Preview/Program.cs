@@ -45,6 +45,8 @@ namespace UIFramework.Preview
             }
             else
                 spec = SampleSpec.Blackjack(settings);
+            if (Array.Exists(args, a => a.Equals("-customize", StringComparison.OrdinalIgnoreCase)))
+                spec.Customizing = true;
 
             if (shots != null)
                 return Screenshots.Take(spec, log, hooks, shots, page) ? 0 : 1;

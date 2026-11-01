@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -104,5 +106,106 @@ namespace UIFramework
             Theme.IsDark = Dark ?? true;
             Theme.AccentOverride = Colours.TryParseHex(Accent, out var accent) ? accent : (System.Windows.Media.Color?)null;
         }
+
+        // ---- The user's layout: what the customise mode writes ------------------------------------------
+
+        private JObject Section(string name) => Root[name] as JObject ?? (JObject)(Root[name] = new JObject());
+
+        private JObject Entry(string section, string id, bool create)
+        {
+            var list = Root[section] as JObject;
+            var entry = list?[id] as JObject;
+            if (entry == null && create)
+            {
+                entry = new JObject();
+                Section(section)[id] = entry;
+            }
+            return entry;
+        }
+
+        private void Prune(string section, string id)
+        {
+            var list = Root[section] as JObject;
+            if (list?[id] is JObject entry && !entry.HasValues)
+                list.Remove(id);
+            if (list != null && !list.HasValues)
+                Root.Remove(section);
+        }
+
+        public LayoutPage Page(string id)
+        {
+            var e = Entry("pages", id, false);
+            if (e == null) return null;
+            return new LayoutPage
+            {
+                Title = (string)e["title"],
+                Icon = (string)e["icon"],
+                Order = (int?)e["order"],
+                Hidden = e["hidden"]?.Type == JTokenType.Boolean ? (bool?)(bool)e["hidden"] : null
+            };
+        }
+
+        public LayoutField Field(string key)
+        {
+            var e = Entry("fields", key, false);
+            if (e == null) return null;
+            return new LayoutField
+            {
+                Page = (string)e["page"],
+                Label = (string)e["label"],
+                Section = (string)e["section"],
+                Order = (int?)e["order"],
+                Hidden = e["hidden"]?.Type == JTokenType.Boolean ? (bool?)(bool)e["hidden"] : null
+            };
+        }
+
+        /// <summary>Sets one property of a page override; null removes it. The file is not written here.</summary>
+        public void SetPage(string id, string property, JToken value)
+        {
+            var e = Entry("pages", id, value != null);
+            if (e == null) return;
+            if (value == null || value.Type == JTokenType.Null) e.Remove(property); else e[property] = value;
+            Prune("pages", id);
+        }
+
+        public void SetField(string key, string property, JToken value)
+        {
+            var e = Entry("fields", key, value != null);
+            if (e == null) return;
+            if (value == null || value.Type == JTokenType.Null) e.Remove(property); else e[property] = value;
+            Prune("fields", key);
+        }
+
+        public void ResetPage(string id) { (Root["pages"] as JObject)?.Remove(id); Prune("pages", id); }
+        public void ResetField(string key) { (Root["fields"] as JObject)?.Remove(key); Prune("fields", key); }
+
+        /// <summary>Drops every page and field override; the theme and the update preference stay.</summary>
+        public void ResetLayout()
+        {
+            Root.Remove("pages");
+            Root.Remove("fields");
+        }
+
+        /// <summary>How many pages and fields carry an override.</summary>
+        public int ChangeCount =>
+            ((Root["pages"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0) +
+            ((Root["fields"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0);
+
+        public IEnumerable<string> OverriddenPages => (Root["pages"] as JObject)?.Properties().Select(p => p.Name) ?? Enumerable.Empty<string>();
+        public IEnumerable<string> OverriddenFields => (Root["fields"] as JObject)?.Properties().Select(p => p.Name) ?? Enumerable.Empty<string>();
+    }
+
+    public sealed class LayoutPage
+    {
+        public string Title, Icon;
+        public int? Order;
+        public bool? Hidden;
+    }
+
+    public sealed class LayoutField
+    {
+        public string Page, Label, Section;
+        public int? Order;
+        public bool? Hidden;
     }
 }

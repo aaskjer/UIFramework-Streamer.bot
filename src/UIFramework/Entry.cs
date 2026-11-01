@@ -45,11 +45,13 @@ namespace UIFramework
         /// <summary>Resolve without opening: fills pages, defaults, messages and aliases on the spec.</summary>
         public static void Prepare(WindowSpec spec, Schema schema)
         {
-            string language = spec.Language;
-            if (language == null && !string.IsNullOrEmpty(spec.SettingsPath))
-                language = LayoutFile.Load(spec.SettingsPath).Language;
+            var layout = !string.IsNullOrEmpty(spec.SettingsPath) ? LayoutFile.Load(spec.SettingsPath) : new LayoutFile("layout");
+            string language = spec.Language ?? layout.Language;
             var conventions = string.IsNullOrEmpty(language) || language == "en" ? Conventions.Default : Conventions.Load(language);
-            Resolve.Apply(spec, schema, conventions);
+            spec.Schema = schema;
+            spec.Conventions = conventions;
+            spec.Layout = layout;
+            Resolve.Apply(spec, schema, conventions, layout);
         }
 
         /// <summary>Closes the window for a settings file without asking, for the host's Dispose.</summary>

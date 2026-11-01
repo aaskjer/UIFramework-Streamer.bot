@@ -16,10 +16,11 @@ namespace UIFramework
     {
         private static readonly string[] TrailingPages = { "log", "help", "about" };
 
-        public static void Apply(WindowSpec spec, Schema schema, Conventions conventions)
+        public static void Apply(WindowSpec spec, Schema schema, Conventions conventions, LayoutFile layout = null)
         {
             conventions = conventions ?? Conventions.Default;
             var lang = conventions.Lang;
+            bool customizing = spec.Customizing;
 
             // 1. Complete every setting and lay the spec's overrides on top.
             var settings = new List<Setting>();
@@ -34,6 +35,16 @@ namespace UIFramework
                     setting.Section = over.Section ?? setting.Section;
                     if (over.Hidden.HasValue) setting.Hidden = over.Hidden.Value;
                     if (over.Order.HasValue) setting.Order = over.Order.Value;
+                }
+                // The user's layout has the last word on where a field sits and what it is called.
+                var mine = layout?.Field(setting.Key);
+                if (mine != null)
+                {
+                    setting.Page = mine.Page ?? setting.Page;
+                    setting.Label = mine.Label ?? setting.Label;
+                    setting.Section = mine.Section ?? setting.Section;
+                    if (mine.Hidden.HasValue) setting.Hidden = mine.Hidden.Value;
+                    if (mine.Order.HasValue) setting.Order = mine.Order.Value;
                 }
                 settings.Add(setting);
             }
@@ -96,7 +107,7 @@ namespace UIFramework
 
             foreach (var setting in settings.OrderBy(s => s.Order))
             {
-                if (claimed.Contains(setting.Key) || setting.Hidden || senderKeys.Contains(setting.Key))
+                if (claimed.Contains(setting.Key) || (setting.Hidden && !customizing) || senderKeys.Contains(setting.Key))
                     continue;
                 if (setting.Key == spec.Log.WriteLogKey)
                     continue;
@@ -126,13 +137,20 @@ namespace UIFramework
                 if (trailing >= 0) return 10000 + trailing;
                 return 1000 + (conventions.Pages.TryGetValue(p.Id, out var c) ? c.Order : 500);
             }
-            pageOrder = pageOrder.OrderBy(Rank).ToList();
+            // Pages the user put in order come first, in that order; the rest follow by rank. The customise mode
+            // writes an order for every page in the top group, so a drag never mixes the two.
+            int? UserOrder(SpecPage p) => Array.IndexOf(TrailingPages, p.Id) >= 0 || p.Bottom ? null : layout?.Page(p.Id)?.Order;
+            pageOrder = pageOrder.OrderBy(p => UserOrder(p).HasValue ? 0 : 1).ThenBy(p => UserOrder(p) ?? 0).ThenBy(Rank).ToList();
 
             spec.Pages.Clear();
             foreach (var page in pageOrder)
             {
-                string title = page.Title ?? lang.Page(page.Id) ?? Conventions.Humanize(page.Id);
-                string icon = page.Icon ?? (conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•");
+                var userPage = layout?.Page(page.Id);
+                bool hidden = userPage?.Hidden == true && page.Id != "about";
+                if (hidden && !customizing)
+                    continue;
+                string title = userPage?.Title ?? page.Title ?? lang.Page(page.Id) ?? Conventions.Humanize(page.Id);
+                string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon ?? (conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•");
                 // Help and About sit in their own group at the bottom of the rail, apart from the settings pages.
                 bool bottom = page.Bottom || page.Id == "about" || page.Id == "help";
                 var fields = pageFields.TryGetValue(page.Id, out var list) ? list : new List<Setting>();
@@ -160,7 +178,7 @@ namespace UIFramework
                     var captured = fields;
                     build = ctx => SchemaPage.Prepend(ctx, captured, inner(ctx));
                 }
-                spec.Pages.Add(new PageSpec(page.Id, title, icon, build, bottom));
+                spec.Pages.Add(new PageSpec(page.Id, title, icon, build, bottom) { Hidden = hidden });
             }
         }
 

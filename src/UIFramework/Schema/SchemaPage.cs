@@ -21,8 +21,32 @@ namespace UIFramework
         public static UIElement Build(PageContext ctx, List<Setting> settings)
         {
             var page = Ui.PageStack();
-            Fill(ctx, page, settings, true);
+            if (ctx.Customizing)
+                FillCustomizing(ctx, page, settings);
+            else
+                Fill(ctx, page, settings, true);
             return Ui.Scroll(page);
+        }
+
+        /// <summary>The customise mode: one field per line, each in a draggable frame with its menu; hidden ones
+        /// dimmed so they can be shown again.</summary>
+        private static void FillCustomizing(PageContext ctx, StackPanel page, List<Setting> settings)
+        {
+            string section = null;
+            string pageId = settings.Count > 0 ? settings[0].Page : "";
+            foreach (var setting in settings.OrderBy(s => s.Order))
+            {
+                if (setting.Section != null && setting.Section != section)
+                {
+                    section = setting.Section;
+                    page.Children.Add(Ui.Section(section, page.Children.Count == 0));
+                }
+                var element = Render(ctx, setting);
+                if (element != null)
+                    page.Children.Add(Customize.Wrap(ctx, setting, element, pageId));
+            }
+            if (settings.Count == 0)
+                page.Children.Add(Ui.Note("No fields on this page. Drop one here from another page, or move one with its menu."));
         }
 
         /// <summary>Fields the spec put on a standard page, above that page's own content.</summary>

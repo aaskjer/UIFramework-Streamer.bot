@@ -183,7 +183,11 @@ namespace UIFramework
                     "Settings Damaged", MessageBoxButton.OK, MessageBoxImage.Warning);
 
             var settings = loaded.Settings;
-            var layout = LayoutFile.Load(_spec.SettingsPath);
+            // Every open resolves afresh, so a layout change made in the customise mode shows up after the reopen.
+            if (_spec.Schema != null)
+                Entry.Prepare(_spec, _spec.Schema);
+            var layout = _spec.Layout ?? LayoutFile.Load(_spec.SettingsPath);
+            _spec.Layout = layout;
             if (layout.AdoptFromHost(settings, "darkMode", "DarkMode"))
             {
                 try { layout.Save(); if (loaded.Damaged == null) _store.Save(settings); }
@@ -222,6 +226,7 @@ namespace UIFramework
             };
             ctx.Fields = new Fields(parts, settings, defaults, url => Web.OpenUrl(url, _log, _spec.LogPrefix));
             ctx.RefreshPage = parts.Refresh;
+            bool customizing = _spec.Customizing && _spec.Schema != null;
 
             // ---- Pages ----
             var pages = new List<(PageSpec Spec, UIElement Page)>();
@@ -284,6 +289,8 @@ namespace UIFramework
                 int index = i;
                 var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "•", () => ShowPage(index));
                 item.ToolTip = i < 9 ? pages[i].Spec.Title + " (Ctrl+" + (i + 1) + ")" : pages[i].Spec.Title;
+                if (customizing)
+                    Customize.AttachRail(ctx, pages[i].Spec, item, () => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList());
                 if (pages[i].Spec.Bottom) railBottom.Children.Add(item);
                 else railTop.Children.Add(item);
             }
@@ -421,6 +428,35 @@ namespace UIFramework
             bool closeConfirmed = false;
             bool reopenForThemeChange = false;
 
+            // A layout change or the mode switch: remember the page, close, let the loop open a fresh window.
+            void ReopenOn(string pageId)
+            {
+                _spec.ReopenPageId = pageId ?? pages[current].Spec.Id;
+                reopenForThemeChange = true;
+                closeConfirmed = true;
+                window.Close();
+            }
+            ctx.Reopen = ReopenOn;
+
+            var btnCustomize = Ui.IconButton(Icons.Edit, Icons.Font, customizing ? "Leave the customise mode" : "Customise: rename, move and hide pages and fields");
+            btnCustomize.Margin = new Thickness(6, 0, 0, 0);
+            if (customizing)
+                btnCustomize.Foreground = new SolidColorBrush(Theme.AccentText);
+            btnCustomize.IsEnabled = _spec.Schema != null;
+            btnCustomize.Click += (s, e) =>
+            {
+                if (!customizing && Changes() > 0)
+                {
+                    var answer = MessageBox.Show(
+                        "Save your changes before customising?\nThe window reopens, and anything unsaved is lost.",
+                        "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    if (answer == MessageBoxResult.Cancel) return;
+                    if (answer == MessageBoxResult.Yes && !SaveNow()) return;
+                }
+                _spec.Customizing = !customizing;
+                ReopenOn(null);
+            };
+
             btnSave.Click += (s, e) => SaveNow();
             btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = true; window.Close(); } };
             btnCancel.Click += (s, e) =>
@@ -516,8 +552,19 @@ namespace UIFramework
             leftButtons.Children.Add(btnTheme);
             leftButtons.Children.Add(btnReset);
             leftButtons.Children.Add(btnResetPage);
+            leftButtons.Children.Add(btnCustomize);
             var rightButtons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             rightButtons.Children.Add(status);
+            if (customizing)
+            {
+                SetStatus("Customise mode", Theme.AccentText);
+                // Nothing to save in the customise mode: values are frozen, the layout file is written on every change.
+                btnReset.IsEnabled = false;
+                btnResetPage.IsEnabled = false;
+                btnSave.Visibility = Visibility.Collapsed;
+                btnSaveExit.Visibility = Visibility.Collapsed;
+                btnCancel.Content = "Close";
+            }
             rightButtons.Children.Add(btnCancel);
             rightButtons.Children.Add(btnSave);
             rightButtons.Children.Add(btnSaveExit);
@@ -537,11 +584,20 @@ namespace UIFramework
             DockPanel.SetDock(headerBorder, Dock.Top);
             DockPanel.SetDock(footer, Dock.Bottom);
             root.Children.Add(headerBorder);
+            if (customizing)
+            {
+                var bar = Customize.Bar(ctx, () => { _spec.Customizing = false; ReopenOn(null); });
+                DockPanel.SetDock(bar, Dock.Top);
+                root.Children.Add(bar);
+                window.Title = _spec.Title + " – Settings  ·  Customise";
+            }
             root.Children.Add(footer);
             root.Children.Add(body);
             window.Content = root;
 
-            ShowPage(0);
+            int startPage = _spec.ReopenPageId == null ? -1 : pages.FindIndex(p => p.Spec.Id == _spec.ReopenPageId);
+            _spec.ReopenPageId = null;
+            ShowPage(startPage < 0 ? 0 : startPage);
 
             window.Closing += (s, e) =>
             {

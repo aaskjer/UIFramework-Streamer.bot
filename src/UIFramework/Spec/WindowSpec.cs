@@ -82,6 +82,17 @@ namespace UIFramework
         /// <summary>Pulls saved values into range before the file is written.</summary>
         public Action<JObject> Clamp;
 
+        /// <summary>Kept after <see cref="Entry.Prepare"/>, so the shell can resolve again after a layout change.</summary>
+        public Schema Schema;
+        public Conventions Conventions;
+        public LayoutFile Layout;
+
+        /// <summary>The customise mode is on; survives the reopen that every layout change asks for.</summary>
+        public bool Customizing;
+
+        /// <summary>The page to show after a reopen, by id.</summary>
+        public string ReopenPageId;
+
         public string RepoUrl => string.IsNullOrEmpty(GitHubRepo) ? null : "https://github.com/" + GitHubRepo;
         public string ReleasesUrl => RepoUrl == null ? null : RepoUrl + "/releases";
     }
@@ -96,6 +107,8 @@ namespace UIFramework
         public Func<PageContext, UIElement> Build;
         /// <summary>Docked at the bottom of the rail, like About.</summary>
         public bool Bottom;
+        /// <summary>Hidden by the user's layout; shown dimmed in the customise mode only.</summary>
+        public bool Hidden;
 
         public PageSpec() { }
 
