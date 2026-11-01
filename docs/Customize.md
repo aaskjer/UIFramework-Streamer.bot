@@ -44,7 +44,8 @@ Nach jeder Änderung baut sich das Fenster neu auf und zeigt dieselbe Seite wied
 | `theme.rainbow`               | Regenbogen-Modus, nur für ein Öffnen                                       |
 | `theme.accent`                | Akzentfarbe `#rrggbb`; leer: Standardblau                                  |
 | `language`                    | Sprachcode für Labels und Hilfetexte der Konventionen; fehlt: `en`         |
-| `autoUpdate`                  | `false`: der Loader lädt keine neue DLL mehr                               |
+| `autoUpdate`                  | `false`: der Loader fragt nicht mehr nach neuen Versionen                   |
+| `skipVersion`                 | vom Update-Dialog mit *Abbrechen* gesetzt: diese Version wird nicht mehr angeboten |
 | `pages.<id>.title`, `.icon`   | Anzeige der Seite                                                          |
 | `pages.<id>.order`            | Reihenfolge in der oberen Gruppe; Seiten mit `order` kommen zuerst         |
 | `pages.<id>.hidden`           | Seite weg (außer `about`)                                                  |
