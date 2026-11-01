@@ -16,6 +16,9 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
+        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool), and the file next
+        // to the settings file that holds the rows, with the property in it (no field: the file is the array).
+        public string[] Columns; public string File, Field;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -23,13 +26,14 @@ public static class UiSchema
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
-        string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null)
+        string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
+        string[] columns = null, string file = null, string field = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
-            Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor
+            Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field
         };
     }
 
@@ -69,6 +73,18 @@ public static class UiSchema
                 item["options"] = options;
             }
             if (s.Placeholders != null) item["placeholders"] = new JArray(s.Placeholders);
+            if (s.Columns != null)
+            {
+                var columns = new JArray();
+                foreach (var column in s.Columns)
+                {
+                    var parts = column.Split('|');
+                    columns.Add(new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] });
+                }
+                item["columns"] = columns;
+            }
+            if (s.File != null) item["file"] = s.File;
+            if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
             settings.Add(item);

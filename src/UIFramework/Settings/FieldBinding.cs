@@ -44,6 +44,8 @@ namespace UIFramework
                     settings[tt.Key] = ValueOf(tt, txt.Text);
                 else if (node is ComboBox cmb && FieldTag.Of(cmb.Tag) is FieldTag mt && cmb.SelectedItem is ComboBoxItem selected)
                     settings[mt.Key] = ComboValue(mt, selected.Tag);
+                else if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt)
+                    settings[lt.Key] = list.Value;
             });
         }
 
@@ -116,6 +118,12 @@ namespace UIFramework
                     return;
                 }
 
+                if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt)
+                {
+                    list.Set(defaults[lt.Key] as JArray);
+                    return;
+                }
+
                 if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt)
                 {
                     txt.Text = Display(tt, defaults[tt.Key]);
@@ -149,6 +157,8 @@ namespace UIFramework
                 return txt.Text ?? "";
             if (node is ComboBox cmb && cmb.Tag is FieldTag)
                 return cmb.SelectedItem is ComboBoxItem item && item.Tag != null ? item.Tag.ToString() : "";
+            if (node is ListEditor list && list.Tag is FieldTag)
+                return list.Serialized;
             return null;
         }
 
@@ -188,6 +198,8 @@ namespace UIFramework
                     txt.TextChanged += (s, e) => onChanged();
                 else if (obj is ComboBox cmb && cmb.Tag is FieldTag)
                     cmb.SelectionChanged += (s, e) => onChanged();
+                else if (obj is ListEditor list && list.Tag is FieldTag)
+                    list.Changed += onChanged;
             });
         }
 

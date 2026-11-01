@@ -226,7 +226,10 @@ ihre Harnesse sind weg; `run-window-tests.ps1` öffnet das echte Fenster über d
 Hintergrund-Update in `Init`, Release-Workflow; v0.1.0 und v0.1.1 sind veröffentlicht. Phase 4 (01.11.):
 Layout-Datei als vierte Schicht (Seiten: Titel, Icon, Reihenfolge, ausblenden; Felder: Seite, Reihenfolge, Label,
 Abschnitt, ausblenden), Anpassen-Modus im Fenster mit Griff, Drag auf Felder und Seiten, Kontextmenüs, Dialogen,
-Akzentfarbe, Sprache, Reset; `docs/Customize.md`. Offen aus Phase 4: Screenshots für die Docs.
+Akzentfarbe, Sprache, Reset; `docs/Customize.md`. Offen aus Phase 4: Screenshots für die Docs. Update-Dialog
+statt stillem Download (v0.2.0). Phase 5 (01.11.): `list`-Kind mit Zeilen-Editor und Ablage in eigener Datei
+(`file`/`field`, `Sidecars`) für Wortbank und Fragenlisten (v0.3.0); Blackjack v17.0.0 als erster Host
+veröffentlicht; RhymeTime in Arbeit.
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.

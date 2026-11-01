@@ -112,6 +112,9 @@ namespace UIFramework
         public bool ReadOnly;
         public bool Hidden;
         public List<SettingColumn> Columns;
+        /// <summary>A file of its own next to the settings file that holds this value (see Sidecars), and the
+        /// property in it; no field: the file's root is the value.</summary>
+        public string File, Field;
         public List<string> Aliases = new List<string>();
         public Dictionary<string, double> AliasFactors = new Dictionary<string, double>(StringComparer.Ordinal);
         public int Order;
@@ -152,7 +155,9 @@ namespace UIFramework
                 Confirm = (string)item["confirm"],
                 Advanced = item["advanced"]?.Type == JTokenType.Boolean && (bool)item["advanced"],
                 ReadOnly = item["readonly"]?.Type == JTokenType.Boolean && (bool)item["readonly"],
-                Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"]
+                Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
+                File = (string)item["file"],
+                Field = (string)item["field"]
             };
             if (item["options"] is JArray options)
                 setting.Options = options.Select(SettingOption.Parse).ToList();
@@ -191,6 +196,8 @@ namespace UIFramework
             if (ReadOnly) item["readonly"] = true;
             if (Hidden) item["hidden"] = true;
             if (Columns != null) item["columns"] = new JArray(Columns.Select(c => c.ToJson()));
+            if (File != null) item["file"] = File;
+            if (Field != null) item["field"] = Field;
             if (Aliases.Count > 0) item["aliases"] = new JArray(Aliases);
             if (AliasFactors.Count > 0) item["aliasFactors"] = JObject.FromObject(AliasFactors);
             return item;
