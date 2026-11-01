@@ -70,7 +70,8 @@ JSON-Array von Objekten, deren Felder die `columns` nennen.
 
 **Eigene Datei (`file`, `field`):** der Wert wird beim Öffnen aus `<Ordner der Settings-Datei>\<file>` gelesen
 (Property `field`, oder die Datei selbst) und beim Speichern dorthin geschrieben, atomar mit `.bak`; alles andere
-in der Datei bleibt stehen. In die Settings-Datei kommt der Key nie. Fehlt die Datei, zeigt das Fenster den
+in der Datei bleibt stehen. In die Settings-Datei kommt der Key nie; *Reset all* setzt nur die Settings-Datei zurück
+und lässt die eigene Datei stehen (ihr Editor hat *Restore defaults*). Fehlt die Datei, zeigt das Fenster den
 `default`; so bleibt die Datei, die das Spiel ohnehin liest (`RT-wordbank.json`), das einzige Exemplar.
 
 Ableitung ohne `kind`: bool → `bool`, ganze Zahl → `int`, Kommazahl → `double`, string → `string`, Array → `list`

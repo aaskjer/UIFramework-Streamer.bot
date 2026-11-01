@@ -190,7 +190,7 @@ namespace UIFramework
             _spec.Layout = layout;
             if (layout.AdoptFromHost(settings, "darkMode", "DarkMode"))
             {
-                try { layout.Save(); if (loaded.Damaged == null) _store.Save(settings); }
+                try { layout.Save(); if (loaded.Damaged == null) _store.Save(Sidecars.Strip(settings, _spec.ResolvedSettings)); }
                 catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Theme not moved to the layout file: " + ex.Message); }
             }
             layout.ApplyTheme();
@@ -495,7 +495,7 @@ namespace UIFramework
                 if (confirm != MessageBoxResult.Yes) return;
 
                 var fresh = (JObject)defaults.DeepClone();
-                try { _store.Save(Sidecars.Split(fresh, _spec.ResolvedSettings, _spec.SettingsPath)); }
+                try { _store.Save(Sidecars.Strip(fresh, _spec.ResolvedSettings)); }
                 catch (Exception ex)
                 {
                     SetStatus("Not reset", Theme.DangerText, ex.Message);

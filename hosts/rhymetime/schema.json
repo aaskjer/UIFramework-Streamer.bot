@@ -1,0 +1,1079 @@
+{
+  "host": "rhymetime",
+  "version": "v2.0.0",
+  "settingsFile": "Chat Games/RhymeTime/RT-settings.json",
+  "settings": [
+    {
+      "key": "useBot",
+      "default": true,
+      "aliases": [
+        "UseBot"
+      ]
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "aliases": [
+        "SendAction"
+      ]
+    },
+    {
+      "key": "cooldownUseBot",
+      "default": true,
+      "aliases": [
+        "UseBotCD"
+      ]
+    },
+    {
+      "key": "cooldownSendAction",
+      "default": false,
+      "aliases": [
+        "SendActionCD"
+      ]
+    },
+    {
+      "key": "numberSeparator",
+      "default": ".",
+      "aliases": [
+        "NumberSeparator"
+      ]
+    },
+    {
+      "key": "timeLimit",
+      "default": 30,
+      "kind": "duration",
+      "page": "game",
+      "section": "The round",
+      "label": "Seconds to answer",
+      "help": "How long a chatter has to find a rhyme before the round is lost.",
+      "min": 5.0,
+      "max": 600.0,
+      "aliases": [
+        "TimeLimit"
+      ]
+    },
+    {
+      "key": "maxAttempts",
+      "default": 3,
+      "page": "game",
+      "section": "The round",
+      "label": "Attempts",
+      "help": "How many wrong rhymes a chatter may offer before the round is lost. Only guesses that look like an attempt are counted; anything else in chat is ignored.",
+      "min": 1.0,
+      "max": 10.0,
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "aliases": [
+        "MaxAttempts"
+      ]
+    },
+    {
+      "key": "difficulty",
+      "default": "medium",
+      "kind": "options",
+      "page": "game",
+      "section": "The round",
+      "label": "Difficulty",
+      "help": "Which word bank a round draws from. Random picks one of the three that has words in it.",
+      "options": [
+        {
+          "value": "easy",
+          "label": "Easy"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "hard",
+          "label": "Hard"
+        },
+        {
+          "value": "random",
+          "label": "Random"
+        }
+      ],
+      "aliases": [
+        "Difficulty"
+      ]
+    },
+    {
+      "key": "checkRealWords",
+      "default": true,
+      "page": "game",
+      "section": "The round",
+      "label": "Check guesses against a dictionary",
+      "help": "A guess that merely ends the right way is checked against wordotron.com before it counts. Guesses you listed as rhymes yourself always count; with this off, anything with the right ending wins. If the lookup is slow or unreachable the guess is accepted, so a dictionary outage never rejects a correct rhyme.",
+      "aliases": [
+        "CheckRealWords"
+      ]
+    },
+    {
+      "key": "pointsVariable",
+      "default": "points",
+      "page": "game",
+      "section": "Currency",
+      "help": "The Streamer.bot user variable the stake is taken from and the winnings are added to. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own and override this.",
+      "aliases": [
+        "PointsVar"
+      ]
+    },
+    {
+      "key": "pointsName",
+      "default": "Points",
+      "page": "game",
+      "section": "Currency",
+      "help": "What your currency is called in chat; it fills the {currency} placeholder. Overridden by Currency Core or LOYALTY POINTS when one of them is installed.",
+      "aliases": [
+        "PointsName"
+      ]
+    },
+    {
+      "key": "defaultBet",
+      "default": 100,
+      "page": "game",
+      "section": "Bets",
+      "help": "Staked when a chatter runs the command without naming an amount. 0 makes the whole game free: nothing is staked and nothing is paid out. Chatters may also type all, half, third, quarter or random.",
+      "min": 0.0,
+      "aliases": [
+        "DefaultBet"
+      ]
+    },
+    {
+      "key": "minBet",
+      "default": 10,
+      "page": "game",
+      "section": "Bets",
+      "help": "Bets below this are refused. 0 turns the floor off.",
+      "min": 0.0,
+      "aliases": [
+        "MinBet"
+      ]
+    },
+    {
+      "key": "maxBet",
+      "default": 10000,
+      "page": "game",
+      "section": "Bets",
+      "help": "Bets above this are refused. 0 turns the ceiling off.",
+      "min": 0.0,
+      "aliases": [
+        "MaxBet"
+      ]
+    },
+    {
+      "key": "easyMultiplier",
+      "default": 1.5,
+      "page": "game",
+      "section": "Payout",
+      "label": "Easy ×",
+      "help": "The stake is multiplied by this on a win from the easy bank.",
+      "min": 0.0,
+      "aliases": [
+        "EasyMultiplier"
+      ]
+    },
+    {
+      "key": "mediumMultiplier",
+      "default": 2.0,
+      "page": "game",
+      "section": "Payout",
+      "label": "Medium ×",
+      "help": "The stake is multiplied by this on a win from the medium bank.",
+      "min": 0.0,
+      "aliases": [
+        "MediumMultiplier"
+      ]
+    },
+    {
+      "key": "hardMultiplier",
+      "default": 3.0,
+      "page": "game",
+      "section": "Payout",
+      "label": "Hard ×",
+      "help": "The stake is multiplied by this on a win from the hard bank.",
+      "min": 0.0,
+      "aliases": [
+        "HardMultiplier"
+      ]
+    },
+    {
+      "key": "globalCooldown",
+      "default": 10,
+      "page": "game",
+      "section": "Cooldowns",
+      "label": "Everyone",
+      "help": "Applied to the !Rhyme command for the whole chat, in seconds. 0 turns it off. Saving writes it straight onto the command.",
+      "aliases": [
+        "CooldownGlobalSeconds"
+      ]
+    },
+    {
+      "key": "userCooldown",
+      "default": 30,
+      "page": "game",
+      "section": "Cooldowns",
+      "label": "Per chatter",
+      "help": "Applied to the !Rhyme command per chatter, in seconds. 0 turns it off. Saving writes it straight onto the command.",
+      "aliases": [
+        "CooldownUserSeconds"
+      ]
+    },
+    {
+      "key": "battleReward",
+      "default": 500,
+      "page": "battle",
+      "section": "The prize",
+      "label": "Battle reward",
+      "help": "Paid to the winner when the moderator starts a battle without staking anything. 0 means a battle without a stake pays nothing. With a default bet above 0 the moderator stakes that instead, and the winner takes it. Minimum and maximum bet from the Game page apply to a staked battle too.",
+      "min": 0.0,
+      "aliases": [
+        "BattleReward"
+      ]
+    },
+    {
+      "key": "wordsEasy",
+      "default": [
+        {
+          "Word": "CAT",
+          "Rhymes": "BAT,HAT,MAT,RAT,SAT,FAT,PAT,FLAT,CHAT,THAT"
+        },
+        {
+          "Word": "GAME",
+          "Rhymes": "FAME,NAME,SAME,BLAME,CAME,FLAME,FRAME,SHAME,TAME,CLAIM"
+        },
+        {
+          "Word": "LIGHT",
+          "Rhymes": "NIGHT,SIGHT,FIGHT,RIGHT,MIGHT,BRIGHT,FLIGHT,TIGHT,HEIGHT,SLIGHT"
+        },
+        {
+          "Word": "PLAY",
+          "Rhymes": "DAY,SAY,WAY,MAY,STAY,PAY,LAY,GRAY,PRAY,DELAY"
+        },
+        {
+          "Word": "LOVE",
+          "Rhymes": "DOVE,ABOVE,GLOVE,SHOVE,THEREOF"
+        },
+        {
+          "Word": "KING",
+          "Rhymes": "RING,SING,BRING,THING,WING,STRING,SPRING,SWING,STING,CLING"
+        },
+        {
+          "Word": "TREE",
+          "Rhymes": "SEE,BEE,FREE,THREE,KEY,AGREE,DEGREE,FLEE,KNEE,TEA"
+        },
+        {
+          "Word": "STAR",
+          "Rhymes": "CAR,FAR,BAR,JAR,SCAR,GUITAR,CIGAR,AVATAR,BIZARRE"
+        },
+        {
+          "Word": "STAR LIGHT STAR BRIGHT ...",
+          "Rhymes": "FIRST STAR I SEE TONIGHT"
+        },
+        {
+          "Word": "ROSES ARE RED VIOLETS ARE BLUE ...",
+          "Rhymes": "SUGAR IS SWEET AND SO ARE YOU"
+        },
+        {
+          "Word": "JACK AND JILL WENT UP THE HILL ...",
+          "Rhymes": "TO FETCH A PAIL OF WATER"
+        },
+        {
+          "Word": "TWINKLE TWINKLE LITTLE STAR ...",
+          "Rhymes": "HOW I WONDER WHAT YOU ARE"
+        },
+        {
+          "Word": "HUMPTY DUMPTY SAT ON A WALL ...",
+          "Rhymes": "HUMPTY DUMPTY HAD A GREAT FALL"
+        },
+        {
+          "Word": "WITH GREAT POWER ...",
+          "Rhymes": "COMES GREAT RESPONSIBILITY"
+        }
+      ],
+      "kind": "list",
+      "page": "words",
+      "section": "Easy bank",
+      "label": "Easy",
+      "help": "One target per row with its rhymes beside it, separated by commas. A target with spaces in it is treated as a line to finish instead of a word to rhyme: then the whole reply has to match one of the answers.",
+      "columns": [
+        {
+          "key": "Word",
+          "kind": "string",
+          "label": "Word or line"
+        },
+        {
+          "key": "Rhymes",
+          "kind": "text",
+          "label": "Rhymes / answers"
+        }
+      ],
+      "file": "RT-wordbank.json",
+      "field": "Easy"
+    },
+    {
+      "key": "wordsMedium",
+      "default": [
+        {
+          "Word": "STREAM",
+          "Rhymes": "DREAM,TEAM,THEME,CREAM,BEAM,GLEAM,SCHEME,SUPREME,EXTREME,REGIME"
+        },
+        {
+          "Word": "VICTORY",
+          "Rhymes": "HISTORY,MYSTERY,MISERY,DELIVERY,DISCOVERY"
+        },
+        {
+          "Word": "BATTLE",
+          "Rhymes": "CATTLE,RATTLE,SEATTLE,PRATTLE,TATTLE"
+        },
+        {
+          "Word": "GAMING",
+          "Rhymes": "NAMING,CLAIMING,FRAMING,BLAMING,SHAMING,TAMING,AIMING,FLAMING"
+        },
+        {
+          "Word": "POWER",
+          "Rhymes": "HOUR,TOWER,FLOWER,SHOWER,DEVOUR,SOUR"
+        },
+        {
+          "Word": "NOTIFICATION",
+          "Rhymes": "VACATION,STATION,NATION,CREATION,EDUCATION,FOUNDATION,POPULATION,SENSATION"
+        },
+        {
+          "Word": "CONTROLLER",
+          "Rhymes": "ROLLER,STROLLER,BOWLER,PATROLLER"
+        },
+        {
+          "Word": "CHAMPION",
+          "Rhymes": "MANSION,FASHION,PASSION,EXPANSION,COMPASSION"
+        },
+        {
+          "Word": "TO BE OR NOT TO BE ...",
+          "Rhymes": "THAT IS THE QUESTION"
+        },
+        {
+          "Word": "ALL THAT GLITTERS IS NOT GOLD ...",
+          "Rhymes": "OFTEN HAVE YOU HEARD THAT TOLD"
+        },
+        {
+          "Word": "PETER PIPER PICKED A PECK OF PICKLED PEPPERS ...",
+          "Rhymes": "A PECK OF PICKLED PEPPERS PETER PIPER PICKED"
+        },
+        {
+          "Word": "SHE SELLS SEASHELLS BY THE SEASHORE ...",
+          "Rhymes": "THE SHELLS SHE SELLS ARE SURELY SEASHELLS"
+        },
+        {
+          "Word": "HOW MUCH WOOD WOULD A WOODCHUCK CHUCK ...",
+          "Rhymes": "IF A WOODCHUCK COULD CHUCK WOOD"
+        }
+      ],
+      "kind": "list",
+      "page": "words",
+      "section": "Medium bank",
+      "label": "Medium",
+      "help": "The bank a round at medium difficulty draws from. A row only reaches the game once it has a target and at least one rhyme.",
+      "columns": [
+        {
+          "key": "Word",
+          "kind": "string",
+          "label": "Word or line"
+        },
+        {
+          "key": "Rhymes",
+          "kind": "text",
+          "label": "Rhymes / answers"
+        }
+      ],
+      "file": "RT-wordbank.json",
+      "field": "Medium"
+    },
+    {
+      "key": "wordsHard",
+      "default": [
+        {
+          "Word": "SUBSCRIBE",
+          "Rhymes": "TRIBE,BRIBE,DESCRIBE,PRESCRIBE,VIBE"
+        },
+        {
+          "Word": "ALGORITHM",
+          "Rhymes": "RHYTHM,PRISM,SCHISM"
+        },
+        {
+          "Word": "MOMENTUM",
+          "Rhymes": "CONTINUUM,SPECTRUM,QUANTUM,DRUM,SUM"
+        },
+        {
+          "Word": "PHENOMENON",
+          "Rhymes": "MARATHON,PENTAGON,PARAGON,OCTAGON"
+        },
+        {
+          "Word": "ORCHESTRA",
+          "Rhymes": "EXTRA,SPECTRA,TUNDRA,MANTRA"
+        },
+        {
+          "Word": "SILHOUETTE",
+          "Rhymes": "ROULETTE,CASSETTE,BAGUETTE,REGRET,SUNSET"
+        },
+        {
+          "Word": "ENTREPRENEUR",
+          "Rhymes": "CONNOISSEUR,SABOTEUR,AMATEUR,PROVOCATEUR"
+        },
+        {
+          "Word": "LABYRINTH",
+          "Rhymes": "ZENITH,MONOLITH,MEGALITH"
+        },
+        {
+          "Word": "A JOURNEY OF A THOUSAND MILES ...",
+          "Rhymes": "BEGINS WITH A SINGLE STEP"
+        },
+        {
+          "Word": "THE EARLY BIRD CATCHES THE WORM ...",
+          "Rhymes": "BUT THE SECOND MOUSE GETS THE CHEESE"
+        },
+        {
+          "Word": "ASHES TO ASHES ...",
+          "Rhymes": "DUST TO DUST"
+        },
+        {
+          "Word": "WHAT DOESNT KILL YOU ...",
+          "Rhymes": "MAKES YOU STRONGER"
+        }
+      ],
+      "kind": "list",
+      "page": "words",
+      "section": "Hard bank",
+      "label": "Hard",
+      "help": "The bank a round at hard difficulty draws from.",
+      "columns": [
+        {
+          "key": "Word",
+          "kind": "string",
+          "label": "Word or line"
+        },
+        {
+          "key": "Rhymes",
+          "kind": "text",
+          "label": "Rhymes / answers"
+        }
+      ],
+      "file": "RT-wordbank.json",
+      "field": "Hard"
+    },
+    {
+      "key": "blockedUsers",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "help": "These names are ignored when they run the command, with no reply in chat.",
+      "aliases": [
+        "BlockedUsers"
+      ]
+    },
+    {
+      "key": "blockedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "help": "Everyone in these Streamer.bot groups is ignored when they run the command (Settings > Groups). A group that does not exist is skipped and logged.",
+      "aliases": [
+        "BlockedGroups"
+      ]
+    },
+    {
+      "key": "overlayEnabled",
+      "default": false,
+      "page": "overlay",
+      "section": "OBS overlay",
+      "label": "Send rounds to the overlay",
+      "help": "A browser source that shows the word being rhymed with its countdown, then the rhyme that won it and what it paid. It listens to Streamer.bot's own WebSocket server. Off, and the game sends it nothing.",
+      "aliases": [
+        "OverlayEnabled"
+      ]
+    },
+    {
+      "key": "overlayPort",
+      "default": 8080,
+      "page": "overlay",
+      "section": "Streamer.bot's WebSocket server",
+      "label": "Port",
+      "help": "The port of Streamer.bot's WebSocket server (Servers/Clients > WebSocket Server, tick Auto Start). 8080 unless you changed it there. With its authentication on, add &password= and the password to the end of the URL in OBS.",
+      "min": 1.0,
+      "max": 65535.0,
+      "aliases": [
+        "OverlayPort"
+      ]
+    },
+    {
+      "key": "obsConnectionId",
+      "default": 0,
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Connection #",
+      "help": "Which of Streamer.bot's OBS connections to use, if you have more than one. 0 is the first.",
+      "min": 0.0,
+      "aliases": [
+        "ObsConnectionId"
+      ]
+    },
+    {
+      "key": "obsSceneName",
+      "default": "RhymeTime",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Scene",
+      "help": "The scene the source is added to. It is created if it is not there yet.",
+      "aliases": [
+        "ObsSceneName"
+      ]
+    },
+    {
+      "key": "obsSourceName",
+      "default": "RhymeTime Overlay",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Source",
+      "help": "The browser source created in that scene. Nothing is touched if OBS already has a source of this name.",
+      "aliases": [
+        "ObsSourceName"
+      ]
+    },
+    {
+      "key": "setupObsOverlay",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Set the overlay up in OBS",
+      "help": "Creates the scene if it is missing and adds a browser source the size of your canvas pointed at the overlay URL. OBS has to be connected in Streamer.bot under Stream Apps > OBS Studio. Save first: the setup reads the saved port and names.",
+      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay URL, over the OBS connection set above. Save your changes first if you edited the port or the names. Go ahead?"
+    },
+    {
+      "key": "copyOverlayUrl",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Or add it by hand",
+      "label": "Copy the overlay URL",
+      "help": "Writes the overlay page and copies its address for a Browser source in OBS: untick 'Local file', paste the URL, set the size to 1920 × 1080. The URL takes &platform=twitch for one platform's rounds only, &lang=de for German wording, &demo=1 to place the source, and &debug=1 to see whether it reached Streamer.bot."
+    },
+    {
+      "key": "openOverlayDemo",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Or add it by hand",
+      "label": "Try the demo",
+      "help": "Opens the overlay in your browser, playing sample rounds without Streamer.bot."
+    },
+    {
+      "key": "openOverlayFolder",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Or add it by hand",
+      "label": "Open the overlay folder",
+      "help": "Opens Chat Games\\RhymeTime\\Overlay, where the page is written."
+    },
+    {
+      "key": "overlayPosition",
+      "default": "left",
+      "kind": "options",
+      "page": "overlay",
+      "section": "Size and place",
+      "label": "Place",
+      "help": "Which side of the canvas the card sits on. A position= in the overlay's URL overrules this. Everything in this section travels with the round, so nothing has to be set up in OBS again.",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Centre"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "aliases": [
+        "OverlayPosition"
+      ]
+    },
+    {
+      "key": "overlayScale",
+      "default": 100,
+      "page": "overlay",
+      "section": "Size and place",
+      "label": "Size",
+      "help": "Scales the whole card. 100 is full size, 10 to 300 are the limits.",
+      "min": 10.0,
+      "max": 300.0,
+      "aliases": [
+        "OverlayScale"
+      ]
+    },
+    {
+      "key": "overlayResultSeconds",
+      "default": 8,
+      "page": "overlay",
+      "section": "Size and place",
+      "label": "Result shown",
+      "help": "How long the winning rhyme, or the examples after a lost round, stays on screen.",
+      "min": 1.0,
+      "max": 120.0,
+      "aliases": [
+        "OverlayResultSeconds"
+      ]
+    },
+    {
+      "key": "overlayShowEnding",
+      "default": true,
+      "page": "overlay",
+      "section": "What it shows",
+      "label": "The ending to rhyme with",
+      "help": "The 'anything ending in …EAM' pill under the word. The ending stays picked out in the word itself either way. One round at a time is shown, the newest: a battle takes the card from a single-player round that is still running.",
+      "aliases": [
+        "OverlayShowEnding"
+      ]
+    },
+    {
+      "key": "overlayShowAttempts",
+      "default": true,
+      "page": "overlay",
+      "section": "What it shows",
+      "label": "Attempts left",
+      "help": "The row of dots following 'Attempts' on the Game page. A battle never shows them; the whole chat is racing.",
+      "aliases": [
+        "OverlayShowAttempts"
+      ]
+    },
+    {
+      "key": "overlayShowStake",
+      "default": true,
+      "page": "overlay",
+      "section": "What it shows",
+      "label": "The stake",
+      "help": "The chip in the corner with the bet, or the battle's prize. Off in a free game either way.",
+      "aliases": [
+        "OverlayShowStake"
+      ]
+    },
+    {
+      "key": "overlayShowExamples",
+      "default": true,
+      "page": "overlay",
+      "section": "What it shows",
+      "label": "Rhymes after a lost round",
+      "help": "Up to five of the rhymes you listed, the way the Examples message posts them in chat.",
+      "aliases": [
+        "OverlayShowExamples"
+      ]
+    },
+    {
+      "key": "overlayGlow",
+      "default": true,
+      "page": "overlay",
+      "section": "What it shows",
+      "label": "The warm glow behind the card",
+      "help": "A soft bloom in the accent colour, turning to the battle or won colour with the card.",
+      "aliases": [
+        "OverlayGlow"
+      ]
+    },
+    {
+      "key": "overlayAccentColour",
+      "default": "#F97316",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Colours",
+      "label": "Accent",
+      "help": "The word's ending, the wordmark and the clock bar. Everything lighter is worked out from it.",
+      "aliases": [
+        "OverlayAccentColor"
+      ]
+    },
+    {
+      "key": "overlayBattleColour",
+      "default": "#FB7185",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Colours",
+      "label": "Battle",
+      "help": "The battle card's border and chip, the used attempt dots and a lost round.",
+      "aliases": [
+        "OverlayBattleColor"
+      ]
+    },
+    {
+      "key": "overlayWinColour",
+      "default": "#86EFAC",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Colours",
+      "label": "Won",
+      "help": "The winning rhyme and what it paid.",
+      "aliases": [
+        "OverlayWinColor"
+      ]
+    },
+    {
+      "key": "overlayCardColour",
+      "default": "#160E10",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Colours",
+      "label": "Card",
+      "help": "The card behind it all. Anything this page does not reach belongs in the Browser source's own Custom CSS, which wins: :root { --rt-width: 480px; --rt-edge: 40px; --rt-radius: 8px; }",
+      "aliases": [
+        "OverlayCardColor"
+      ]
+    },
+    {
+      "key": "overlayCardOpacity",
+      "default": 78,
+      "kind": "percent",
+      "page": "overlay",
+      "section": "Colours",
+      "label": "Card opacity",
+      "help": "How solid the card is. 0 leaves only the text, 100 hides the stream behind it.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "OverlayCardOpacity"
+      ]
+    },
+    {
+      "key": "startMessage",
+      "default": "{user}, find a rhyme for: {word}! You have {timeLimit} seconds. Bet: {amount} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Round started",
+      "help": "Opens a round and names the word to rhyme with.",
+      "placeholders": [
+        "user",
+        "word",
+        "timeLimit",
+        "amount",
+        "currency"
+      ],
+      "aliases": [
+        "StartMessage"
+      ]
+    },
+    {
+      "key": "winMessage",
+      "default": "{user} rhymed '{word}' with '{guess}'! +{winAmount} {currency} [Total: {currentPoints} {currency}]",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Win",
+      "help": "Sent on the first guess that counts as a rhyme.",
+      "placeholders": [
+        "user",
+        "word",
+        "guess",
+        "winAmount",
+        "currency",
+        "currentPoints"
+      ],
+      "aliases": [
+        "WinMessage"
+      ]
+    },
+    {
+      "key": "loseMessage",
+      "default": "{user} couldn't find a rhyme for '{word}' in time! -{amount} {currency} [Total: {currentPoints} {currency}]",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Out of time",
+      "help": "Sent when the clock runs out with no valid rhyme.",
+      "placeholders": [
+        "user",
+        "word",
+        "amount",
+        "currency",
+        "currentPoints"
+      ],
+      "aliases": [
+        "LoseMessage"
+      ]
+    },
+    {
+      "key": "failedAttemptMessage",
+      "default": "@{user}, '{guess}' doesn't rhyme with '{word}'! {attempts}/{maxAttempts} attempts used.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Wrong guess",
+      "help": "Sent for each guess that looks like an attempt but does not rhyme, up to the attempt limit.",
+      "placeholders": [
+        "user",
+        "guess",
+        "word",
+        "attempts",
+        "maxAttempts"
+      ],
+      "aliases": [
+        "FailedAttemptMessage"
+      ]
+    },
+    {
+      "key": "maxAttemptsLoseMessage",
+      "default": "{user} used all {maxAttempts} attempts on '{word}'! -{amount} {currency} [Total: {currentPoints} {currency}]",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Out of attempts",
+      "help": "Sent instead of 'Out of time' when the attempt limit is what ended the round.",
+      "placeholders": [
+        "user",
+        "word",
+        "amount",
+        "currency",
+        "currentPoints",
+        "maxAttempts"
+      ],
+      "aliases": [
+        "MaxAttemptsLoseMessage"
+      ]
+    },
+    {
+      "key": "educationalMessage",
+      "default": "Examples: {examples}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Examples after a loss",
+      "help": "Follows a lost round with up to five of the rhymes you listed. Empty it to post nothing.",
+      "placeholders": [
+        "examples"
+      ],
+      "aliases": [
+        "EducationalMessage"
+      ]
+    },
+    {
+      "key": "alreadyPlayingMessage",
+      "default": "{user}, you already have an active round!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Already in a round",
+      "help": "Sent when a chatter runs the command while their own round is still open.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "AlreadyPlayingMessage"
+      ]
+    },
+    {
+      "key": "noWordsMessage",
+      "default": "{user}, there are no words in the {difficulty} word bank yet.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Empty word bank",
+      "help": "Sent when the chosen bank has no usable word in it, so no round can start.",
+      "placeholders": [
+        "user",
+        "difficulty"
+      ],
+      "aliases": [
+        "NoWordsMessage"
+      ]
+    },
+    {
+      "key": "battleStartMessage",
+      "default": "⚔️ BATTLE TIME! First to rhyme with '{word}' wins {reward} {currency}! You have {timeLimit}s!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Battle",
+      "label": "Battle opened",
+      "help": "Opens a battle for the whole chat.",
+      "placeholders": [
+        "word",
+        "reward",
+        "currency",
+        "timeLimit",
+        "user"
+      ],
+      "aliases": [
+        "BattleStartMessage"
+      ]
+    },
+    {
+      "key": "battleWinMessage",
+      "default": "🏆 {winner} won the battle by rhyming '{word}' with '{guess}'! +{reward} {currency} (Total: {currentPoints} {currency})",
+      "kind": "template",
+      "page": "messages",
+      "group": "Battle",
+      "label": "Battle won",
+      "help": "Sent to whoever got the first valid rhyme in.",
+      "placeholders": [
+        "winner",
+        "word",
+        "guess",
+        "reward",
+        "currency",
+        "currentPoints"
+      ],
+      "aliases": [
+        "BattleWinMessage"
+      ]
+    },
+    {
+      "key": "battleTimeoutMessage",
+      "default": "⏰ Nobody rhymed with '{word}' in time! Some valid rhymes: {examples}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Battle",
+      "label": "Battle expired",
+      "help": "Sent when nobody rhymed in time. Any stake the moderator put up goes back.",
+      "placeholders": [
+        "word",
+        "examples",
+        "currency"
+      ],
+      "aliases": [
+        "BattleTimeoutMessage"
+      ]
+    },
+    {
+      "key": "battleAlreadyActiveMessage",
+      "default": "⚔️ A battle is already in progress! Type your rhyme in chat!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Battle",
+      "label": "Battle already running",
+      "help": "Sent when a moderator opens a battle while one is still going on that platform.",
+      "placeholders": [],
+      "aliases": [
+        "BattleAlreadyActiveMessage"
+      ]
+    },
+    {
+      "key": "invalidBetMessage",
+      "default": "{user}, {reason}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Bet refused",
+      "help": "The frame around the four reasons below; {reason} is replaced by whichever one applies.",
+      "placeholders": [
+        "user",
+        "reason",
+        "currency"
+      ],
+      "aliases": [
+        "InvalidBetMessage"
+      ]
+    },
+    {
+      "key": "reasonNegativeAmount",
+      "default": "please specify a valid bet amount greater than 0.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: not a number",
+      "help": "Fills {reason} when the amount could not be read, or is not above zero.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "ReasonNegativeAmount"
+      ]
+    },
+    {
+      "key": "reasonInsufficientFunds",
+      "default": "you don't have enough {currency}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: cannot afford it",
+      "help": "Fills {reason} when the bet is more than the chatter has.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "ReasonInsufficientFunds"
+      ]
+    },
+    {
+      "key": "reasonBelowMinimum",
+      "default": "minimum bet is {min} {currency}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: under the minimum",
+      "help": "Fills {reason} when the bet is below the minimum on the Game page.",
+      "placeholders": [
+        "min",
+        "currency"
+      ],
+      "aliases": [
+        "ReasonBelowMinimum"
+      ]
+    },
+    {
+      "key": "reasonAboveMaximum",
+      "default": "maximum bet is {max} {currency}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: over the maximum",
+      "help": "Fills {reason} when the bet is above the maximum on the Game page.",
+      "placeholders": [
+        "max",
+        "currency"
+      ],
+      "aliases": [
+        "ReasonAboveMaximum"
+      ]
+    },
+    {
+      "key": "globalCooldownMessage",
+      "default": "Please wait {seconds} seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Everyone's cooldown",
+      "help": "Sent when the command is still on cooldown for the whole chat.",
+      "placeholders": [
+        "seconds"
+      ],
+      "aliases": [
+        "GlobalMessage"
+      ]
+    },
+    {
+      "key": "userCooldownMessage",
+      "default": "@{user}, please wait {seconds} seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "A chatter's cooldown",
+      "help": "Sent when the command is still on cooldown for that one chatter.",
+      "placeholders": [
+        "user",
+        "seconds"
+      ],
+      "aliases": [
+        "UserMessage"
+      ]
+    }
+  ]
+}

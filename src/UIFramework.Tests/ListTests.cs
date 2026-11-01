@@ -112,6 +112,20 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void StripLeavesTheSidecarFilesAlone()
+        {
+            var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
+                { ""key"": ""a"", ""default"": 1 },
+                { ""key"": ""rows"", ""default"": [], ""kind"": ""list"", ""file"": ""rows.json"", ""columns"": [ { ""key"": ""q"" } ] } ] }");
+            var settings = schema.Defaults();
+            var main = Sidecars.Strip(settings, schema.Settings);
+            Assert.Equal(1, (int)main["a"]);
+            Assert.Null(main["rows"]);
+            Assert.NotNull(settings["rows"]);                       // the original is untouched
+            Assert.False(File.Exists(Path.Combine(_folder, "rows.json")));
+        }
+
+        [Fact]
         public void SidecarWithoutFieldIsTheWholeFile()
         {
             var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
