@@ -229,7 +229,8 @@ Abschnitt, ausblenden), Anpassen-Modus im Fenster mit Griff, Drag auf Felder und
 Akzentfarbe, Sprache, Reset; `docs/Customize.md`. Offen aus Phase 4: Screenshots für die Docs. Update-Dialog
 statt stillem Download (v0.2.0). Phase 5 (01.11.): `list`-Kind mit Zeilen-Editor und Ablage in eigener Datei
 (`file`/`field`, `Sidecars`) für Wortbank und Fragenlisten (v0.3.0); Blackjack v17.0.0 als erster Host
-veröffentlicht; RhymeTime in Arbeit.
+veröffentlicht; RhymeTime v2.0.0 umgestellt (Host-Block in Game und Battle, Wortbank als drei `list`-Settings in
+`RT-wordbank.json`, Overlay-Seite im Game-Script, Stub aus `hosts/rhymetime`), Release steht aus.
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
