@@ -82,8 +82,8 @@ public class CPHInline
 
     // ================================================================================================
     // LOADER: finds UIFramework.dll under <Streamer.bot>\UIFramework\lib\<version>\. The first time, it asks
-    // whether to download the DLL from GitHub or to show the folder it belongs in; after that, Init checks for a
-    // newer release in the background and fetches it into a new version folder for the next start.
+    // whether to download the DLL from GitHub or to show the folder it belongs in. Every later open looks for a
+    // newer release and asks whether to fetch it; "Cancel" skips that version until the next one.
     // ================================================================================================
 
     private const string FrameworkName = "UIFramework for streamer.bot";
@@ -170,11 +170,23 @@ public class CPHInline
         return result;
     }
 
+    // WebClient waits 100 s by default; a release check at window open gets five.
+    private sealed class QuickWebClient : System.Net.WebClient
+    {
+        public int TimeoutMs = 5000;
+        protected override System.Net.WebRequest GetWebRequest(Uri address)
+        {
+            var request = base.GetWebRequest(address);
+            if (request != null) request.Timeout = TimeoutMs;
+            return request;
+        }
+    }
+
     /// <summary>What lib/v1/latest.json says: version, download url, sha256.</summary>
     private static JObject FetchLatest()
     {
         System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
-        using (var client = new System.Net.WebClient())
+        using (var client = new QuickWebClient())
         {
             client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
             string json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
@@ -202,7 +214,7 @@ public class CPHInline
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
                 string temp = target + ".download";
                 System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
-                using (var client = new System.Net.WebClient())
+                using (var client = new QuickWebClient { TimeoutMs = 60000 })
                 {
                     client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
                     client.DownloadFile((string)latest["url"], temp);
@@ -230,43 +242,83 @@ public class CPHInline
         }
     }
 
+    private static string LayoutPath => Path.Combine(Path.GetDirectoryName(SettingsPath), "uiframework.layout.json");
+
+    private static JObject ReadLayout()
+    {
+        try { return File.Exists(LayoutPath) ? JObject.Parse(File.ReadAllText(LayoutPath)) : new JObject(); }
+        catch (Exception) { return new JObject(); }
+    }
+
     private static bool AutoUpdateEnabled()
+    {
+        var token = ReadLayout()["autoUpdate"];
+        return token == null || token.Type != JTokenType.Boolean || (bool)token;
+    }
+
+    // "Cancel" in the update dialog: that version is not offered again.
+    private static string SkippedVersion() => (string)ReadLayout()["skipVersion"];
+
+    private static void SkipVersion(string version)
     {
         try
         {
-            string layout = Path.Combine(Path.GetDirectoryName(SettingsPath), "uiframework.layout.json");
-            if (!File.Exists(layout)) return true;
-            var token = JObject.Parse(File.ReadAllText(layout))["autoUpdate"];
-            return token == null || token.Type != JTokenType.Boolean || (bool)token;
+            var layout = ReadLayout();
+            layout["skipVersion"] = version;
+            Directory.CreateDirectory(Path.GetDirectoryName(LayoutPath));
+            File.WriteAllText(LayoutPath, layout.ToString(Newtonsoft.Json.Formatting.Indented));
         }
-        catch (Exception) { return true; }
+        catch (Exception) { }
     }
 
-    // Streamer.bot calls this once the action is compiled: a newer release goes into its own folder for next time.
-    public void Init()
+    /// <summary>Looks for a newer release than the one installed and offers to fetch it. Returns the DLL to use:
+    /// the new one when it could be loaded now, else the one that is there.</summary>
+    private string OfferUpdate(string installed)
     {
-        if (FindFramework() == null || !AutoUpdateEnabled())
-            return;
-        var check = new Thread(() =>
+        if (!AutoUpdateEnabled())
+            return installed;
+        JObject latest;
+        try { latest = FetchLatest(); }
+        catch (Exception ex)
         {
-            try
-            {
-                var latest = FetchLatest();
-                var newest = ParseVersion((string)latest["version"]);
-                var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(FindFramework())));
-                if (newest != null && have != null && newest > have)
-                {
-                    string path = Download(latest);
-                    CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + "; it is used from the next start of Streamer.bot.");
-                }
-            }
-            catch (Exception ex)
-            {
-                CPH.LogWarn(LogPrefix + " UIFramework update check skipped: " + ex.Message);
-            }
-        });
-        check.IsBackground = true;
-        check.Start();
+            CPH.LogWarn(LogPrefix + " UIFramework update check skipped: " + ex.Message);
+            return installed;
+        }
+        var newest = ParseVersion((string)latest["version"]);
+        var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
+        if (newest == null || have == null || newest <= have)
+            return installed;
+        if (string.Equals(SkippedVersion(), newest.ToString(), StringComparison.OrdinalIgnoreCase))
+            return installed;
+
+        bool loaded;
+        lock (BridgeGate) loaded = _show != null;
+        var answer = Ask(
+            "A newer version of " + FrameworkName + " is available: " + newest + " (installed: " + have + ").\n\n" +
+            "Yes: download it now" + (loaded ? "; it is used from the next start of Streamer.bot." : " and open the settings with it.") + "\n" +
+            "No: ask again next time.\n" +
+            "Cancel: skip version " + newest + ".",
+            System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Information);
+        if (answer == System.Windows.MessageBoxResult.Cancel)
+        {
+            SkipVersion(newest.ToString());
+            return installed;
+        }
+        if (answer != System.Windows.MessageBoxResult.Yes)
+            return installed;
+        try
+        {
+            string path = Download(latest);
+            CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + (loaded ? "; it is used from the next start of Streamer.bot." : "."));
+            return loaded ? installed : path;
+        }
+        catch (Exception ex)
+        {
+            CPH.LogError(LogPrefix + " UIFramework " + newest + " could not be downloaded: " + ex.Message);
+            Ask("The download failed:\n\n" + ex.Message + "\n\nThe installed version " + have + " is used. Releases: " + FrameworkReleasesUrl,
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return installed;
+        }
     }
 
     // ================================================================================================
@@ -305,6 +357,7 @@ public class CPHInline
         }
         try
         {
+            dll = OfferUpdate(dll);
             if (!Bind(dll))
             {
                 CPH.LogError(LogPrefix + " " + dll + " has no UIFramework.Entry.Show; a newer or older build than this action expects.");
