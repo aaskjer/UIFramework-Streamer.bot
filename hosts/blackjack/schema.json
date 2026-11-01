@@ -1,6 +1,6 @@
 {
   "host": "blackjack",
-  "version": "v16.3.1",
+  "version": "v17.0.0",
   "settingsFile": "Chat Games/Blackjack Game/BJG-Settings.json",
   "settings": [
     {
