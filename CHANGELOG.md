@@ -3,6 +3,18 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.4.0] - 2026-11-03
+
+- `action` settings can be `live` (the host gets the values as they stand in the window, unsaved ones included),
+  `panel` (the answer is shown in a panel under the button instead of the footer) and `auto` (no button: the host
+  is asked when the page is shown and a moment after every change in the window). Slot Machine's odds and its test
+  spin are built on them.
+- `transient` settings: shown in the window, never saved, never counted as a change; a live snapshot carries them.
+  The bet, role and platform of a test spin are such fields.
+- An alias with a dot (`PlatformEmotes.twitch`) reaches into an object of the old settings file and moves the value
+  out; the object is dropped once it is empty. `UiSettings` in the host block reads such aliases too.
+- Slot Machine Game v16.0.0 runs on the framework (`hosts/slotmachine`).
+
 ## [0.3.4] - 2026-11-02
 
 - Customise mode: a field let go over another field takes that field's place, after it when it came from above

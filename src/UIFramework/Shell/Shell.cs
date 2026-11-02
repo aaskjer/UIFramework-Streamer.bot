@@ -253,6 +253,9 @@ namespace UIFramework
             };
             ctx.Fields = new Fields(parts, settings, defaults, url => Web.OpenUrl(url, _log, _spec.LogPrefix));
             ctx.RefreshPage = parts.Refresh;
+            ctx.LiveSettings = () => settings;
+            var changeListeners = new List<Action>();
+            ctx.OnAnyChange = listener => changeListeners.Add(listener);
             bool customizing = _spec.Customizing && _spec.Schema != null;
 
             // ---- Pages ----
@@ -445,8 +448,20 @@ namespace UIFramework
                 else SetStatus(n == 1 ? "1 unsaved change" : n + " unsaved changes", Theme.UnsavedText);
                 DrawPills();
             }
-            FieldBinding.HookChangeTracking(pageHost, ShowChanges);
+            FieldBinding.HookChangeTracking(pageHost, () =>
+            {
+                ShowChanges();
+                foreach (var listener in changeListeners)
+                    listener();
+            });
             ShowChanges();
+            ctx.LiveSettings = () =>
+            {
+                parts.CommitNames();
+                var live = (JObject)settings.DeepClone();
+                FieldBinding.Save(live, pageHost, transientToo: true);
+                return live;
+            };
 
             var btnTheme = layout.Rainbow
                 ? Ui.IconButton("🌈", null, "Switch between the light and dark theme")

@@ -102,6 +102,26 @@ namespace UIFramework.Tests
         });
 
         [Fact]
+        public void TransientFieldsAreNeitherSavedNorCounted() => Sta(() =>
+        {
+            var (f, parts, settings, _) = Make(@"{ ""n"": 3 }", @"{ ""n"": 3, ""tryBet"": 1000 }");
+            var page = new StackPanel();
+            page.Children.Add(f.IntField("Decks", "n", ""));
+            var tryBet = f.IntField("Bet to try", "tryBet", "");
+            FieldBinding.MarkTransient(tryBet);
+            page.Children.Add(tryBet);
+            var baseline = new System.Collections.Generic.Dictionary<object, string>();
+            FieldBinding.Snapshot(page, baseline);
+            parts.Boxes["tryBet"].Text = "500";
+            Assert.Equal(0, FieldBinding.CountChanged(page, baseline));
+            FieldBinding.Save(settings, page);
+            Assert.Equal(1000, (int)settings["tryBet"]);                  // the loaded default, not the typed value
+            var live = (JObject)settings.DeepClone();
+            FieldBinding.Save(live, page, transientToo: true);
+            Assert.Equal(500, (int)live["tryBet"]);
+        });
+
+        [Fact]
         public void NameListStoresCommaSeparatedWithoutDuplicates() => Sta(() =>
         {
             var (f, parts, settings, _) = Make(@"{ ""users"": ""alice"" }", @"{ ""users"": """" }");

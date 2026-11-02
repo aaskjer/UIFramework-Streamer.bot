@@ -200,6 +200,13 @@ namespace UIFramework
                     element = f.TextField(label, s.Key, help);
                     break;
             }
+            if (s.Transient)
+                FieldBinding.MarkTransient(element);
+            switch (s.Kind)
+            {
+                default:
+                    break;
+            }
 
             if (s.Requires != null)
             {
@@ -255,8 +262,51 @@ namespace UIFramework
             return Ui.Labeled(label, dock);
         }
 
+        /// <summary>An action: a button that asks the host. With <c>live</c> the host gets the values as they stand
+        /// in the window; with <c>panel</c> its answer goes into a panel under the button; with <c>auto</c> there is
+        /// no button, the host is asked when the page is shown and after every change, a moment after the last.</summary>
         private static FrameworkElement ActionButton(PageContext ctx, Setting s, string label, string help)
         {
+            TextBlock panel = null;
+            if (s.Panel || s.Auto)
+                panel = new TextBlock { FontSize = 12.5, Foreground = Theme.LabelFg, TextWrapping = TextWrapping.Wrap };
+
+            void Run()
+            {
+                try
+                {
+                    var settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings;
+                    string result = ctx.Hooks.Test(s.Key, settings);
+                    if (panel != null)
+                        panel.Text = result ?? "";
+                    else
+                        ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
+                }
+                catch (Exception ex)
+                {
+                    if (panel != null) panel.Text = label + " failed: " + ex.Message;
+                    else ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
+                }
+            }
+
+            if (s.Auto)
+            {
+                var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+                timer.Tick += (sender, e) => { timer.Stop(); Run(); };
+                ctx.OnAnyChange(() => { timer.Stop(); timer.Start(); });
+                ctx.Parts.OnShow(s.Page ?? "", () => { timer.Stop(); Run(); });
+                var box = new Border
+                {
+                    Background = new SolidColorBrush(Theme.Surface),
+                    CornerRadius = new CornerRadius(6),
+                    Padding = new Thickness(10, 8, 10, 8),
+                    Margin = new Thickness(0, 8, 0, 0),
+                    ToolTip = string.IsNullOrEmpty(help) ? null : help,
+                    Child = panel
+                };
+                return Stack(Ui.SmallLabel(label, 0), box);
+            }
+
             var button = Ui.TextButton(label, false);
             button.Margin = new Thickness(0, 8, 0, 0);
             button.HorizontalAlignment = HorizontalAlignment.Left;
@@ -266,17 +316,19 @@ namespace UIFramework
                 if (s.Confirm != null &&
                     MessageBox.Show(s.Confirm, label, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                     return;
-                try
-                {
-                    string result = ctx.Hooks.Test(s.Key, ctx.Settings);
-                    ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
-                }
-                catch (Exception ex)
-                {
-                    ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
-                }
+                Run();
             };
-            return button;
+            if (panel == null)
+                return button;
+            var result = new Border
+            {
+                Background = new SolidColorBrush(Theme.Surface),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(10, 8, 10, 8),
+                Margin = new Thickness(0, 8, 0, 0),
+                Child = panel
+            };
+            return Stack(button, result);
         }
 
         private static FrameworkElement Table(PageContext ctx, Setting s, string label, string help)

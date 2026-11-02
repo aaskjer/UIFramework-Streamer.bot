@@ -111,6 +111,15 @@ namespace UIFramework
         public bool Advanced;
         public bool ReadOnly;
         public bool Hidden;
+        /// <summary>Shown and taken into a live snapshot, but never written to the file and never counted as a
+        /// change: the inputs of a Try button.</summary>
+        public bool Transient;
+        /// <summary>For an action: the host gets the values as they stand in the window, unsaved ones included.</summary>
+        public bool Live;
+        /// <summary>For an action: the host's answer is shown in a panel under the button instead of the footer.</summary>
+        public bool Panel;
+        /// <summary>For an action: no button; the host is asked when the page is shown and after every change.</summary>
+        public bool Auto;
         public List<SettingColumn> Columns;
         /// <summary>A file of its own next to the settings file that holds this value (see Sidecars), and the
         /// property in it; no field: the file's root is the value.</summary>
@@ -156,6 +165,10 @@ namespace UIFramework
                 Advanced = item["advanced"]?.Type == JTokenType.Boolean && (bool)item["advanced"],
                 ReadOnly = item["readonly"]?.Type == JTokenType.Boolean && (bool)item["readonly"],
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
+                Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
+                Live = item["live"]?.Type == JTokenType.Boolean && (bool)item["live"],
+                Panel = item["panel"]?.Type == JTokenType.Boolean && (bool)item["panel"],
+                Auto = item["auto"]?.Type == JTokenType.Boolean && (bool)item["auto"],
                 File = (string)item["file"],
                 Field = (string)item["field"]
             };
@@ -195,6 +208,10 @@ namespace UIFramework
             if (Advanced) item["advanced"] = true;
             if (ReadOnly) item["readonly"] = true;
             if (Hidden) item["hidden"] = true;
+            if (Transient) item["transient"] = true;
+            if (Live) item["live"] = true;
+            if (Panel) item["panel"] = true;
+            if (Auto) item["auto"] = true;
             if (Columns != null) item["columns"] = new JArray(Columns.Select(c => c.ToJson()));
             if (File != null) item["file"] = File;
             if (Field != null) item["field"] = Field;

@@ -1,0 +1,1137 @@
+{
+  "host": "slotmachine",
+  "version": "16.0.0",
+  "settingsFile": "Chat Games/Slot Machine Game/SMG-Settings.json",
+  "settings": [
+    {
+      "key": "useBot",
+      "default": true,
+      "aliases": [
+        "UseBot"
+      ]
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "aliases": [
+        "SendAction"
+      ]
+    },
+    {
+      "key": "cooldownUseBot",
+      "default": true,
+      "aliases": [
+        "UseBotCD"
+      ]
+    },
+    {
+      "key": "cooldownSendAction",
+      "default": false,
+      "aliases": [
+        "SendActionCD"
+      ]
+    },
+    {
+      "key": "numberSeparator",
+      "default": ".",
+      "aliases": [
+        "NumberSeparator"
+      ]
+    },
+    {
+      "key": "numberOfSlots",
+      "default": 4,
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Slots",
+      "help": "How many slots a spin shows. All of them alike is the jackpot.",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "aliases": [
+        "NumberOfSlots"
+      ]
+    },
+    {
+      "key": "matchChance",
+      "default": 18,
+      "kind": "percent",
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Match chance",
+      "help": "Chance in percent that a spin may land matching slots: they're then drawn freely, so a match is likely but not certain. The rest of the time a repeat is rerolled to avoid a match. The odds below show what really comes out.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "AllowMatchChance"
+      ],
+      "aliasFactors": {
+        "AllowMatchChance": 100.0
+      }
+    },
+    {
+      "key": "jackpotChance",
+      "default": 1,
+      "kind": "percent",
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Jackpot chance",
+      "help": "Chance in percent that every slot shows the same emote - the jackpot. '1' is 1 in 100. A free draw can land all alike too, so the real chance is a little higher.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "AllowJackpotChance"
+      ],
+      "aliasFactors": {
+        "AllowJackpotChance": 100.0
+      }
+    },
+    {
+      "key": "rerollAttempts",
+      "default": 2,
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Rerolls",
+      "help": "How hard a spin that isn't meant to match avoids a repeat: each slot is drawn up to this many times. A repeat can still slip through, most of all with few emotes in play.",
+      "min": 0.0,
+      "aliases": [
+        "RerollAttempts"
+      ]
+    },
+    {
+      "key": "emotePoolSize",
+      "default": 10,
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Emote pool (0 = all)",
+      "help": "How many of the emotes in play are drawn for each spin. Fewer emotes make matches more likely. 0, or more than there are, uses them all.",
+      "min": 0.0,
+      "aliases": [
+        "EmotePoolSize"
+      ]
+    },
+    {
+      "key": "minEmoteWeight",
+      "default": 1,
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Min weight",
+      "help": "Only emotes with at least this weight play. Low weights come up often and pay little, so raising this takes out the cheapest emotes.",
+      "min": 1.0,
+      "aliases": [
+        "MinEmoteWeight"
+      ]
+    },
+    {
+      "key": "maxEmoteWeight",
+      "default": 10,
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Max weight",
+      "help": "Only emotes with at most this weight play. High weights are rare and pay a lot, so lowering this takes out the most valuable emotes.",
+      "min": 1.0,
+      "aliases": [
+        "MaxEmoteWeight"
+      ]
+    },
+    {
+      "key": "tryPlatform",
+      "default": "twitch",
+      "kind": "options",
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "Emotes of",
+      "help": "Whose emotes the odds and the test spin use. Subscriber and VIP boosts only exist on Twitch. Not saved.",
+      "options": [
+        {
+          "value": "twitch",
+          "label": "Twitch"
+        },
+        {
+          "value": "youtube",
+          "label": "YouTube"
+        },
+        {
+          "value": "kick",
+          "label": "Kick"
+        }
+      ],
+      "transient": true
+    },
+    {
+      "key": "odds",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "What really comes out",
+      "help": "Worked out from 30,000 test spins with the emotes, weights, chances and payouts as they stand on this page, for a viewer without Subscriber/VIP boost or Addicted cut, and without the jackpot pool.",
+      "live": true,
+      "panel": true,
+      "auto": true
+    },
+    {
+      "key": "defaultBet",
+      "default": 1234,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Default bet",
+      "help": "The bet for a spin with no amount. Viewers can also bet a number, all, half, third, quarter or random.",
+      "min": 0.0,
+      "aliases": [
+        "DefaultBet"
+      ]
+    },
+    {
+      "key": "minBet",
+      "default": 1,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Minimum (0 = none)",
+      "help": "The smallest bet allowed. 0 turns the limit off. 'random' bets between Minimum and Maximum. Also applies to channel points in 'Typed amount' and 'Fixed' mode.",
+      "min": 0.0,
+      "aliases": [
+        "MinBet"
+      ]
+    },
+    {
+      "key": "maxBet",
+      "default": 9999999,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Maximum (0 = none)",
+      "help": "The largest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.",
+      "min": 0.0,
+      "aliases": [
+        "MaxBet"
+      ]
+    },
+    {
+      "key": "freeGame",
+      "default": false,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Free mode",
+      "help": "Every spin is free: nobody pays or wins points, the jackpot pool doesn't grow, and chat gets the Free messages. For a single free spin, a trigger of your own can pass the argument free=1 instead.",
+      "aliases": [
+        "IsFree"
+      ]
+    },
+    {
+      "key": "pointsVariable",
+      "default": "points",
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Points variable",
+      "help": "The variable your points live in. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own; only change this for a points system of your own.",
+      "aliases": [
+        "PointsVar"
+      ]
+    },
+    {
+      "key": "pointsName",
+      "default": "Points",
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Shown in chat as",
+      "help": "The name {currency} puts in chat, like 'Coins' or 'Gems'. Currency Core and LOYALTY POINTS bring their own name, which is used instead.",
+      "aliases": [
+        "PointsName"
+      ]
+    },
+    {
+      "key": "twoMatchPayout",
+      "default": 150.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "2 alike",
+      "help": "A win pays the bet × payout % × the emote's weight ÷ 100, and never less than the bet. All slots alike is the jackpot, which pays the Jackpot tier whatever the number of slots.",
+      "min": 0.0,
+      "unit": "%",
+      "aliases": [
+        "TwoMatchPayout"
+      ]
+    },
+    {
+      "key": "threeMatchPayout",
+      "default": 300.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "3 alike",
+      "help": "With 3 slots, three alike is the jackpot and this tier is not used.",
+      "min": 0.0,
+      "unit": "%",
+      "aliases": [
+        "ThreeMatchPayout"
+      ]
+    },
+    {
+      "key": "fourMatchPayout",
+      "default": 500.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "4 alike",
+      "help": "Only with 5 or 6 slots; fewer slots never land four alike short of the jackpot.",
+      "min": 0.0,
+      "unit": "%",
+      "aliases": [
+        "FourMatchPayout"
+      ]
+    },
+    {
+      "key": "fiveMatchPayout",
+      "default": 1000.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "5 alike",
+      "help": "Only with 6 slots.",
+      "min": 0.0,
+      "unit": "%",
+      "aliases": [
+        "FiveMatchPayout"
+      ]
+    },
+    {
+      "key": "sixMatchPayout",
+      "default": 1500.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "Jackpot",
+      "help": "All slots alike, whatever their number: 3 of 3 as much as 6 of 6.",
+      "min": 0.0,
+      "unit": "%",
+      "aliases": [
+        "SixMatchPayout"
+      ]
+    },
+    {
+      "key": "subscriberBoostEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Payouts",
+      "label": "Subscriber boost",
+      "help": "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.",
+      "aliases": [
+        "SubscriberBoostEnabled"
+      ]
+    },
+    {
+      "key": "vipBoostEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Payouts",
+      "label": "VIP boost",
+      "help": "Gives Twitch VIPs a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for VIPs.",
+      "aliases": [
+        "VipBoostEnabled"
+      ]
+    },
+    {
+      "key": "subscriberBoostPercent",
+      "default": 10.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "Subscriber boost",
+      "help": "How much bigger a subscriber's win is: '10' turns 100 into 110. Adds up with the VIP boost for someone who is both.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "subscriberBoostEnabled",
+      "aliases": [
+        "SubscriberBoostPercent"
+      ]
+    },
+    {
+      "key": "vipBoostPercent",
+      "default": 20.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "VIP boost",
+      "help": "How much bigger a VIP's win is: '20' turns 100 into 120. Adds up with the Subscriber boost for someone who is both.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "vipBoostEnabled",
+      "aliases": [
+        "VipBoostPercent"
+      ]
+    },
+    {
+      "key": "addictedPayoutCut",
+      "default": 50,
+      "kind": "percent",
+      "page": "game",
+      "section": "Payouts",
+      "label": "Addicted cut",
+      "help": "How much of an addicted viewer's win is cut, from 0 (nothing) to 99 - a win always pays something. Applied last, so it cuts a boosted win and the jackpot pool too. Who counts as addicted is set on the Access page.",
+      "min": 0.0,
+      "max": 99.0,
+      "aliases": [
+        "AddictedPayoutCut"
+      ],
+      "aliasFactors": {
+        "AddictedPayoutCut": 100.0
+      }
+    },
+    {
+      "key": "useJackpotPool",
+      "default": true,
+      "page": "game",
+      "section": "Jackpot pool",
+      "label": "Jackpot pool",
+      "help": "Every lost bet goes into a pool, one per platform, and a jackpot with a big enough bet wins it all on top. Losses of addicted viewers and free spins don't go in. Messages can wrap what they say about the pool in {jackpot}…{/jackpot}: with the pool off, that part is left out.",
+      "aliases": [
+        "UseJackpotPool"
+      ]
+    },
+    {
+      "key": "jackpotBet",
+      "default": 50000,
+      "page": "game",
+      "section": "Jackpot pool",
+      "label": "Bet to win the pool",
+      "help": "The smallest bet that wins the pool with a jackpot. A smaller bet still gets the jackpot payout, just not the pool.",
+      "min": 0.0,
+      "aliases": [
+        "JackpotBet"
+      ]
+    },
+    {
+      "key": "tryBet",
+      "default": 1000,
+      "page": "game",
+      "section": "Try a spin",
+      "label": "Bet to try",
+      "help": "A bet to try the odds and messages with. It isn't saved.",
+      "min": 1.0,
+      "transient": true
+    },
+    {
+      "key": "tryRole",
+      "default": "viewer",
+      "kind": "options",
+      "page": "game",
+      "section": "Try a spin",
+      "label": "Spin as",
+      "help": "Who spins: boosts and the Addicted cut change what a win pays. The platform is the one picked under 'Slots and odds'.",
+      "options": [
+        {
+          "value": "viewer",
+          "label": "Viewer"
+        },
+        {
+          "value": "subscriber",
+          "label": "Subscriber"
+        },
+        {
+          "value": "vip",
+          "label": "VIP"
+        },
+        {
+          "value": "addicted",
+          "label": "Addicted"
+        }
+      ],
+      "transient": true
+    },
+    {
+      "key": "trySpin",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Try a spin",
+      "label": "Spin",
+      "help": "Plays one spin with the settings as they stand on this page, saved or not, and shows the slots and the message chat would get. Nothing is sent and nothing is saved.",
+      "live": true,
+      "panel": true
+    },
+    {
+      "key": "emotesTwitch",
+      "default": [
+        {
+          "Code": "Kappa",
+          "Weight": 1,
+          "Name": "Kappa"
+        },
+        {
+          "Code": "PogChamp",
+          "Weight": 2,
+          "Name": "PogChamp"
+        },
+        {
+          "Code": "LUL",
+          "Weight": 3,
+          "Name": "LUL"
+        },
+        {
+          "Code": "NotLikeThis",
+          "Weight": 4,
+          "Name": "NotLikeThis"
+        },
+        {
+          "Code": "BigPhish",
+          "Weight": 5,
+          "Name": "BigPhish"
+        },
+        {
+          "Code": "RitzMitz",
+          "Weight": 6,
+          "Name": "RitzMitz"
+        },
+        {
+          "Code": "FrankerZ",
+          "Weight": 7,
+          "Name": "FrankerZ"
+        },
+        {
+          "Code": "SeemsGood",
+          "Weight": 8,
+          "Name": "SeemsGood"
+        },
+        {
+          "Code": "Kreygasm",
+          "Weight": 9,
+          "Name": "Kreygasm"
+        },
+        {
+          "Code": "FailFish",
+          "Weight": 10,
+          "Name": "FailFish"
+        }
+      ],
+      "kind": "list",
+      "page": "emotes",
+      "section": "Twitch",
+      "label": "Twitch",
+      "help": "The emote exactly as it's typed in chat, like Kappa, with its weight: a low weight comes up often and pays little, a high one is rare and pays a lot. Chat only shows it as an emote if the account sending the messages can use it, and a 7TV, BTTV or FFZ one only to viewers with that extension. Which weights play is set on the Game page.",
+      "columns": [
+        {
+          "key": "Code",
+          "kind": "string",
+          "label": "Emote"
+        },
+        {
+          "key": "Weight",
+          "kind": "int",
+          "label": "Weight"
+        },
+        {
+          "key": "Name",
+          "kind": "string",
+          "label": "Name"
+        }
+      ],
+      "aliases": [
+        "PlatformEmotes.twitch"
+      ]
+    },
+    {
+      "key": "emotesYoutube",
+      "default": [
+        {
+          "Code": "🍇",
+          "Weight": 1,
+          "Name": "Grapes"
+        },
+        {
+          "Code": "🍈",
+          "Weight": 2,
+          "Name": "Melon"
+        },
+        {
+          "Code": "🍉",
+          "Weight": 3,
+          "Name": "Watermelon"
+        },
+        {
+          "Code": "🍊",
+          "Weight": 4,
+          "Name": "Tangerine"
+        },
+        {
+          "Code": "🍋",
+          "Weight": 5,
+          "Name": "Lemon"
+        },
+        {
+          "Code": "🍌",
+          "Weight": 6,
+          "Name": "Banana"
+        },
+        {
+          "Code": "🍍",
+          "Weight": 7,
+          "Name": "Pineapple"
+        },
+        {
+          "Code": "🍎",
+          "Weight": 8,
+          "Name": "Red Apple"
+        },
+        {
+          "Code": "🍏",
+          "Weight": 9,
+          "Name": "Green Apple"
+        },
+        {
+          "Code": "🍑",
+          "Weight": 10,
+          "Name": "Peach"
+        }
+      ],
+      "kind": "list",
+      "page": "emotes",
+      "section": "YouTube",
+      "label": "YouTube",
+      "help": "The emoji or text chat gets for this slot, like 🍒, with its weight.",
+      "columns": [
+        {
+          "key": "Code",
+          "kind": "string",
+          "label": "Emoji or text"
+        },
+        {
+          "key": "Weight",
+          "kind": "int",
+          "label": "Weight"
+        },
+        {
+          "key": "Name",
+          "kind": "string",
+          "label": "Name"
+        }
+      ],
+      "aliases": [
+        "PlatformEmotes.youtube"
+      ]
+    },
+    {
+      "key": "emotesKick",
+      "default": [
+        {
+          "Code": "[emote:1730803:emojiRich]",
+          "Weight": 1,
+          "Name": "emojiRich"
+        },
+        {
+          "Code": "[emote:1579059:emojiSwearing]",
+          "Weight": 2,
+          "Name": "emojiSwearing"
+        },
+        {
+          "Code": "[emote:3419630:emojiTire]",
+          "Weight": 3,
+          "Name": "emojiTire"
+        },
+        {
+          "Code": "[emote:1730772:emojiFire]",
+          "Weight": 4,
+          "Name": "emojiFire"
+        },
+        {
+          "Code": "[emote:1730758:emojiClown]",
+          "Weight": 5,
+          "Name": "emojiClown"
+        },
+        {
+          "Code": "[emote:1730752:emojiAngel]",
+          "Weight": 6,
+          "Name": "emojiAngel"
+        },
+        {
+          "Code": "[emote:1730790:emojiKiss]",
+          "Weight": 7,
+          "Name": "emojiKiss"
+        },
+        {
+          "Code": "[emote:1730753:emojiAngry]",
+          "Weight": 8,
+          "Name": "emojiAngry"
+        },
+        {
+          "Code": "[emote:1730807:emojiShocked]",
+          "Weight": 9,
+          "Name": "emojiShocked"
+        },
+        {
+          "Code": "[emote:1730792:emojiLoading]",
+          "Weight": 10,
+          "Name": "emojiLoading"
+        }
+      ],
+      "kind": "list",
+      "page": "emotes",
+      "section": "Kick",
+      "label": "Kick",
+      "help": "Kick shows [emote:ID:name] as the emote. Open the emote's picture in a new browser tab: the number in its address is the ID (https://files.kick.com/emotes/1730803/fullsize is emojiRich).",
+      "columns": [
+        {
+          "key": "Code",
+          "kind": "string",
+          "label": "Emote, as [emote:ID:name]"
+        },
+        {
+          "key": "Weight",
+          "kind": "int",
+          "label": "Weight"
+        },
+        {
+          "key": "Name",
+          "kind": "string",
+          "label": "Name"
+        }
+      ],
+      "aliases": [
+        "PlatformEmotes.kick"
+      ]
+    },
+    {
+      "key": "blockedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "label": "Blocked groups",
+      "help": "Everyone in these Streamer.bot groups is ignored when they run the command or redeem the reward (Settings > Groups). A group that does not exist is skipped and logged.",
+      "aliases": [
+        "BlockedGroups"
+      ]
+    },
+    {
+      "key": "addictedUsers",
+      "default": "",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Addicted viewers",
+      "help": "These viewers still play, but every win is cut by the Addicted cut on the Game page, their losses don't feed the jackpot pool, and the per-viewer cooldown holds them on channel point redemptions too.",
+      "aliases": [
+        "AddictedUsers"
+      ]
+    },
+    {
+      "key": "addictedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Addicted groups",
+      "help": "Everyone in these Streamer.bot groups counts as addicted.",
+      "aliases": [
+        "AddictedGroups"
+      ]
+    },
+    {
+      "key": "isChannelPointsTrigger",
+      "default": false,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Channel points start a spin",
+      "help": "On Twitch, a redemption of the reward below spins instead of the chat command, which is then off on Twitch. The slot machine takes redemptions from Twitch only, so on YouTube and Kick the command keeps working.",
+      "aliases": [
+        "IsChannelPointsTrigger"
+      ]
+    },
+    {
+      "key": "rewardId",
+      "default": "",
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Reward ID",
+      "help": "The ID of the channel point reward that starts a spin. Other rewards are ignored; without one, no redemption starts a spin. https://ayrtonalexis.com/reward_checker/reward_check.html lists your rewards with their IDs.",
+      "requires": "isChannelPointsTrigger",
+      "aliases": [
+        "TargetRewardId"
+      ]
+    },
+    {
+      "key": "cpBetMode",
+      "default": "cost",
+      "kind": "options",
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "What is bet",
+      "help": "Reward cost: the reward's price is the bet, paid in channel points; a loss doesn't touch the viewer's points or the jackpot pool, a win is paid in points. Typed amount: viewers type a bet in their own points into the reward, checked against their balance like a chat spin; not enough, and the redemption is refunded. Fixed: every redemption bets the fixed amount below, the price and the text are ignored, the channel points are the stake. Free: nothing is won or lost and the Free messages are used.",
+      "requires": "isChannelPointsTrigger",
+      "options": [
+        {
+          "value": "cost",
+          "label": "Reward cost"
+        },
+        {
+          "value": "input",
+          "label": "Typed amount"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed"
+        },
+        {
+          "value": "free",
+          "label": "Free"
+        }
+      ],
+      "aliases": [
+        "CPBetMode"
+      ]
+    },
+    {
+      "key": "fixedBetAmount",
+      "default": 0,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Fixed bet",
+      "help": "What every redemption bets in Fixed mode. Must be more than 0.",
+      "min": 0.0,
+      "requires": "isChannelPointsTrigger",
+      "aliases": [
+        "FixedBetAmount"
+      ]
+    },
+    {
+      "key": "refundFailedRedemptions",
+      "default": true,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Refund redemptions that don't end in a spin",
+      "help": "When a redemption can't end in a spin - a blocked group, a bet that doesn't work, an addicted viewer still on cooldown, a balance that can't be read or no emotes - it's cancelled and the channel points go back. That only works while the redemption is still in the request queue: a reward that skips the queue can't be refunded.",
+      "requires": "isChannelPointsTrigger",
+      "aliases": [
+        "RefundFailedRedemptions"
+      ]
+    },
+    {
+      "key": "globalCooldown",
+      "default": 0,
+      "page": "access",
+      "section": "Cooldowns",
+      "label": "Everyone",
+      "help": "How long nobody can spin after any spin, in seconds. 0 turns it off. Saving writes it onto the chat command in Streamer.bot, so channel point redemptions don't wait for it.",
+      "min": 0.0,
+      "aliases": [
+        "CooldownGlobalSeconds"
+      ]
+    },
+    {
+      "key": "userCooldown",
+      "default": 0,
+      "page": "access",
+      "section": "Cooldowns",
+      "label": "Per viewer",
+      "help": "How long one viewer waits before their next spin, in seconds. 0 turns it off. Saving writes it onto the chat command in Streamer.bot, so channel point redemptions don't wait for it - except for addicted viewers, whom the game holds to it itself.",
+      "min": 0.0,
+      "aliases": [
+        "CooldownUserSeconds"
+      ]
+    },
+    {
+      "key": "logToFile",
+      "default": true,
+      "page": "log",
+      "label": "Write a log file per day",
+      "help": "Writes every spin - win, loss, jackpot - with the bet and the balance to a dated 'SMG-log-yyyy-MM-dd.txt' in the Logs folder, one file per day.",
+      "aliases": [
+        "LogToFile"
+      ]
+    },
+    {
+      "key": "winMessage",
+      "default": "@{user}, you WON! {amount} {currency}! 🎉🎉{jackpot} (Min. bet for the Jackpool: {jackpotMinBet} {currency}){/jackpot} -- Your new balance: {newBalance} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Results",
+      "label": "Win",
+      "help": "Sent after the slots on a win that isn't the jackpot. The slots themselves go out as a message of their own just before.",
+      "placeholders": [
+        "user",
+        "amount",
+        "currency",
+        "newBalance",
+        "jackpotMinBet",
+        "jackpot",
+        "/jackpot"
+      ],
+      "aliases": [
+        "WinMessage"
+      ]
+    },
+    {
+      "key": "lossMessage",
+      "default": "@{user}, you LOST! Better luck next time!{jackpot} 💸 {jackpotLossContribution} {currency} got added to the Jackpool of now {jackpotPoolCurrent} {currency}!{/jackpot} -- Your new balance: {newBalance} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Results",
+      "label": "Loss",
+      "help": "Sent after the slots on a loss. With the jackpot pool on, the lost bet goes into it.",
+      "placeholders": [
+        "user",
+        "amount",
+        "currency",
+        "newBalance",
+        "jackpotLossContribution",
+        "jackpotPoolCurrent",
+        "jackpot",
+        "/jackpot"
+      ],
+      "aliases": [
+        "LossMessage"
+      ]
+    },
+    {
+      "key": "jackpotMessage",
+      "default": "🔥 J A C K P O T 🔥 @{user}, YOU WON {amount} {currency}{jackpot} + {jackpotPoolWinAmount} {currency} from the Jackpool!{/jackpot} -- Your new balance: {newBalance} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Results",
+      "label": "Jackpot",
+      "help": "Sent after the slots when all of them are alike.",
+      "placeholders": [
+        "user",
+        "amount",
+        "currency",
+        "newBalance",
+        "jackpotPoolWinAmount",
+        "jackpot",
+        "/jackpot"
+      ],
+      "aliases": [
+        "JackpotMessage"
+      ]
+    },
+    {
+      "key": "freeGameWinMessage",
+      "default": "🎉 @{user}, you WON! Lucky spin!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Win",
+      "help": "Sent after the slots on a win while Free mode is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "FreeGameWinMessage"
+      ]
+    },
+    {
+      "key": "freeGameLossMessage",
+      "default": "💸 @{user}, unlucky! Better luck next spin!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Loss",
+      "help": "Sent after the slots on a loss while Free mode is on. Nothing is taken.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "FreeGameLossMessage"
+      ]
+    },
+    {
+      "key": "freeGameJackpotMessage",
+      "default": "🔥 J A C K P O T 🔥 @{user}, incredible! You hit the jackpot on a free spin!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Jackpot",
+      "help": "Sent after the slots on a jackpot while Free mode is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "FreeGameJackpotMessage"
+      ]
+    },
+    {
+      "key": "addictedWinMessage",
+      "default": "@{user}, you WON! {amount} {currency}! 🎉🎉 -- Addiction Fee: your win was cut by {addictedCutPercent}% -- Your new balance: {newBalance} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Win",
+      "help": "Sent instead of the Win message to viewers on the Addicted list.",
+      "placeholders": [
+        "user",
+        "amount",
+        "currency",
+        "newBalance",
+        "addictedCutPercent"
+      ],
+      "aliases": [
+        "AddictedWinMessage"
+      ]
+    },
+    {
+      "key": "addictedLossMessage",
+      "default": "@{user}, you LOST! Better luck next time! 💸 -- Your new balance: {newBalance} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Loss",
+      "help": "Sent instead of the Loss message to viewers on the Addicted list. Their losses don't go into the pool.",
+      "placeholders": [
+        "user",
+        "amount",
+        "currency",
+        "newBalance"
+      ],
+      "aliases": [
+        "AddictedLossMessage"
+      ]
+    },
+    {
+      "key": "addictedJackpotMessage",
+      "default": "🔥 J A C K P O T 🔥 @{user}, YOU WON {amount} {currency}{jackpot} + {jackpotPoolWinAmount} {currency} from the Jackpool!{/jackpot} -- Addiction Fee: your win was cut by {addictedCutPercent}% -- Your new balance: {newBalance} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Jackpot",
+      "help": "Sent instead of the Jackpot message to viewers on the Addicted list.",
+      "placeholders": [
+        "user",
+        "amount",
+        "currency",
+        "newBalance",
+        "jackpotPoolWinAmount",
+        "addictedCutPercent",
+        "jackpot",
+        "/jackpot"
+      ],
+      "aliases": [
+        "AddictedJackpotMessage"
+      ]
+    },
+    {
+      "key": "invalidBetMessage",
+      "default": "❌ @{user}, {reason}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Bet refused",
+      "help": "The frame around the four reasons below; {reason} is replaced by whichever one applies.",
+      "placeholders": [
+        "user",
+        "reason",
+        "currency"
+      ],
+      "aliases": [
+        "InvalidBetMessage"
+      ]
+    },
+    {
+      "key": "reasonNegativeAmount",
+      "default": "no decimals, negative, invalid or too large amounts.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: not a valid amount",
+      "help": "Fills {reason} when the amount is negative, not a number, has decimals, or is too large.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "ReasonNegativeAmount"
+      ]
+    },
+    {
+      "key": "reasonInsufficientFunds",
+      "default": "you don't have enough {currency}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: not enough points",
+      "help": "Fills {reason} when the bet is more than the viewer has.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "ReasonInsufficientFunds"
+      ]
+    },
+    {
+      "key": "reasonBelowMinimum",
+      "default": "your bet is below the minimum ({min} {currency}).",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: below the minimum",
+      "help": "Fills {reason} when the bet is below the minimum on the Game page.",
+      "placeholders": [
+        "min",
+        "currency"
+      ],
+      "aliases": [
+        "ReasonBelowMinimum"
+      ]
+    },
+    {
+      "key": "reasonAboveMaximum",
+      "default": "your bet is above the maximum ({max} {currency}).",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: above the maximum",
+      "help": "Fills {reason} when the bet is above the maximum on the Game page.",
+      "placeholders": [
+        "max",
+        "currency"
+      ],
+      "aliases": [
+        "ReasonAboveMaximum"
+      ]
+    },
+    {
+      "key": "globalCooldownMessage",
+      "default": "Please wait '{seconds}' seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Everyone's cooldown",
+      "help": "Sent while the cooldown for everyone runs.",
+      "placeholders": [
+        "seconds",
+        "user"
+      ],
+      "aliases": [
+        "GlobalMessage"
+      ]
+    },
+    {
+      "key": "userCooldownMessage",
+      "default": "@{user}, please wait '{seconds}' seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "A viewer's cooldown",
+      "help": "Sent while this viewer's own cooldown runs.",
+      "placeholders": [
+        "user",
+        "seconds"
+      ],
+      "aliases": [
+        "UserMessage"
+      ]
+    },
+    {
+      "key": "redemptionRefundedMessage",
+      "default": "@{user}, your Channel Points were refunded since the redemption couldn't be completed.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Channel points",
+      "label": "Refunded",
+      "help": "Sent when a redemption is refunded.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "RedemptionRefundedMessage"
+      ]
+    }
+  ]
+}

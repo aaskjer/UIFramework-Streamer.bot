@@ -55,7 +55,15 @@ namespace UIFramework
             var main = (JObject)settings.DeepClone();
             foreach (var setting in Of(schema))
                 main.Remove(setting.Key);
+            DropTransient(main, schema);
             return main;
+        }
+
+        /// <summary>A transient setting is never written: it only exists while the window is open.</summary>
+        public static void DropTransient(JObject main, IEnumerable<Setting> schema)
+        {
+            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient))
+                main.Remove(setting.Key);
         }
 
         /// <summary>Writes every sidecar value into its file (keeping whatever else the file holds) and returns the
@@ -88,6 +96,7 @@ namespace UIFramework
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 SettingsStore.WriteAllTextAtomic(path, root.ToString(Formatting.Indented));
             }
+            DropTransient(main, schema);
             return main;
         }
 
