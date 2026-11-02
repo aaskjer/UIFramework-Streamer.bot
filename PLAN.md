@@ -230,7 +230,14 @@ Akzentfarbe, Sprache, Reset; `docs/Customize.md`. Offen aus Phase 4: Screenshots
 statt stillem Download (v0.2.0). Phase 5 (01.11.): `list`-Kind mit Zeilen-Editor und Ablage in eigener Datei
 (`file`/`field`, `Sidecars`) für Wortbank und Fragenlisten (v0.3.0); Blackjack v17.0.0 als erster Host
 veröffentlicht; RhymeTime v2.0.0 umgestellt (Host-Block in Game und Battle, Wortbank als drei `list`-Settings in
-`RT-wordbank.json`, Overlay-Seite im Game-Script, Stub aus `hosts/rhymetime`), Release steht aus.
+`RT-wordbank.json`, Overlay-Seite im Game-Script, Stub aus `hosts/rhymetime`); Release v2.0.0 als PR und
+Draft-Release vorbereitet (03.11.). Nach dem ersten Praxistest (01./02.11., v0.3.1 bis v0.3.4): Pille im Kopf nur
+nach "Nein" im Update-Dialog, Anpassen-Modus baut das Fenster an Ort und Stelle neu (kein Schließen/Öffnen mehr),
+Nachrichten-Seite anpassbar, nachsichtiges Drag&Drop, Akzentfarbe wird beim Picker-Schließen übernommen; Releases
+tragen den CHANGELOG-Abschnitt als Notes und sind bis 1.0.0 Pre-Releases. Slot Machine v16.0.0 umgestellt (03.11.,
+v0.4.0): `action` mit `live`/`panel`/`auto` und `transient`-Felder für Quoten und Probe-Spin aus der Spiel-Engine
+(gemeinsamer `SlotEngine`-Block in Spiel und Stub), Emotes als drei `list`-Settings mit Punkt-Alias aus
+`PlatformEmotes`, Log-Seite aus der Spec. Screenshots für alle Docs bleiben für den Abschluss (Phase 6).
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.

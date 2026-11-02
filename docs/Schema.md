@@ -32,13 +32,17 @@ Settings-Datei.
 | `group`        | nein    | für `template`: die Gruppe im Nachrichten-Picker                                           |
 | `factor`       | nein    | für `percent`: gespeicherter Wert = getippt × Faktor (0.01 speichert einen Bruch; Standard 1) |
 | `unlimitedAtZero` | nein | für `int`/`long`: 0 im Feld heißt "keine Grenze" und wird als MaxValue gespeichert         |
-| `aliases`      | nein    | alte Keys; der Store liest sie und schreibt den kanonischen Key zurück                     |
+| `aliases`      | nein    | alte Keys; der Store liest sie und schreibt den kanonischen Key zurück. Ein Alias mit Punkt (`PlatformEmotes.twitch`) holt den Wert aus einem Objekt der alten Datei; das Objekt fällt weg, sobald es leer ist |
 | `aliasFactors` | nein    | je Alias ein Faktor für den Wert beim Umzug (Bruch zu Prozent: 100)                        |
 | `hidden`       | nein    | true: hat kein Feld, bleibt aber in der Datei                                              |
 | `confirm`      | nein    | für `action`: Frage (Ja/Nein), bevor der Host gerufen wird                                 |
 | `requires`     | nein    | Key eines `bool`; Feld ist ausgegraut, solange der false ist                               |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
+| `transient`    | nein    | true: wird angezeigt, aber nie gespeichert und nie als Änderung gezählt; nur ein Live-Abzug für den Host trägt den Wert (Eingaben eines Probe-Buttons) |
+| `live`         | nein    | für `action`: `Test` bekommt die Werte, wie sie im Fenster stehen, ungespeicherte und flüchtige eingeschlossen |
+| `panel`        | nein    | für `action`: die Antwort steht in einem Feld unter dem Button statt in der Fußzeile       |
+| `auto`         | nein    | für `action`: kein Button; der Host wird beim Anzeigen der Seite und kurz nach jeder Änderung im Fenster gefragt (Quoten, die mitlaufen) |
 | `columns`      | für `list`, `table` | `[{key, kind, label}]`; Kinds `string`, `text` (mehrzeilig, doppelt breit), `int`, `double`, `bool` |
 | `file`         | nein    | Datei neben der Settings-Datei, in der dieser Wert liegt statt in ihr (Wortbank, Fragenliste); relativ oder absolut |
 | `field`        | nein    | mit `file`: die Property in dieser Datei, die den Wert hält; ohne `field` ist die Datei selbst der Wert |
@@ -63,7 +67,7 @@ Settings-Datei.
 | `emote`     | string      | Textfeld mit Emote-Vorschau                | Plattform-Emotes als Text                             |
 | `list`      | array       | Zeilen-Editor: je Zeile eine Zelle pro Spalte, Entfernen, *Add row*, *Restore defaults* | `columns` Pflicht; leere Zeilen fallen beim Speichern weg; mit `file`/`field` in eigener Datei |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
-| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status |
+| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst |
 
 `table` und `action` haben keinen Wert in der Datei. `table` holt seine Zeilen mit `ReadTable(key)` vom Host als
 JSON-Array von Objekten, deren Felder die `columns` nennen.

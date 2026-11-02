@@ -22,6 +22,9 @@ namespace UIFramework
         /// <summary>The ceiling settings show "no limit" as 0 and store it as the type's MaxValue.</summary>
         public bool UnlimitedAtZero;
 
+        /// <summary>Never saved and never counted as a change; only a live snapshot carries it.</summary>
+        public bool Transient;
+
         public FieldTag(string key, FieldKind kind) { Key = key; Kind = kind; }
 
         public override string ToString() => Key;

@@ -119,6 +119,22 @@ namespace UIFramework
         {
             var merged = (JObject)Defaults.DeepClone();
             var moved = new HashSet<string>(StringComparer.Ordinal);
+            fromFile = (JObject)fromFile.DeepClone();
+            // An alias with a dot names a value inside an object of the old file ("PlatformEmotes.twitch"): it is
+            // moved out, and the object is dropped once it is empty.
+            foreach (var pair in Aliases)
+            {
+                int dot = pair.Key.IndexOf('.');
+                if (dot <= 0 || fromFile[pair.Value] != null || moved.Contains(pair.Value))
+                    continue;
+                if (!(fromFile[pair.Key.Substring(0, dot)] is JObject holder) || !(holder[pair.Key.Substring(dot + 1)] is JToken inner))
+                    continue;
+                merged[pair.Value] = Convert(inner, AliasFactors.TryGetValue(pair.Key, out double f) ? f : 1.0, Defaults[pair.Value]);
+                moved.Add(pair.Value);
+                holder.Remove(pair.Key.Substring(dot + 1));
+                if (!holder.HasValues)
+                    fromFile.Remove(pair.Key.Substring(0, dot));
+            }
             foreach (var property in fromFile.Properties())
             {
                 if (Aliases.TryGetValue(property.Name, out string canonical))

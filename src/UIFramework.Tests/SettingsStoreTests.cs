@@ -71,6 +71,24 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void DottedAliasMovesAValueOutOfAnObject()
+        {
+            var defaults = JObject.Parse(@"{ ""emotesTwitch"": [], ""emotesKick"": [], ""a"": 1 }");
+            var store = new SettingsStore(File_, defaults).WithAliases(new System.Collections.Generic.Dictionary<string, string>
+            {
+                ["PlatformEmotes.twitch"] = "emotesTwitch",
+                ["PlatformEmotes.kick"] = "emotesKick"
+            });
+            var merged = store.Merged(JObject.Parse(@"{ ""PlatformEmotes"": { ""twitch"": [ { ""Code"": ""Kappa"" } ], ""youtube"": [ 1 ] }, ""a"": 2 }"));
+            Assert.Equal("Kappa", (string)merged["emotesTwitch"][0]["Code"]);
+            Assert.Empty((JArray)merged["emotesKick"]);
+            Assert.Single((JArray)merged["PlatformEmotes"]["youtube"]);                  // what nothing claims stays
+            Assert.Null(merged["PlatformEmotes"]["twitch"]);
+            var gone = store.Merged(JObject.Parse(@"{ ""PlatformEmotes"": { ""twitch"": [] } }"));
+            Assert.Null(gone["PlatformEmotes"]);                                   // the emptied object is dropped
+        }
+
+        [Fact]
         public void DatesStayText()
         {
             File.WriteAllText(File_, @"{ ""b"": ""2026-01-01"" }");

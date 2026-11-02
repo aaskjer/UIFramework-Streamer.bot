@@ -33,19 +33,33 @@ namespace UIFramework
                 VisitTree(cc.Content, visitor);
         }
 
-        /// <summary>Writes every tagged control's value into the settings object.</summary>
-        public static void Save(JObject settings, object root)
+        /// <summary>Writes every tagged control's value into the settings object. Transient fields are left out
+        /// unless asked for: a save never carries them, a live snapshot for the host does.</summary>
+        public static void Save(JObject settings, object root, bool transientToo = false)
         {
             VisitTree(root, node =>
             {
-                if (node is CheckBox chk && FieldTag.Of(chk.Tag) is FieldTag ct)
+                if (node is CheckBox chk && FieldTag.Of(chk.Tag) is FieldTag ct && (transientToo || !ct.Transient))
                     settings[ct.Key] = chk.IsChecked ?? false;
-                else if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt)
+                else if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt && (transientToo || !tt.Transient))
                     settings[tt.Key] = ValueOf(tt, txt.Text);
-                else if (node is ComboBox cmb && FieldTag.Of(cmb.Tag) is FieldTag mt && cmb.SelectedItem is ComboBoxItem selected)
+                else if (node is ComboBox cmb && FieldTag.Of(cmb.Tag) is FieldTag mt && (transientToo || !mt.Transient) && cmb.SelectedItem is ComboBoxItem selected)
                     settings[mt.Key] = ComboValue(mt, selected.Tag);
-                else if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt)
+                else if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt && (transientToo || !lt.Transient))
                     settings[lt.Key] = list.Value;
+            });
+        }
+
+        /// <summary>Marks every tagged control under the element as transient.</summary>
+        public static void MarkTransient(object root)
+        {
+            VisitTree(root, node =>
+            {
+                var tag = node is CheckBox chk ? FieldTag.Of(chk.Tag)
+                        : node is TextBox txt ? FieldTag.Of(txt.Tag)
+                        : node is ComboBox cmb ? FieldTag.Of(cmb.Tag)
+                        : node is ListEditor list ? FieldTag.Of(list.Tag) : null;
+                if (tag != null) tag.Transient = true;
             });
         }
 
@@ -149,16 +163,17 @@ namespace UIFramework
             });
         }
 
+        /// <summary>What a control holds, as text, for the change count; null for furniture and transient fields.</summary>
         public static string ControlValue(object node)
         {
-            if (node is CheckBox chk && chk.Tag is FieldTag)
-                return (chk.IsChecked ?? false).ToString();
-            if (node is TextBox txt && txt.Tag is FieldTag)
-                return txt.Text ?? "";
-            if (node is ComboBox cmb && cmb.Tag is FieldTag)
-                return cmb.SelectedItem is ComboBoxItem item && item.Tag != null ? item.Tag.ToString() : "";
-            if (node is ListEditor list && list.Tag is FieldTag)
-                return list.Serialized;
+            if (node is CheckBox chk && chk.Tag is FieldTag ct)
+                return ct.Transient ? null : (chk.IsChecked ?? false).ToString();
+            if (node is TextBox txt && txt.Tag is FieldTag tt)
+                return tt.Transient ? null : txt.Text ?? "";
+            if (node is ComboBox cmb && cmb.Tag is FieldTag mt)
+                return mt.Transient ? null : cmb.SelectedItem is ComboBoxItem item && item.Tag != null ? item.Tag.ToString() : "";
+            if (node is ListEditor list && list.Tag is FieldTag lt)
+                return lt.Transient ? null : list.Serialized;
             return null;
         }
 

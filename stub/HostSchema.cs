@@ -19,6 +19,9 @@ public static class UiSchema
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool), and the file next
         // to the settings file that holds the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
+        // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
+        // its answer under the button, Auto asks it on show and after every change without a button.
+        public bool Transient, Live, Panel, Auto;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -27,13 +30,14 @@ public static class UiSchema
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
-        string[] columns = null, string file = null, string field = null)
+        string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
-            Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field
+            Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
+            Transient = transient, Live = live, Panel = panel, Auto = auto
         };
     }
 
@@ -84,6 +88,10 @@ public static class UiSchema
                 item["columns"] = columns;
             }
             if (s.File != null) item["file"] = s.File;
+            if (s.Transient) item["transient"] = true;
+            if (s.Live) item["live"] = true;
+            if (s.Panel) item["panel"] = true;
+            if (s.Auto) item["auto"] = true;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -153,7 +161,10 @@ public sealed class UiSettings
         if (setting?.Aliases != null)
             for (int i = 0; i < setting.Aliases.Length; i++)
             {
-                var old = _root[setting.Aliases[i]];
+                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                string alias = setting.Aliases[i];
+                int dot = alias.IndexOf('.');
+                var old = dot > 0 ? (_root[alias.Substring(0, dot)] as JObject)?[alias.Substring(dot + 1)] : _root[alias];
                 if (old == null || old.Type == JTokenType.Null) continue;
                 if (i == 0 && setting.AliasFactor.HasValue && (old.Type == JTokenType.Integer || old.Type == JTokenType.Float))
                     return Convert.ToDouble(((JValue)old).Value, CultureInfo.InvariantCulture) * setting.AliasFactor.Value;

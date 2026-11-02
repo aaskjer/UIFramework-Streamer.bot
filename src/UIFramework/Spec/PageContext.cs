@@ -38,6 +38,13 @@ namespace UIFramework
         /// <summary>Rebuilds the window's content in place on the given page (null: the current one), after a layout change.</summary>
         public Action<string> Reopen { get; internal set; }
 
+        /// <summary>The settings as the window shows them right now, unsaved and transient values included; the
+        /// loaded settings until the window is wired.</summary>
+        public Func<JObject> LiveSettings { get; internal set; }
+
+        /// <summary>Runs the action after every change to any field of the window (debounce it yourself).</summary>
+        public Action<Action> OnAnyChange { get; internal set; } = listener => { };
+
         public void OpenUrl(string url) => Web.OpenUrl(url, Log, Spec?.LogPrefix);
     }
 }

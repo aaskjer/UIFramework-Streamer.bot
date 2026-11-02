@@ -19,7 +19,9 @@ namespace UIFramework.Tests
             { ""key"": ""overlayScale"", ""default"": 100 },
             { ""key"": ""customThing"", ""default"": ""x"" },
             { ""key"": ""msgWin"", ""default"": ""@{user} wins {amount}"", ""kind"": ""template"", ""group"": ""Wins"", ""label"": ""Win"", ""placeholders"": [""user"", ""amount""] },
-            { ""key"": ""resetBoard"", ""kind"": ""action"", ""page"": ""stats"", ""label"": ""Reset"" }
+            { ""key"": ""resetBoard"", ""kind"": ""action"", ""page"": ""stats"", ""label"": ""Reset"" },
+            { ""key"": ""tryBet"", ""default"": 1000, ""transient"": true },
+            { ""key"": ""odds"", ""kind"": ""action"", ""live"": true, ""panel"": true, ""auto"": true }
           ] }";
 
         [Fact]
@@ -27,7 +29,11 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(SchemaJson);
             Assert.Equal("demo", schema.Host);
-            Assert.Equal(9, schema.Settings.Count);
+            Assert.Equal(11, schema.Settings.Count);
+            Assert.True(schema.Find("tryBet").Transient);
+            var odds = schema.Find("odds");
+            Assert.True(odds.Live && odds.Panel && odds.Auto);
+            Assert.True((bool)odds.ToJson()["auto"]);
             var decks = schema.Find("numDecks");
             Assert.Equal("Shoe", decks.Section);
             Assert.Equal(1, decks.Min);
