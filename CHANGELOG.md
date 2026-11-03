@@ -3,6 +3,23 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.8.0] - 2026-11-03
+
+- Export and import in the footer: export writes every setting as it stands in the window to a file of the
+  user's choosing (`{ "uiframework": "settings", "host", "version", "exported", "settings" }`); import reads such a
+  file, or a settings file itself, into the window as if typed, old keys through the aliases, and Save is what
+  keeps it. A file from another host asks first; what the window does not know is skipped.
+- Tooltips have a fixed width and wrap instead of running across the screen.
+- `row` on a setting: settings naming the same row, one after the other, share one line of the page whatever
+  their kind. Classic Chat Gamble's bet and role to try sit side by side; Slot Machine's platform, bet and role too.
+- `slider` kind: a slider over `options` (the stored value is the stop's value, the stops captioned under the
+  track) or over `min` to `max` in `step`.
+- `live` on a field that is not an action: the host is asked whenever the field changes, and `set` in its answer
+  fills in other fields. Classic Chat Gamble's fairness slider is back on it: a stop fills in the five numbers,
+  and the odds move the slider to the preset the numbers match, or to Custom.
+- A line `{ "emotes": [...], "platform": "twitch" }` in an action's answer shows the emotes as pictures with their
+  names beneath. Slot Machine's test spin shows the slots that way.
+
 ## [0.7.0] - 2026-11-03
 
 - An old key two settings share (one switch that became two, Battleship's `OverlayShowRoster`) gives both its

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
@@ -142,6 +143,71 @@ namespace UIFramework.Tests
             Assert.Equal("2.25", parts.Boxes["rate"].Text);
             Assert.NotNull(ResultPanel.TryParse(@"{ ""set"": {} }"));
             Assert.Null(ResultPanel.TryParse("plain text"));
+        });
+
+        [Fact]
+        public void SlidersSaveSetFollowRequirementsAndTakeImports() => Sta(() =>
+        {
+            var (f, parts, _, _) = Make("{}", @"{ ""fairness"": ""fair"", ""level"": 3, ""bet"": 10 }");
+            var page = new StackPanel();
+            var stops = new List<SettingOption>
+            {
+                new SettingOption { Value = "strict", Label = "Strict" },
+                new SettingOption { Value = "fair", Label = "Fair" },
+                new SettingOption { Value = "custom", Label = "Custom" }
+            };
+            page.Children.Add(f.SliderField("Fairness", "fairness", "", stops, 0, 0, 1, true, null));
+            page.Children.Add(f.SliderField("Level", "level", "", null, 1, 5, 1, true, null));
+            page.Children.Add(f.IntField("Bet", "bet", ""));
+            Assert.Equal(1, parts.Sliders["fairness"].Index);
+            Assert.Equal(3.0, parts.Sliders["level"].Value);
+
+            bool custom = false;
+            Requirement.Wire(f, parts, "fairness=custom", v => custom = v);
+            Assert.False(custom);
+            LiveValues.Apply(parts, JObject.Parse(@"{ ""fairness"": ""custom"", ""level"": 9 }"));
+            Assert.True(custom);
+            Assert.Equal("custom", f.LiveText("fairness", ""));
+            Assert.Equal(5.0, f.LiveNumber("level", 0));   // clamped to the range
+
+            var saved = new JObject();
+            FieldBinding.Save(saved, page);
+            Assert.Equal("custom", (string)saved["fairness"]);
+            Assert.Equal(5, (int)saved["level"]);
+
+            // An import puts only the keys it names into the controls, and says which it placed.
+            int changes = 0;
+            FieldBinding.HookChangeTracking(page, () => changes++);
+            var placed = FieldBinding.Apply(page, JObject.Parse(@"{ ""level"": 2, ""bet"": 250, ""nothing"": 1 }"), true);
+            Assert.Equal(new[] { "level", "bet" }, placed.OrderByDescending(k => k).ToArray());
+            Assert.Equal(2, changes);
+            Assert.Equal(2.0, parts.Sliders["level"].Value);
+            Assert.Equal("250", parts.Boxes["bet"].Text);
+            Assert.Equal(1, parts.Sliders["fairness"].Index == 2 ? 1 : 0);
+
+            // Reset to defaults reaches the slider too.
+            FieldBinding.ResetToDefaults(page, JObject.Parse(@"{ ""fairness"": ""strict"", ""level"": 4, ""bet"": 10 }"));
+            Assert.Equal(0, parts.Sliders["fairness"].Index);
+            Assert.Equal(4.0, parts.Sliders["level"].Value);
+        });
+
+        [Fact]
+        public void ResultPanelDrawsEmoteLinesAsPictures() => Sta(() =>
+        {
+            var panel = new StackPanel();
+            ResultPanel.Render(panel, @"{ ""lines"": [ ""alice spins"", { ""emotes"": [""🍇"", ""🍈"", ""🍇""], ""platform"": ""youtube"", ""text"": ""The slots"" }, ""No match"" ] }");
+            Assert.Equal(4, panel.Children.Count);
+            var pictures = Assert.IsType<WrapPanel>(panel.Children[2]);
+            Assert.Equal(3, pictures.Children.Count);
+            var cell = Assert.IsType<StackPanel>(pictures.Children[0]);
+            Assert.Equal("🍇", ((TextBlock)cell.Children[0]).Text);
+            Assert.Equal("🍇", ((TextBlock)cell.Children[1]).Text);
+
+            panel.Children.Clear();
+            ResultPanel.Render(panel, @"{ ""lines"": [ { ""emotes"": [""[emote:1730803:emojiRich]""], ""platform"": ""kick"" } ] }");
+            var kick = Assert.IsType<StackPanel>(((WrapPanel)panel.Children[0]).Children[0]);
+            Assert.IsType<System.Windows.Controls.Image>(kick.Children[0]);
+            Assert.Equal("emojiRich", ((TextBlock)kick.Children[1]).Text);
         });
 
         [Fact]

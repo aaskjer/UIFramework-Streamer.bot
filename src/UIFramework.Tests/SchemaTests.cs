@@ -26,7 +26,8 @@ namespace UIFramework.Tests
             { ""key"": ""winEmote"", ""default"": ""Kappa"", ""kind"": ""emote"", ""platform"": ""twitch"", ""requires"": ""numDecks>=4"" },
             { ""key"": ""aboutShoe"", ""kind"": ""note"", ""page"": ""table"", ""help"": ""The shoe is shuffled when it runs low."" },
             { ""key"": ""whisper"", ""default"": true, ""twitchOnly"": true, ""aliases"": [""Whisper""] },
-            { ""key"": ""whisperTwice"", ""default"": false, ""aliases"": [""Whisper""] }
+            { ""key"": ""whisperTwice"", ""default"": false, ""aliases"": [""Whisper""] },
+            { ""key"": ""fairness"", ""default"": ""classic"", ""kind"": ""slider"", ""transient"": true, ""live"": true, ""row"": ""try"", ""options"": [""strict|Strict"", ""fair"", ""classic""] }
           ] }";
 
         [Fact]
@@ -34,7 +35,12 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(SchemaJson);
             Assert.Equal("demo", schema.Host);
-            Assert.Equal(16, schema.Settings.Count);
+            Assert.Equal(17, schema.Settings.Count);
+            var fairness = schema.Find("fairness");
+            Assert.Equal("slider", fairness.Kind);
+            Assert.Equal("try", fairness.Row);
+            Assert.True(fairness.Live && fairness.Transient);
+            Assert.Equal("try", (string)fairness.ToJson()["row"]);
             Assert.True(schema.Find("whisper").TwitchOnly);
             Assert.True((bool)schema.Find("whisper").ToJson()["twitchOnly"]);
             Assert.Equal("note", schema.Find("aboutShoe").Kind);

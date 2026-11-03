@@ -39,6 +39,8 @@ namespace UIFramework
                 combo.SelectionChanged += (sender, e) => Apply();
             else if (parts.Boxes.TryGetValue(key, out var box))
                 box.TextChanged += (sender, e) => Apply();
+            else if (parts.Sliders.TryGetValue(key, out var slider))
+                slider.ValueChanged += (sender, e) => Apply();
             else
                 return;
             Apply();

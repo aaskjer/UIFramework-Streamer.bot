@@ -12,7 +12,8 @@ namespace UIFramework
 {
     /// <summary>
     /// Renders a page from its settings: section headings where the section changes, numbers three to a row,
-    /// switches two to a row, everything else on its own line. Each kind maps to one of the <see cref="Fields"/>.
+    /// switches two to a row, settings naming the same <c>row</c> side by side, everything else on its own line.
+    /// Each kind maps to one of the <see cref="Fields"/>.
     /// </summary>
     public static class SchemaPage
     {
@@ -86,7 +87,7 @@ namespace UIFramework
                 else
                 {
                     var cells = row.ToList();
-                    while (cells.Count < rowMax && rowKind != "bool")
+                    while (cells.Count < rowMax && rowKind == "number")
                         cells.Add(new TextBlock());
                     page.Children.Add(Ui.Row(cells.ToArray()));
                 }
@@ -109,6 +110,13 @@ namespace UIFramework
 
                 string kind = NumberKinds.Contains(setting.Kind) ? "number" : setting.Kind == "bool" ? "bool" : "single";
                 int max = kind == "number" ? 3 : kind == "bool" ? 2 : 1;
+                if (!string.IsNullOrEmpty(setting.Row))
+                {
+                    // Settings naming the same row, one after the other, share it whatever their kind.
+                    kind = "row " + setting.Row;
+                    max = int.MaxValue;
+                    InRow(element);
+                }
                 if (kind == "single" || (rowKind != null && rowKind != kind) || row.Count >= rowMax)
                     Flush();
                 rowKind = kind;
@@ -118,6 +126,15 @@ namespace UIFramework
                     Flush();
             }
             Flush();
+        }
+
+        /// <summary>A button or a switch beside labelled fields sits on their baseline.</summary>
+        private static void InRow(FrameworkElement element)
+        {
+            if (element is Button button)
+                button.VerticalAlignment = VerticalAlignment.Bottom;
+            else if (element is CheckBox toggle)
+                Ui.Held(toggle);
         }
 
         public static FrameworkElement Render(PageContext ctx, Setting s)
@@ -184,6 +201,13 @@ namespace UIFramework
                 case "emote":
                     element = EmoteField(ctx, s, label, help);
                     break;
+                case "slider":
+                {
+                    bool stops = s.Options != null && s.Options.Count > 0;
+                    bool whole = s.Default == null || s.Default.Type != JTokenType.Float;
+                    element = f.SliderField(label, s.Key, help, s.Options, s.Min ?? 0, s.Max ?? (stops ? s.Options.Count - 1 : 100), s.Step ?? (whole ? 1 : 0.1), whole, s.Unit);
+                    break;
+                }
                 case "note":
                 {
                     var note = Ui.NoteWithLinks(string.IsNullOrEmpty(help) ? (s.Default?.Type == JTokenType.String ? (string)s.Default : "") : help, ctx.OpenUrl);
@@ -216,10 +240,11 @@ namespace UIFramework
             }
             if (s.Transient)
                 FieldBinding.MarkTransient(element);
-            switch (s.Kind)
+            if (s.Live && s.Kind != "action")
             {
-                default:
-                    break;
+                // A field that asks the host whenever it changes; `set` in the answer fills in other fields (a preset slider).
+                var source = element;
+                ctx.AfterBuild.Add(() => FieldBinding.HookChangeTracking(source, () => Ask(ctx, s, label, null)));
             }
 
             if (s.Requires != null)
@@ -294,31 +319,7 @@ namespace UIFramework
             if (s.Panel || s.Auto)
                 panel = new StackPanel();
 
-            void Run()
-            {
-                try
-                {
-                    var settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings;
-                    string result = ctx.Hooks.Test(s.Key, settings);
-                    // An answer as JSON may carry "set" (values for other fields of the window, applied as if typed, nothing
-                    // saved) and "status" (a line for the footer); the rest of it goes to the panel when there is one.
-                    JObject structured = ResultPanel.TryParse(result);
-                    if (structured?["set"] is JObject values)
-                        LiveValues.Apply(ctx.Parts, values);
-                    string status = (string)structured?["status"];
-                    if (panel != null)
-                        ResultPanel.Render(panel, result ?? "");
-                    else if (structured != null)
-                        ctx.SetStatus(status ?? (label + ": done"), Theme.SuccessText, null);
-                    else
-                        ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
-                }
-                catch (Exception ex)
-                {
-                    if (panel != null) ResultPanel.Render(panel, label + " failed: " + ex.Message);
-                    else ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
-                }
-            }
+            void Run() => Ask(ctx, s, label, panel);
 
             if (s.Auto)
             {
@@ -360,6 +361,36 @@ namespace UIFramework
                 Child = panel
             };
             return Stack(button, result);
+        }
+
+        /// <summary>Asks the host about a setting and places the answer: "set" (values for other fields of the window,
+        /// applied as if typed, nothing saved) and "status" (a line for the footer) are taken out of a JSON answer; the
+        /// rest goes to the panel when there is one, to the footer otherwise.</summary>
+        private static void Ask(PageContext ctx, Setting s, string label, StackPanel panel)
+        {
+            try
+            {
+                var settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings;
+                string result = ctx.Hooks.Test(s.Key, settings);
+                JObject structured = ResultPanel.TryParse(result);
+                if (structured?["set"] is JObject values)
+                    LiveValues.Apply(ctx.Parts, values);
+                string status = (string)structured?["status"];
+                if (panel != null)
+                    ResultPanel.Render(panel, result ?? "", ctx.Hooks);
+                else if (structured != null)
+                {
+                    if (status != null || s.Kind == "action")
+                        ctx.SetStatus(status ?? (label + ": done"), Theme.SuccessText, null);
+                }
+                else if (result != null || s.Kind == "action")
+                    ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
+            }
+            catch (Exception ex)
+            {
+                if (panel != null) ResultPanel.Render(panel, label + " failed: " + ex.Message);
+                else ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
+            }
         }
 
         private static FrameworkElement Table(PageContext ctx, Setting s, string label, string help)

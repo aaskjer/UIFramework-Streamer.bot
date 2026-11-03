@@ -36,12 +36,13 @@ Settings-Datei.
 | `aliasFactors` | nein    | je Alias ein Faktor für den Wert beim Umzug (Bruch zu Prozent: 100)                        |
 | `hidden`       | nein    | true: hat kein Feld, bleibt aber in der Datei                                              |
 | `confirm`      | nein    | für `action`: Frage (Ja/Nein), bevor der Host gerufen wird                                 |
+| `row`          | nein    | Name einer Zeile: Settings, die nacheinander dieselbe `row` nennen, stehen nebeneinander in einer Zeile, egal welcher Art (Einsatz, Rolle und Probe-Button); ohne `row` stehen Zahlen zu dritt, Schalter zu zweit, alles andere allein |
 | `requires`     | nein    | Key eines `bool`, oder eine Bedingung an ein beliebiges Feld (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`); das Feld ist ausgegraut, solange sie nicht gilt |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
 | `twitchOnly`   | nein    | für `bool`: der Schalter trägt die Pille „Twitch only"                                     |
 | `transient`    | nein    | true: wird angezeigt, aber nie gespeichert und nie als Änderung gezählt; nur ein Live-Abzug für den Host trägt den Wert (Eingaben eines Probe-Buttons) |
-| `live`         | nein    | für `action`: `Test` bekommt die Werte, wie sie im Fenster stehen, ungespeicherte und flüchtige eingeschlossen |
+| `live`         | nein    | für `action`: `Test` bekommt die Werte, wie sie im Fenster stehen, ungespeicherte und flüchtige eingeschlossen. Auf jedem anderen Feld: der Host wird bei jeder Änderung des Feldes gefragt (`Test(key, liveSettings)`), und `set` in seiner Antwort füllt andere Felder (ein Preset-Slider, der fünf Zahlen setzt) |
 | `panel`        | nein    | für `action`: die Antwort steht in einem Feld unter dem Button statt in der Fußzeile       |
 | `auto`         | nein    | für `action`: kein Button; der Host wird beim Anzeigen der Seite und kurz nach jeder Änderung im Fenster gefragt (Quoten, die mitlaufen) |
 | `columns`      | für `list`, `table` | `[{key, kind, label}]`; Kinds `string`, `text` (mehrzeilig, doppelt breit), `int`, `double`, `bool`, `emote` (Textfeld mit Bild daneben; `platform` sagt `twitch`, `youtube` oder `kick`: Kick aus `[emote:ID:name]`, Twitch per Name aus Twitch/7TV/BTTV/FFZ mit dem, was `EmoteSources()` des Hosts liefert, YouTube zeigt das Emoji selbst) |
@@ -66,10 +67,19 @@ Settings-Datei.
 | `path`      | string      | Textfeld + Ordner-/Datei-Dialog            | relativ zum Streamer.bot-Ordner erlaubt               |
 | `colour`    | string      | Farbfeld + Picker                          | `#rrggbb` oder `#aarrggbb`                            |
 | `emote`     | string      | Textfeld mit dem Bild des Emotes daneben   | `platform` sagt `twitch`, `youtube` oder `kick`; Bilder wie bei der `emote`-Spalte |
+| `slider`    | string/int/double | Schieberegler                        | mit `options` ein Regler über die Stufen (gespeichert wird der Wert der Stufe, die Beschriftungen stehen darunter); sonst über `min` bis `max` in `step`, der Wert steht neben dem Label; ein Default mit Kommastelle macht ihn zum `double` |
 | `list`      | array       | Zeilen-Editor: je Zeile eine Zelle pro Spalte, Entfernen, *Add row*, *Restore defaults* | `columns` Pflicht; leere Zeilen fallen beim Speichern weg; mit `file`/`field` in eigener Datei |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
 | `note`      | –           | Ein Absatz Text auf der Seite (`help`)     | kein Wert; erklärt, was darunter kommt; http(s)-Adressen im Text sind Links |
-| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst. Eine Antwort als JSON-Objekt `{ "lines": ["…", { "text": "…", "big": true }], "bar": [ { "label": "Win", "value": 27, "text": "27 %", "colour": "#…" } ] }` wird als Balken mit Legende und Zeilen gezeichnet; `"set": { "gridSize": 8, "shipCarrierEnabled": true }` setzt andere Felder des Fensters wie getippt (gespeichert wird erst mit Save, ein Preset-Button), `"status": "…"` ist die Zeile für die Fußzeile |
+| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst. Eine Antwort als JSON-Objekt `{ "lines": ["…", { "text": "…", "big": true }], "bar": [ { "label": "Win", "value": 27, "text": "27 %", "colour": "#…" } ] }` wird als Balken mit Legende und Zeilen gezeichnet; `"set": { "gridSize": 8, "shipCarrierEnabled": true }` setzt andere Felder des Fensters wie getippt (gespeichert wird erst mit Save, ein Preset-Button), `"status": "…"` ist die Zeile für die Fußzeile. Eine Zeile `{ "emotes": ["Kappa", "LUL"], "platform": "twitch", "text": "The slots" }` zeigt die Emotes als Bilder mit Namen darunter (YouTube als Emoji), nach dem `text`, wenn einer da ist |
+
+Der Fuß des Fensters hat *Export* und *Import*: Export schreibt jedes Setting, wie es im Fenster steht (flüchtige
+ausgenommen, Werte aus eigenen Dateien eingeschlossen), als `{ "uiframework": "settings", "host", "version",
+"exported", "settings": { … } }` in eine Datei nach Wahl; Import liest so eine Datei, oder eine Settings-Datei selbst,
+in das Fenster, als wäre es getippt (alte Keys über die Aliase), zählt als ungespeicherte Änderungen und wird erst mit
+Save geschrieben. Eine Datei eines anderen Hosts fragt nach; was das Fenster nicht kennt, wird übersprungen.
+
+Tooltips haben eine feste Breite und brechen um, statt über den Bildschirm zu laufen.
 
 Vor dem Speichern fragt das Fenster den Host mit `Validate(settingsJson)`: jede zurückgegebene Zeile ist ein Problem
 („Minimum bet is above the maximum"), das Fenster zeigt sie und fragt, ob trotzdem gespeichert wird.

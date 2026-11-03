@@ -13,7 +13,9 @@ namespace UIFramework
     /// What an action's answer looks like in its panel. Plain text is shown as it is. An answer that is a JSON
     /// object may carry <c>lines</c> (strings, or <c>{text, big}</c> for a headline figure) and <c>bar</c>
     /// (segments <c>{label, value, text, colour}</c>, drawn proportionally with a legend, the colour as #rrggbb;
-    /// without one the segments take the accent, the success colour and the surface in turn).
+    /// without one the segments take the accent, the success colour and the surface in turn). A line
+    /// <c>{emotes: [codes], platform, text}</c> shows the emotes as pictures (see <see cref="EmotePictures"/>),
+    /// each with its name beneath, after the text when there is one.
     /// </summary>
     public static class ResultPanel
     {
@@ -26,7 +28,7 @@ namespace UIFramework
             try { return JObject.Parse(text); } catch (Exception) { return null; }
         }
 
-        public static void Render(StackPanel panel, string result)
+        public static void Render(StackPanel panel, string result, IHostHooks hooks = null)
         {
             panel.Children.Clear();
             string text = (result ?? "").Trim();
@@ -50,20 +52,53 @@ namespace UIFramework
             int shown = 0;
             foreach (var line in lines)
             {
-                bool big = line is JObject o && (bool?)o["big"] == true;
-                string value = line is JObject lo ? (string)lo["text"] ?? "" : line.ToString();
-                if (shown == 0 || big || bar.Count == 0)
-                    panel.Children.Add(Line(value, big));
-                else if (shown == 1)
-                    panel.Children.Add(Line(value, false));
+                if (line is JObject pictures && pictures["emotes"] is JArray codes)
+                {
+                    string caption = (string)pictures["text"];
+                    if (!string.IsNullOrEmpty(caption))
+                        panel.Children.Add(Line(caption, false));
+                    panel.Children.Add(Emotes(codes, (string)pictures["platform"], hooks));
+                }
                 else
-                    panel.Children.Add(Line(value, false));
+                {
+                    bool big = line is JObject o && (bool?)o["big"] == true;
+                    string value = line is JObject lo ? (string)lo["text"] ?? "" : line.ToString();
+                    panel.Children.Add(Line(value, big));
+                }
                 shown++;
                 if (shown == 1 && bar.Count > 0)
                     panel.Children.Add(Bar(bar));
             }
             if (lines.Count == 0 && bar.Count > 0)
                 panel.Children.Add(Bar(bar));
+        }
+
+        /// <summary>The emotes of a spin as pictures, each with its name beneath; a YouTube emote is its emoji.</summary>
+        public static FrameworkElement Emotes(JArray codes, string platform, IHostHooks hooks)
+        {
+            platform = (platform ?? "twitch").Trim().ToLowerInvariant();
+            var wrap = new WrapPanel { Margin = new Thickness(0, 4, 0, 4) };
+            foreach (var token in codes)
+            {
+                string code = token?.ToString() ?? "";
+                var kick = EmotePictures.KickCode.Match(code);
+                string name = kick.Success ? kick.Groups[2].Value : code;
+                var cell = new StackPanel { Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Bottom };
+                if (platform == "youtube")
+                    cell.Children.Add(new TextBlock { Text = code, FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, Foreground = Theme.LabelFg });
+                else
+                {
+                    var image = EmotePictures.Picture(platform, code, hooks);
+                    image.Width = 32;
+                    image.Height = 32;
+                    image.Margin = new Thickness(0);
+                    image.HorizontalAlignment = HorizontalAlignment.Center;
+                    cell.Children.Add(image);
+                }
+                cell.Children.Add(new TextBlock { Text = name, FontSize = 11, Foreground = Theme.SubFg, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 0) });
+                wrap.Children.Add(cell);
+            }
+            return wrap;
         }
 
         private static TextBlock Line(string text, bool big) => new TextBlock

@@ -47,6 +47,8 @@ namespace UIFramework
                     settings[mt.Key] = ComboValue(mt, selected.Tag);
                 else if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt && (transientToo || !lt.Transient))
                     settings[lt.Key] = list.Value;
+                else if (node is OptionSlider slider && FieldTag.Of(slider.Tag) is FieldTag st && (transientToo || !st.Transient))
+                    settings[st.Key] = slider.Stored;
             });
         }
 
@@ -58,6 +60,7 @@ namespace UIFramework
                 var tag = node is CheckBox chk ? FieldTag.Of(chk.Tag)
                         : node is TextBox txt ? FieldTag.Of(txt.Tag)
                         : node is ComboBox cmb ? FieldTag.Of(cmb.Tag)
+                        : node is OptionSlider slider ? FieldTag.Of(slider.Tag)
                         : node is ListEditor list ? FieldTag.Of(list.Tag) : null;
                 if (tag != null) tag.Transient = true;
             });
@@ -121,32 +124,53 @@ namespace UIFramework
             }
         }
 
-        public static void ResetToDefaults(UIElement page, JObject defaults)
+        public static void ResetToDefaults(UIElement page, JObject defaults) => Apply(page, defaults, false);
+
+        /// <summary>Puts the values into the controls as if typed: every control takes its key's value, or, with
+        /// <paramref name="onlyPresent"/>, only the controls whose key the object names (an import). Returns the keys
+        /// a control took.</summary>
+        public static HashSet<string> Apply(UIElement page, JObject values, bool onlyPresent)
         {
+            var placed = new HashSet<string>(StringComparer.Ordinal);
             VisitTree(page, node =>
             {
+                var tag = node is CheckBox c ? FieldTag.Of(c.Tag)
+                        : node is TextBox t ? FieldTag.Of(t.Tag)
+                        : node is ComboBox m ? FieldTag.Of(m.Tag)
+                        : node is OptionSlider s ? FieldTag.Of(s.Tag)
+                        : node is ListEditor l ? FieldTag.Of(l.Tag) : null;
+                if (tag == null || (onlyPresent && (values[tag.Key] == null || tag.Transient)))
+                    return;
+                placed.Add(tag.Key);
+
                 if (node is CheckBox chk && FieldTag.Of(chk.Tag) is FieldTag ct)
                 {
-                    var want = defaults[ct.Key];
-                    chk.IsChecked = want != null && want.Type == JTokenType.Boolean && (bool)want;
+                    var want = values[ct.Key];
+                    chk.IsChecked = want != null && (want.Type == JTokenType.Boolean ? (bool)want : string.Equals(want.ToString(), "true", StringComparison.OrdinalIgnoreCase));
                     return;
                 }
 
                 if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt)
                 {
-                    list.Set(defaults[lt.Key] as JArray);
+                    list.Set(values[lt.Key] as JArray);
+                    return;
+                }
+
+                if (node is OptionSlider slider && FieldTag.Of(slider.Tag) is FieldTag st)
+                {
+                    slider.Put(values[st.Key]);
                     return;
                 }
 
                 if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt)
                 {
-                    txt.Text = Display(tt, defaults[tt.Key]);
+                    txt.Text = Display(tt, values[tt.Key]);
                     return;
                 }
 
                 if (node is ComboBox cmb && FieldTag.Of(cmb.Tag) is FieldTag mt)
                 {
-                    var want = defaults[mt.Key];
+                    var want = values[mt.Key];
                     foreach (var raw in cmb.Items)
                     {
                         if (!(raw is ComboBoxItem item) || item.Tag == null) continue;
@@ -161,6 +185,7 @@ namespace UIFramework
                     }
                 }
             });
+            return placed;
         }
 
         /// <summary>What a control holds, as text, for the change count; null for furniture and transient fields.</summary>
@@ -174,6 +199,8 @@ namespace UIFramework
                 return mt.Transient ? null : cmb.SelectedItem is ComboBoxItem item && item.Tag != null ? item.Tag.ToString() : "";
             if (node is ListEditor list && list.Tag is FieldTag lt)
                 return lt.Transient ? null : list.Serialized;
+            if (node is OptionSlider slider && slider.Tag is FieldTag st)
+                return st.Transient ? null : slider.StoredText;
             return null;
         }
 
@@ -215,6 +242,8 @@ namespace UIFramework
                     cmb.SelectionChanged += (s, e) => onChanged();
                 else if (obj is ListEditor list && list.Tag is FieldTag)
                     list.Changed += onChanged;
+                else if (obj is OptionSlider slider && slider.Tag is FieldTag)
+                    slider.ValueChanged += (s, e) => onChanged();
             });
         }
 

@@ -10,8 +10,8 @@
 
     private const long SampleBalance = 12340;
 
-    // The fairness presets: jackpot chance, jackpot multiplier, win chance, min and max multiplier.
-    private static readonly string[] Presets = { "presetStrict", "presetHouseEdge", "presetFair", "presetGenerous", "presetClassic" };
+    // The stops of the fairness slider and their numbers: jackpot chance, jackpot multiplier, win chance, min and max multiplier.
+    private static readonly string[] Presets = { "strict", "houseEdge", "fair", "generous", "classic" };
     private static readonly double[][] PresetValues =
     {
         new[] { 0.1, 43, 22, 1.5, 2.5 },
@@ -24,7 +24,7 @@
 
     /// <summary>What the DLL calls. Public methods, string arguments, no framework types: found by reflection.
     /// Everything that needs CPH is queued as a job and run by Pump on Streamer.bot's thread; the odds, the test
-    /// roll and the presets need nothing but the values, so they answer at once.</summary>
+    /// roll and the fairness slider need nothing but the values, so they answer at once.</summary>
     public sealed class Host
     {
         private readonly CPHInline _owner;
@@ -52,11 +52,10 @@
         public string Test(string name, string settingsJson)
         {
             var settings = JObject.Parse(settingsJson);
-            int preset = Array.IndexOf(Presets, name);
-            if (preset >= 0)
-                return Preset(preset);
             switch (name)
             {
+                // The slider moved: its stop fills in the five numbers; on Custom it leaves them alone.
+                case "fairness": return Preset(Array.IndexOf(Presets, ((string)settings["fairness"] ?? "").Trim()));
                 case "odds": return Odds(settings);
                 case "tryRoll": return TryRoll(settings, _dice);
                 default: return null;
@@ -111,10 +110,12 @@
         }
     }
 
-    // ---- The presets, the odds and the test roll, from the values as they stand in the window ----
+    // ---- The slider's stops, the odds and the test roll, from the values as they stand in the window ----
 
     private static string Preset(int index)
     {
+        if (index < 0)
+            return null;
         var v = PresetValues[index];
         var set = new JObject
         {
@@ -160,8 +161,10 @@
             "Viewers come out ahead, so points grow.",
             "The default: rare, huge jackpots. Viewers come out far ahead and points grow fast."
         };
+        // The slider follows the numbers: the stop they match, or Custom.
         return new JObject
         {
+            ["set"] = new JObject { ["fairness"] = step >= 0 ? Presets[step] : "custom" },
             ["lines"] = new JArray
             {
                 new JObject { ["text"] = (step >= 0 ? PresetNames[step] + " · " : "Your own numbers · ") + "A bet of 100 comes back as about " + Amount(s, back), ["big"] = true },

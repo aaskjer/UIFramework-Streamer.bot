@@ -8,7 +8,6 @@
     private static readonly string SettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Chat Games", "Slot Machine Game", "SMG-Settings.json");
     private static readonly string LogsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Chat Games", "Logs");
 
-    private const int OddsSpins = 30000;
     private const long SampleBalance = 100000;
     private const long SamplePool = 23400;
 
@@ -44,7 +43,6 @@
             var settings = JObject.Parse(settingsJson);
             switch (name)
             {
-                case "odds": return Odds(settings);
                 case "trySpin": return TrySpin(settings, _dice);
                 default: return null;
             }
@@ -159,32 +157,6 @@
         return string.IsNullOrEmpty(sep) ? text.Replace(",", "") : text.Replace(",", sep);
     }
 
-    private static string Odds(JObject s)
-    {
-        string platform = PlatformKey(s);
-        var rules = RulesOf(s);
-        var emotes = EmotesOf(s, platform);
-        if (emotes.Count == 0)
-            return PlatformName(platform) + " has no emotes yet, so a spin there does nothing. Add some on the Emotes page.";
-        var odds = SlotEngine.Simulate(rules, emotes, PayoutsOf(s), OddsSpins, 20261001);
-        // The window draws this as a bar with a legend and the lines around it (UIFramework docs/Schema.md, action).
-        return new JObject
-        {
-            ["lines"] = new JArray
-            {
-                rules.Slots + " slots: " + SlotsDescription(rules.Slots),
-                new JObject { ["text"] = "A bet of 100 comes back as about " + Amount(s, odds.Return), ["big"] = true },
-                "Worked out from " + Amount(s, OddsSpins) + " test spins with the " + PlatformName(platform) + " emotes, for a viewer without boosts, Addicted cut or jackpot pool."
-            },
-            ["bar"] = new JArray
-            {
-                new JObject { ["label"] = "Jackpot", ["value"] = odds.Jackpot, ["text"] = Percent(odds.Jackpot), ["colour"] = "#F59E0B" },
-                new JObject { ["label"] = "Win", ["value"] = odds.Win, ["text"] = Percent(odds.Win), ["colour"] = "#22C55E" },
-                new JObject { ["label"] = "Loss", ["value"] = odds.Loss, ["text"] = Percent(odds.Loss), ["colour"] = "#6B7280" }
-            }
-        }.ToString(Newtonsoft.Json.Formatting.None);
-    }
-
     private static string TrySpin(JObject s, Random dice)
     {
         string platform = PlatformKey(s);
@@ -273,9 +245,16 @@
         string template = JackpotBlock((string)s[key] ?? "", poolInText);
         string message = Fill(template, values);
         string prefix = spin.IsJackpot ? "Jackpot" : spin.IsWin ? spin.MatchCount + " alike" : "No match";
-        return "alice has " + Amount(s, SampleBalance) + " " + currency + " and spins " + (free ? "for free" : "for " + Amount(s, bet) + " " + currency) + " on " + PlatformName(platform) + ".\n"
-             + "🎰 " + slotsLine + "\n"
-             + prefix + " · " + message;
+        // The window draws the slots as the emotes' pictures (UIFramework docs/Schema.md, action: an "emotes" line).
+        return new JObject
+        {
+            ["lines"] = new JArray
+            {
+                "alice has " + Amount(s, SampleBalance) + " " + currency + " and spins " + (free ? "for free" : "for " + Amount(s, bet) + " " + currency) + " on " + PlatformName(platform) + ".",
+                new JObject { ["emotes"] = new JArray(spin.Emotes.Select(e => e.Code)), ["platform"] = platform },
+                prefix + " · " + message
+            }
+        }.ToString(Newtonsoft.Json.Formatting.None);
     }
 
     private static string Fill(string template, Dictionary<string, string> values)

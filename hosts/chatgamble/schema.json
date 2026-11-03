@@ -39,49 +39,41 @@
       ]
     },
     {
-      "key": "presetStrict",
-      "default": null,
-      "kind": "action",
+      "key": "fairness",
+      "default": "classic",
+      "kind": "slider",
       "page": "game",
       "section": "Fairness",
-      "label": "Strict",
-      "help": "The house wins: over time viewers lose about a quarter of what they bet, so points drain away. Jackpot 0.1 %, win 22 %, ×1.5 to ×2.5, jackpot ×43. Fills in the five numbers below; nothing is saved until you save."
-    },
-    {
-      "key": "presetHouseEdge",
-      "default": null,
-      "kind": "action",
-      "page": "game",
-      "section": "Fairness",
-      "label": "House Edge",
-      "help": "The house keeps a small cut, so points shrink slowly. Jackpot 0.25 %, win 23 %."
-    },
-    {
-      "key": "presetFair",
-      "default": null,
-      "kind": "action",
-      "page": "game",
-      "section": "Fairness",
-      "label": "Fair",
-      "help": "About even: over time viewers get back roughly what they bet. Jackpot 0.3 %, win 25 %."
-    },
-    {
-      "key": "presetGenerous",
-      "default": null,
-      "kind": "action",
-      "page": "game",
-      "section": "Fairness",
-      "label": "Generous",
-      "help": "Viewers come out ahead, so points grow. Jackpot 0.6 %, win 28 %."
-    },
-    {
-      "key": "presetClassic",
-      "default": null,
-      "kind": "action",
-      "page": "game",
-      "section": "Fairness",
-      "label": "Classic",
-      "help": "The default: rare, huge jackpots. Viewers come out far ahead and points grow fast. Jackpot 1 %, win 30 %."
+      "label": "Preset",
+      "help": "One slider for the odds, from Strict, where the house wins and points drain away, to Classic, the default with rare, huge jackpots where points grow fast. A stop fills in the five numbers below; nothing is saved until you save. Custom is where the slider goes when the numbers are your own.",
+      "options": [
+        {
+          "value": "strict",
+          "label": "Strict"
+        },
+        {
+          "value": "houseEdge",
+          "label": "House Edge"
+        },
+        {
+          "value": "fair",
+          "label": "Fair"
+        },
+        {
+          "value": "generous",
+          "label": "Generous"
+        },
+        {
+          "value": "classic",
+          "label": "Classic"
+        },
+        {
+          "value": "custom",
+          "label": "Custom"
+        }
+      ],
+      "transient": true,
+      "live": true
     },
     {
       "key": "presetNote",
@@ -89,7 +81,7 @@
       "kind": "note",
       "page": "game",
       "section": "Fairness",
-      "help": "A preset sets the jackpot and win chance, the jackpot multiplier and the win multiplier range in one go. The game only ever reads those five numbers, so you can still fine-tune them."
+      "help": "A stop of the slider sets the jackpot and win chance, the jackpot multiplier and the win multiplier range in one go. The game only ever reads those five numbers, so you can still fine-tune them: the slider then shows Custom, or the stop they match."
     },
     {
       "key": "jackpotPercent",
@@ -326,7 +318,8 @@
       "label": "Bet to try",
       "help": "A bet to try the odds and messages with. It isn't saved.",
       "min": 1.0,
-      "transient": true
+      "transient": true,
+      "row": "try"
     },
     {
       "key": "tryRole",
@@ -354,7 +347,8 @@
           "label": "Addicted"
         }
       ],
-      "transient": true
+      "transient": true,
+      "row": "try"
     },
     {
       "key": "tryRoll",
