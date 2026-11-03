@@ -108,6 +108,9 @@ namespace UIFramework
         public List<SettingOption> Options;
         public List<string> Placeholders;
         public string Requires;
+        /// <summary>Settings that name the same row, one after the other, share one line of the page, whatever
+        /// their kind: a bet, a role and a Try button side by side.</summary>
+        public string Row;
         /// <summary>For an action: the question asked before the host is called. Null asks nothing.</summary>
         public string Confirm;
         public bool Advanced;
@@ -118,7 +121,9 @@ namespace UIFramework
         public bool Transient;
         /// <summary>For a bool: the switch carries a "Twitch only" pill.</summary>
         public bool TwitchOnly;
-        /// <summary>For an action: the host gets the values as they stand in the window, unsaved ones included.</summary>
+        /// <summary>For an action: the host gets the values as they stand in the window, unsaved ones included. On
+        /// any other field: the host is asked (<c>Test(key, live settings)</c>) whenever the field changes, and its
+        /// answer's <c>set</c> fills in other fields, a preset slider.</summary>
         public bool Live;
         /// <summary>For an action: the host's answer is shown in a panel under the button instead of the footer.</summary>
         public bool Panel;
@@ -166,6 +171,7 @@ namespace UIFramework
                 Factor = (double?)item["factor"],
                 UnlimitedAtZero = item["unlimitedAtZero"]?.Type == JTokenType.Boolean && (bool)item["unlimitedAtZero"],
                 Requires = (string)item["requires"],
+                Row = (string)item["row"],
                 Confirm = (string)item["confirm"],
                 Advanced = item["advanced"]?.Type == JTokenType.Boolean && (bool)item["advanced"],
                 ReadOnly = item["readonly"]?.Type == JTokenType.Boolean && (bool)item["readonly"],
@@ -211,6 +217,7 @@ namespace UIFramework
             if (Options != null) item["options"] = new JArray(Options.Select(o => o.ToJson()));
             if (Placeholders != null) item["placeholders"] = new JArray(Placeholders);
             if (Requires != null) item["requires"] = Requires;
+            if (Row != null) item["row"] = Row;
             if (Confirm != null) item["confirm"] = Confirm;
             if (Advanced) item["advanced"] = true;
             if (ReadOnly) item["readonly"] = true;

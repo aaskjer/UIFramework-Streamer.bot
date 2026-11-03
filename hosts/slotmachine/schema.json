@@ -138,42 +138,6 @@
       ]
     },
     {
-      "key": "tryPlatform",
-      "default": "twitch",
-      "kind": "options",
-      "page": "game",
-      "section": "Slots and odds",
-      "label": "Emotes of",
-      "help": "Whose emotes the odds and the test spin use. Subscriber and VIP boosts only exist on Twitch. Not saved.",
-      "options": [
-        {
-          "value": "twitch",
-          "label": "Twitch"
-        },
-        {
-          "value": "youtube",
-          "label": "YouTube"
-        },
-        {
-          "value": "kick",
-          "label": "Kick"
-        }
-      ],
-      "transient": true
-    },
-    {
-      "key": "odds",
-      "default": null,
-      "kind": "action",
-      "page": "game",
-      "section": "Slots and odds",
-      "label": "What really comes out",
-      "help": "Worked out from 30,000 test spins with the emotes, weights, chances and payouts as they stand on this page, for a viewer without Subscriber/VIP boost or Addicted cut, and without the jackpot pool.",
-      "live": true,
-      "panel": true,
-      "auto": true
-    },
-    {
       "key": "defaultBet",
       "default": 1234,
       "page": "game",
@@ -410,6 +374,31 @@
       ]
     },
     {
+      "key": "tryPlatform",
+      "default": "twitch",
+      "kind": "options",
+      "page": "game",
+      "section": "Try a spin",
+      "label": "Platform",
+      "help": "Whose emotes the test spin uses: a Twitch emote only exists on Twitch, a Kick emote only on Kick. Subscriber and VIP boosts only exist on Twitch. Not saved.",
+      "options": [
+        {
+          "value": "twitch",
+          "label": "Twitch"
+        },
+        {
+          "value": "youtube",
+          "label": "YouTube"
+        },
+        {
+          "value": "kick",
+          "label": "Kick"
+        }
+      ],
+      "transient": true,
+      "row": "try"
+    },
+    {
       "key": "tryBet",
       "default": 1000,
       "page": "game",
@@ -417,7 +406,8 @@
       "label": "Bet to try",
       "help": "A bet to try the odds and messages with. It isn't saved.",
       "min": 1.0,
-      "transient": true
+      "transient": true,
+      "row": "try"
     },
     {
       "key": "tryRole",
@@ -426,7 +416,7 @@
       "page": "game",
       "section": "Try a spin",
       "label": "Spin as",
-      "help": "Who spins: boosts and the Addicted cut change what a win pays. The platform is the one picked under 'Slots and odds'.",
+      "help": "Who spins: boosts and the Addicted cut change what a win pays.",
       "options": [
         {
           "value": "viewer",
@@ -445,7 +435,8 @@
           "label": "Addicted"
         }
       ],
-      "transient": true
+      "transient": true,
+      "row": "try"
     },
     {
       "key": "trySpin",

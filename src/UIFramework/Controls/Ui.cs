@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using Run = System.Windows.Documents.Run;
 using Hyperlink = System.Windows.Documents.Hyperlink;
@@ -423,6 +424,76 @@ namespace UIFramework
             template.Triggers.Add(on);
             return template;
         }
+
+        /// <summary>A thin track with the accent up to a round thumb, in the theme's colours.</summary>
+        public static ControlTemplate SliderTemplate()
+        {
+            string xaml =
+                "<ControlTemplate TargetType=\"Slider\" xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">" +
+                "<Grid Background=\"Transparent\" VerticalAlignment=\"Center\" MinHeight=\"22\">" +
+                "<Border Height=\"4\" CornerRadius=\"2\" VerticalAlignment=\"Center\" Margin=\"9,0\" Background=\"" + Colours.ToHex(Theme.LineStrong) + "\"/>" +
+                "<Track x:Name=\"PART_Track\">" +
+                "<Track.DecreaseRepeatButton><RepeatButton Command=\"Slider.DecreaseLarge\" Focusable=\"False\"><RepeatButton.Template><ControlTemplate TargetType=\"RepeatButton\">" +
+                "<Border Background=\"Transparent\"><Border Height=\"4\" CornerRadius=\"2\" VerticalAlignment=\"Center\" Margin=\"9,0,0,0\" Background=\"" + Colours.ToHex(Theme.Accent) + "\"/></Border>" +
+                "</ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>" +
+                "<Track.IncreaseRepeatButton><RepeatButton Command=\"Slider.IncreaseLarge\" Focusable=\"False\"><RepeatButton.Template><ControlTemplate TargetType=\"RepeatButton\">" +
+                "<Border Background=\"Transparent\"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>" +
+                "<Track.Thumb><Thumb Width=\"18\" Height=\"18\" Cursor=\"Hand\"><Thumb.Template><ControlTemplate TargetType=\"Thumb\">" +
+                "<Ellipse x:Name=\"Dot\" Fill=\"" + Colours.ToHex(Theme.ContentBg) + "\" Stroke=\"" + Colours.ToHex(Theme.Accent) + "\" StrokeThickness=\"2\"/>" +
+                "<ControlTemplate.Triggers><Trigger Property=\"IsMouseOver\" Value=\"True\"><Setter TargetName=\"Dot\" Property=\"Fill\" Value=\"" + Colours.ToHex(Theme.Accent) + "\"/></Trigger>" +
+                "<Trigger Property=\"IsDragging\" Value=\"True\"><Setter TargetName=\"Dot\" Property=\"Fill\" Value=\"" + Colours.ToHex(Theme.Accent) + "\"/></Trigger></ControlTemplate.Triggers>" +
+                "</ControlTemplate></Thumb.Template></Thumb></Track.Thumb>" +
+                "</Track></Grid></ControlTemplate>";
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        // ---- Tooltips ----------------------------------------------------------------------------------
+        // A tooltip given as a string would stretch across the screen on one line. The windows registered here
+        // swap it for a wrapping one of a fixed width the moment it opens, through a class handler on the opening
+        // event (a direct event, so a handler on the window would never see it); elements of other windows in the
+        // process are left alone.
+
+        private static readonly HashSet<Window> TipWindows = new HashSet<Window>();
+        private static bool _tipHandler;
+        public const double ToolTipWidth = 360;
+
+        public static void WrapToolTips(Window window)
+        {
+            TipWindows.Add(window);
+            window.Closed += (sender, e) => TipWindows.Remove(window);
+            if (_tipHandler)
+                return;
+            _tipHandler = true;
+            EventManager.RegisterClassHandler(typeof(FrameworkElement), ToolTipService.ToolTipOpeningEvent, new ToolTipEventHandler(OnToolTipOpening));
+        }
+
+        private static void OnToolTipOpening(object sender, ToolTipEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.ToolTip is string text && Owns(element))
+                element.ToolTip = Tip(text);
+        }
+
+        private static bool Owns(DependencyObject node)
+        {
+            var window = Window.GetWindow(node);
+            if (window != null)
+                return TipWindows.Contains(window);
+            // Inside a popup: the popup's target says which window it belongs to.
+            for (var at = node; at != null; at = LogicalTreeHelper.GetParent(at) ?? (at is Visual ? VisualTreeHelper.GetParent(at) : null))
+                if (at is Popup popup)
+                    return popup.PlacementTarget != null && Owns(popup.PlacementTarget);
+            return false;
+        }
+
+        /// <summary>A tooltip of a fixed width that wraps its text.</summary>
+        public static ToolTip Tip(string text) => new ToolTip
+        {
+            Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, MaxWidth = ToolTipWidth, FontSize = 12, Foreground = Theme.LabelFg },
+            MaxWidth = ToolTipWidth + 20,
+            Background = new SolidColorBrush(Theme.PopupBg),
+            BorderBrush = new SolidColorBrush(Theme.LineStrong),
+            Padding = new Thickness(9, 6, 9, 7)
+        };
 
         public static ControlTemplate ComboTemplate()
         {

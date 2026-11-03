@@ -155,7 +155,7 @@
           "note": "With the jackpot pool on, every lost bet goes into a pool per platform, and a jackpot with a bet at or above 'Bet to win the pool' takes the pool on top. Twitch subscribers and VIPs can get a boost; viewers on the Addicted list get a cut."
         },
         {
-          "note": "'What really comes out' on the Game page shows the odds your settings give, and 'Try a spin' plays one with the exact chat message, without sending or saving anything."
+          "note": "'Try a spin' on the Game page plays one round with the game's own engine and the exact chat message, from the settings as they stand in the window, without sending or saving anything."
         }
       ]
     },
@@ -216,36 +216,12 @@
     ]
   },
   "answers": {
-    "odds": {
+    "trySpin": {
       "lines": [
-        "4 slots: Two or three alike pay; all four alike is the jackpot.",
-        {
-          "text": "A bet of 100 comes back as about 93",
-          "big": true
-        },
-        "Worked out from 30,000 test spins with the Twitch emotes, for a viewer without boosts, Addicted cut or jackpot pool."
-      ],
-      "bar": [
-        {
-          "label": "Jackpot",
-          "value": 0.9,
-          "text": "0.9 %",
-          "colour": "#F59E0B"
-        },
-        {
-          "label": "Win",
-          "value": 26.5,
-          "text": "26.5 %",
-          "colour": "#22C55E"
-        },
-        {
-          "label": "Loss",
-          "value": 72.6,
-          "text": "72.6 %",
-          "colour": "#6B7280"
-        }
+        "alice has 12,340 Points and spins for 1,000 Points on Twitch.",
+        { "emotes": ["Kappa", "LUL", "Kappa", "FailFish"], "platform": "twitch" },
+        "No match · @alice spun Kappa || LUL || Kappa || FailFish and lost 1,000 Points. New balance: 11,340 Points."
       ]
-    },
-    "trySpin": "alice has 100,000 Points and spins for 1,000 Points on Twitch.\n🎰 Kappa || LUL || Kappa || PogChamp\n2 alike · @alice, you WON! 1,500 Points! 🎉🎉 (Min. bet for the Jackpool: 50,000 Points) -- Your new balance: 100,500 Points"
+    }
   }
 }

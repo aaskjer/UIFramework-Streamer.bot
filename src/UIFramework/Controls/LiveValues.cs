@@ -46,6 +46,8 @@ namespace UIFramework
                 box.Text = box.Tag is FieldTag tag ? FieldBinding.Display(tag, value) : value?.ToString() ?? "";
                 return true;
             }
+            if (parts.Sliders.TryGetValue(key, out var slider))
+                return slider.Put(value);
             return false;
         }
     }

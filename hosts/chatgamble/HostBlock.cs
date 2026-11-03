@@ -13,7 +13,7 @@ public static class UiSchema
 {
     public sealed class Setting
     {
-        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform;
+        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
@@ -21,7 +21,9 @@ public static class UiSchema
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
-        // its answer under the button, Auto asks it on show and after every change without a button.
+        // its answer under the button, Auto asks it on show and after every change without a button. Live on any
+        // other field asks the host whenever the field changes (a preset slider whose answer fills in other fields).
+        // Row: settings naming the same row, one after the other, share one line of the page.
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
@@ -35,14 +37,14 @@ public static class UiSchema
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false)
+        string platform = null, bool twitchOnly = false, string row = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
         };
     }
 
@@ -103,6 +105,7 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -128,12 +131,8 @@ public static class UiSchema
         S("cooldownSendAction", false, aliases: new[] { "SendActionCD" }),
         S("numberSeparator", ".", aliases: new[] { "NumberSeparator" }),
         // ---- game ----
-        S("presetStrict", null, page: "game", label: "Strict", help: "The house wins: over time viewers lose about a quarter of what they bet, so points drain away. Jackpot 0.1 %, win 22 %, ×1.5 to ×2.5, jackpot ×43. Fills in the five numbers below; nothing is saved until you save.", kind: "action", section: "Fairness"),
-        S("presetHouseEdge", null, page: "game", label: "House Edge", help: "The house keeps a small cut, so points shrink slowly. Jackpot 0.25 %, win 23 %.", kind: "action", section: "Fairness"),
-        S("presetFair", null, page: "game", label: "Fair", help: "About even: over time viewers get back roughly what they bet. Jackpot 0.3 %, win 25 %.", kind: "action", section: "Fairness"),
-        S("presetGenerous", null, page: "game", label: "Generous", help: "Viewers come out ahead, so points grow. Jackpot 0.6 %, win 28 %.", kind: "action", section: "Fairness"),
-        S("presetClassic", null, page: "game", label: "Classic", help: "The default: rare, huge jackpots. Viewers come out far ahead and points grow fast. Jackpot 1 %, win 30 %.", kind: "action", section: "Fairness"),
-        S("presetNote", null, page: "game", help: "A preset sets the jackpot and win chance, the jackpot multiplier and the win multiplier range in one go. The game only ever reads those five numbers, so you can still fine-tune them.", kind: "note", section: "Fairness"),
+        S("fairness", "classic", page: "game", label: "Preset", help: "One slider for the odds, from Strict, where the house wins and points drain away, to Classic, the default with rare, huge jackpots where points grow fast. A stop fills in the five numbers below; nothing is saved until you save. Custom is where the slider goes when the numbers are your own.", kind: "slider", section: "Fairness", options: new[] { "strict|Strict", "houseEdge|House Edge", "fair|Fair", "generous|Generous", "classic|Classic", "custom|Custom" }, transient: true, live: true),
+        S("presetNote", null, page: "game", help: "A stop of the slider sets the jackpot and win chance, the jackpot multiplier and the win multiplier range in one go. The game only ever reads those five numbers, so you can still fine-tune them: the slider then shows Custom, or the stop they match.", kind: "note", section: "Fairness"),
         S("jackpotPercent", 1.0, page: "game", label: "Jackpot chance", help: "Chance in percent, from 0 (never) to 100 (always), that a gamble hits the jackpot. Keep it small so jackpots stay rare: '1' is 1 in 100.", kind: "percent", section: "Fairness", min: 0.0, max: 100.0, aliases: new[] { "JackpotPercent" }),
         S("jackpotMultiplier", 43, page: "game", label: "Jackpot ×", help: "Multiplier stacked on top of the win roll when a jackpot hits. With '43', a 2× roll pays 2 × 43 = 86 times the bet.", section: "Fairness", min: 1.0, aliases: new[] { "JackpotMultiplier" }),
         S("winPercent", 30.0, page: "game", label: "Win chance", help: "Chance in percent that a gamble is a normal win, on top of the jackpot chance. Jackpot '1' and Win '30' leave a 69 % chance to lose.", kind: "percent", section: "Fairness", min: 0.0, max: 100.0, aliases: new[] { "WinPercent" }),
@@ -152,8 +151,8 @@ public static class UiSchema
         S("subscriberBoostPercent", 10.0, page: "game", label: "Subscriber boost", help: "How much bigger a subscriber's win is: '10' turns 100 into 110. Adds up with the VIP boost for someone who is both.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "subscriberBoostEnabled", aliases: new[] { "SubscriberBoostPercent" }),
         S("vipBoostPercent", 20.0, page: "game", label: "VIP boost", help: "How much bigger a VIP's win is: '20' turns 100 into 120. Adds up with the Subscriber boost for someone who is both.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "vipBoostEnabled", aliases: new[] { "VipBoostPercent" }),
         S("addictedPayoutCut", 50, page: "game", label: "Addicted cut", help: "How much of an addicted viewer's win is cut, from 0 (nothing) to 100 (all of it). Applied last, so it cuts a boosted win too - part of the boost is kept. Who counts as addicted is set on the Access page.", kind: "percent", section: "Payouts", min: 0.0, max: 100.0, aliases: new[] { "AddictedPayoutCutPercent" }),
-        S("tryBet", 1000, page: "game", label: "Bet to try", help: "A bet to try the odds and messages with. It isn't saved.", section: "Try a bet", min: 1.0, transient: true),
-        S("tryRole", "viewer", page: "game", label: "Play as", help: "Who plays: boosts and the Addicted cut change what a win pays.", kind: "options", section: "Try a bet", options: new[] { "viewer|Viewer", "subscriber|Subscriber", "vip|VIP", "addicted|Addicted" }, transient: true),
+        S("tryBet", 1000, page: "game", label: "Bet to try", help: "A bet to try the odds and messages with. It isn't saved.", section: "Try a bet", min: 1.0, transient: true, row: "try"),
+        S("tryRole", "viewer", page: "game", label: "Play as", help: "Who plays: boosts and the Addicted cut change what a win pays.", kind: "options", section: "Try a bet", options: new[] { "viewer|Viewer", "subscriber|Subscriber", "vip|VIP", "addicted|Addicted" }, transient: true, row: "try"),
         S("tryRoll", null, page: "game", label: "Roll", help: "Plays one gamble with the settings as they stand on this page, saved or not, and shows the roll and the message chat would get. Nothing is sent and nothing is saved.", kind: "action", section: "Try a bet", live: true, panel: true),
         // ---- access ----
         S("platformsNote", null, page: "access", help: "Twitch, YouTube and Kick all play, and every reply goes to the chat the command or redemption came from. To leave a platform out, untick it on the !gamble command in Streamer.bot, for example 'Kick Message'.", kind: "note", section: "Platforms"),

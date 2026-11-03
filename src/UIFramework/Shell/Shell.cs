@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace UIFramework
@@ -203,6 +205,7 @@ namespace UIFramework
                 Background = new SolidColorBrush(Theme.ContentBg),
                 Tag = this
             };
+            Ui.WrapToolTips(window);
             lock (Gate)
                 OpenWindows[_gateKey] = window;
 
@@ -510,6 +513,119 @@ namespace UIFramework
                 Rebuild(null);
             };
 
+            // Export writes every setting as it stands in the window to a file of the user's choosing; import reads
+            // such a file (or a settings file) into the window, as if typed, so Save is what keeps it.
+            var btnExport = Ui.IconButton(Icons.Export, Icons.Font, "Export every setting as it stands in the window to a file");
+            btnExport.Margin = new Thickness(6, 0, 0, 0);
+            var btnImport = Ui.IconButton(Icons.Import, Icons.Font, "Import settings from an exported file into the window; nothing is saved until you save");
+            btnImport.Margin = new Thickness(6, 0, 0, 0);
+            string hostName = _spec.Schema?.Host ?? _spec.Title ?? "settings";
+            string Folder() { try { return Path.GetDirectoryName(_spec.SettingsPath); } catch (Exception) { return null; } }
+            btnExport.Click += (s, e) =>
+            {
+                parts.CommitNames();
+                var live = (JObject)settings.DeepClone();
+                FieldBinding.Save(live, pageHost);
+                Sidecars.DropTransient(live, _spec.ResolvedSettings);
+                var export = new JObject
+                {
+                    ["uiframework"] = "settings",
+                    ["host"] = hostName,
+                    ["version"] = _spec.Version ?? "",
+                    ["exported"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+                    ["settings"] = live
+                };
+                var dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Export settings",
+                    FileName = Regex.Replace(hostName, @"[^\w-]+", "-").Trim('-') + "-settings-" + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + ".json",
+                    Filter = "Settings export (*.json)|*.json|All files (*.*)|*.*",
+                    DefaultExt = ".json",
+                    AddExtension = true
+                };
+                if (Folder() != null) dialog.InitialDirectory = Folder();
+                if (dialog.ShowDialog(window) != true)
+                    return;
+                try
+                {
+                    File.WriteAllText(dialog.FileName, export.ToString(Formatting.Indented));
+                    int unsaved = Changes();
+                    SetStatus("Exported to " + Path.GetFileName(dialog.FileName) + (unsaved > 0 ? ", with " + unsaved + " unsaved change" + (unsaved == 1 ? "" : "s") : ""), Theme.SuccessText, dialog.FileName);
+                    _log.Info(_spec.LogPrefix + " Settings exported to " + dialog.FileName);
+                }
+                catch (Exception ex)
+                {
+                    SetStatus("Not exported", Theme.DangerText, ex.Message);
+                    MessageBox.Show("The file could not be written:\n\n" + ex.Message, "Export Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            };
+            btnImport.Click += (s, e) =>
+            {
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Import settings",
+                    Filter = "Settings export (*.json)|*.json|All files (*.*)|*.*",
+                    CheckFileExists = true
+                };
+                if (Folder() != null) dialog.InitialDirectory = Folder();
+                if (dialog.ShowDialog(window) != true)
+                    return;
+                JObject root;
+                try
+                {
+                    using (var reader = new Newtonsoft.Json.JsonTextReader(new StringReader(File.ReadAllText(dialog.FileName))) { DateParseHandling = Newtonsoft.Json.DateParseHandling.None })
+                        root = JObject.Load(reader);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("The file could not be read as settings:\n\n" + ex.Message, "Import Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                // An export carries the settings under "settings"; a settings file itself is the settings.
+                var incoming = root["settings"] as JObject ?? root;
+                string from = (string)root["host"];
+                if (from != null && !string.Equals(from, hostName, StringComparison.OrdinalIgnoreCase) &&
+                    MessageBox.Show("This file was exported from '" + from + "', not from '" + hostName + "'.\nImport it anyway? Only the settings this window knows are taken.",
+                        "Import Settings", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                    return;
+                var known = new JObject();
+                int unknown = 0;
+                foreach (var property in incoming.Properties())
+                {
+                    string key = _spec.Aliases.TryGetValue(property.Name, out var canonical) ? canonical : property.Name;
+                    var declared = _spec.ResolvedSettings.FirstOrDefault(d => d.Key == key);
+                    if (declared == null || declared.Transient || declared.Kind == "action" || declared.Kind == "note" || declared.Kind == "table")
+                    {
+                        unknown++;
+                        continue;
+                    }
+                    var value = property.Value;
+                    if (_spec.AliasFactors.TryGetValue(property.Name, out double factor) && value.Type != JTokenType.String && double.TryParse(value.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double number))
+                        value = number * factor;
+                    known[key] = value;
+                }
+                if (known.Count == 0)
+                {
+                    MessageBox.Show("Nothing in " + Path.GetFileName(dialog.FileName) + " matches a setting of this window.", "Import Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                var answer = MessageBox.Show(
+                    "Put " + known.Count + " setting" + (known.Count == 1 ? "" : "s") + " from " + Path.GetFileName(dialog.FileName) + " into the window?" +
+                    (unknown > 0 ? "\n" + unknown + " entr" + (unknown == 1 ? "y" : "ies") + " the window does not know " + (unknown == 1 ? "is" : "are") + " skipped." : "") +
+                    "\nThe values replace what the window shows; nothing is saved until you save.",
+                    "Import Settings", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (answer != MessageBoxResult.Yes)
+                    return;
+                var placed = FieldBinding.Apply(pageHost, known, true);
+                // A setting without a field (hidden) goes straight into the settings, for the next save.
+                foreach (var property in known.Properties().Where(p => !placed.Contains(p.Name)))
+                    settings[property.Name] = property.Value.DeepClone();
+                foreach (var page in pages)
+                    parts.Refresh(page.Spec.Id);
+                SetStatus("Imported " + known.Count + " setting" + (known.Count == 1 ? "" : "s") + " from " + Path.GetFileName(dialog.FileName) + "; save to keep them", Theme.UnsavedText, dialog.FileName);
+                _log.Info(_spec.LogPrefix + " Settings imported from " + dialog.FileName + " (" + known.Count + " taken, " + unknown + " skipped).");
+            };
+
             btnSave.Click += (s, e) => SaveNow();
             btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = true; window.Close(); } };
             btnCancel.Click += (s, e) =>
@@ -612,6 +728,8 @@ namespace UIFramework
             leftButtons.Children.Add(btnReset);
             leftButtons.Children.Add(btnResetPage);
             leftButtons.Children.Add(btnCustomize);
+            leftButtons.Children.Add(btnExport);
+            leftButtons.Children.Add(btnImport);
             var rightButtons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             rightButtons.Children.Add(status);
             if (customizing)
@@ -620,6 +738,7 @@ namespace UIFramework
                 // Nothing to save in the customise mode: values are frozen, the layout file is written on every change.
                 btnReset.IsEnabled = false;
                 btnResetPage.IsEnabled = false;
+                btnImport.IsEnabled = false;
                 btnSave.Visibility = Visibility.Collapsed;
                 btnSaveExit.Visibility = Visibility.Collapsed;
                 btnCancel.Content = "Close";

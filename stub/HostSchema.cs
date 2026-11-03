@@ -13,7 +13,7 @@ public static class UiSchema
 {
     public sealed class Setting
     {
-        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform;
+        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
@@ -21,7 +21,9 @@ public static class UiSchema
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
-        // its answer under the button, Auto asks it on show and after every change without a button.
+        // its answer under the button, Auto asks it on show and after every change without a button. Live on any
+        // other field asks the host whenever the field changes (a preset slider whose answer fills in other fields).
+        // Row: settings naming the same row, one after the other, share one line of the page.
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
@@ -35,14 +37,14 @@ public static class UiSchema
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false)
+        string platform = null, bool twitchOnly = false, string row = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
         };
     }
 
@@ -103,6 +105,7 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };

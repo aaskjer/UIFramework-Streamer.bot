@@ -6,14 +6,14 @@
 // In Execute(), first thing:
 //     if (args.ContainsKey("uiframework.describe"))
 //     {
-//         CPH.SetGlobalVar("uiframework.schema." + ActionName, UiSchema.ToJson("slotmachine", CurrentVersion, "Chat Games/Slot Machine Game/SMG-Settings.json"), false);
+//         CPH.SetGlobalVar(UiSchema.Var(ActionName), UiSchema.ToJson("slotmachine", CurrentVersion, "Chat Games/Slot Machine Game/SMG-Settings.json"), false);
 //         return true;
 //     }
 public static class UiSchema
 {
     public sealed class Setting
     {
-        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform;
+        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
@@ -21,7 +21,9 @@ public static class UiSchema
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
-        // its answer under the button, Auto asks it on show and after every change without a button.
+        // its answer under the button, Auto asks it on show and after every change without a button. Live on any
+        // other field asks the host whenever the field changes (a preset slider whose answer fills in other fields).
+        // Row: settings naming the same row, one after the other, share one line of the page.
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
@@ -35,14 +37,14 @@ public static class UiSchema
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false)
+        string platform = null, bool twitchOnly = false, string row = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
         };
     }
 
@@ -101,6 +103,7 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -108,6 +111,11 @@ public static class UiSchema
         }
         return new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings }.ToString(Formatting.None);
     }
+
+    /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
+    /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
+    public static string Var(string actionName) =>
+        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
 
     public static Setting Find(string key)
     {
@@ -133,8 +141,6 @@ public static class UiSchema
         S("emotePoolSize", 10, page: "game", label: "Emote pool (0 = all)", help: "How many of the emotes in play are drawn for each spin. Fewer emotes make matches more likely. 0, or more than there are, uses them all.", section: "Slots and odds", min: 0.0, aliases: new[] { "EmotePoolSize" }),
         S("minEmoteWeight", 1, page: "game", label: "Min weight", help: "Only emotes with at least this weight play. Low weights come up often and pay little, so raising this takes out the cheapest emotes.", section: "Slots and odds", min: 1.0, aliases: new[] { "MinEmoteWeight" }),
         S("maxEmoteWeight", 10, page: "game", label: "Max weight", help: "Only emotes with at most this weight play. High weights are rare and pay a lot, so lowering this takes out the most valuable emotes.", section: "Slots and odds", min: 1.0, aliases: new[] { "MaxEmoteWeight" }),
-        S("tryPlatform", "twitch", page: "game", label: "Emotes of", help: "Whose emotes the odds and the test spin use. Subscriber and VIP boosts only exist on Twitch. Not saved.", kind: "options", section: "Slots and odds", options: new[] { "twitch|Twitch", "youtube|YouTube", "kick|Kick" }, transient: true),
-        S("odds", null, page: "game", label: "What really comes out", help: "Worked out from 30,000 test spins with the emotes, weights, chances and payouts as they stand on this page, for a viewer without Subscriber/VIP boost or Addicted cut, and without the jackpot pool.", kind: "action", section: "Slots and odds", live: true, panel: true, auto: true),
         S("defaultBet", 1234, page: "game", label: "Default bet", help: "The bet for a spin with no amount. Viewers can also bet a number, all, half, third, quarter or random.", section: "Bets and points", min: 0.0, aliases: new[] { "DefaultBet" }),
         S("minBet", 1, page: "game", label: "Minimum (0 = none)", help: "The smallest bet allowed. 0 turns the limit off. 'random' bets between Minimum and Maximum. Also applies to channel points in 'Typed amount' and 'Fixed' mode.", section: "Bets and points", min: 0.0, aliases: new[] { "MinBet" }),
         S("maxBet", 9999999, page: "game", label: "Maximum (0 = none)", help: "The largest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.", section: "Bets and points", min: 0.0, aliases: new[] { "MaxBet" }),
@@ -153,8 +159,9 @@ public static class UiSchema
         S("addictedPayoutCut", 50, page: "game", label: "Addicted cut", help: "How much of an addicted viewer's win is cut, from 0 (nothing) to 99 - a win always pays something. Applied last, so it cuts a boosted win and the jackpot pool too. Who counts as addicted is set on the Access page.", kind: "percent", section: "Payouts", min: 0.0, max: 99.0, aliases: new[] { "AddictedPayoutCut" }, aliasFactor: 100.0),
         S("useJackpotPool", true, page: "game", label: "Jackpot pool", help: "Every lost bet goes into a pool, one per platform, and a jackpot with a big enough bet wins it all on top. Losses of addicted viewers and free spins don't go in. Messages can wrap what they say about the pool in {jackpot}…{/jackpot}: with the pool off, that part is left out.", section: "Jackpot pool", aliases: new[] { "UseJackpotPool" }),
         S("jackpotBet", 50000, page: "game", label: "Bet to win the pool", help: "The smallest bet that wins the pool with a jackpot. A smaller bet still gets the jackpot payout, just not the pool.", section: "Jackpot pool", min: 0.0, aliases: new[] { "JackpotBet" }),
-        S("tryBet", 1000, page: "game", label: "Bet to try", help: "A bet to try the odds and messages with. It isn't saved.", section: "Try a spin", min: 1.0, transient: true),
-        S("tryRole", "viewer", page: "game", label: "Spin as", help: "Who spins: boosts and the Addicted cut change what a win pays. The platform is the one picked under 'Slots and odds'.", kind: "options", section: "Try a spin", options: new[] { "viewer|Viewer", "subscriber|Subscriber", "vip|VIP", "addicted|Addicted" }, transient: true),
+        S("tryPlatform", "twitch", page: "game", label: "Platform", help: "Whose emotes the test spin uses: a Twitch emote only exists on Twitch, a Kick emote only on Kick. Subscriber and VIP boosts only exist on Twitch. Not saved.", kind: "options", section: "Try a spin", options: new[] { "twitch|Twitch", "youtube|YouTube", "kick|Kick" }, transient: true, row: "try"),
+        S("tryBet", 1000, page: "game", label: "Bet to try", help: "A bet to try the odds and messages with. It isn't saved.", section: "Try a spin", min: 1.0, transient: true, row: "try"),
+        S("tryRole", "viewer", page: "game", label: "Spin as", help: "Who spins: boosts and the Addicted cut change what a win pays.", kind: "options", section: "Try a spin", options: new[] { "viewer|Viewer", "subscriber|Subscriber", "vip|VIP", "addicted|Addicted" }, transient: true, row: "try"),
         S("trySpin", null, page: "game", label: "Spin", help: "Plays one spin with the settings as they stand on this page, saved or not, and shows the slots and the message chat would get. Nothing is sent and nothing is saved.", kind: "action", section: "Try a spin", live: true, panel: true),
         // ---- emotes ----
         S("emotesTwitch", JArray.Parse("[{\"Code\":\"Kappa\",\"Weight\":1,\"Name\":\"Kappa\"},{\"Code\":\"PogChamp\",\"Weight\":2,\"Name\":\"PogChamp\"},{\"Code\":\"LUL\",\"Weight\":3,\"Name\":\"LUL\"},{\"Code\":\"NotLikeThis\",\"Weight\":4,\"Name\":\"NotLikeThis\"},{\"Code\":\"BigPhish\",\"Weight\":5,\"Name\":\"BigPhish\"},{\"Code\":\"RitzMitz\",\"Weight\":6,\"Name\":\"RitzMitz\"},{\"Code\":\"FrankerZ\",\"Weight\":7,\"Name\":\"FrankerZ\"},{\"Code\":\"SeemsGood\",\"Weight\":8,\"Name\":\"SeemsGood\"},{\"Code\":\"Kreygasm\",\"Weight\":9,\"Name\":\"Kreygasm\"},{\"Code\":\"FailFish\",\"Weight\":10,\"Name\":\"FailFish\"}]"), page: "emotes", label: "Twitch", help: "The emote exactly as it's typed in chat, like Kappa, with its weight: a low weight comes up often and pays little, a high one is rare and pays a lot. Its picture appears beside it once it is known to Twitch, 7TV, BTTV or FFZ. Chat only shows it as an emote if the account sending the messages can use it, and a 7TV, BTTV or FFZ one only to viewers with that extension. Which weights play is set on the Game page.", kind: "list", section: "Twitch", columns: new[] { "Code|emote|Emote|twitch", "Weight|int|Weight", "Name|string|Name" }, aliases: new[] { "PlatformEmotes.twitch" }),

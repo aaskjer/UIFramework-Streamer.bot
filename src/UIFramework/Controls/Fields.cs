@@ -228,6 +228,78 @@ namespace UIFramework
 
         // ---- Switches ------------------------------------------------------------------------------------
 
+        /// <summary>A slider over stops (<paramref name="options"/>: the stored value is the stop's value, the stops
+        /// are captioned under the track) or over a number range, with the number beside the label.</summary>
+        public FrameworkElement SliderField(string label, string key, string tooltip, List<SettingOption> options, double min, double max, double step, bool whole, string unit)
+        {
+            bool stops = options != null && options.Count > 0;
+            var kind = stops
+                ? (options.All(o => long.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)) ? FieldKind.Int : FieldKind.String)
+                : whole ? FieldKind.Int : FieldKind.Double;
+            var slider = new OptionSlider
+            {
+                Options = stops ? options : null,
+                Whole = whole,
+                Minimum = stops ? 0 : min,
+                Maximum = stops ? options.Count - 1 : Math.Max(min, max),
+                TickFrequency = stops ? 1 : Math.Max(step, 1e-9),
+                Tag = new FieldTag(key, kind),
+                ToolTip = tooltip,
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+            if (!slider.Put(Token(key)))
+                slider.Value = slider.Minimum;
+            AutomationProperties.SetName(slider, label);
+            _parts.Sliders[key] = slider;
+
+            var panel = new StackPanel();
+            var head = Ui.SmallLabel(label, 0);
+            panel.Children.Add(head);
+            panel.Children.Add(slider);
+            if (stops)
+            {
+                var captions = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+                var labels = new List<TextBlock>();
+                for (int i = 0; i < options.Count; i++)
+                {
+                    captions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    var caption = new TextBlock
+                    {
+                        Text = options[i].Label,
+                        FontSize = 11,
+                        Foreground = Theme.SubFg,
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                        HorizontalAlignment = i == 0 ? HorizontalAlignment.Left : i == options.Count - 1 ? HorizontalAlignment.Right : HorizontalAlignment.Center,
+                        Cursor = Cursors.Hand
+                    };
+                    int stop = i;
+                    caption.MouseLeftButtonDown += (sender, e) => slider.Value = stop;
+                    Grid.SetColumn(caption, i);
+                    captions.Children.Add(caption);
+                    labels.Add(caption);
+                }
+                void Paint()
+                {
+                    int at = slider.Index;
+                    for (int i = 0; i < labels.Count; i++)
+                    {
+                        labels[i].Foreground = i == at ? new SolidColorBrush(Theme.AccentText) : Theme.SubFg;
+                        labels[i].FontWeight = i == at ? FontWeights.SemiBold : FontWeights.Normal;
+                    }
+                }
+                slider.ValueChanged += (sender, e) => Paint();
+                Paint();
+                panel.Children.Add(captions);
+            }
+            else
+            {
+                void Paint() => head.Text = label + "  ·  " + slider.StoredText + (string.IsNullOrEmpty(unit) ? "" : " " + unit);
+                slider.ValueChanged += (sender, e) => Paint();
+                Paint();
+            }
+            return panel;
+        }
+
         public CheckBox Toggle(string label, string key, string tooltip)
         {
             var toggle = new CheckBox
@@ -418,6 +490,8 @@ namespace UIFramework
                 if (item.Tag is double exact) return exact;
                 if (FieldBinding.TryParseInvariantDouble(item.Tag as string, out double picked)) return picked;
             }
+            if (_parts.Sliders.TryGetValue(key, out var slider) && FieldBinding.TryParseInvariantDouble(slider.StoredText, out double stop))
+                return stop;
             return fallback;
         }
 
@@ -429,6 +503,8 @@ namespace UIFramework
                 return box.Text;
             if (_parts.Combos.TryGetValue(key, out var combo) && combo.SelectedItem is ComboBoxItem item)
                 return item.Tag?.ToString() ?? fallback;
+            if (_parts.Sliders.TryGetValue(key, out var slider))
+                return slider.StoredText;
             return fallback;
         }
 
