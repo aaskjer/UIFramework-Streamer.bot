@@ -237,7 +237,11 @@ Nachrichten-Seite anpassbar, nachsichtiges Drag&Drop, Akzentfarbe wird beim Pick
 tragen den CHANGELOG-Abschnitt als Notes und sind bis 1.0.0 Pre-Releases. Slot Machine v16.0.0 umgestellt (03.11.,
 v0.4.0): `action` mit `live`/`panel`/`auto` und `transient`-Felder für Quoten und Probe-Spin aus der Spiel-Engine
 (gemeinsamer `SlotEngine`-Block in Spiel und Stub), Emotes als drei `list`-Settings mit Punkt-Alias aus
-`PlatformEmotes`, Log-Seite aus der Spec. Screenshots für alle Docs bleiben für den Abschluss (Phase 6).
+`PlatformEmotes`, Log-Seite aus der Spec; nachgerüstet v0.4.1 bis v0.6.0: Emote-Bilder (Spalte und Feld),
+`requires` mit Bedingung, `Validate` vor dem Speichern, Balken-Panels, `note`-Kind, Aktionen, die Felder setzen.
+Battleship v2.0.0 umgestellt (03.11., v0.6.0): Presets über `set`, Flotten- und Uhr-Zusammenfassung als
+`auto`-Panels, Heat-Marker und OBS-Setup als Jobs, Scoreboard mit demselben Host-Block. Screenshots für alle Docs
+bleiben für den Abschluss (Phase 6).
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
