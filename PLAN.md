@@ -284,6 +284,118 @@ und Sprachdateien veröffentlichen. ChatCalendar und die übrigen Nicht-Spiele-P
 
 Summe: etwa vier bis fünf Arbeitswochen bis alle sieben Spiele umgestellt sind.
 
+### Phase 7: Baukasten (etwa zwei Wochen, nach Phase 6)
+
+Ziel: Ein fremdes Projekt bindet das Framework mit zwei Dateien an, ohne dieses Repository zu klonen und ohne
+PowerShell: den Host-Block in die eigene Action, den generischen Stub unverändert als Settings-Action, dann die
+Tabelle ausfüllen. Stand heute braucht ein Host dazu `hosts/<host>/spec.json`, einen handgeschriebenen
+`host-section.cs` (Settings-Pfad, Log-Ordner, Cooldown-Zuordnung, `Host`-Klasse mit `OnSaved`/`Test`/
+`Validate`/`ReadLogLines`, bei Slot Machine 400 Zeilen Engine-Kopie) und `tools/embed-spec.ps1`, das beides in
+`stub/Stub.cs` spleißt; die Doku ist deutsch.
+
+#### 7.1 Das Fenster wird im Spiel deklariert (DLL 0.9.0)
+
+Die Describe-Antwort trägt neben `host`, `version`, `settingsFile`, `settings` ein `window`-Objekt mit dem
+Inhalt der heutigen Spec (`title`, `releases`, `logo`, `logPrefix`, `pages`, `senders`, `samples`, `answers`,
+`headerPills`, `log`, `help`, `about`, `width`, `height`). Der Host-Block bekommt dafür kleine Builder, damit
+die Deklaration im C# lesbar bleibt und der Compiler Tippfehler findet:
+
+```csharp
+public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases: "aaskjer/Blackjack-Game", logo: "https://…")
+    .Pages(P("table", "Table", "🃏"), P("duel", "Duel", "⚔️"), P("stats", "Stats", "🏆", "leaderboard*", "statsTable", "resetLeaderboard"), "log", P("help", "How to play"), "about")
+    .Log(folder: "Chat Games/Logs", files: "BJG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Bet" }, results: new[] { "Win", "Loss", "Push" })
+    .Cooldowns(C("dc2d4f17-…", "globalCooldown", "userCooldown"))
+    .Pill("freeGame", "Free game on", "Free game off", tooltip: "…")
+    .Help(H("Playing a hand", Cmd("!blackjack <bet>", "Deals in."), Note("…"), Link("Guide", "https://…")))
+    .About(credits: "Responsible: aaskjer", links: new[] { Link("Discord", "https://…") });
+```
+
+Neu gegenüber der Spec: `log.files` (das Dateimuster, heute in `ReadLogLines` fest verdrahtet) und
+`cooldowns` (Command-Id plus die Keys des globalen und des Nutzer-Cooldowns, heute die Tabelle im
+Host-Abschnitt). `Entry.Show(specJson, …)` bleibt: ist `specJson` leer, nimmt die DLL `window` aus dem Schema;
+eine mitgegebene Spec gewinnt weiterhin (die fünf bestehenden Stubs laufen unverändert weiter, der Umstieg ist je
+Host möglich). `docs/Spec.md` geht in `docs/Schema.md` auf.
+
+#### 7.2 Der generische Stub
+
+`stub/Stub.cs` verliert die HOST-Marker und die `Spec`-Konstante. Am Kopf steht eine Zeile, die ein fremdes
+Projekt anpasst: `GameActionName`. `SettingsPath` kommt aus `settingsFile` des Schemas (relativ zum
+Streamer.bot-Ordner). Die `Host`-Klasse wird generisch, weil alles, was das Spiel weiß, über denselben Weg wie
+`uiframework.describe` zurück in die Spiel-Action läuft; die hat ohnehin den Code und die Settings:
+
+| Stub-Hook                  | Argument an die Spiel-Action                          | Antwort (nicht-persistente Globale `UiSchema.Var(...)`) |
+|----------------------------|-------------------------------------------------------|---------------------------------------------------------|
+| `OnSaved(settings)`        | `uiframework.saved` = Settings-JSON                   | keine; der Stub setzt vorher die `cooldowns` selbst      |
+| `Test(name, settings)`     | `uiframework.test` = name, `uiframework.values` = JSON | Text oder JSON wie heute                                |
+| `Validate(settings)`       | `uiframework.validate` = JSON                         | Liste der Probleme                                       |
+| `ReadTable(key)`           | `uiframework.table` = key                             | JSON-Array                                               |
+| `EmoteSources()`           | `uiframework.emotes` = 1                              | JSON                                                     |
+| `ReadLogLines()`           | keins; der Stub liest `log.folder` + `log.files`      | Zeilen                                                   |
+
+Der Host-Block bekommt dazu einen Verteiler, den die Spiel-Action als erstes aufruft:
+
+```csharp
+if (UiHost.Handle(args, CPH, ActionName, CurrentVersion, SettingsFile,
+        test: (name, s) => name == "tryHand" ? TryHand(s) : null,
+        validate: s => Problems(s),
+        saved: s => SetupOverlay(s)))
+    return true;
+```
+
+Jeder Delegat ist optional; ein Spiel ohne Test-Buttons gibt nur die drei Konstanten. Die Zweige müssen rein
+bleiben (keine Chat-Ausgabe, keine Zustandsänderung), wie Describe heute. Laufzeit: das Fenster läuft auf einem
+eigenen Thread, `RunAction` braucht Streamer.bots Thread, also stellt der Stub den Aufruf in die Job-Queue, die
+`Pump` alle 100 ms leert, und wartet mit Timeout (5 s) auf die Globale. Für Buttons unmerklich; für `auto`- und
+`live`-Actions (Odds bei Classic Chat Gamble, der Fairness-Slider) sind 100 ms Verzug in Ordnung. Ein Spiel, das
+mehr braucht als den Verteiler, schreibt seinen Code in die Spiel-Action; die Settings-Action bleibt überall
+dieselbe Datei. `tools/check-stub.ps1` prüft dann nur noch die eine Datei, `tools/embed-spec.ps1` entfällt.
+
+Gewinn nebenbei: der Test-Spin der Slot Machine läuft mit der echten Engine statt mit ihrer Kopie, und bei jedem
+Spiel verschwindet die zweite Stelle, die den Settings-Pfad, die Log-Dateien und die Command-Ids kennt.
+
+#### 7.3 Fehler im Fenster statt nur im Log
+
+Heute landet ein unbekanntes `kind`, ein doppelter Key, eine Option ohne `|`, ein `requires` auf einen fremden
+Key oder eine Seite ohne Settings als `LogWarn` in Streamer.bot. `Entry.Prepare` sammelt diese Befunde und das
+Fenster zeigt sie als gelbes Banner über der ersten Seite ("3 problems in the schema, see About"), die
+About-Seite listet sie. Antwortet die Spiel-Action nicht auf Describe, zeigt der Stub einen Dialog mit Ursache
+und Abhilfe (falscher Action-Name, alte Spielversion) statt einer Logzeile.
+
+#### 7.4 Englische Doku, Beispielspiel, Quickstart
+
+- `docs/Schema.md` (mit dem Inhalt von `Spec.md`), `Loader.md`, `Customize.md` auf Englisch; `PLAN.md` und
+  `Phase0-Konventionen.md` bleiben deutsch (interne Planung).
+- `docs/Getting-Started.md`: in zehn Minuten von null zum Fenster, mit Screenshots aus der Preview-EXE.
+- `examples/DemoGame/`: `DemoGame.sb` (eine Spiel-Action mit drei Settings und einer Nachricht, die
+  Settings-Action ist der generische Stub) plus README; die Beispiel-Action ist zugleich der Testfall für den
+  Stub ohne Host-Code. `tools/check-stub.ps1` kompiliert beide.
+- README: Abschnitt "Use it in your own project" mit den drei Schritten, Link auf Getting-Started.
+
+#### 7.5 Umstellung der bestehenden Hosts
+
+Ein Einmal-Werkzeug `tools/spec-to-window.ps1` schreibt aus `hosts/<host>/spec.json` den `Window`-Block als C#,
+damit die Hilfe- und About-Texte nicht abgetippt werden. Je Host: `Window` in den Host-Block, die Logik der
+`Host`-Klasse in die `uiframework.*`-Zweige der Spiel-Action, die GUI-Action durch den generischen Stub
+ersetzen, Harness auf die neuen Argumente, Release. Reihenfolge nach Umfang des Host-Abschnitts: High-Low,
+RhymeTime, Classic Chat Gamble, Slot Machine, Blackjack, Battleship. `hosts/<host>/schema.json` bleibt für
+Preview und Tests (es trägt nun `window`); `spec.json` und `host-section.cs` werden gelöscht, zuletzt
+`embed-spec.ps1`.
+
+#### Reihenfolge und Aufwand
+
+| Schritt                                           | Aufwand |
+|---------------------------------------------------|---------|
+| 7.1 Window im Schema, Builder, Tests              | 1 Tag   |
+| 7.2 generischer Stub, `UiHost.Handle`, Demo-Spiel | 1½ Tage |
+| 7.3 Banner und Describe-Dialog                    | ½ Tag   |
+| Release 0.9.0 (beide Stub-Arten laufen)           |         |
+| 7.4 Doku und Quickstart                           | 2 Tage  |
+| 7.5 sechs Hosts umstellen, je Release             | 5 Tage  |
+
+Offene Entscheidungen: (a) Fenster-Deklaration als C#-Builder (Vorschlag) oder als JSON-String im Spiel;
+(b) ob der Stub eine Escape-Luke für eigenen Code behält (Vorschlag: nein, alles ins Spiel); (c) ob der
+Log-Auto-Refresh (FileSystemWatcher auf `log.folder`) mit in 0.9.0 geht.
+
 ## 9. Tests und Werkzeuge
 
 - Framework: xUnit-Projekt, läuft in `ci.yml`. Resolve (alle vier Schichten), Layout-Merge, Store-Migration,
