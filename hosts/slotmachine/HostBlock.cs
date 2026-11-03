@@ -23,6 +23,8 @@ public static class UiSchema
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
         // its answer under the button, Auto asks it on show and after every change without a button.
         public bool Transient, Live, Panel, Auto;
+        // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
+        public bool TwitchOnly;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -33,14 +35,14 @@ public static class UiSchema
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null)
+        string platform = null, bool twitchOnly = false)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly
         };
     }
 
@@ -98,6 +100,7 @@ public static class UiSchema
             if (s.Live) item["live"] = true;
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
+            if (s.TwitchOnly) item["twitchOnly"] = true;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -143,8 +146,8 @@ public static class UiSchema
         S("fourMatchPayout", 500.0, page: "game", label: "4 alike", help: "Only with 5 or 6 slots; fewer slots never land four alike short of the jackpot.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "numberOfSlots>=5", aliases: new[] { "FourMatchPayout" }),
         S("fiveMatchPayout", 1000.0, page: "game", label: "5 alike", help: "Only with 6 slots.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "numberOfSlots>=6", aliases: new[] { "FiveMatchPayout" }),
         S("sixMatchPayout", 1500.0, page: "game", label: "Jackpot", help: "All slots alike, whatever their number: 3 of 3 as much as 6 of 6.", kind: "double", section: "Payouts", min: 0.0, unit: "%", aliases: new[] { "SixMatchPayout" }),
-        S("subscriberBoostEnabled", false, page: "game", label: "Subscriber boost", help: "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.", section: "Payouts", aliases: new[] { "SubscriberBoostEnabled" }),
-        S("vipBoostEnabled", false, page: "game", label: "VIP boost", help: "Gives Twitch VIPs a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for VIPs.", section: "Payouts", aliases: new[] { "VipBoostEnabled" }),
+        S("subscriberBoostEnabled", false, page: "game", label: "Subscriber boost", help: "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.", section: "Payouts", aliases: new[] { "SubscriberBoostEnabled" }, twitchOnly: true),
+        S("vipBoostEnabled", false, page: "game", label: "VIP boost", help: "Gives Twitch VIPs a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for VIPs.", section: "Payouts", aliases: new[] { "VipBoostEnabled" }, twitchOnly: true),
         S("subscriberBoostPercent", 10.0, page: "game", label: "Subscriber boost", help: "How much bigger a subscriber's win is: '10' turns 100 into 110. Adds up with the VIP boost for someone who is both.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "subscriberBoostEnabled", aliases: new[] { "SubscriberBoostPercent" }),
         S("vipBoostPercent", 20.0, page: "game", label: "VIP boost", help: "How much bigger a VIP's win is: '20' turns 100 into 120. Adds up with the Subscriber boost for someone who is both.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "vipBoostEnabled", aliases: new[] { "VipBoostPercent" }),
         S("addictedPayoutCut", 50, page: "game", label: "Addicted cut", help: "How much of an addicted viewer's win is cut, from 0 (nothing) to 99 - a win always pays something. Applied last, so it cuts a boosted win and the jackpot pool too. Who counts as addicted is set on the Access page.", kind: "percent", section: "Payouts", min: 0.0, max: 99.0, aliases: new[] { "AddictedPayoutCut" }, aliasFactor: 100.0),
@@ -161,7 +164,7 @@ public static class UiSchema
         S("blockedGroups", "", page: "access", label: "Blocked groups", help: "Everyone in these Streamer.bot groups is ignored when they run the command or redeem the reward (Settings > Groups). A group that does not exist is skipped and logged.", section: "Who may not play", aliases: new[] { "BlockedGroups" }),
         S("addictedUsers", "", page: "access", label: "Addicted viewers", help: "These viewers still play, but every win is cut by the Addicted cut on the Game page, their losses don't feed the jackpot pool, and the per-viewer cooldown holds them on channel point redemptions too.", section: "Addicted", aliases: new[] { "AddictedUsers" }),
         S("addictedGroups", "", page: "access", label: "Addicted groups", help: "Everyone in these Streamer.bot groups counts as addicted.", section: "Addicted", aliases: new[] { "AddictedGroups" }),
-        S("isChannelPointsTrigger", false, page: "access", label: "Channel points start a spin", help: "On Twitch, a redemption of the reward below spins instead of the chat command, which is then off on Twitch. The slot machine takes redemptions from Twitch only, so on YouTube and Kick the command keeps working.", section: "Channel points (Twitch)", aliases: new[] { "IsChannelPointsTrigger" }),
+        S("isChannelPointsTrigger", false, page: "access", label: "Channel points start a spin", help: "On Twitch, a redemption of the reward below spins instead of the chat command, which is then off on Twitch. The slot machine takes redemptions from Twitch only, so on YouTube and Kick the command keeps working.", section: "Channel points (Twitch)", aliases: new[] { "IsChannelPointsTrigger" }, twitchOnly: true),
         S("rewardId", "", page: "access", label: "Reward ID", help: "The ID of the channel point reward that starts a spin. Other rewards are ignored; without one, no redemption starts a spin. https://ayrtonalexis.com/reward_checker/reward_check.html lists your rewards with their IDs.", section: "Channel points (Twitch)", requires: "isChannelPointsTrigger", aliases: new[] { "TargetRewardId" }),
         S("cpBetMode", "cost", page: "access", label: "What is bet", help: "Reward cost: the reward's price is the bet, paid in channel points; a loss doesn't touch the viewer's points or the jackpot pool, a win is paid in points. Typed amount: viewers type a bet in their own points into the reward, checked against their balance like a chat spin; not enough, and the redemption is refunded. Fixed: every redemption bets the fixed amount below, the price and the text are ignored, the channel points are the stake. Free: nothing is won or lost and the Free messages are used.", kind: "options", section: "Channel points (Twitch)", options: new[] { "cost|Reward cost", "input|Typed amount", "fixed|Fixed", "free|Free" }, requires: "isChannelPointsTrigger", aliases: new[] { "CPBetMode" }),
         S("fixedBetAmount", 0, page: "access", label: "Fixed bet", help: "What every redemption bets in Fixed mode. Must be more than 0.", section: "Channel points (Twitch)", min: 0.0, requires: "cpBetMode=fixed", aliases: new[] { "FixedBetAmount" }),

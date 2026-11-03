@@ -322,6 +322,7 @@
       "section": "Payouts",
       "label": "Subscriber boost",
       "help": "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.",
+      "twitchOnly": true,
       "aliases": [
         "SubscriberBoostEnabled"
       ]
@@ -333,6 +334,7 @@
       "section": "Payouts",
       "label": "VIP boost",
       "help": "Gives Twitch VIPs a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for VIPs.",
+      "twitchOnly": true,
       "aliases": [
         "VipBoostEnabled"
       ]
@@ -739,6 +741,7 @@
       "section": "Channel points (Twitch)",
       "label": "Channel points start a spin",
       "help": "On Twitch, a redemption of the reward below spins instead of the chat command, which is then off on Twitch. The slot machine takes redemptions from Twitch only, so on YouTube and Kick the command keeps working.",
+      "twitchOnly": true,
       "aliases": [
         "IsChannelPointsTrigger"
       ]

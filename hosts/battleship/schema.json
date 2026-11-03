@@ -1081,6 +1081,7 @@
       "section": "Click to Fire",
       "label": "Fire by clicking the stream",
       "help": "Twitch only: Heat is a Twitch extension. Needs Heat on your channel and Streamer.bot's WebSocket server running, see Setup below.",
+      "twitchOnly": true,
       "aliases": [
         "HeatEnabled"
       ]
@@ -1296,6 +1297,7 @@
       "section": "Platforms",
       "label": "Whisper each player their fleet",
       "help": "Twitch only: Streamer.bot can't whisper on YouTube or Kick. Twitch drops whispers from accounts without a verified phone number; a failure is logged and the battle goes on. The overlay already shows the player their fleet, so this is a private second copy.",
+      "twitchOnly": true,
       "aliases": [
         "WhisperOwnFleet"
       ]
@@ -1518,6 +1520,7 @@
       "section": "Leaderboard sent as",
       "label": "Send as /me",
       "help": "Twitch only: YouTube and Kick have no /me, so there the leaderboard always goes out as plain chat. On Twitch, sends it as a /me action.",
+      "twitchOnly": true,
       "aliases": [
         "LeaderboardSendAction"
       ]
