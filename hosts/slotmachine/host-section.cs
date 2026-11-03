@@ -52,6 +52,26 @@
 
         public string ReadTable(string key) => null;
 
+        // What the emote pictures of the Twitch list are looked up with: the broadcaster for the channel's 7TV, BTTV,
+        // FFZ and Twitch emotes, client id and token for the Twitch API. Read where the DLL asks, like the old window did.
+        public string EmoteSources()
+        {
+            try
+            {
+                return new JObject
+                {
+                    ["twitchUserId"] = _owner.CPH.TwitchGetBroadcaster()?.UserId,
+                    ["clientId"] = _owner.CPH.TwitchClientId,
+                    ["token"] = _owner.CPH.TwitchOAuthToken
+                }.ToString(Newtonsoft.Json.Formatting.None);
+            }
+            catch (Exception ex)
+            {
+                _owner.CPH.LogDebug(LogPrefix + " No Twitch connection for emote pictures: " + ex.Message);
+                return null;
+            }
+        }
+
         public IEnumerable<string> ReadLogLines()
         {
             if (!Directory.Exists(LogsDir))

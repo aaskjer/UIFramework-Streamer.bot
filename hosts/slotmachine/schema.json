@@ -511,12 +511,13 @@
       "page": "emotes",
       "section": "Twitch",
       "label": "Twitch",
-      "help": "The emote exactly as it's typed in chat, like Kappa, with its weight: a low weight comes up often and pays little, a high one is rare and pays a lot. Chat only shows it as an emote if the account sending the messages can use it, and a 7TV, BTTV or FFZ one only to viewers with that extension. Which weights play is set on the Game page.",
+      "help": "The emote exactly as it's typed in chat, like Kappa, with its weight: a low weight comes up often and pays little, a high one is rare and pays a lot. Its picture appears beside it once it is known to Twitch, 7TV, BTTV or FFZ. Chat only shows it as an emote if the account sending the messages can use it, and a 7TV, BTTV or FFZ one only to viewers with that extension. Which weights play is set on the Game page.",
       "columns": [
         {
           "key": "Code",
-          "kind": "string",
-          "label": "Emote"
+          "kind": "emote",
+          "label": "Emote",
+          "platform": "twitch"
         },
         {
           "key": "Weight",
@@ -595,8 +596,9 @@
       "columns": [
         {
           "key": "Code",
-          "kind": "string",
-          "label": "Emoji or text"
+          "kind": "emote",
+          "label": "Emoji or text",
+          "platform": "youtube"
         },
         {
           "key": "Weight",
@@ -675,8 +677,9 @@
       "columns": [
         {
           "key": "Code",
-          "kind": "string",
-          "label": "Emote, as [emote:ID:name]"
+          "kind": "emote",
+          "label": "Emote, as [emote:ID:name]",
+          "platform": "kick"
         },
         {
           "key": "Weight",

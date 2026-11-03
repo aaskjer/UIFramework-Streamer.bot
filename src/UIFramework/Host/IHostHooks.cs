@@ -28,6 +28,11 @@ namespace UIFramework
         /// <summary>Rows for a setting of kind "table", as a JSON array of objects keyed by the schema's columns.
         /// Null or empty shows the table's empty text.</summary>
         string ReadTable(string key);
+
+        /// <summary>What the emote pictures of Twitch emote cells are looked up with, as JSON: <c>twitchUserId</c>
+        /// (the broadcaster, for the channel's 7TV, BTTV, FFZ and Twitch emotes), <c>clientId</c> and <c>token</c>
+        /// (for the Twitch API). Null asks only the global 7TV, BTTV and FFZ sets.</summary>
+        string EmoteSources();
     }
 
     /// <summary>A hooks implementation that does nothing, for previews and hosts without extras.</summary>
@@ -38,5 +43,6 @@ namespace UIFramework
         public virtual FrameworkElement BuildPage(string pageId, PageContext context) => null;
         public virtual IEnumerable<LogEntry> ReadLog() => null;
         public virtual string ReadTable(string key) => null;
+        public virtual string EmoteSources() => null;
     }
 }

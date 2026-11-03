@@ -226,7 +226,7 @@ namespace UIFramework
             copy.Default = Default?.DeepClone();
             copy.Options = Options?.Select(o => new SettingOption { Value = o.Value, Label = o.Label }).ToList();
             copy.Placeholders = Placeholders?.ToList();
-            copy.Columns = Columns?.Select(c => new SettingColumn { Key = c.Key, Kind = c.Kind, Label = c.Label }).ToList();
+            copy.Columns = Columns?.Select(c => new SettingColumn { Key = c.Key, Kind = c.Kind, Label = c.Label, Platform = c.Platform }).ToList();
             copy.Aliases = Aliases.ToList();
             copy.AliasFactors = new Dictionary<string, double>(AliasFactors, StringComparer.Ordinal);
             return copy;
@@ -251,14 +251,22 @@ namespace UIFramework
     public sealed class SettingColumn
     {
         public string Key, Kind = "string", Label;
+        /// <summary>For an <c>emote</c> column: twitch, youtube or kick, which says where its picture comes from.</summary>
+        public string Platform;
 
         public static SettingColumn Parse(JObject o) => new SettingColumn
         {
             Key = (string)o["key"],
             Kind = (string)o["kind"] ?? "string",
-            Label = (string)o["label"] ?? (string)o["key"]
+            Label = (string)o["label"] ?? (string)o["key"],
+            Platform = (string)o["platform"]
         };
 
-        public JObject ToJson() => new JObject { ["key"] = Key, ["kind"] = Kind, ["label"] = Label };
+        public JObject ToJson()
+        {
+            var o = new JObject { ["key"] = Key, ["kind"] = Kind, ["label"] = Label };
+            if (Platform != null) o["platform"] = Platform;
+            return o;
+        }
     }
 }

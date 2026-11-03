@@ -191,7 +191,7 @@ namespace UIFramework
                     break;
                 case "list":
                 {
-                    var editor = new ListEditor(s.Key, label, s.Columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help);
+                    var editor = new ListEditor(s.Key, label, s.Columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks);
                     editor.Margin = new Thickness(0, 8, 0, 0);
                     element = string.IsNullOrEmpty(help) ? (FrameworkElement)editor : Stack(Ui.Note(help), editor);
                     break;

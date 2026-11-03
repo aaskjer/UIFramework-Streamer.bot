@@ -17,13 +17,14 @@ namespace UIFramework
     ///   void   OnSaved(string settingsJson)
     ///   string Test(string name, string settingsJson)
     ///   string ReadTable(string key)                 // JSON array of row objects
+    ///   string EmoteSources()                        // JSON: twitchUserId, clientId, token (for emote pictures)
     ///   IEnumerable&lt;string&gt; ReadLogLines()          // or string[] / List&lt;string&gt;; null = no Log page
     /// </code>
     /// </summary>
     public sealed class ReflectionHost : IHostLog, IHostHooks
     {
         private readonly object _host;
-        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog;
+        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources;
 
         public ReflectionHost(object host)
         {
@@ -34,6 +35,7 @@ namespace UIFramework
             _test = Find(type, "Test", typeof(string), typeof(string));
             _readTable = Find(type, "ReadTable", typeof(string));
             _readLog = Find(type, "ReadLogLines");
+            _emoteSources = Find(type, "EmoteSources");
         }
 
         private static MethodInfo Find(Type type, string name, params Type[] parameters) =>
@@ -75,6 +77,12 @@ namespace UIFramework
         {
             if (_readTable == null) return null;
             return _readTable.Invoke(_host, new object[] { key }) as string;
+        }
+
+        public string EmoteSources()
+        {
+            if (_emoteSources == null) return null;
+            try { return _emoteSources.Invoke(_host, null) as string; } catch (Exception) { return null; }
         }
     }
 }
