@@ -23,6 +23,8 @@ public static class UiSchema
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
         // its answer under the button, Auto asks it on show and after every change without a button.
         public bool Transient, Live, Panel, Auto;
+        // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
+        public bool TwitchOnly;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -33,14 +35,14 @@ public static class UiSchema
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null)
+        string platform = null, bool twitchOnly = false)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly
         };
     }
 
@@ -98,6 +100,7 @@ public static class UiSchema
             if (s.Live) item["live"] = true;
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
+            if (s.TwitchOnly) item["twitchOnly"] = true;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -212,7 +215,7 @@ public static class UiSchema
         S("coloursNote", null, page: "overlay", help: "Your own fleet is drawn in full and the Admiral's waters stay fogged until something is hit. The Admiral reads neither chat nor the overlay, so showing your ships gives nothing away.", kind: "note", section: "Colours"),
         // ---- clicks ----
         S("clicksNote", null, page: "clicks", help: "Heat is a free Twitch extension that passes viewers' clicks on your video to the overlay. With this on, the player whose battle is on screen can fire by clicking a square in enemy waters, and !fire keeps working as before.", kind: "note", section: "Click to Fire"),
-        S("heatEnabled", false, page: "clicks", label: "Fire by clicking the stream", help: "Twitch only: Heat is a Twitch extension. Needs Heat on your channel and Streamer.bot's WebSocket server running, see Setup below.", section: "Click to Fire", aliases: new[] { "HeatEnabled" }),
+        S("heatEnabled", false, page: "clicks", label: "Fire by clicking the stream", help: "Twitch only: Heat is a Twitch extension. Needs Heat on your channel and Streamer.bot's WebSocket server running, see Setup below.", section: "Click to Fire", aliases: new[] { "HeatEnabled" }, twitchOnly: true),
         S("heatAutoLink", true, page: "clicks", label: "First click takes control", help: "The first click in a player's battle takes control: Heat doesn't say who clicked, so the first viewer to click enemy waters in a player's battle is taken to be that player, for that battle. It holds back when another viewer clicked there in the last 20 seconds, or when the clicker is linked to a different player. A player whose battle was taken over clicks once and types !fire link, which also makes a link that lasts. Off, every player links with !fire link.", section: "Click to Fire", aliases: new[] { "HeatAutoLink" }),
         S("setupNote", null, page: "clicks", help: "1. Install Heat on your channel and activate it as an Overlay extension: https://dashboard.twitch.tv/extensions/cr20njfkgll4okyrhag7xxph270sqk\n2. Start Streamer.bot's WebSocket server: Servers/Clients > WebSocket Server, tick Auto Start, then Start Server. The overlay hands every click to the Battleship Game action through it.\n3. Players just click. If someone else's click got in first, or the switch above is off, the player clicks once and types !fire link; that link is remembered for later battles.\nHeat works in desktop browsers only: Twitch shows no overlay extensions in its mobile app, so phone viewers keep using !fire.", kind: "note", section: "Setup"),
         S("heatChannelId", "", page: "clicks", label: "Twitch channel ID", help: "The number Heat files your viewers' clicks under: your channel's user ID, not its name. Leave it empty to use the broadcaster account connected to Streamer.bot.", section: "Connection", aliases: new[] { "HeatChannelId" }),
@@ -232,7 +235,7 @@ public static class UiSchema
         S("markersNote2", null, page: "clicks", help: "What chat is told about linking is on the Messages page, under Click to Fire.", kind: "note", section: "Heat's click markers"),
         // ---- access ----
         S("platformsNote", null, page: "access", help: "Twitch, YouTube and Kick all play, and every reply goes to the chat the command came from. To leave a platform out, untick it on the game's commands in Streamer.bot, for example 'Kick Message'. Click to Fire and the fleet whisper work on Twitch only.", kind: "note", section: "Platforms"),
-        S("whisperOwnFleet", true, page: "access", label: "Whisper each player their fleet", help: "Twitch only: Streamer.bot can't whisper on YouTube or Kick. Twitch drops whispers from accounts without a verified phone number; a failure is logged and the battle goes on. The overlay already shows the player their fleet, so this is a private second copy.", section: "Platforms", aliases: new[] { "WhisperOwnFleet" }),
+        S("whisperOwnFleet", true, page: "access", label: "Whisper each player their fleet", help: "Twitch only: Streamer.bot can't whisper on YouTube or Kick. Twitch drops whispers from accounts without a verified phone number; a failure is logged and the battle goes on. The overlay already shows the player their fleet, so this is a private second copy.", section: "Platforms", aliases: new[] { "WhisperOwnFleet" }, twitchOnly: true),
         S("globalCooldown", 0, page: "access", label: "Everyone", help: "How long everyone waits after anybody starts a battle with !battleship, in seconds. 0 turns it off. Saving writes it onto the command in Streamer.bot.", section: "Cooldowns", min: 0.0, aliases: new[] { "GlobalCooldown" }),
         S("userCooldown", 0, page: "access", label: "Per viewer", help: "How long one viewer waits before starting their next battle, in seconds. 0 turns it off. Saving writes it onto the command in Streamer.bot.", section: "Cooldowns", min: 0.0, aliases: new[] { "UserCooldown" }),
         S("maxGamesPerHour", 0, page: "access", label: "Battles per hour (0 = none)", help: "How many battles one viewer may start per hour. 0 for no limit.", section: "Cooldowns", min: 0.0, unlimitedAtZero: true, aliases: new[] { "MaxGamesPerHour" }),
@@ -250,7 +253,7 @@ public static class UiSchema
         S("leaderboardExcludeBroadcaster", true, page: "stats", label: "Hide the broadcaster", help: "Matched by user ID, so a name change can't put them back on the board.", section: "Who appears", aliases: new[] { "LeaderboardExcludeBroadcaster" }),
         S("leaderboardExcludeBot", true, page: "stats", label: "Hide the bot account", help: "Matched by user ID.", section: "Who appears", aliases: new[] { "LeaderboardExcludeBot" }),
         S("leaderboardUseBot", true, page: "stats", label: "Bot account", help: "Send the leaderboard from your Streamer.bot bot account instead of the broadcaster account.", section: "Leaderboard sent as", aliases: new[] { "LeaderboardUseBot" }),
-        S("leaderboardSendAction", false, page: "stats", label: "Send as /me", help: "Twitch only: YouTube and Kick have no /me, so there the leaderboard always goes out as plain chat. On Twitch, sends it as a /me action.", section: "Leaderboard sent as", aliases: new[] { "LeaderboardSendAction" }),
+        S("leaderboardSendAction", false, page: "stats", label: "Send as /me", help: "Twitch only: YouTube and Kick have no /me, so there the leaderboard always goes out as plain chat. On Twitch, sends it as a /me action.", section: "Leaderboard sent as", aliases: new[] { "LeaderboardSendAction" }, twitchOnly: true),
         S("sentNote", null, page: "stats", help: "The !bstats and !ballstats replies are on the Messages page, under Stats, and go out like the game's messages.", kind: "note", section: "Leaderboard sent as"),
         S("leaderboardAutoReset", "off", page: "stats", label: "Automatic reset", help: "Clears the leaderboard on its own when the period rolls over, using the scope below. Switching it on never wipes anything at once: the current period is recorded first, and the reset happens at the next boundary.", kind: "options", section: "Seasons", options: new[] { "off|Off", "weekly|Weekly, on Mondays", "monthly|Monthly, on the 1st" }, aliases: new[] { "LeaderboardAutoReset" }),
         S("leaderboardResetScope", "totals", page: "stats", label: "What a reset clears", help: "Totals only: points won, points lost and net. Battles, streaks and records are kept. Everything: every statistic of every player, a clean slate.", kind: "options", section: "Seasons", options: new[] { "totals|Totals only", "all|Everything" }, aliases: new[] { "LeaderboardResetScope" }),

@@ -214,5 +214,38 @@
         "url": "https://discord.com/channels/834650675224248362/1446889756297527530/1446889756297527530"
       }
     ]
+  },
+  "answers": {
+    "odds": {
+      "lines": [
+        "4 slots: Two or three alike pay; all four alike is the jackpot.",
+        {
+          "text": "A bet of 100 comes back as about 93",
+          "big": true
+        },
+        "Worked out from 30,000 test spins with the Twitch emotes, for a viewer without boosts, Addicted cut or jackpot pool."
+      ],
+      "bar": [
+        {
+          "label": "Jackpot",
+          "value": 0.9,
+          "text": "0.9 %",
+          "colour": "#F59E0B"
+        },
+        {
+          "label": "Win",
+          "value": 26.5,
+          "text": "26.5 %",
+          "colour": "#22C55E"
+        },
+        {
+          "label": "Loss",
+          "value": 72.6,
+          "text": "72.6 %",
+          "colour": "#6B7280"
+        }
+      ]
+    },
+    "trySpin": "alice has 100,000 Points and spins for 1,000 Points on Twitch.\n🎰 Kappa || LUL || Kappa || PogChamp\n2 alike · @alice, you WON! 1,500 Points! 🎉🎉 (Min. bet for the Jackpool: 50,000 Points) -- Your new balance: 100,500 Points"
   }
 }
