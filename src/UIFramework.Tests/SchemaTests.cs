@@ -24,7 +24,9 @@ namespace UIFramework.Tests
             { ""key"": ""odds"", ""kind"": ""action"", ""live"": true, ""panel"": true, ""auto"": true },
             { ""key"": ""emotes"", ""default"": [], ""kind"": ""list"", ""columns"": [ { ""key"": ""Code"", ""kind"": ""emote"", ""label"": ""Emote"", ""platform"": ""kick"" }, { ""key"": ""Weight"", ""kind"": ""int"" } ] },
             { ""key"": ""winEmote"", ""default"": ""Kappa"", ""kind"": ""emote"", ""platform"": ""twitch"", ""requires"": ""numDecks>=4"" },
-            { ""key"": ""aboutShoe"", ""kind"": ""note"", ""page"": ""table"", ""help"": ""The shoe is shuffled when it runs low."" }
+            { ""key"": ""aboutShoe"", ""kind"": ""note"", ""page"": ""table"", ""help"": ""The shoe is shuffled when it runs low."" },
+            { ""key"": ""whisper"", ""default"": true, ""twitchOnly"": true, ""aliases"": [""Whisper""] },
+            { ""key"": ""whisperTwice"", ""default"": false, ""aliases"": [""Whisper""] }
           ] }";
 
         [Fact]
@@ -32,7 +34,9 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(SchemaJson);
             Assert.Equal("demo", schema.Host);
-            Assert.Equal(14, schema.Settings.Count);
+            Assert.Equal(16, schema.Settings.Count);
+            Assert.True(schema.Find("whisper").TwitchOnly);
+            Assert.True((bool)schema.Find("whisper").ToJson()["twitchOnly"]);
             Assert.Equal("note", schema.Find("aboutShoe").Kind);
             Assert.Equal("twitch", schema.Find("winEmote").Platform);
             Assert.Equal("numDecks>=4", (string)schema.Find("winEmote").ToJson()["requires"]);

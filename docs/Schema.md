@@ -32,13 +32,14 @@ Settings-Datei.
 | `group`        | nein    | für `template`: die Gruppe im Nachrichten-Picker                                           |
 | `factor`       | nein    | für `percent`: gespeicherter Wert = getippt × Faktor (0.01 speichert einen Bruch; Standard 1) |
 | `unlimitedAtZero` | nein | für `int`/`long`: 0 im Feld heißt "keine Grenze" und wird als MaxValue gespeichert         |
-| `aliases`      | nein    | alte Keys; der Store liest sie und schreibt den kanonischen Key zurück. Ein Alias mit Punkt (`PlatformEmotes.twitch`) holt den Wert aus einem Objekt der alten Datei; das Objekt fällt weg, sobald es leer ist |
+| `aliases`      | nein    | alte Keys; der Store liest sie und schreibt den kanonischen Key zurück. Ein Alias mit Punkt (`PlatformEmotes.twitch`) holt den Wert aus einem Objekt der alten Datei; das Objekt fällt weg, sobald es leer ist. Nennen zwei Settings denselben Alias (ein alter Schalter, der zwei wurde), bekommen beide seinen Wert |
 | `aliasFactors` | nein    | je Alias ein Faktor für den Wert beim Umzug (Bruch zu Prozent: 100)                        |
 | `hidden`       | nein    | true: hat kein Feld, bleibt aber in der Datei                                              |
 | `confirm`      | nein    | für `action`: Frage (Ja/Nein), bevor der Host gerufen wird                                 |
 | `requires`     | nein    | Key eines `bool`, oder eine Bedingung an ein beliebiges Feld (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`); das Feld ist ausgegraut, solange sie nicht gilt |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
+| `twitchOnly`   | nein    | für `bool`: der Schalter trägt die Pille „Twitch only"                                     |
 | `transient`    | nein    | true: wird angezeigt, aber nie gespeichert und nie als Änderung gezählt; nur ein Live-Abzug für den Host trägt den Wert (Eingaben eines Probe-Buttons) |
 | `live`         | nein    | für `action`: `Test` bekommt die Werte, wie sie im Fenster stehen, ungespeicherte und flüchtige eingeschlossen |
 | `panel`        | nein    | für `action`: die Antwort steht in einem Feld unter dem Button statt in der Fußzeile       |
@@ -67,7 +68,7 @@ Settings-Datei.
 | `emote`     | string      | Textfeld mit dem Bild des Emotes daneben   | `platform` sagt `twitch`, `youtube` oder `kick`; Bilder wie bei der `emote`-Spalte |
 | `list`      | array       | Zeilen-Editor: je Zeile eine Zelle pro Spalte, Entfernen, *Add row*, *Restore defaults* | `columns` Pflicht; leere Zeilen fallen beim Speichern weg; mit `file`/`field` in eigener Datei |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
-| `note`      | –           | Ein Absatz Text auf der Seite (`help`)     | kein Wert; erklärt, was darunter kommt                |
+| `note`      | –           | Ein Absatz Text auf der Seite (`help`)     | kein Wert; erklärt, was darunter kommt; http(s)-Adressen im Text sind Links |
 | `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst. Eine Antwort als JSON-Objekt `{ "lines": ["…", { "text": "…", "big": true }], "bar": [ { "label": "Win", "value": 27, "text": "27 %", "colour": "#…" } ] }` wird als Balken mit Legende und Zeilen gezeichnet; `"set": { "gridSize": 8, "shipCarrierEnabled": true }` setzt andere Felder des Fensters wie getippt (gespeichert wird erst mit Save, ein Preset-Button), `"status": "…"` ist die Zeile für die Fußzeile |
 
 Vor dem Speichern fragt das Fenster den Host mit `Validate(settingsJson)`: jede zurückgegebene Zeile ist ein Problem

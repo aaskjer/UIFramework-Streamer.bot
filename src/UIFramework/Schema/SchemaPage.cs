@@ -135,8 +135,12 @@ namespace UIFramework
             switch (s.Kind)
             {
                 case "bool":
-                    element = f.Toggle(label, s.Key, help);
+                {
+                    var toggle = f.Toggle(label, s.Key, help);
+                    if (s.TwitchOnly) Fields.TwitchOnly(toggle);
+                    element = toggle;
                     break;
+                }
                 case "int":
                     element = s.Options != null && s.Options.Count > 0
                         ? f.IntCombo(label, s.Key, s.Options.Select(o => (int.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) ? v : 0, o.Label)).ToArray(), help)
@@ -182,7 +186,7 @@ namespace UIFramework
                     break;
                 case "note":
                 {
-                    var note = Ui.Note(string.IsNullOrEmpty(help) ? (s.Default?.Type == JTokenType.String ? (string)s.Default : "") : help);
+                    var note = Ui.NoteWithLinks(string.IsNullOrEmpty(help) ? (s.Default?.Type == JTokenType.String ? (string)s.Default : "") : help, ctx.OpenUrl);
                     note.Margin = new Thickness(0, 8, 0, 0);
                     element = note;
                     break;

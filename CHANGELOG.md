@@ -3,6 +3,16 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.7.0] - 2026-11-03
+
+- An old key two settings share (one switch that became two, Battleship's `OverlayShowRoster`) gives both its
+  value on the move; before, only the first took it.
+- http(s) addresses in a `note` are links.
+- `twitchOnly` on a `bool`: the switch carries the "Twitch only" pill that the sender switches have.
+- `answers` in the spec: what an action would answer, for the preview and its screenshots, so an `auto` panel
+  shows the real thing instead of a placeholder.
+- Ctrl+0 opens the tenth page.
+
 ## [0.6.0] - 2026-11-03
 
 - `note` kind: a paragraph of text on a page, with no value. Battleship's pages carry their explanations with it.

@@ -38,13 +38,16 @@ namespace UIFramework
         /// with 100.</summary>
         public Dictionary<string, double> AliasFactors { get; } = new Dictionary<string, double>(StringComparer.Ordinal);
 
+        /// <summary>Old key to the further canonical keys that take its value too (one old switch that became two).</summary>
+        public Dictionary<string, List<string>> AliasesShared { get; } = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
         public SettingsStore(string path, JObject defaults)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Defaults = defaults ?? new JObject();
         }
 
-        public SettingsStore WithAliases(IDictionary<string, string> aliases, IDictionary<string, double> factors = null)
+        public SettingsStore WithAliases(IDictionary<string, string> aliases, IDictionary<string, double> factors = null, IDictionary<string, List<string>> shared = null)
         {
             if (aliases != null)
                 foreach (var pair in aliases)
@@ -52,6 +55,9 @@ namespace UIFramework
             if (factors != null)
                 foreach (var pair in factors)
                     AliasFactors[pair.Key] = pair.Value;
+            if (shared != null)
+                foreach (var pair in shared)
+                    AliasesShared[pair.Key] = new List<string>(pair.Value);
             return this;
         }
 
@@ -139,10 +145,19 @@ namespace UIFramework
             {
                 if (Aliases.TryGetValue(property.Name, out string canonical))
                 {
+                    double factor = AliasFactors.TryGetValue(property.Name, out double f2) ? f2 : 1.0;
+                    // The old key may feed further settings too (one switch that became two).
+                    if (AliasesShared.TryGetValue(property.Name, out var more))
+                        foreach (var other in more)
+                            if (fromFile[other] == null && !moved.Contains(other))
+                            {
+                                merged[other] = Convert(property.Value, factor, Defaults[other]);
+                                moved.Add(other);
+                            }
                     // The canonical key in the file wins over an old one left behind.
                     if (fromFile[canonical] != null || moved.Contains(canonical))
                         continue;
-                    merged[canonical] = Convert(property.Value, AliasFactors.TryGetValue(property.Name, out double factor) ? factor : 1.0, Defaults[canonical]);
+                    merged[canonical] = Convert(property.Value, factor, Defaults[canonical]);
                     moved.Add(canonical);
                     continue;
                 }

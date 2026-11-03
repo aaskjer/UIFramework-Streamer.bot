@@ -40,6 +40,7 @@ schreibt `hosts/<host>/spec.json` hinein). Was sie nicht nennt, füllen Schema u
 | `overrides`   | Je Key: `page`, `label`, `help`, `section`, `hidden`, `order`                                         |
 | `senders`     | Die Keys der Sender-Schalter der Nachrichten-Seite; `null` blendet einen aus. Keys, die das Schema nicht kennt, erscheinen nicht |
 | `samples`     | Feste Beispielwerte für Platzhalter der Chat-Vorschau; Live-Werte (`pointsName`, `amount`, `min`, `max`) ergänzt das Framework |
+| `answers`     | Je `action`-Key, was der Host antworten würde (Text oder JSON-Objekt), für die Preview und ihre Screenshots |
 | `headerPills` | Pills im Kopf: `key` eines bool, Text für `on`/`off`, `tooltip`                                        |
 | `log`         | `folder`, `writeLogKey`, `writeLogLabel`, `writeLogHelp`, `columns`, `results`, `platforms`, `emptyText` |
 | `help`        | Abschnitte für die Hilfe-Seite: `heading`, `lines` mit `note`, `command`+`what` oder `link`+`url`      |

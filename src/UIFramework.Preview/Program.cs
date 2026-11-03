@@ -41,6 +41,7 @@ namespace UIFramework.Preview
                 // The schema-driven path a stub takes: spec JSON plus the host's describe answer.
                 spec = SpecJson.Parse(File.ReadAllText(specFile), settings);
                 Entry.Prepare(spec, Schema.Parse(File.ReadAllText(schemaFile)));
+                hooks.Answers = spec.Answers;
                 Console.WriteLine($"resolved {spec.Pages.Count} pages, {spec.ResolvedSettings.Count} settings, {spec.Messages.Count} messages, {spec.Aliases.Count} aliases");
             }
             else
@@ -82,7 +83,11 @@ namespace UIFramework.Preview
 
         public override void OnSaved(JObject settings) => Interlocked.Exchange(ref _pending, settings);
 
-        public override string Test(string name, JObject settings) => name + ": the preview would run this now.";
+        /// <summary>The spec's sample answers, so a panel in the preview shows what the host would say.</summary>
+        public Dictionary<string, string> Answers = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        public override string Test(string name, JObject settings) =>
+            Answers.TryGetValue(name, out var answer) ? answer : name + ": the preview would run this now.";
 
         public override string ReadTable(string key) =>
             "[{\"rank\":\"1\",\"user\":\"alice\",\"net\":\"12,500\"},{\"rank\":\"2\",\"user\":\"bob\",\"net\":\"3,000\"}]";
