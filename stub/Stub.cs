@@ -67,9 +67,14 @@ public class CPHInline
     }
 
     // The game describes itself: the stub asks, the game answers through a non-persistent global.
+    // Streamer.bot keeps its globals in LiteDB, which refuses some characters in a name (brackets, a trailing
+    // space): the variable takes the action's name with those replaced. The game builds the same name.
+    public static string SchemaVar(string actionName) =>
+        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+
     private string AskSchema()
     {
-        string var = "uiframework.schema." + GameActionName;
+        string var = SchemaVar(GameActionName);
         CPH.UnsetGlobalVar(var, false);
         CPH.SetArgument("uiframework.describe", "1");
         if (!CPH.RunAction(GameActionName, true))

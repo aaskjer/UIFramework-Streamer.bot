@@ -6,7 +6,7 @@
 // In Execute(), first thing:
 //     if (args.ContainsKey("uiframework.describe"))
 //     {
-//         CPH.SetGlobalVar("uiframework.schema." + ActionName, UiSchema.ToJson("blackjack", CurrentVersion, "Chat Games/Blackjack Game/BJG-Settings.json"), false);
+//         CPH.SetGlobalVar(UiSchema.Var(ActionName), UiSchema.ToJson("blackjack", CurrentVersion, "Chat Games/Blackjack Game/BJG-Settings.json"), false);
 //         return true;
 //     }
 public static class UiSchema
@@ -110,6 +110,11 @@ public static class UiSchema
         }
         return new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings }.ToString(Formatting.None);
     }
+
+    /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
+    /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
+    public static string Var(string actionName) =>
+        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
 
     public static Setting Find(string key)
     {
