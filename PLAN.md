@@ -392,9 +392,9 @@ Preview und Tests (es trägt nun `window`); `spec.json` und `host-section.cs` we
 | 7.4 Doku und Quickstart                           | 2 Tage  |
 | 7.5 sechs Hosts umstellen, je Release             | 5 Tage  |
 
-Offene Entscheidungen: (a) Fenster-Deklaration als C#-Builder (Vorschlag) oder als JSON-String im Spiel;
-(b) ob der Stub eine Escape-Luke für eigenen Code behält (Vorschlag: nein, alles ins Spiel); (c) ob der
-Log-Auto-Refresh (FileSystemWatcher auf `log.folder`) mit in 0.9.0 geht.
+Entschieden (04.11.2026): (a) Fenster-Deklaration als C#-Builder im Host-Block; (b) keine Escape-Luke, der Stub
+ist eine Datei für alle Projekte, jede Logik läuft über `uiframework.*` in der Spiel-Action; (c) der
+Log-Auto-Refresh (FileSystemWatcher auf `log.folder`, der Button bleibt als Fallback) geht mit in 0.9.0.
 
 ## 9. Tests und Werkzeuge
 
