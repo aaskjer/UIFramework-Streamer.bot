@@ -327,7 +327,7 @@ namespace UIFramework
 
         // ---- The bar under the header ------------------------------------------------------------------
 
-        public static FrameworkElement Bar(PageContext ctx, Action done)
+        public static FrameworkElement Bar(PageContext ctx, Action done, Action exportSettings = null, Action importSettings = null)
         {
             var text = new TextBlock
             {
@@ -394,12 +394,20 @@ namespace UIFramework
             var open = Ui.TextButton("Open file", false);
             open.ToolTip = ctx.Layout.Path;
             open.Click += (s, e) => Web.OpenUrl(ctx.Layout.Path, ctx.Log, ctx.Spec.LogPrefix);
+            var export = Ui.TextButton("Export", false);
+            export.ToolTip = "Write the saved settings to a file of your choosing";
+            export.Click += (s, e) => exportSettings?.Invoke();
+            var import = Ui.TextButton("Import", false);
+            import.ToolTip = "Replace the saved settings with an exported file, or a settings file; the file as it was is kept as .bak";
+            import.Click += (s, e) => importSettings?.Invoke();
             var finish = Ui.TextButton("Done", true);
             finish.Click += (s, e) => done();
 
             var controls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
             controls.Children.Add(Ui.Labeled("Language", language));
             controls.Children.Add(reset);
+            if (exportSettings != null) controls.Children.Add(export);
+            if (importSettings != null) controls.Children.Add(import);
             controls.Children.Add(open);
             controls.Children.Add(finish);
 

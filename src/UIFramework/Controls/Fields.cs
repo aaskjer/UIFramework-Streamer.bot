@@ -258,25 +258,30 @@ namespace UIFramework
             panel.Children.Add(slider);
             if (stops)
             {
-                var captions = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+                // Each caption is centred under its stop: the thumb's centre runs from half the thumb's width to the
+                // slider's width less that, and the outermost captions stay inside the edges.
+                var captions = new Canvas { Height = 16, Margin = new Thickness(0, 2, 0, 0) };
                 var labels = new List<TextBlock>();
                 for (int i = 0; i < options.Count; i++)
                 {
-                    captions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    var caption = new TextBlock
-                    {
-                        Text = options[i].Label,
-                        FontSize = 11,
-                        Foreground = Theme.SubFg,
-                        TextTrimming = TextTrimming.CharacterEllipsis,
-                        HorizontalAlignment = i == 0 ? HorizontalAlignment.Left : i == options.Count - 1 ? HorizontalAlignment.Right : HorizontalAlignment.Center,
-                        Cursor = Cursors.Hand
-                    };
+                    var caption = new TextBlock { Text = options[i].Label, FontSize = 11, Foreground = Theme.SubFg, Cursor = Cursors.Hand };
                     int stop = i;
                     caption.MouseLeftButtonDown += (sender, e) => slider.Value = stop;
-                    Grid.SetColumn(caption, i);
                     captions.Children.Add(caption);
                     labels.Add(caption);
+                }
+                void Place()
+                {
+                    double width = captions.ActualWidth;
+                    if (width <= 0) return;
+                    double half = Ui.SliderThumb / 2.0, inner = width - Ui.SliderThumb;
+                    for (int i = 0; i < labels.Count; i++)
+                    {
+                        labels[i].Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                        double w = labels[i].DesiredSize.Width;
+                        double centre = labels.Count == 1 ? half : half + i * inner / (labels.Count - 1);
+                        Canvas.SetLeft(labels[i], Math.Max(0, Math.Min(width - w, centre - w / 2)));
+                    }
                 }
                 void Paint()
                 {
@@ -286,7 +291,9 @@ namespace UIFramework
                         labels[i].Foreground = i == at ? new SolidColorBrush(Theme.AccentText) : Theme.SubFg;
                         labels[i].FontWeight = i == at ? FontWeights.SemiBold : FontWeights.Normal;
                     }
+                    Place();
                 }
+                captions.SizeChanged += (sender, e) => Place();
                 slider.ValueChanged += (sender, e) => Paint();
                 Paint();
                 panel.Children.Add(captions);

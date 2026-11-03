@@ -71,13 +71,14 @@ Settings-Datei.
 | `list`      | array       | Zeilen-Editor: je Zeile eine Zelle pro Spalte, Entfernen, *Add row*, *Restore defaults* | `columns` Pflicht; leere Zeilen fallen beim Speichern weg; mit `file`/`field` in eigener Datei |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
 | `note`      | –           | Ein Absatz Text auf der Seite (`help`)     | kein Wert; erklärt, was darunter kommt; http(s)-Adressen im Text sind Links |
-| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst. Eine Antwort als JSON-Objekt `{ "lines": ["…", { "text": "…", "big": true }], "bar": [ { "label": "Win", "value": 27, "text": "27 %", "colour": "#…" } ] }` wird als Balken mit Legende und Zeilen gezeichnet; `"set": { "gridSize": 8, "shipCarrierEnabled": true }` setzt andere Felder des Fensters wie getippt (gespeichert wird erst mit Save, ein Preset-Button), `"status": "…"` ist die Zeile für die Fußzeile. Eine Zeile `{ "emotes": ["Kappa", "LUL"], "platform": "twitch", "text": "The slots" }` zeigt die Emotes als Bilder mit Namen darunter (YouTube als Emoji), nach dem `text`, wenn einer da ist |
+| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst. Eine Antwort als JSON-Objekt `{ "lines": ["…", { "text": "…", "big": true }], "bar": [ { "label": "Win", "value": 27, "text": "27 %", "colour": "#…" } ] }` wird als Balken mit Legende und Zeilen gezeichnet; `"set": { "gridSize": 8, "shipCarrierEnabled": true }` setzt andere Felder des Fensters wie getippt (gespeichert wird erst mit Save, ein Preset-Button; ein Feld, dessen Wert sich ändert, leuchtet kurz in der Akzentfarbe), `"status": "…"` ist die Zeile für die Fußzeile. Eine Zeile `{ "emotes": ["Kappa", "LUL"], "platform": "twitch", "text": "The slots" }` zeigt die Emotes als Bilder mit Namen darunter (YouTube als Emoji), nach dem `text`, wenn einer da ist |
 
-Der Fuß des Fensters hat *Export* und *Import*: Export schreibt jedes Setting, wie es im Fenster steht (flüchtige
-ausgenommen, Werte aus eigenen Dateien eingeschlossen), als `{ "uiframework": "settings", "host", "version",
-"exported", "settings": { … } }` in eine Datei nach Wahl; Import liest so eine Datei, oder eine Settings-Datei selbst,
-in das Fenster, als wäre es getippt (alte Keys über die Aliase), zählt als ungespeicherte Änderungen und wird erst mit
-Save geschrieben. Eine Datei eines anderen Hosts fragt nach; was das Fenster nicht kennt, wird übersprungen.
+Die Leiste des Customise-Modus (Stift unten links) hat *Export* und *Import*: Export schreibt die gespeicherten
+Settings (flüchtige ausgenommen, Werte aus eigenen Dateien eingeschlossen) als `{ "uiframework": "settings", "host",
+"version", "exported", "settings": { … } }` in eine Datei nach Wahl; Import ersetzt die gespeicherten Settings nach
+Rückfrage sofort durch so eine Datei, oder eine Settings-Datei selbst (alte Keys über die Aliase), die Datei davor
+bleibt als `.bak`, und das Fenster wird darauf neu aufgebaut. Eine Datei eines anderen Hosts fragt nach; was das
+Fenster nicht kennt, wird übersprungen.
 
 Tooltips haben eine feste Breite und brechen um, statt über den Bildschirm zu laufen.
 

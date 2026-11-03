@@ -3,6 +3,14 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.8.1] - 2026-11-03
+
+- The captions of a `slider` sit under its stops; they were spread evenly and missed the thumb.
+- A field that a `set` answer changes glows in the accent colour for a moment, so the eye finds what a preset
+  stop moved.
+- Export and import moved from the footer into the customise mode's bar, next to *Open file*. Import there
+  replaces the saved settings at once (the file as it was is kept as `.bak`) and rebuilds the window on them.
+
 ## [0.8.0] - 2026-11-03
 
 - Export and import in the footer: export writes every setting as it stands in the window to a file of the

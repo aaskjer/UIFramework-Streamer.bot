@@ -6,7 +6,8 @@ using Newtonsoft.Json.Linq;
 namespace UIFramework
 {
     /// <summary>Puts values into the window's controls as if the user had typed them: nothing is saved until Save.
-    /// Used by an action whose answer carries <c>set</c> (a preset button filling in several fields).</summary>
+    /// Used by an action whose answer carries <c>set</c> (a preset button filling in several fields). A control
+    /// whose value changes glows for a moment (<see cref="Ui.Flash"/>).</summary>
     public static class LiveValues
     {
         public static void Apply(WindowParts parts, JObject values)
@@ -21,8 +22,10 @@ namespace UIFramework
         {
             if (parts.Switches.TryGetValue(key, out var toggle))
             {
+                bool was = toggle.IsChecked == true;
                 toggle.IsChecked = value != null && value.Type == JTokenType.Boolean ? (bool)value
                     : string.Equals(value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+                if (was != (toggle.IsChecked == true)) Ui.Flash(toggle);
                 return true;
             }
             if (parts.Combos.TryGetValue(key, out var combo))
@@ -37,17 +40,30 @@ namespace UIFramework
                         hit = value != null && long.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long whole) && Convert.ToInt64(item.Tag, CultureInfo.InvariantCulture) == whole;
                     else
                         hit = string.Equals(item.Tag.ToString(), value?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
-                    if (hit) { combo.SelectedItem = item; return true; }
+                    if (hit)
+                    {
+                        bool moved = !ReferenceEquals(combo.SelectedItem, item);
+                        combo.SelectedItem = item;
+                        if (moved) Ui.Flash(combo);
+                        return true;
+                    }
                 }
                 return false;
             }
             if (parts.Boxes.TryGetValue(key, out var box))
             {
+                string was = box.Text;
                 box.Text = box.Tag is FieldTag tag ? FieldBinding.Display(tag, value) : value?.ToString() ?? "";
+                if (!string.Equals(was, box.Text, StringComparison.Ordinal)) Ui.Flash(box);
                 return true;
             }
             if (parts.Sliders.TryGetValue(key, out var slider))
-                return slider.Put(value);
+            {
+                double at = slider.Value;
+                if (!slider.Put(value)) return false;
+                if (Math.Abs(at - slider.Value) > 1e-9) Ui.Flash(slider);
+                return true;
+            }
             return false;
         }
     }
