@@ -59,10 +59,10 @@ namespace UIFramework
             return main;
         }
 
-        /// <summary>A transient setting is never written: it only exists while the window is open.</summary>
+        /// <summary>A transient setting is never written: it only exists while the window is open. Neither is a note.</summary>
         public static void DropTransient(JObject main, IEnumerable<Setting> schema)
         {
-            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient))
+            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient || s.Kind == "note"))
                 main.Remove(setting.Key);
         }
 

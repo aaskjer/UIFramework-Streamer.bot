@@ -17,18 +17,31 @@ namespace UIFramework
     /// </summary>
     public static class ResultPanel
     {
+        /// <summary>The answer as a JSON object, or null for plain text.</summary>
+        public static JObject TryParse(string result)
+        {
+            string text = (result ?? "").Trim();
+            if (!text.StartsWith("{"))
+                return null;
+            try { return JObject.Parse(text); } catch (Exception) { return null; }
+        }
+
         public static void Render(StackPanel panel, string result)
         {
             panel.Children.Clear();
             string text = (result ?? "").Trim();
-            JObject structured = null;
-            if (text.StartsWith("{"))
-            {
-                try { structured = JObject.Parse(text); } catch (Exception) { structured = null; }
-            }
+            var structured = TryParse(text);
             if (structured == null)
             {
                 panel.Children.Add(Line(text, false));
+                return;
+            }
+            if (structured["lines"] == null && structured["bar"] == null)
+            {
+                // An answer that only sets fields or a status leaves the panel as it was, or empty.
+                string status = (string)structured["status"];
+                if (!string.IsNullOrEmpty(status))
+                    panel.Children.Add(Line(status, false));
                 return;
             }
 

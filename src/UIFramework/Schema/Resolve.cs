@@ -57,7 +57,7 @@ namespace UIFramework
             spec.AliasFactors.Clear();
             foreach (var setting in settings)
             {
-                if (setting.Kind != "table" && setting.Kind != "action")
+                if (setting.Kind != "table" && setting.Kind != "action" && setting.Kind != "note")
                     spec.Defaults[setting.Key] = setting.Default?.DeepClone() ?? JValue.CreateNull();
                 foreach (var alias in setting.Aliases)
                     if (!spec.Aliases.ContainsKey(alias))

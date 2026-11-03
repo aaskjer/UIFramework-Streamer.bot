@@ -64,6 +64,23 @@
         }
 
         public string ReadTable(string key) => null;
+
+        // What would not do what it looks like, one problem per line; the window asks before saving anyway.
+        public string Validate(string settingsJson)
+        {
+            var s = JObject.Parse(settingsJson);
+            var problems = new List<string>();
+            long min = (long?)s["minBet"] ?? 0, max = (long?)s["maxBet"] ?? 0, fallback = (long?)s["defaultBet"] ?? 0;
+            if (min > 0 && max > 0 && min > max)
+                problems.Add("The minimum bet (" + min + ") is above the maximum (" + max + "), so every stake is refused.");
+            if (fallback > 0 && ((min > 0 && fallback < min) || (max > 0 && fallback > max)))
+                problems.Add("The default bet (" + fallback + ") is outside the minimum and maximum, so !Rhyme without an amount is refused.");
+            if (fallback > 0 && string.IsNullOrWhiteSpace((string)s["pointsVariable"]))
+                problems.Add("The default bet is above 0 but the points variable is empty, so no stake can be taken.");
+            if (((int?)s["timeLimit"] ?? 30) < 5)
+                problems.Add("Less than 5 seconds to answer leaves no time to type a rhyme.");
+            return problems.Count == 0 ? null : string.Join("\n", problems);
+        }
         public IEnumerable<string> ReadLogLines() => null;
     }
 
