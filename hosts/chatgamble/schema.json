@@ -1,0 +1,915 @@
+{
+  "host": "chatgamble",
+  "version": "25.0.0",
+  "settingsFile": "Chat Games/Classic Chat Gamble/configs.json",
+  "settings": [
+    {
+      "key": "useBot",
+      "default": true,
+      "aliases": [
+        "UseBot"
+      ]
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "aliases": [
+        "SendAction"
+      ]
+    },
+    {
+      "key": "cooldownUseBot",
+      "default": true,
+      "aliases": [
+        "UseBotCD"
+      ]
+    },
+    {
+      "key": "cooldownSendAction",
+      "default": false,
+      "aliases": [
+        "SendActionCD"
+      ]
+    },
+    {
+      "key": "numberSeparator",
+      "default": ".",
+      "aliases": [
+        "NumberSeparator"
+      ]
+    },
+    {
+      "key": "presetStrict",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Strict",
+      "help": "The house wins: over time viewers lose about a quarter of what they bet, so points drain away. Jackpot 0.1 %, win 22 %, ×1.5 to ×2.5, jackpot ×43. Fills in the five numbers below; nothing is saved until you save."
+    },
+    {
+      "key": "presetHouseEdge",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Fairness",
+      "label": "House Edge",
+      "help": "The house keeps a small cut, so points shrink slowly. Jackpot 0.25 %, win 23 %."
+    },
+    {
+      "key": "presetFair",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Fair",
+      "help": "About even: over time viewers get back roughly what they bet. Jackpot 0.3 %, win 25 %."
+    },
+    {
+      "key": "presetGenerous",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Generous",
+      "help": "Viewers come out ahead, so points grow. Jackpot 0.6 %, win 28 %."
+    },
+    {
+      "key": "presetClassic",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Classic",
+      "help": "The default: rare, huge jackpots. Viewers come out far ahead and points grow fast. Jackpot 1 %, win 30 %."
+    },
+    {
+      "key": "presetNote",
+      "default": null,
+      "kind": "note",
+      "page": "game",
+      "section": "Fairness",
+      "help": "A preset sets the jackpot and win chance, the jackpot multiplier and the win multiplier range in one go. The game only ever reads those five numbers, so you can still fine-tune them."
+    },
+    {
+      "key": "jackpotPercent",
+      "default": 1.0,
+      "kind": "percent",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Jackpot chance",
+      "help": "Chance in percent, from 0 (never) to 100 (always), that a gamble hits the jackpot. Keep it small so jackpots stay rare: '1' is 1 in 100.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "JackpotPercent"
+      ]
+    },
+    {
+      "key": "jackpotMultiplier",
+      "default": 43,
+      "page": "game",
+      "section": "Fairness",
+      "label": "Jackpot ×",
+      "help": "Multiplier stacked on top of the win roll when a jackpot hits. With '43', a 2× roll pays 2 × 43 = 86 times the bet.",
+      "min": 1.0,
+      "aliases": [
+        "JackpotMultiplier"
+      ]
+    },
+    {
+      "key": "winPercent",
+      "default": 30.0,
+      "kind": "percent",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Win chance",
+      "help": "Chance in percent that a gamble is a normal win, on top of the jackpot chance. Jackpot '1' and Win '30' leave a 69 % chance to lose.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "WinPercent"
+      ]
+    },
+    {
+      "key": "rndMin",
+      "default": 1.5,
+      "kind": "double",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Min ×",
+      "help": "The smallest win multiplier. Every win rolls a multiplier between Min and Max, and a jackpot stacks on that roll.",
+      "min": 0.0,
+      "aliases": [
+        "RndMin"
+      ]
+    },
+    {
+      "key": "rndMax",
+      "default": 2.5,
+      "kind": "double",
+      "page": "game",
+      "section": "Fairness",
+      "label": "Max ×",
+      "help": "The largest win multiplier.",
+      "min": 0.0,
+      "aliases": [
+        "RndMax"
+      ]
+    },
+    {
+      "key": "odds",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Fairness",
+      "label": "What really comes out",
+      "help": "The chance of a jackpot, a win and a loss, and what a bet of 100 comes back as on average, from the five numbers as they stand, for a viewer without Subscriber/VIP boost or Addicted cut.",
+      "live": true,
+      "panel": true,
+      "auto": true
+    },
+    {
+      "key": "defaultBet",
+      "default": 1234,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Default bet",
+      "help": "The bet for a plain !gamble with no amount. 0 means viewers always have to name one. Viewers can also bet a number, a percentage, shorthand like 10k, or all, half, third, quarter and random.",
+      "min": 0.0,
+      "aliases": [
+        "DefaultBet"
+      ]
+    },
+    {
+      "key": "minBet",
+      "default": 0,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Minimum (0 = none)",
+      "help": "The smallest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.",
+      "min": 0.0,
+      "aliases": [
+        "MinBet"
+      ]
+    },
+    {
+      "key": "maxBet",
+      "default": 9999999,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Maximum (0 = none)",
+      "help": "The largest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.",
+      "min": 0.0,
+      "aliases": [
+        "MaxBet"
+      ]
+    },
+    {
+      "key": "freeGame",
+      "default": false,
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Free Game Mode",
+      "help": "Nobody pays or wins points, channel point redemptions included, and chat gets the Free game messages. !SetFreeGamble and !EndFreeGamble switch it from chat; starting it there puts the Default bet to 0 and ending it brings the previous one back.",
+      "aliases": [
+        "FreeGameActive"
+      ]
+    },
+    {
+      "key": "previousDefaultBet",
+      "default": 1234,
+      "page": "game",
+      "section": "Bets and points",
+      "help": "The Default bet from before !SetFreeGamble, brought back by !EndFreeGamble.",
+      "min": 0.0,
+      "hidden": true,
+      "aliases": [
+        "PreviousDefaultBet"
+      ]
+    },
+    {
+      "key": "pointsVariable",
+      "default": "points",
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Points variable",
+      "help": "The variable your points live in. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own; only change this for a points system of your own.",
+      "aliases": [
+        "PointsVar"
+      ]
+    },
+    {
+      "key": "pointsName",
+      "default": "Points",
+      "page": "game",
+      "section": "Bets and points",
+      "label": "Shown in chat as",
+      "help": "The name {pointsName} puts in chat, like 'Coins' or 'Gems'. Currency Core and LOYALTY POINTS bring their own name, which is used instead.",
+      "aliases": [
+        "PointsName"
+      ]
+    },
+    {
+      "key": "subscriberBoostEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Payouts",
+      "label": "Subscriber boost",
+      "help": "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.",
+      "twitchOnly": true,
+      "aliases": [
+        "SubscriberBoostEnabled"
+      ]
+    },
+    {
+      "key": "vipBoostEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Payouts",
+      "label": "VIP boost",
+      "help": "Gives Twitch VIPs a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for VIPs.",
+      "twitchOnly": true,
+      "aliases": [
+        "VipBoostEnabled"
+      ]
+    },
+    {
+      "key": "subscriberBoostPercent",
+      "default": 10.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "Subscriber boost",
+      "help": "How much bigger a subscriber's win is: '10' turns 100 into 110. Adds up with the VIP boost for someone who is both.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "subscriberBoostEnabled",
+      "aliases": [
+        "SubscriberBoostPercent"
+      ]
+    },
+    {
+      "key": "vipBoostPercent",
+      "default": 20.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Payouts",
+      "label": "VIP boost",
+      "help": "How much bigger a VIP's win is: '20' turns 100 into 120. Adds up with the Subscriber boost for someone who is both.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "vipBoostEnabled",
+      "aliases": [
+        "VipBoostPercent"
+      ]
+    },
+    {
+      "key": "addictedPayoutCut",
+      "default": 50,
+      "kind": "percent",
+      "page": "game",
+      "section": "Payouts",
+      "label": "Addicted cut",
+      "help": "How much of an addicted viewer's win is cut, from 0 (nothing) to 100 (all of it). Applied last, so it cuts a boosted win too - part of the boost is kept. Who counts as addicted is set on the Access page.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "AddictedPayoutCutPercent"
+      ]
+    },
+    {
+      "key": "tryBet",
+      "default": 1000,
+      "page": "game",
+      "section": "Try a bet",
+      "label": "Bet to try",
+      "help": "A bet to try the odds and messages with. It isn't saved.",
+      "min": 1.0,
+      "transient": true
+    },
+    {
+      "key": "tryRole",
+      "default": "viewer",
+      "kind": "options",
+      "page": "game",
+      "section": "Try a bet",
+      "label": "Play as",
+      "help": "Who plays: boosts and the Addicted cut change what a win pays.",
+      "options": [
+        {
+          "value": "viewer",
+          "label": "Viewer"
+        },
+        {
+          "value": "subscriber",
+          "label": "Subscriber"
+        },
+        {
+          "value": "vip",
+          "label": "VIP"
+        },
+        {
+          "value": "addicted",
+          "label": "Addicted"
+        }
+      ],
+      "transient": true
+    },
+    {
+      "key": "tryRoll",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Try a bet",
+      "label": "Roll",
+      "help": "Plays one gamble with the settings as they stand on this page, saved or not, and shows the roll and the message chat would get. Nothing is sent and nothing is saved.",
+      "live": true,
+      "panel": true
+    },
+    {
+      "key": "platformsNote",
+      "default": null,
+      "kind": "note",
+      "page": "access",
+      "section": "Platforms",
+      "help": "Twitch, YouTube and Kick all play, and every reply goes to the chat the command or redemption came from. To leave a platform out, untick it on the !gamble command in Streamer.bot, for example 'Kick Message'."
+    },
+    {
+      "key": "isChannelPointsTrigger",
+      "default": false,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Channel points start a gamble",
+      "help": "On Twitch, a redemption of the reward below plays instead of !gamble, which is then off on Twitch. Redemptions only come from Twitch, so on YouTube and Kick viewers keep playing with !gamble.",
+      "twitchOnly": true,
+      "aliases": [
+        "IsChannelPointsTrigger"
+      ]
+    },
+    {
+      "key": "rewardId",
+      "default": "",
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Reward ID",
+      "help": "The ID of the channel point reward that starts a gamble. Other rewards are ignored; without one, no redemption starts a gamble. https://ayrtonalexis.com/reward_checker/reward_check.html lists your rewards with their IDs.",
+      "requires": "isChannelPointsTrigger",
+      "aliases": [
+        "TargetRewardId"
+      ]
+    },
+    {
+      "key": "cpBetMode",
+      "default": "cost",
+      "kind": "options",
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "What is bet",
+      "help": "Reward cost: the reward's price is the bet, so viewers don't type anything; a loss doesn't touch their points, a win is paid in points. Typed amount: viewers type a bet into the reward, paid from their own points, checked against their balance; without enough points the redemption is refunded. Fixed: every redemption bets the fixed amount below, the price and the text are ignored, a loss doesn't touch the viewer's points. Free: nothing is won or lost. Minimum and Maximum bet apply to Typed amount and Fixed.",
+      "requires": "isChannelPointsTrigger",
+      "options": [
+        {
+          "value": "cost",
+          "label": "Reward cost"
+        },
+        {
+          "value": "input",
+          "label": "Typed amount"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed"
+        },
+        {
+          "value": "free",
+          "label": "Free"
+        }
+      ],
+      "aliases": [
+        "CPBetMode"
+      ]
+    },
+    {
+      "key": "fixedBetAmount",
+      "default": 0,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Fixed bet",
+      "help": "What every redemption bets in Fixed mode. Must be more than 0.",
+      "min": 0.0,
+      "requires": "cpBetMode=fixed",
+      "aliases": [
+        "FixedBetAmount"
+      ]
+    },
+    {
+      "key": "refundFailedRedemptions",
+      "default": true,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Refund redemptions that don't end in a gamble",
+      "help": "Viewer blocked, cooldown running or a bet that doesn't work: the redemption is cancelled and the channel points go back. Only works while the redemption is still queued - a reward that skips the request queue can't be refunded.",
+      "requires": "isChannelPointsTrigger",
+      "aliases": [
+        "RefundFailedRedemptions"
+      ]
+    },
+    {
+      "key": "globalCooldown",
+      "default": 0,
+      "page": "access",
+      "section": "Cooldowns",
+      "label": "Everyone",
+      "help": "How long everyone waits after any gamble, in seconds. 0 turns it off. Saving writes it onto the !gamble command. A channel point redemption during the cooldown is refunded; redemptions keep a clock of their own, so they don't hold up !gamble on YouTube or Kick, nor the other way round.",
+      "min": 0.0,
+      "aliases": [
+        "CooldownGlobalSeconds"
+      ]
+    },
+    {
+      "key": "userCooldown",
+      "default": 0,
+      "page": "access",
+      "section": "Cooldowns",
+      "label": "Per viewer",
+      "help": "How long one viewer waits before their next gamble, in seconds. 0 turns it off. Saving writes it onto the !gamble command. A channel point redemption during the cooldown is refunded.",
+      "min": 0.0,
+      "aliases": [
+        "CooldownUserSeconds"
+      ]
+    },
+    {
+      "key": "cooldownNote",
+      "default": null,
+      "kind": "note",
+      "page": "access",
+      "section": "Cooldowns",
+      "help": "What chat is told while a cooldown runs is on the Messages page, under Cooldown."
+    },
+    {
+      "key": "blockedUsers",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "label": "Blocked viewers",
+      "help": "Viewers who can't play. A name or a platform user ID - with the ID, a name change doesn't get around it.",
+      "aliases": [
+        "BlockedUsers"
+      ]
+    },
+    {
+      "key": "blockedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "label": "Blocked groups",
+      "help": "Streamer.bot user groups whose members can't play. Names must match the groups exactly.",
+      "aliases": [
+        "BlockedGroups"
+      ]
+    },
+    {
+      "key": "addictedUsers",
+      "default": "",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Addicted viewers",
+      "help": "Their wins are cut by the Addicted cut on the Game page, and they get the Addicted messages. !gambleaddict adds and removes them from chat too.",
+      "aliases": [
+        "AddictedUsers"
+      ]
+    },
+    {
+      "key": "addictedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Addicted groups",
+      "help": "Members of these Streamer.bot groups count as addicted too.",
+      "aliases": [
+        "AddictedGroups"
+      ]
+    },
+    {
+      "key": "logToFile",
+      "default": true,
+      "page": "log",
+      "label": "Write a log file per day",
+      "help": "Writes every gamble and refund - win, loss, jackpot - with the bet and the balance to a dated 'CCG-log-yyyy-MM-dd.txt' in the Logs folder, one file per day.",
+      "aliases": [
+        "LogToFile"
+      ]
+    },
+    {
+      "key": "winMessage",
+      "default": "@{user}, WINS! 🎉 You got {amount} {pointsName}! New balance: {currentPoints} {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Results",
+      "label": "Win",
+      "help": "Sent on a normal win.",
+      "placeholders": [
+        "user",
+        "amount",
+        "pointsName",
+        "currentPoints"
+      ],
+      "file": "messages.json",
+      "field": "WinMessage"
+    },
+    {
+      "key": "lossMessage",
+      "default": "@{user}, unlucky! You LOST {amount} {pointsName}. New balance: {currentPoints} {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Results",
+      "label": "Loss",
+      "help": "Sent on a loss.",
+      "placeholders": [
+        "user",
+        "amount",
+        "pointsName",
+        "currentPoints"
+      ],
+      "file": "messages.json",
+      "field": "LossMessage"
+    },
+    {
+      "key": "jackpotMessage",
+      "default": "🎰 J A C K P O T 🎰 @{user} you WON the JACKPOT of: {amount} {pointsName}! New balance: {currentPoints} {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Results",
+      "label": "Jackpot",
+      "help": "Sent on a jackpot.",
+      "placeholders": [
+        "user",
+        "amount",
+        "pointsName",
+        "currentPoints"
+      ],
+      "file": "messages.json",
+      "field": "JackpotMessage"
+    },
+    {
+      "key": "freeGameMessage",
+      "default": "@{user}, gamble runs in 'Free Mode'! Enjoy playing without spending any {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Notice, once per viewer",
+      "help": "Sent once to each viewer who plays while Free Game Mode is on.",
+      "placeholders": [
+        "user",
+        "pointsName"
+      ],
+      "file": "messages.json",
+      "field": "FreeGameMessage"
+    },
+    {
+      "key": "freeGameWinMessage",
+      "default": "🎉 @{user}, you WON! Lucky you! 🎉",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Win",
+      "help": "Sent on a win while Free Game Mode is on.",
+      "placeholders": [
+        "user"
+      ],
+      "file": "messages.json",
+      "field": "FreeGameWinMessage"
+    },
+    {
+      "key": "freeGameLossMessage",
+      "default": "@{user}, unlucky! Luckily it's Free Mode, so you lost nothing. 🍀",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Loss",
+      "help": "Sent on a loss while Free Game Mode is on. Nothing is taken.",
+      "placeholders": [
+        "user",
+        "pointsName"
+      ],
+      "file": "messages.json",
+      "field": "FreeGameLossMessage"
+    },
+    {
+      "key": "freeGameJackpotMessage",
+      "default": "🎰 J A C K P O T 🎰 @{user}, you hit the JACKPOT! Incredible! 🎰",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Jackpot",
+      "help": "Sent on a jackpot while Free Game Mode is on.",
+      "placeholders": [
+        "user"
+      ],
+      "file": "messages.json",
+      "field": "FreeGameJackpotMessage"
+    },
+    {
+      "key": "freeGameStartMessage",
+      "default": "🎲 Free Gamble Mode is now ACTIVE! Gamble for free — no points needed!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Started",
+      "help": "Sent once when Free Game Mode is turned on, in the chat the command or redemption came from. Started any other way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [],
+      "file": "messages.json",
+      "field": "FreeGameStartMessage"
+    },
+    {
+      "key": "freeGameEndMessage",
+      "default": "⏹️ Free Gamble Mode has ended. Normal betting is back, time to waste points!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Ended",
+      "help": "Sent once when Free Game Mode ends and the Default bet is back, in the chat the command or redemption came from. Ended any other way, say by an Execute C# Method on EndFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [],
+      "file": "messages.json",
+      "field": "FreeGameEndMessage"
+    },
+    {
+      "key": "addictedWinMessage",
+      "default": "@{user}, WINS! 🎉 You got {amount} {pointsName}! -- Addiction Fee: your win was cut by {addictedCut}% -- New balance: {currentPoints} {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Win",
+      "help": "Sent instead of the Win message to viewers on the Addicted list.",
+      "placeholders": [
+        "user",
+        "amount",
+        "pointsName",
+        "currentPoints",
+        "addictedCut"
+      ],
+      "file": "messages.json",
+      "field": "AddictedWinMessage"
+    },
+    {
+      "key": "addictedJackpotMessage",
+      "default": "🎰 J A C K P O T 🎰 @{user} you WON the JACKPOT of: {amount} {pointsName}! -- Addiction Fee: your win was cut by {addictedCut}% -- New balance: {currentPoints} {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Jackpot",
+      "help": "Sent instead of the Jackpot message to viewers on the Addicted list.",
+      "placeholders": [
+        "user",
+        "amount",
+        "pointsName",
+        "currentPoints",
+        "addictedCut"
+      ],
+      "file": "messages.json",
+      "field": "AddictedJackpotMessage"
+    },
+    {
+      "key": "addictedAdded",
+      "default": "@{user}, {target} has been added to the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Added",
+      "help": "Sent when !gambleaddict puts someone on the list.",
+      "placeholders": [
+        "user",
+        "target"
+      ],
+      "file": "messages.json",
+      "field": "AddictedAdded"
+    },
+    {
+      "key": "addictedRemoved",
+      "default": "@{user}, {target} has been removed from the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Removed",
+      "help": "Sent when !gambleaddict remove takes someone off the list.",
+      "placeholders": [
+        "user",
+        "target"
+      ],
+      "file": "messages.json",
+      "field": "AddictedRemoved"
+    },
+    {
+      "key": "addictedAlreadyOnList",
+      "default": "@{user}, {target} is already on the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Already on the list",
+      "help": "Sent when !gambleaddict names someone who is already on the list.",
+      "placeholders": [
+        "user",
+        "target"
+      ],
+      "file": "messages.json",
+      "field": "AddictedAlreadyOnList"
+    },
+    {
+      "key": "addictedNotOnList",
+      "default": "@{user}, {target} is not on the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Not on the list",
+      "help": "Sent when !gambleaddict remove names someone who isn't on the list.",
+      "placeholders": [
+        "user",
+        "target"
+      ],
+      "file": "messages.json",
+      "field": "AddictedNotOnList"
+    },
+    {
+      "key": "addictedUsage",
+      "default": "@{user}, usage: !gambleaddict add <user> or !gambleaddict remove <user>",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Usage",
+      "help": "Sent when !gambleaddict comes without a name.",
+      "placeholders": [
+        "user"
+      ],
+      "file": "messages.json",
+      "field": "AddictedUsage"
+    },
+    {
+      "key": "invalidBetMessage",
+      "default": "❌ @{user}, {reason}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Bet refused",
+      "help": "The frame around the five reasons below; {reason} is replaced by whichever one applies.",
+      "placeholders": [
+        "user",
+        "reason"
+      ],
+      "file": "messages.json",
+      "field": "InvalidBetMessage"
+    },
+    {
+      "key": "reasonNegativeAmount",
+      "default": "that's not a valid amount: no decimals, nothing negative and nothing too large.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: not a valid amount",
+      "help": "Fills {reason} when the amount is negative, not a number, has decimals, or is too large.",
+      "placeholders": [],
+      "file": "messages.json",
+      "field": "ReasonNegativeAmount"
+    },
+    {
+      "key": "reasonInsufficientFunds",
+      "default": "you don't have enough {pointsName}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: not enough points",
+      "help": "Fills {reason} when the bet is more than the viewer has.",
+      "placeholders": [
+        "pointsName"
+      ],
+      "file": "messages.json",
+      "field": "ReasonInsufficientFunds"
+    },
+    {
+      "key": "reasonBelowMinimum",
+      "default": "your bet is below the allowed minimum ({min} {pointsName}).",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: below the minimum",
+      "help": "Fills {reason} when the bet is below the minimum on the Game page.",
+      "placeholders": [
+        "min",
+        "pointsName"
+      ],
+      "file": "messages.json",
+      "field": "ReasonBelowMinimum"
+    },
+    {
+      "key": "reasonAboveMaximum",
+      "default": "your bet is above the allowed maximum ({max} {pointsName}).",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: above the maximum",
+      "help": "Fills {reason} when the bet is above the maximum on the Game page.",
+      "placeholders": [
+        "max",
+        "pointsName"
+      ],
+      "file": "messages.json",
+      "field": "ReasonAboveMaximum"
+    },
+    {
+      "key": "reasonNoInput",
+      "default": "please name an amount, or ask the streamer to set a Default bet.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Bets",
+      "label": "Reason: no amount",
+      "help": "Fills {reason} when no amount was given: Default bet is 0, or a Typed amount redemption came without one.",
+      "placeholders": [],
+      "file": "messages.json",
+      "field": "ReasonNoInput"
+    },
+    {
+      "key": "globalCooldownMessage",
+      "default": "Please wait '{seconds}' seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Everyone",
+      "help": "Sent while the cooldown for everyone runs.",
+      "placeholders": [
+        "seconds",
+        "user"
+      ],
+      "file": "messages.json",
+      "field": "GlobalMessage"
+    },
+    {
+      "key": "userCooldownMessage",
+      "default": "@{user}, please wait '{seconds}' seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Per viewer",
+      "help": "Sent while this viewer's own cooldown runs.",
+      "placeholders": [
+        "user",
+        "seconds"
+      ],
+      "file": "messages.json",
+      "field": "UserMessage"
+    },
+    {
+      "key": "redemptionRefundedMessage",
+      "default": "↩️ @{user}, your channel point redemption was refunded.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Channel points",
+      "label": "Refunded",
+      "help": "Sent when a redemption is refunded.",
+      "placeholders": [
+        "user"
+      ],
+      "file": "messages.json",
+      "field": "RedemptionRefunded"
+    }
+  ]
+}

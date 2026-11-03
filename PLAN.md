@@ -240,8 +240,10 @@ v0.4.0): `action` mit `live`/`panel`/`auto` und `transient`-Felder für Quoten u
 `PlatformEmotes`, Log-Seite aus der Spec; nachgerüstet v0.4.1 bis v0.6.0: Emote-Bilder (Spalte und Feld),
 `requires` mit Bedingung, `Validate` vor dem Speichern, Balken-Panels, `note`-Kind, Aktionen, die Felder setzen.
 Battleship v2.0.0 umgestellt (03.11., v0.6.0): Presets über `set`, Flotten- und Uhr-Zusammenfassung als
-`auto`-Panels, Heat-Marker und OBS-Setup als Jobs, Scoreboard mit demselben Host-Block. Screenshots für alle Docs
-bleiben für den Abschluss (Phase 6).
+`auto`-Panels, Heat-Marker und OBS-Setup als Jobs, Scoreboard mit demselben Host-Block. Classic Chat Gamble v25.0.0 umgestellt (03.11.): Nachrichten bleiben als
+Sidecar-Felder in `messages.json`, Fairness-Presets als Buttons, das Spiel schreibt Free-Game-Zustand und
+Addicted-Liste unter den neuen Keys zurück. Offen in Phase 5: Hangman, Trivia. Screenshots für alle Docs bleiben für
+den Abschluss (Phase 6).
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)
 - Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
