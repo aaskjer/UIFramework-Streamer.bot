@@ -22,6 +22,8 @@ namespace UIFramework
             var lang = conventions.Lang;
             bool customizing = spec.Customizing;
 
+            spec.Problems.Clear();
+
             // 1. Complete every setting and lay the spec's overrides on top.
             var settings = new List<Setting>();
             foreach (var declared in schema.Settings)
@@ -50,6 +52,7 @@ namespace UIFramework
             }
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
+            Check(spec, settings);
 
             // 2. Defaults and aliases for the store.
             spec.Defaults = new JObject();
@@ -108,11 +111,15 @@ namespace UIFramework
                 pageOrder.Add(page);
                 var mine = new List<Setting>();
                 foreach (var pattern in page.Fields)
+                {
+                    if (!Match(pattern, settings).Any())
+                        spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which no setting matches.");
                     foreach (var setting in Match(pattern, settings).Where(s => !claimed.Contains(s.Key)))
                     {
                         claimed.Add(setting.Key);
                         mine.Add(setting);
                     }
+                }
                 pageFields[page.Id] = mine;
             }
 
@@ -161,7 +168,7 @@ namespace UIFramework
                 if (hidden && !customizing)
                     continue;
                 string title = userPage?.Title ?? page.Title ?? lang.Page(page.Id) ?? Conventions.Humanize(page.Id);
-                string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon ?? (conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•");
+                string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
                 // Help and About sit in their own group at the bottom of the rail, apart from the settings pages.
                 bool bottom = page.Bottom || page.Id == "about" || page.Id == "help";
                 var fields = pageFields.TryGetValue(page.Id, out var list) ? list : new List<Setting>();
@@ -192,6 +199,44 @@ namespace UIFramework
                 }
                 spec.Pages.Add(new PageSpec(page.Id, title, icon, build, bottom) { Hidden = hidden });
             }
+        }
+
+        private static readonly HashSet<string> Kinds = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "bool", "int", "long", "duration", "double", "percent", "options", "namelist", "grouplist", "colour", "color",
+            "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list"
+        };
+
+        /// <summary>What a host's author got wrong, in words: an unknown kind, a requirement on a key that is not
+        /// there, a page or pill naming a setting that does not exist.</summary>
+        private static void Check(WindowSpec spec, List<Setting> settings)
+        {
+            var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
+            foreach (var s in settings)
+            {
+                if (s.Kind != null && !Kinds.Contains(s.Kind))
+                    spec.Problems.Add("'" + s.Key + "' has the kind '" + s.Kind + "', which the framework does not know; it is shown as text.");
+                if ((s.Kind == "options" || s.Kind == "slider") && (s.Options == null || s.Options.Count == 0))
+                    spec.Problems.Add("'" + s.Key + "' is " + (s.Kind == "slider" ? "a slider" : "an options field") + " without options.");
+                if (s.Kind == "list" && (s.Columns == null || s.Columns.Count == 0))
+                    spec.Problems.Add("'" + s.Key + "' is a list without columns.");
+                if (!string.IsNullOrWhiteSpace(s.Requires))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(s.Requires.Trim(), @"^!?\s*([A-Za-z_]\w*)");
+                    if (m.Success && !keys.Contains(m.Groups[1].Value))
+                        spec.Problems.Add("'" + s.Key + "' requires '" + m.Groups[1].Value + "', which is not a setting.");
+                }
+                if (s.Min.HasValue && s.Max.HasValue && s.Min > s.Max)
+                    spec.Problems.Add("'" + s.Key + "' has a minimum above its maximum.");
+            }
+            if (!string.IsNullOrEmpty(spec.Log.WriteLogKey) && !keys.Contains(spec.Log.WriteLogKey))
+                spec.Problems.Add("The log page's switch '" + spec.Log.WriteLogKey + "' is not a setting.");
+            foreach (var key in spec.HeaderPillKeys)
+                if (!keys.Contains(key))
+                    spec.Problems.Add("The header pill '" + key + "' is not a setting.");
+            foreach (var key in spec.Overrides.Keys)
+                if (!keys.Contains(key))
+                    spec.Problems.Add("The spec overrides '" + key + "', which is not a setting.");
         }
 
         private static IEnumerable<Setting> Match(string pattern, List<Setting> settings)

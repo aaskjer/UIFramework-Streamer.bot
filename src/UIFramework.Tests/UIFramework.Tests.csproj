@@ -19,4 +19,9 @@
     <ProjectReference Include="..\UIFramework\UIFramework.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The host block a game pastes in, compiled here against a stand-in for Streamer.bot's CPH (HostBlock/Streamerbot.cs). -->
+    <Compile Include="..\..\stub\HostSchema.cs" Link="HostBlock\HostSchema.cs" />
+  </ItemGroup>
+
 </Project>

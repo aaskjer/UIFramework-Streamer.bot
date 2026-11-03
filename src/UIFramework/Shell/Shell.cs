@@ -769,6 +769,15 @@ namespace UIFramework
                 root.Children.Add(bar);
                 window.Title = _spec.Title + " – Settings  ·  Customise";
             }
+            if (_spec.Problems.Count > 0)
+            {
+                // The host's author sees what the schema got wrong without opening Streamer.bot's log.
+                var banner = Ui.Banner(_spec.Problems.Count + " problem" + (_spec.Problems.Count == 1 ? "" : "s") + " in the schema: the About page lists " + (_spec.Problems.Count == 1 ? "it" : "them") + ".", PillStyle.Warning);
+                DockPanel.SetDock(banner, Dock.Top);
+                root.Children.Add(banner);
+                foreach (var problem in _spec.Problems)
+                    _log.Warn(_spec.LogPrefix + " Schema: " + problem);
+            }
             root.Children.Add(footer);
             root.Children.Add(body);
             window.Content = root;

@@ -36,11 +36,13 @@ namespace UIFramework.Preview
             var hooks = new SampleHooks(settings);
             WindowSpec spec;
             string specFile = Arg(args, "-spec"), schemaFile = Arg(args, "-schema");
-            if (specFile != null && schemaFile != null)
+            if (schemaFile != null)
             {
-                // The schema-driven path a stub takes: spec JSON plus the host's describe answer.
-                spec = SpecJson.Parse(File.ReadAllText(specFile), settings);
-                Entry.Prepare(spec, Schema.Parse(File.ReadAllText(schemaFile)));
+                // The schema-driven path a stub takes: the host's describe answer, with the spec JSON of a stub
+                // that carries one, or the window the schema declares (-schema alone).
+                var schema = Schema.Parse(File.ReadAllText(schemaFile));
+                spec = Entry.SpecFor(specFile != null ? File.ReadAllText(specFile) : null, schema, settings);
+                Entry.Prepare(spec, schema);
                 hooks.Answers = spec.Answers;
                 Console.WriteLine($"resolved {spec.Pages.Count} pages, {spec.ResolvedSettings.Count} settings, {spec.Messages.Count} messages, {spec.Aliases.Count} aliases");
             }

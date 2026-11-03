@@ -202,7 +202,7 @@ namespace UIFramework
             results.SelectionChanged += (sender, e) => ApplyFilter();
             platforms.SelectionChanged += (sender, e) => ApplyFilter();
             dates.SelectionChanged += (sender, e) => ApplyFilter();
-            reload.Click += (sender, e) =>
+            void Reload()
             {
                 string keepDay = dates.SelectedItem as string;
                 IEnumerable<LogEntry> reloaded;
@@ -215,11 +215,66 @@ namespace UIFramework
                 grid.SelectedItem = null;
                 details.Text = "";
                 ApplyFilter();
-            };
+            }
+            reload.Click += (sender, e) => Reload();
+            Follow(root, spec, ctx, Reload);
 
             FillDates(null);
             ApplyFilter();
             return root;
+        }
+
+        /// <summary>Reads the log again whenever a file in its folder changes, so a round played in chat shows
+        /// up without the reload button. Writes come in bursts, so a short timer gathers them; a folder that is
+        /// not there yet (no log written so far) is looked for every few seconds. Everything stops with the page.</summary>
+        private static void Follow(FrameworkElement page, LogSpec spec, PageContext ctx, Action reload)
+        {
+            string folder = spec.FullFolder;
+            if (folder == null)
+                return;
+            System.IO.FileSystemWatcher watcher = null;
+            var settle = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            settle.Tick += (sender, e) =>
+            {
+                settle.Stop();
+                try { reload(); }
+                catch (Exception ex) { ctx.Log.Warn(ctx.Spec.LogPrefix + " Log could not be read again: " + ex.Message); }
+            };
+            var dispatcher = page.Dispatcher;
+            void Changed(object sender, System.IO.FileSystemEventArgs e) => dispatcher.BeginInvoke(new Action(() => { settle.Stop(); settle.Start(); }));
+            bool Start()
+            {
+                if (!System.IO.Directory.Exists(folder))
+                    return false;
+                try
+                {
+                    watcher = new System.IO.FileSystemWatcher(folder, string.IsNullOrWhiteSpace(spec.Files) ? "*" : spec.Files)
+                    {
+                        NotifyFilter = System.IO.NotifyFilters.LastWrite | System.IO.NotifyFilters.FileName | System.IO.NotifyFilters.Size
+                    };
+                    watcher.Changed += Changed;
+                    watcher.Created += Changed;
+                    watcher.Renamed += (sender, e) => Changed(sender, e);
+                    watcher.EnableRaisingEvents = true;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    ctx.Log.Warn(ctx.Spec.LogPrefix + " The log folder is not followed: " + ex.Message);
+                    watcher = null;
+                    return true;
+                }
+            }
+            var look = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            look.Tick += (sender, e) => { if (Start()) { look.Stop(); settle.Start(); } };
+            if (!Start())
+                look.Start();
+            page.Unloaded += (sender, e) =>
+            {
+                look.Stop();
+                settle.Stop();
+                if (watcher != null) { watcher.EnableRaisingEvents = false; watcher.Dispose(); watcher = null; }
+            };
         }
 
         private static string Title(string upper) => upper.Length == 0 ? "" : upper.Substring(0, 1) + upper.Substring(1).ToLowerInvariant();

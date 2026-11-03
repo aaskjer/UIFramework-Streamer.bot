@@ -1,39 +1,38 @@
 # Loader
 
-Jede Settings-Aktion (der Stub) trägt den Loader. Er sucht `UIFramework.dll` unter
-`<Streamer.bot>\UIFramework\lib\<version>\` und nimmt die höchste Version.
+Every settings action (the stub) carries the loader. It looks for `UIFramework.dll` under
+`<Streamer.bot>\UIFramework\lib\<version>\` and takes the highest version.
 
-**Erster Start ohne DLL:** ein Dialog fragt
-- **Ja**: `lib/v1/latest.json` aus diesem Repository lesen (Version, URL, SHA-256), die DLL vom Release laden,
-  Hash prüfen, nach `lib\<version>\UIFramework.dll` legen, Fenster öffnen.
-- **Nein**: der Ordner `UIFramework\lib` wird angelegt und im Explorer geöffnet, mit dem Hinweis, die Datei in einen
-  Versionsordner darunter zu legen (Releases-Link im Dialog).
-- **Abbrechen**: nichts passiert; die Aktion loggt eine Warnung.
+**First open without a DLL:** a dialog asks
+- **Yes**: read `lib/v1/latest.json` from this repository (version, URL, SHA-256), download the DLL from the
+  release, check the hash, put it under `lib\<version>\UIFramework.dll`, open the window.
+- **No**: the folder `UIFramework\lib` is created and opened in Explorer, with a note to put the file into a
+  version folder underneath (the releases link is in the dialog).
+- **Cancel**: nothing happens; the action logs a warning.
 
-**Jedes spätere Öffnen des Fensters:** liegt eine DLL vor und `autoUpdate` in `uiframework.layout.json` ist nicht
-`false`, liest der Stub `latest.json` (5 s Timeout). Gibt es eine neuere Version, fragt ein Dialog: **Ja** lädt
-sie in ihren eigenen Ordner; war die alte DLL in diesem Streamer.bot-Lauf noch nicht geladen, öffnet sich das
-Fenster gleich mit der neuen, sonst ab dem nächsten Start. **Nein** fragt beim nächsten Öffnen wieder.
-**Abbrechen** schreibt `skipVersion` in die Layout-Datei; diese Version wird nicht mehr angeboten, die nächste
-schon. Die laufende DLL wird nie überschrieben (sie ist gesperrt und .NET Framework entlädt nicht).
+**Every later open of the window:** with a DLL in place and `autoUpdate` in `uiframework.layout.json` not
+`false`, the stub reads `latest.json` (5 s timeout). When there is a newer version, a dialog asks: **Yes**
+downloads it into its own folder; when the old DLL has not been loaded in this run of Streamer.bot yet, the window
+opens with the new one at once, otherwise from the next start. **No** asks again next time. **Cancel** writes
+`skipVersion` into the layout file: that version is not offered again, the next one is. A running DLL is never
+overwritten (it is locked, and .NET Framework does not unload).
 
-**Pille im Kopf des Fensters:** wer im Update-Dialog *Nein* drückt, sieht im Fenster die Pille
-`UIFramework 0.3.2 available` (Klick öffnet die Releases), bis die Version genommen oder mit *Abbrechen*
-übersprungen ist. Grundlage ist `frameworkAvailable` in `uiframework.layout.json`; *Ja* und *Abbrechen* löschen
-die Notiz wieder.
+**The pill in the window's header:** whoever answers *No* in the update dialog sees the pill
+`UIFramework 0.3.2 available` in the window (a click opens the releases) until the version is taken or skipped
+with *Cancel*. It rests on `frameworkAvailable` in `uiframework.layout.json`; *Yes* and *Cancel* clear the note.
 
-**Woher `latest.json` kommt:** zuerst über die GitHub-API (`contents/lib/v1/latest.json`, ungecacht, 60 Abrufe je
-Stunde und IP); schlägt das fehl, über raw.githubusercontent.com, dessen CDN die Datei bis zu fünf Minuten alt
-liefert. Jede Prüfung schreibt eine Zeile ins Streamer.bot-Log: installierte Version, was `latest.json` sagt, ob
-gefragt, übersprungen oder abgeschaltet wurde.
+**Where `latest.json` comes from:** first through the GitHub API (`contents/lib/v1/latest.json`, uncached, 60
+calls per hour and IP); when that fails, through raw.githubusercontent.com, whose CDN serves the file up to five
+minutes old. Every check writes a line into Streamer.bot's log: the installed version, what `latest.json` says,
+whether it asked, skipped or is turned off.
 
-**Schutz:** HTTPS, SHA-256 aus `latest.json`, ein globaler Mutex, damit mehrere Hosts nicht gleichzeitig laden.
-Die Major-Linie steckt im Pfad (`lib/v1/`): ein inkompatibles v2 landet nie in einem v1-Host.
+**Safety:** HTTPS, SHA-256 from `latest.json`, a global mutex so that several hosts do not download at once. The
+major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host.
 
-**Referenzen:** der Dialog ist eine WPF-MessageBox; die Settings-Aktion braucht `PresentationFramework`,
-`PresentationCore` und `WindowsBase` in ihrer Referenzliste (ein aus einer WPF-Settings-Aktion gewachsener Export
-hat sie). Der Download läuft über `System.Net.WebClient` aus `System.dll`.
+**References:** the dialog is a WPF message box; the settings action needs `PresentationFramework`,
+`PresentationCore` and `WindowsBase` in its references (an export grown out of a WPF settings action has them).
+The download runs through `System.Net.WebClient` from `System.dll`.
 
-**Release:** ein Tag `vX.Y.Z` (die `<Version>` in `UIFramework.csproj` muss gleich sein) lässt
-`.github/workflows/release.yml` bauen, testen, das Release mit `UIFramework.dll` anlegen und `lib/v1/latest.json`
-auf `main` schreiben.
+**Release:** a tag `vX.Y.Z` (the `<Version>` in `UIFramework.csproj` must match) makes
+`.github/workflows/release.yml` build, test, create the release with `UIFramework.dll` and write
+`lib/v1/latest.json` on `main`.

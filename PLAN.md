@@ -396,6 +396,11 @@ Entschieden (04.11.2026): (a) Fenster-Deklaration als C#-Builder im Host-Block; 
 ist eine Datei für alle Projekte, jede Logik läuft über `uiframework.*` in der Spiel-Action; (c) der
 Log-Auto-Refresh (FileSystemWatcher auf `log.folder`, der Button bleibt als Fallback) geht mit in 0.9.0.
 
+Stand 04.11.2026: 7.1 bis 7.4 mit Release 0.9.0 erledigt (Window-Builder, generischer `stub/Stub.cs`,
+`UiHost.Handle`, Banner und Dialog, Log-Watcher, englische Doku, `examples/DemoGame`, `tools/update-host-block.ps1`);
+das Demo-`.sb` folgt, sobald die beiden Actions einmal aus Streamer.bot exportiert sind. Offen: 7.5, die
+Umstellung der Hosts (`tools/spec-to-window.ps1` kommt mit dem ersten Host).
+
 ## 9. Tests und Werkzeuge
 
 - Framework: xUnit-Projekt, läuft in `ci.yml`. Resolve (alle vier Schichten), Layout-Merge, Store-Migration,
