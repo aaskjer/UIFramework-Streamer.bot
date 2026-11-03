@@ -125,6 +125,26 @@ namespace UIFramework.Tests
         });
 
         [Fact]
+        public void LiveValuesSetSwitchesCombosAndBoxes() => Sta(() =>
+        {
+            var (f, parts, _, _) = Make("{}", @"{ ""slots"": 4, ""mode"": ""cost"", ""on"": false, ""bet"": 10, ""rate"": 1.5 }");
+            var page = new StackPanel();
+            page.Children.Add(f.IntCombo("Slots", "slots", new[] { (3, "3"), (4, "4"), (5, "5") }, ""));
+            page.Children.Add(f.StringComboField("Mode", "mode", new[] { ("cost", "Cost"), ("fixed", "Fixed") }, ""));
+            page.Children.Add(f.Toggle("On", "on", ""));
+            page.Children.Add(f.IntField("Bet", "bet", ""));
+            page.Children.Add(f.DoubleField("Rate", "rate", ""));
+            LiveValues.Apply(parts, JObject.Parse(@"{ ""slots"": 5, ""mode"": ""fixed"", ""on"": true, ""bet"": 250, ""rate"": 2.25, ""nothing"": 1 }"));
+            Assert.Equal(5, (int)((ComboBoxItem)parts.Combos["slots"].SelectedItem).Tag);
+            Assert.Equal("fixed", (string)((ComboBoxItem)parts.Combos["mode"].SelectedItem).Tag);
+            Assert.True(parts.Switches["on"].IsChecked);
+            Assert.Equal("250", parts.Boxes["bet"].Text);
+            Assert.Equal("2.25", parts.Boxes["rate"].Text);
+            Assert.NotNull(ResultPanel.TryParse(@"{ ""set"": {} }"));
+            Assert.Null(ResultPanel.TryParse("plain text"));
+        });
+
+        [Fact]
         public void TransientFieldsAreNeitherSavedNorCounted() => Sta(() =>
         {
             var (f, parts, settings, _) = Make(@"{ ""n"": 3 }", @"{ ""n"": 3, ""tryBet"": 1000 }");

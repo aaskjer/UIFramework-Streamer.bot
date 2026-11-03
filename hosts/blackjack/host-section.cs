@@ -84,6 +84,31 @@
 
         public string ReadTable(string key) => null;
 
+        // What would not do what it looks like, one problem per line; the window asks before saving anyway.
+        public string Validate(string settingsJson)
+        {
+            var s = JObject.Parse(settingsJson);
+            var problems = new List<string>();
+            if (!((bool?)s["freeGame"] ?? false) && string.IsNullOrWhiteSpace((string)s["pointsVariable"]))
+                problems.Add("Free Game is off but the points variable is empty, so no stake can ever be taken.");
+            Stakes(s, "minBet", "maxBet", "defaultBet", "the table", problems);
+            Stakes(s, "duelMinBet", "duelMaxBet", null, "a duel", problems);
+            Stakes(s, "houseMinBet", "houseMaxBet", null, "a House seat", problems);
+            return problems.Count == 0 ? null : string.Join("\n", problems);
+        }
+
+        // A minimum above the maximum refuses every stake; a default outside them is reshaped on every hand.
+        private static void Stakes(JObject s, string minKey, string maxKey, string defaultKey, string what, List<string> problems)
+        {
+            long min = (long?)s[minKey] ?? 0, max = (long?)s[maxKey] ?? 0;
+            if (max > 0 && min > max)
+                problems.Add("The minimum stake of " + what + " (" + min + ") is above its maximum (" + max + "), so every stake is refused.");
+            if (defaultKey == null) return;
+            long fallback = (long?)s[defaultKey] ?? 0;
+            if (fallback > 0 && (fallback < min || (max > 0 && fallback > max)))
+                problems.Add("The default bet (" + fallback + ") is outside the minimum and maximum of " + what + ", so a hand without an amount is reshaped every time.");
+        }
+
         public IEnumerable<string> ReadLogLines()
         {
             if (!Directory.Exists(LogsDir))

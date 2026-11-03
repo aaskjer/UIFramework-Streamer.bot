@@ -3,6 +3,14 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.6.0] - 2026-11-03
+
+- `note` kind: a paragraph of text on a page, with no value. Battleship's pages carry their explanations with it.
+- An action's answer may carry `set`, values for other fields of the window, put in as if typed and saved only
+  with Save, and `status`, a line for the footer. Battleship's fleet presets fill in the board and the ships
+  that way.
+- Battleship Game v2.0.0 runs on the framework (`hosts/battleship`).
+
 ## [0.5.0] - 2026-11-03
 
 - `requires` takes a condition on any field, not only a switch: `numberOfSlots>=5`, `cpBetMode=fixed`,

@@ -180,6 +180,13 @@ namespace UIFramework
                 case "emote":
                     element = EmoteField(ctx, s, label, help);
                     break;
+                case "note":
+                {
+                    var note = Ui.Note(string.IsNullOrEmpty(help) ? (s.Default?.Type == JTokenType.String ? (string)s.Default : "") : help);
+                    note.Margin = new Thickness(0, 8, 0, 0);
+                    element = note;
+                    break;
+                }
                 case "text":
                 case "template":
                     var box = f.TemplateBox(label, s.Key);
@@ -289,8 +296,16 @@ namespace UIFramework
                 {
                     var settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings;
                     string result = ctx.Hooks.Test(s.Key, settings);
+                    // An answer as JSON may carry "set" (values for other fields of the window, applied as if typed, nothing
+                    // saved) and "status" (a line for the footer); the rest of it goes to the panel when there is one.
+                    JObject structured = ResultPanel.TryParse(result);
+                    if (structured?["set"] is JObject values)
+                        LiveValues.Apply(ctx.Parts, values);
+                    string status = (string)structured?["status"];
                     if (panel != null)
                         ResultPanel.Render(panel, result ?? "");
+                    else if (structured != null)
+                        ctx.SetStatus(status ?? (label + ": done"), Theme.SuccessText, null);
                     else
                         ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
                 }
