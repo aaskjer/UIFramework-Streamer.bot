@@ -36,7 +36,7 @@ Settings-Datei.
 | `aliasFactors` | nein    | je Alias ein Faktor für den Wert beim Umzug (Bruch zu Prozent: 100)                        |
 | `hidden`       | nein    | true: hat kein Feld, bleibt aber in der Datei                                              |
 | `confirm`      | nein    | für `action`: Frage (Ja/Nein), bevor der Host gerufen wird                                 |
-| `requires`     | nein    | Key eines `bool`; Feld ist ausgegraut, solange der false ist                               |
+| `requires`     | nein    | Key eines `bool`, oder eine Bedingung an ein beliebiges Feld (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`); das Feld ist ausgegraut, solange sie nicht gilt |
 | `advanced`     | nein    | true: nur sichtbar, wenn der Nutzer "Erweitert" einschaltet                                |
 | `readonly`     | nein    | true: Anzeige, kein Eingabefeld (Statuswerte, die der Host schreibt)                       |
 | `transient`    | nein    | true: wird angezeigt, aber nie gespeichert und nie als Änderung gezählt; nur ein Live-Abzug für den Host trägt den Wert (Eingaben eines Probe-Buttons) |
@@ -64,10 +64,13 @@ Settings-Datei.
 | `grouplist` | string      | Chips mit Vorschlägen aus Streamer.bot-Gruppen | gespeichert kommagetrennt                         |
 | `path`      | string      | Textfeld + Ordner-/Datei-Dialog            | relativ zum Streamer.bot-Ordner erlaubt               |
 | `colour`    | string      | Farbfeld + Picker                          | `#rrggbb` oder `#aarrggbb`                            |
-| `emote`     | string      | Textfeld mit Emote-Vorschau                | Plattform-Emotes als Text                             |
+| `emote`     | string      | Textfeld mit dem Bild des Emotes daneben   | `platform` sagt `twitch`, `youtube` oder `kick`; Bilder wie bei der `emote`-Spalte |
 | `list`      | array       | Zeilen-Editor: je Zeile eine Zelle pro Spalte, Entfernen, *Add row*, *Restore defaults* | `columns` Pflicht; leere Zeilen fallen beim Speichern weg; mit `file`/`field` in eigener Datei |
 | `table`     | array       | Tabelle, nur Anzeige                       | für Statistiken, die der Host schreibt                |
-| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst |
+| `action`    | –           | Button                                     | kein Wert; ruft `Test(key, settingsJson)` am Host; Rückgabe = Status, mit `panel` ein Feld unter dem Button, mit `live` aus den aktuellen Werten, mit `auto` ohne Button und von selbst. Eine Antwort als JSON-Objekt `{ "lines": ["…", { "text": "…", "big": true }], "bar": [ { "label": "Win", "value": 27, "text": "27 %", "colour": "#…" } ] }` wird als Balken mit Legende und Zeilen gezeichnet |
+
+Vor dem Speichern fragt das Fenster den Host mit `Validate(settingsJson)`: jede zurückgegebene Zeile ist ein Problem
+(„Minimum bet is above the maximum"), das Fenster zeigt sie und fragt, ob trotzdem gespeichert wird.
 
 `table` und `action` haben keinen Wert in der Datei. `table` holt seine Zeilen mit `ReadTable(key)` vom Host als
 JSON-Array von Objekten, deren Felder die `columns` nennen.

@@ -102,6 +102,29 @@ namespace UIFramework.Tests
         });
 
         [Fact]
+        public void RequirementsFollowSwitchesCombosAndNumbers() => Sta(() =>
+        {
+            var (f, parts, settings, defaults) = Make("{}", @"{ ""slots"": 4, ""mode"": ""cost"", ""on"": false, ""bet"": 10 }");
+            var page = new StackPanel();
+            page.Children.Add(f.IntCombo("Slots", "slots", new[] { (3, "3"), (4, "4"), (5, "5") }, ""));
+            page.Children.Add(f.StringComboField("Mode", "mode", new[] { ("cost", "Cost"), ("fixed", "Fixed") }, ""));
+            page.Children.Add(f.Toggle("On", "on", ""));
+            page.Children.Add(f.IntField("Bet", "bet", ""));
+            bool five = false, fixedMode = false, on = false, bigBet = false, notCost = false;
+            Requirement.Wire(f, parts, "slots>=5", v => five = v);
+            Requirement.Wire(f, parts, "mode=fixed", v => fixedMode = v);
+            Requirement.Wire(f, parts, "on", v => on = v);
+            Requirement.Wire(f, parts, "bet>100", v => bigBet = v);
+            Requirement.Wire(f, parts, "mode!=cost", v => notCost = v);
+            Assert.False(five); Assert.False(fixedMode); Assert.False(on); Assert.False(bigBet); Assert.False(notCost);
+            parts.Combos["slots"].SelectedIndex = 2;
+            parts.Combos["mode"].SelectedIndex = 1;
+            parts.Switches["on"].IsChecked = true;
+            parts.Boxes["bet"].Text = "500";
+            Assert.True(five); Assert.True(fixedMode); Assert.True(on); Assert.True(bigBet); Assert.True(notCost);
+        });
+
+        [Fact]
         public void TransientFieldsAreNeitherSavedNorCounted() => Sta(() =>
         {
             var (f, parts, settings, _) = Make(@"{ ""n"": 3 }", @"{ ""n"": 3, ""tryBet"": 1000 }");

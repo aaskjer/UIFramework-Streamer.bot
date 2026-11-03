@@ -101,6 +101,8 @@ namespace UIFramework
         public string Help;
         public double? Min, Max, Step;
         public string Unit;
+        /// <summary>For an <c>emote</c> field: twitch, youtube or kick, which says where its picture comes from.</summary>
+        public string Platform;
         public double? Factor;
         public bool UnlimitedAtZero;
         public List<SettingOption> Options;
@@ -158,6 +160,7 @@ namespace UIFramework
                 Max = (double?)item["max"],
                 Step = (double?)item["step"],
                 Unit = (string)item["unit"],
+                Platform = (string)item["platform"],
                 Factor = (double?)item["factor"],
                 UnlimitedAtZero = item["unlimitedAtZero"]?.Type == JTokenType.Boolean && (bool)item["unlimitedAtZero"],
                 Requires = (string)item["requires"],
@@ -199,6 +202,7 @@ namespace UIFramework
             if (Max.HasValue) item["max"] = Max.Value;
             if (Step.HasValue) item["step"] = Step.Value;
             if (Unit != null) item["unit"] = Unit;
+            if (Platform != null) item["platform"] = Platform;
             if (Factor.HasValue) item["factor"] = Factor.Value;
             if (UnlimitedAtZero) item["unlimitedAtZero"] = true;
             if (Options != null) item["options"] = new JArray(Options.Select(o => o.ToJson()));

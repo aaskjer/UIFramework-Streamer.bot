@@ -13,7 +13,7 @@ public static class UiSchema
 {
     public sealed class Setting
     {
-        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm;
+        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
@@ -27,18 +27,20 @@ public static class UiSchema
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
-    /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).</summary>
+    /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
-        string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false)
+        string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
+        string platform = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform
         };
     }
 
@@ -62,6 +64,7 @@ public static class UiSchema
             if (s.Min.HasValue) item["min"] = s.Min.Value;
             if (s.Max.HasValue) item["max"] = s.Max.Value;
             if (s.Unit != null) item["unit"] = s.Unit;
+            if (s.Platform != null) item["platform"] = s.Platform;
             if (s.Factor.HasValue) item["factor"] = s.Factor.Value;
             if (s.UnlimitedAtZero) item["unlimitedAtZero"] = true;
             if (s.Hidden) item["hidden"] = true;
@@ -136,9 +139,9 @@ public static class UiSchema
         S("pointsVariable", "points", page: "game", label: "Points variable", help: "The variable your points live in. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own; only change this for a points system of your own.", section: "Bets and points", aliases: new[] { "PointsVar" }),
         S("pointsName", "Points", page: "game", label: "Shown in chat as", help: "The name {currency} puts in chat, like 'Coins' or 'Gems'. Currency Core and LOYALTY POINTS bring their own name, which is used instead.", section: "Bets and points", aliases: new[] { "PointsName" }),
         S("twoMatchPayout", 150.0, page: "game", label: "2 alike", help: "A win pays the bet × payout % × the emote's weight ÷ 100, and never less than the bet. All slots alike is the jackpot, which pays the Jackpot tier whatever the number of slots.", kind: "double", section: "Payouts", min: 0.0, unit: "%", aliases: new[] { "TwoMatchPayout" }),
-        S("threeMatchPayout", 300.0, page: "game", label: "3 alike", help: "With 3 slots, three alike is the jackpot and this tier is not used.", kind: "double", section: "Payouts", min: 0.0, unit: "%", aliases: new[] { "ThreeMatchPayout" }),
-        S("fourMatchPayout", 500.0, page: "game", label: "4 alike", help: "Only with 5 or 6 slots; fewer slots never land four alike short of the jackpot.", kind: "double", section: "Payouts", min: 0.0, unit: "%", aliases: new[] { "FourMatchPayout" }),
-        S("fiveMatchPayout", 1000.0, page: "game", label: "5 alike", help: "Only with 6 slots.", kind: "double", section: "Payouts", min: 0.0, unit: "%", aliases: new[] { "FiveMatchPayout" }),
+        S("threeMatchPayout", 300.0, page: "game", label: "3 alike", help: "With 3 slots, three alike is the jackpot and this tier is not used.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "numberOfSlots>=4", aliases: new[] { "ThreeMatchPayout" }),
+        S("fourMatchPayout", 500.0, page: "game", label: "4 alike", help: "Only with 5 or 6 slots; fewer slots never land four alike short of the jackpot.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "numberOfSlots>=5", aliases: new[] { "FourMatchPayout" }),
+        S("fiveMatchPayout", 1000.0, page: "game", label: "5 alike", help: "Only with 6 slots.", kind: "double", section: "Payouts", min: 0.0, unit: "%", requires: "numberOfSlots>=6", aliases: new[] { "FiveMatchPayout" }),
         S("sixMatchPayout", 1500.0, page: "game", label: "Jackpot", help: "All slots alike, whatever their number: 3 of 3 as much as 6 of 6.", kind: "double", section: "Payouts", min: 0.0, unit: "%", aliases: new[] { "SixMatchPayout" }),
         S("subscriberBoostEnabled", false, page: "game", label: "Subscriber boost", help: "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.", section: "Payouts", aliases: new[] { "SubscriberBoostEnabled" }),
         S("vipBoostEnabled", false, page: "game", label: "VIP boost", help: "Gives Twitch VIPs a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for VIPs.", section: "Payouts", aliases: new[] { "VipBoostEnabled" }),
@@ -161,7 +164,7 @@ public static class UiSchema
         S("isChannelPointsTrigger", false, page: "access", label: "Channel points start a spin", help: "On Twitch, a redemption of the reward below spins instead of the chat command, which is then off on Twitch. The slot machine takes redemptions from Twitch only, so on YouTube and Kick the command keeps working.", section: "Channel points (Twitch)", aliases: new[] { "IsChannelPointsTrigger" }),
         S("rewardId", "", page: "access", label: "Reward ID", help: "The ID of the channel point reward that starts a spin. Other rewards are ignored; without one, no redemption starts a spin. https://ayrtonalexis.com/reward_checker/reward_check.html lists your rewards with their IDs.", section: "Channel points (Twitch)", requires: "isChannelPointsTrigger", aliases: new[] { "TargetRewardId" }),
         S("cpBetMode", "cost", page: "access", label: "What is bet", help: "Reward cost: the reward's price is the bet, paid in channel points; a loss doesn't touch the viewer's points or the jackpot pool, a win is paid in points. Typed amount: viewers type a bet in their own points into the reward, checked against their balance like a chat spin; not enough, and the redemption is refunded. Fixed: every redemption bets the fixed amount below, the price and the text are ignored, the channel points are the stake. Free: nothing is won or lost and the Free messages are used.", kind: "options", section: "Channel points (Twitch)", options: new[] { "cost|Reward cost", "input|Typed amount", "fixed|Fixed", "free|Free" }, requires: "isChannelPointsTrigger", aliases: new[] { "CPBetMode" }),
-        S("fixedBetAmount", 0, page: "access", label: "Fixed bet", help: "What every redemption bets in Fixed mode. Must be more than 0.", section: "Channel points (Twitch)", min: 0.0, requires: "isChannelPointsTrigger", aliases: new[] { "FixedBetAmount" }),
+        S("fixedBetAmount", 0, page: "access", label: "Fixed bet", help: "What every redemption bets in Fixed mode. Must be more than 0.", section: "Channel points (Twitch)", min: 0.0, requires: "cpBetMode=fixed", aliases: new[] { "FixedBetAmount" }),
         S("refundFailedRedemptions", true, page: "access", label: "Refund redemptions that don't end in a spin", help: "When a redemption can't end in a spin - a blocked group, a bet that doesn't work, an addicted viewer still on cooldown, a balance that can't be read or no emotes - it's cancelled and the channel points go back. That only works while the redemption is still in the request queue: a reward that skips the queue can't be refunded.", section: "Channel points (Twitch)", requires: "isChannelPointsTrigger", aliases: new[] { "RefundFailedRedemptions" }),
         S("globalCooldown", 0, page: "access", label: "Everyone", help: "How long nobody can spin after any spin, in seconds. 0 turns it off. Saving writes it onto the chat command in Streamer.bot, so channel point redemptions don't wait for it.", section: "Cooldowns", min: 0.0, aliases: new[] { "CooldownGlobalSeconds" }),
         S("userCooldown", 0, page: "access", label: "Per viewer", help: "How long one viewer waits before their next spin, in seconds. 0 turns it off. Saving writes it onto the chat command in Streamer.bot, so channel point redemptions don't wait for it - except for addicted viewers, whom the game holds to it itself.", section: "Cooldowns", min: 0.0, aliases: new[] { "CooldownUserSeconds" }),
