@@ -46,10 +46,12 @@ public static class UiSchema
         };
     }
 
-    /// <summary>A message template: group, key, default text, label, help, placeholders without braces, old key.</summary>
-    public static Setting Msg(string group, string key, string @default, string label, string help, string[] placeholders, string alias = null)
+    /// <summary>A message template: group, key, default text, label, help, placeholders without braces, old key; file and
+    /// field when the text lives in a file of its own next to the settings file (a messages.json).</summary>
+    public static Setting Msg(string group, string key, string @default, string label, string help, string[] placeholders, string alias = null,
+        string file = null, string field = null)
         => new Setting { Key = key, Default = @default, Kind = "template", Page = "messages", Group = group, Label = label, Help = help,
-                         Placeholders = placeholders, Aliases = alias == null ? null : new[] { alias } };
+                         Placeholders = placeholders, Aliases = alias == null ? null : new[] { alias }, File = file, Field = field };
 
     public static string ToJson(string host, string version, string settingsFile)
     {
