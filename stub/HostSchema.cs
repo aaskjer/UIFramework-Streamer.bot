@@ -1,14 +1,16 @@
 // --- UIFramework host block (keep identical in every action of this host that reads the settings) ---
-// From UIFramework/stub/HostSchema.cs. The game declares its settings once in UiSchema.Table, reads them through
-// UiSettings, and answers the window's describe request with UiSchema.ToJson(). One table, so the game and its
-// window can never disagree. Compiles in any Streamer.bot action with no reference beyond Newtonsoft.Json.
+// From UIFramework/stub/HostSchema.cs (tools/update-host-block.ps1 refreshes it). The game declares its settings
+// once in UiSchema.Table and its window in UiSchema.Window, reads the settings through UiSettings, and lets
+// UiHost.Handle answer the settings window's requests. One table, so the game and its window can never disagree.
+// Compiles in any Streamer.bot action with no reference beyond Newtonsoft.Json.
 //
 // In Execute(), first thing:
-//     if (args.ContainsKey("uiframework.describe"))
-//     {
-//         CPH.SetGlobalVar(UiSchema.Var(ActionName), UiSchema.ToJson("blackjack", CurrentVersion, "Chat Games/Blackjack Game/BJG-Settings.json"), false);
+//     if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, "Demo Game/settings.json"))
 //         return true;
-//     }
+// With a Try button, a check before saving or work after it (see UiHost.Handle):
+//     if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, SettingsFile,
+//             test: (name, s) => name == "tryRoll" ? TryRoll(s) : null, validate: s => Problems(s), saved: s => SetupOverlay(s)))
+//         return true;
 public static class UiSchema
 {
     public sealed class Setting
@@ -111,8 +113,20 @@ public static class UiSchema
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
             settings.Add(item);
         }
-        return new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings }.ToString(Formatting.None);
+        var root = new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
+        if (Window != null) root["window"] = Window.ToJson();
+        return root.ToString(Formatting.None);
     }
+
+    // ---- Shorthands for the window: a page, a help section and its lines, a cooldown. ----
+    public static UiPage P(string id, string title = null, string icon = null, params string[] fields) => new UiPage(id, title, icon, fields);
+    public static UiSection H(string heading, params object[] lines) => new UiSection(heading, lines);
+    public static UiLine Cmd(string command, string what) => new UiLine(new JObject { ["command"] = command, ["what"] = what });
+    public static UiLine Note(string note) => new UiLine(new JObject { ["note"] = note });
+    public static UiLine Link(string text, string url) => new UiLine(new JObject { ["link"] = text, ["url"] = url });
+    /// <summary>A command's cooldowns, set after every save: its id in Streamer.bot, the setting of its global
+    /// cooldown and the setting of its per-user cooldown (either may be null).</summary>
+    public static string[] C(string commandId, string globalKey, string userKey) => new[] { commandId, globalKey, userKey };
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
@@ -126,11 +140,263 @@ public static class UiSchema
         return null;
     }
 
+    // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
+    public static readonly UiWindow Window = null; // __WINDOW__
+
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =
     {
         // __TABLE__
     };
+}
+
+/// <summary>How the window is called and laid out, declared beside the table: what the framework's docs call the
+/// spec (docs/Schema.md, "The window"). Every part is optional; a page a setting names but the window does not is
+/// made up on the way, help and about always sit at the bottom.</summary>
+public sealed class UiWindow
+{
+    public string Title, Releases, Logo, LogPrefix, Language;
+    public double? Width, Height;
+    public readonly List<object> PageList = new List<object>();
+    public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
+    public JObject SenderMap, LogMap, AboutMap;
+    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+
+    /// <param name="title">Window title and About heading.</param>
+    /// <param name="releases">"owner/repo" on GitHub: the repository and releases links, the update check.</param>
+    /// <param name="logo">URL of the logo, for the window icon and About.</param>
+    public UiWindow(string title, string releases = null, string logo = null, string logPrefix = null, double? width = null, double? height = null)
+    {
+        Title = title; Releases = releases; Logo = logo; LogPrefix = logPrefix; Width = width; Height = height;
+    }
+
+    /// <summary>The pages in order: a UiPage (UiSchema.P) or the id of a standard page ("messages", "log", "help", "about").</summary>
+    public UiWindow Pages(params object[] pages) { PageList.AddRange(pages); return this; }
+
+    /// <summary>The Log page: the folder (relative to the Streamer.bot folder) and the files in it, "BJG-log*.txt";
+    /// the bool setting behind "Write a log file per day"; the columns after Time and Result as "Header|field" or a
+    /// field; the values of the Result filter.</summary>
+    public UiWindow Log(string folder, string files, string writeLogKey = null, string writeLogHelp = null, string[] columns = null, string[] results = null,
+        string[] platforms = null, string emptyText = null, string writeLogLabel = null)
+    {
+        LogMap = new JObject { ["folder"] = folder, ["files"] = files };
+        if (writeLogKey != null) LogMap["writeLogKey"] = writeLogKey;
+        if (writeLogLabel != null) LogMap["writeLogLabel"] = writeLogLabel;
+        if (writeLogHelp != null) LogMap["writeLogHelp"] = writeLogHelp;
+        if (emptyText != null) LogMap["emptyText"] = emptyText;
+        if (columns != null)
+        {
+            var list = new JArray();
+            foreach (var column in columns)
+            {
+                int bar = column.IndexOf('|');
+                list.Add(bar < 0 ? (JToken)column : new JObject { ["header"] = column.Substring(0, bar), ["field"] = column.Substring(bar + 1) });
+            }
+            LogMap["columns"] = list;
+        }
+        if (results != null) LogMap["results"] = new JArray(results);
+        if (platforms != null) LogMap["platforms"] = new JArray(platforms);
+        return this;
+    }
+
+    /// <summary>Commands whose cooldowns follow settings (UiSchema.C): the settings action sets them after every save.</summary>
+    public UiWindow Cooldowns(params string[][] cooldowns)
+    {
+        foreach (var c in cooldowns)
+            CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+        return this;
+    }
+
+    /// <summary>A pill in the window's header that follows a bool setting.</summary>
+    public UiWindow Pill(string key, string on, string off = null, string tooltip = null)
+    {
+        var pill = new JObject { ["key"] = key, ["on"] = on };
+        if (off != null) pill["off"] = off;
+        if (tooltip != null) pill["tooltip"] = tooltip;
+        PillList.Add(pill);
+        return this;
+    }
+
+    /// <summary>The keys of the sender switches on the Messages page, where they differ from the conventions'
+    /// (useBot, sendAction, cooldownUseBot, cooldownSendAction, numberSeparator). Null hides one.</summary>
+    public UiWindow Senders(string useBot = "", string sendAction = "", string cooldownUseBot = "", string cooldownSendAction = "", string numberSeparator = "", string cooldownGroup = "")
+    {
+        SenderMap = SenderMap ?? new JObject();
+        if (useBot != "") SenderMap["useBot"] = useBot;
+        if (sendAction != "") SenderMap["sendAction"] = sendAction;
+        if (cooldownUseBot != "") SenderMap["cooldownUseBot"] = cooldownUseBot;
+        if (cooldownSendAction != "") SenderMap["cooldownSendAction"] = cooldownSendAction;
+        if (numberSeparator != "") SenderMap["numberSeparator"] = numberSeparator;
+        if (cooldownGroup != "") SenderMap["cooldownGroup"] = cooldownGroup;
+        return this;
+    }
+
+    /// <summary>Sample values for the chat preview's placeholders, as pairs: "user", "alice", "bet", "1,500".</summary>
+    public UiWindow Samples(params string[] pairs)
+    {
+        for (int i = 0; i + 1 < pairs.Length; i += 2) SampleMap[pairs[i]] = pairs[i + 1];
+        return this;
+    }
+
+    /// <summary>What an action would answer, for the framework's preview and screenshots: text, or a JSON object.</summary>
+    public UiWindow Answer(string action, string answer)
+    {
+        JToken value;
+        try { value = answer != null && answer.TrimStart().StartsWith("{") ? JObject.Parse(answer) : (JToken)answer; }
+        catch (Exception) { value = answer; }
+        AnswerMap[action] = value;
+        return this;
+    }
+
+    /// <summary>What the window changes about one setting of the table, where the table itself should not say it.</summary>
+    public UiWindow Override(string key, string page = null, string label = null, string help = null, string section = null, bool? hidden = null, int? order = null)
+    {
+        var o = new JObject();
+        if (page != null) o["page"] = page;
+        if (label != null) o["label"] = label;
+        if (help != null) o["help"] = help;
+        if (section != null) o["section"] = section;
+        if (hidden.HasValue) o["hidden"] = hidden.Value;
+        if (order.HasValue) o["order"] = order.Value;
+        OverrideMap[key] = o;
+        return this;
+    }
+
+    /// <summary>The Help page's sections (UiSchema.H).</summary>
+    public UiWindow Help(params UiSection[] sections)
+    {
+        foreach (var section in sections) HelpList.Add(section.ToJson());
+        return this;
+    }
+
+    /// <summary>The About page: the credits line, sections like help, links; the Streamer.bot and author links are on unless turned off.</summary>
+    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool authorLink = true)
+    {
+        AboutMap = new JObject();
+        if (credits != null) AboutMap["credits"] = credits;
+        if (sections != null) AboutMap["sections"] = new JArray(sections.Select(s => s.ToJson()));
+        if (links != null) AboutMap["links"] = new JArray(links.Select(l => new JObject { ["text"] = l.Json["link"], ["url"] = l.Json["url"] }));
+        if (!streamerBotLink) AboutMap["streamerBotLink"] = false;
+        if (!authorLink) AboutMap["authorLink"] = false;
+        return this;
+    }
+
+    public JObject ToJson()
+    {
+        var root = new JObject { ["title"] = Title };
+        if (Releases != null) root["releases"] = Releases;
+        if (Logo != null) root["logo"] = Logo;
+        if (LogPrefix != null) root["logPrefix"] = LogPrefix;
+        if (Language != null) root["language"] = Language;
+        if (Width.HasValue) root["width"] = Width.Value;
+        if (Height.HasValue) root["height"] = Height.Value;
+        if (PageList.Count > 0) root["pages"] = new JArray(PageList.Select(p => p is UiPage page ? page.ToJson() : (JToken)p.ToString()));
+        if (OverrideMap.Count > 0) root["overrides"] = OverrideMap;
+        if (SenderMap != null) root["senders"] = SenderMap;
+        if (SampleMap.Count > 0) root["samples"] = SampleMap;
+        if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
+        if (PillList.Count > 0) root["headerPills"] = PillList;
+        if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
+        if (LogMap != null) root["log"] = LogMap;
+        if (HelpList.Count > 0) root["help"] = HelpList;
+        if (AboutMap != null) root["about"] = AboutMap;
+        return root;
+    }
+}
+
+/// <summary>A page of the window: its id, title and icon (an emoji, or a conventions name like "gear"), and the
+/// settings it claims ahead of their own page (keys, or patterns like "overlay*").</summary>
+public sealed class UiPage
+{
+    public string Id, Title, Icon; public string[] Fields; public bool Custom, Bottom;
+    public UiPage(string id, string title, string icon, string[] fields) { Id = id; Title = title; Icon = icon; Fields = fields; }
+    public JObject ToJson()
+    {
+        var page = new JObject { ["id"] = Id };
+        if (Title != null) page["title"] = Title;
+        if (Icon != null) page["icon"] = Icon;
+        if (Fields != null && Fields.Length > 0) page["fields"] = new JArray(Fields);
+        if (Custom) page["custom"] = true;
+        if (Bottom) page["bottom"] = true;
+        return page;
+    }
+}
+
+/// <summary>A section of the Help or About page: a heading and lines, each a note (a string), UiSchema.Cmd or UiSchema.Link.</summary>
+public sealed class UiSection
+{
+    public string Heading; public object[] Lines;
+    public UiSection(string heading, object[] lines) { Heading = heading; Lines = lines; }
+    public JObject ToJson() => new JObject { ["heading"] = Heading, ["lines"] = new JArray(Lines.Select(l => l is UiLine line ? line.Json : (JToken)l.ToString())) };
+}
+
+public sealed class UiLine
+{
+    public readonly JObject Json;
+    public UiLine(JObject json) { Json = json; }
+}
+
+/// <summary>Answers the settings window's requests, which its generic settings action sends through this game's
+/// arguments: "describe" (the table and the window), "test" (a Try button or a live field, with the window's current
+/// values), "validate" (before a save; answer the problems, one per line, or nothing), "saved" (after a save, with the
+/// saved values), "table" (the rows of a table field) and "emotes" (the emote sources, as JSON). The answers go back
+/// through a non-persistent global; the describe answer through UiSchema.Var, the rest through UiHost.AnswerVar.
+/// Every request must leave the game as it was: no chat output, no state written.</summary>
+public static class UiHost
+{
+    public static string AnswerVar(string actionName) =>
+        "uiframework.answer." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+
+    /// <param name="args">The action's arguments.</param>
+    /// <param name="CPH">The action's CPH.</param>
+    /// <param name="actionName">This action's name, as the settings action knows it.</param>
+    /// <param name="host">A short name of the game for the framework's files, "blackjack".</param>
+    /// <param name="version">The game's version, "v17.0.0".</param>
+    /// <param name="settingsFile">The settings file, relative to the Streamer.bot folder.</param>
+    /// <param name="test">Answers a Try button or a live field by its key with the window's current values: a line for the footer, or JSON (docs/Schema.md, kind action). Null for a key: "no answer".</param>
+    /// <param name="validate">Looks at the values about to be saved; answers the problems, one per line, or null.</param>
+    /// <param name="saved">Runs after a save with the saved values: an overlay to write, a timer to restart. The cooldowns the window declares are set by the settings action itself.</param>
+    /// <param name="table">The rows of a table field by its key, as a JSON array of objects.</param>
+    /// <param name="emotes">The emote sources for emote fields, as JSON (docs/Schema.md).</param>
+    /// <returns>True when the action was called by the settings window and has answered; return true at once then.</returns>
+    public static bool Handle(IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile,
+        Func<string, UiSettings, string> test = null, Func<UiSettings, string> validate = null, Action<UiSettings> saved = null,
+        Func<string, string> table = null, Func<string> emotes = null)
+    {
+        string request = Arg(args, "uiframework.request");
+        if (request == null && args.ContainsKey("uiframework.describe")) request = "describe";
+        if (string.IsNullOrEmpty(request))
+            return false;
+        if (request == "describe")
+        {
+            CPH.SetGlobalVar(UiSchema.Var(actionName), UiSchema.ToJson(host, version, settingsFile), false);
+            return true;
+        }
+        string name = Arg(args, "uiframework.name") ?? "";
+        var values = UiSettings.Parse(Arg(args, "uiframework.values"));
+        string answer = null;
+        try
+        {
+            switch (request)
+            {
+                case "test": answer = test?.Invoke(name, values); break;
+                case "validate": answer = validate?.Invoke(values); break;
+                case "saved": saved?.Invoke(values); break;
+                case "table": answer = table?.Invoke(name); break;
+                case "emotes": answer = emotes?.Invoke(); break;
+                default: CPH.LogWarn("[" + actionName + "] The settings window asked for '" + request + "', which this game does not know."); break;
+            }
+        }
+        catch (Exception ex)
+        {
+            CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
+            answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
+        }
+        CPH.SetGlobalVar(AnswerVar(actionName), answer ?? "", false);
+        return true;
+    }
+
+    private static string Arg(IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
 }
 
 /// <summary>The settings file as the game reads it: every key through its default, old key names tolerated. Values
@@ -141,12 +407,22 @@ public sealed class UiSettings
 
     private UiSettings(JObject root) { _root = root; }
 
-    /// <summary>Settings from JSON text, for tests and callers that already hold the file.</summary>
+    /// <summary>Settings from JSON text, for tests and callers that already hold the values; empty text is empty settings.</summary>
     public static UiSettings Parse(string json)
     {
-        using (var reader = new JsonTextReader(new StringReader(json ?? "{}")) { DateParseHandling = DateParseHandling.None })
-            return new UiSettings(JObject.Load(reader));
+        try
+        {
+            using (var reader = new JsonTextReader(new StringReader(string.IsNullOrWhiteSpace(json) ? "{}" : json)) { DateParseHandling = DateParseHandling.None })
+                return new UiSettings(JObject.Load(reader));
+        }
+        catch (Exception)
+        {
+            return new UiSettings(new JObject());
+        }
     }
+
+    /// <summary>The values as they are, for a host that reads them its own way.</summary>
+    public JObject Raw => _root;
 
     /// <summary>Never throws: an unreadable file gives the defaults, and the game keeps running.</summary>
     public static UiSettings Load(string path)

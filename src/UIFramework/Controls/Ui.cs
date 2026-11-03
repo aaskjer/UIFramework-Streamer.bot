@@ -119,6 +119,19 @@ namespace UIFramework
             return items;
         }
 
+        /// <summary>A line across the window in a pill style's colours, for something the user should know
+        /// before reading the page (a schema problem).</summary>
+        public static Border Banner(string text, PillStyle style)
+        {
+            var (background, foreground) = PillColours(style);
+            return new Border
+            {
+                Background = new SolidColorBrush(background),
+                Padding = new Thickness(14, 7, 14, 8),
+                Child = new TextBlock { Text = text, FontSize = 12, Foreground = new SolidColorBrush(foreground), TextWrapping = TextWrapping.Wrap }
+            };
+        }
+
         public static Border Pill(string text, Color background, Color foreground)
         {
             var pill = new Border

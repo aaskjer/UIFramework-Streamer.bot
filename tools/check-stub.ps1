@@ -1,5 +1,10 @@
-# Compiles stub/Stub.cs (with a host's spec embedded) and stub/HostSchema.cs the way Streamer.bot compiles an
-# action: CPHInlineBase as the base class, Streamer.bot's injected usings, only the references every action gets.
+# Compiles the pieces a project pastes into Streamer.bot the way Streamer.bot compiles an action: CPHInlineBase as the
+# base class, Streamer.bot's injected usings, only the references every action gets.
+#   - stub/Stub.cs, the generic settings action, as it is;
+#   - stub/Stub.spec.cs with a host's spec and section embedded (tools/embed-spec.ps1), for hosts not yet moved;
+#   - examples/DemoGame/DemoGame.cs, the example game with the host block (stub/HostSchema.cs) inside; its block
+#     must be the template's (tools/update-host-block.ps1 -Check), and its schema is written to
+#     examples/DemoGame/schema.json for the preview and the docs.
 # Needs a Streamer.bot install for its assemblies and Roslyn, and a RoslynHost front-end, which the game projects
 # build with their tools\build-roslyn-host.ps1 (pass the project folder in -RoslynHostTools).
 #
@@ -17,8 +22,6 @@ New-Item -ItemType Directory -Force -Path $out | Out-Null
 
 $hostExe = @(& (Join-Path $RoslynHostTools 'build-roslyn-host.ps1') -StreamerBotPath $StreamerBotPath)[-1]
 if (-not (Test-Path -LiteralPath $hostExe)) { throw "RoslynHost.exe not built: $hostExe" }
-
-& (Join-Path $PSScriptRoot 'embed-spec.ps1') -HostName $HostName -Out (Join-Path $out 'Stub.cs')
 
 function Get-PatchedSource([string] $code) {
     $injected = @(
@@ -50,36 +53,44 @@ $stubRefs += '-r:' + [Reflection.Assembly]::Load('System.Xaml, Version=4.0.0.0, 
 $utf8 = New-Object Text.UTF8Encoding $false
 $failed = 0
 
-$stubSrc = Join-Path $out 'Stub.patched.cs'
-[IO.File]::WriteAllText($stubSrc, (Get-PatchedSource ([IO.File]::ReadAllText((Join-Path $out 'Stub.cs'), [Text.Encoding]::UTF8))), $utf8)
-$output = & $hostExe (Join-Path $out 'Stub.dll') '-t:library' @stubRefs $stubSrc
-if ($LASTEXITCODE -eq 0) { Write-Host "  ok   stub/Stub.cs compiles as a Streamer.bot action ($HostName spec embedded)" -ForegroundColor Green }
-else { Write-Host '  FAIL stub/Stub.cs:' -ForegroundColor Red; $output | Where-Object { $_ -match 'error' } | Select-Object -First 10 | ForEach-Object { Write-Host "         $_" -ForegroundColor Red }; $failed++ }
-
-# HostSchema.cs sits beside a game's CPHInline; a minimal one stands in for it here.
-$schemaSrc = Join-Path $out 'HostSchema.patched.cs'
-# The block has no usings of its own; the action file it is pasted into supplies these.
-$hostUsings = "using System;`nusing System.IO;`nusing System.Linq;`nusing System.Threading;`nusing System.Globalization;`nusing System.Collections.Generic;`nusing Newtonsoft.Json;`nusing Newtonsoft.Json.Linq;`n"
-$hostCode = $hostUsings + [IO.File]::ReadAllText((Join-Path $root 'stub\HostSchema.cs'), [Text.Encoding]::UTF8) + @'
-
-public class CPHInline
-{
-    public bool Execute()
-    {
-        if (args.ContainsKey("uiframework.describe"))
-        {
-            CPH.SetGlobalVar("uiframework.schema.demo", UiSchema.ToJson("demo", "v1.0.0", "demo/settings.json"), false);
-            return true;
-        }
-        var s = UiSettings.Load("demo.json");
-        return s.Bool("useBot") || s.Int("globalCooldown") >= 0;
-    }
+function Compile([string] $label, [string] $source, [string] $dll, [string[]] $references) {
+    $patchedPath = Join-Path $out ([IO.Path]::GetFileNameWithoutExtension($dll) + '.patched.cs')
+    [IO.File]::WriteAllText($patchedPath, (Get-PatchedSource ([IO.File]::ReadAllText($source, [Text.Encoding]::UTF8))), $utf8)
+    $output = & $hostExe (Join-Path $out $dll) '-t:library' @references $patchedPath
+    if ($LASTEXITCODE -eq 0) { Write-Host "  ok   $label" -ForegroundColor Green; return $true }
+    Write-Host "  FAIL $label" -ForegroundColor Red
+    $output | Where-Object { $_ -match 'error' } | Select-Object -First 10 | ForEach-Object { Write-Host "         $_" -ForegroundColor Red }
+    return $false
 }
-'@
-[IO.File]::WriteAllText($schemaSrc, (Get-PatchedSource $hostCode), $utf8)
-$output = & $hostExe (Join-Path $out 'HostSchema.dll') '-t:library' @refs $schemaSrc
-if ($LASTEXITCODE -eq 0) { Write-Host '  ok   stub/HostSchema.cs compiles inside a Streamer.bot action' -ForegroundColor Green }
-else { Write-Host '  FAIL stub/HostSchema.cs:' -ForegroundColor Red; $output | Where-Object { $_ -match 'error' } | Select-Object -First 10 | ForEach-Object { Write-Host "         $_" -ForegroundColor Red }; $failed++ }
+
+# 1. The generic stub, the same file for every project.
+if (-not (Compile 'stub/Stub.cs compiles as a Streamer.bot action (generic, nothing embedded)' (Join-Path $root 'stub\Stub.cs') 'Stub.dll' $stubRefs)) { $failed++ }
+
+# 2. The spec-carrying stub with a host's spec and section, for hosts not yet moved.
+& (Join-Path $PSScriptRoot 'embed-spec.ps1') -HostName $HostName -Out (Join-Path $out 'Stub.spec.cs')
+if (-not (Compile "stub/Stub.spec.cs compiles with the $HostName spec and section embedded" (Join-Path $out 'Stub.spec.cs') 'Stub.spec.dll' $stubRefs)) { $failed++ }
+
+# 3. The example game: the host block inside it must be the template's, and it must compile as an action.
+$demo = Join-Path $root 'examples\DemoGame\DemoGame.cs'
+& (Join-Path $PSScriptRoot 'update-host-block.ps1') -File $demo -Check
+if ($LASTEXITCODE -ne 0) { $failed++ }
+if (Compile 'examples/DemoGame/DemoGame.cs compiles as a Streamer.bot action (host block inside)' $demo 'Demo.dll' $refs) {
+    # Its schema, as the game would answer describe with, for the preview (-schema) and the docs' screenshots.
+    try {
+        $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Newtonsoft.Json.dll'))
+        $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Streamer.bot.Plugin.Interface.dll'))
+        $assembly = [Reflection.Assembly]::LoadFrom((Join-Path $out 'Demo.dll'))
+        $json = $assembly.GetType('UiSchema').GetMethod('ToJson').Invoke($null, @('demo', 'v1.0.0', 'Demo Game/DemoGame-Settings.json'))
+        $pretty = [Newtonsoft.Json.Linq.JObject]::Parse($json).ToString()
+        $schemaPath = Join-Path $root 'examples\DemoGame\schema.json'
+        $before = if (Test-Path -LiteralPath $schemaPath) { [IO.File]::ReadAllText($schemaPath, [Text.Encoding]::UTF8) } else { '' }
+        if ($before.Replace("`r`n", "`n") -ne ($pretty.Replace("`r`n", "`n") + "`n")) {
+            [IO.File]::WriteAllText($schemaPath, $pretty.Replace("`r`n", "`n") + "`n", $utf8)
+            Write-Host '  ok   examples/DemoGame/schema.json written from the game' -ForegroundColor Green
+        } else { Write-Host '  ok   examples/DemoGame/schema.json is current' -ForegroundColor Green }
+    }
+    catch { Write-Host "  FAIL the demo game's schema could not be read: $($_.Exception.Message)" -ForegroundColor Red; $failed++ }
+} else { $failed++ }
 
 if ($failed -gt 0) { exit 1 }
 exit 0

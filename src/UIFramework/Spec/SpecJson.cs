@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace UIFramework
 {
-    /// <summary>A page as the spec names it, before the schema fills it. See docs/Spec.md.</summary>
+    /// <summary>A page as the spec names it, before the schema fills it. See docs/Schema.md, "The window".</summary>
     public sealed class SpecPage
     {
         public string Id;
@@ -28,17 +28,20 @@ namespace UIFramework
     }
 
     /// <summary>
-    /// Reads the spec JSON a stub carries into a <see cref="WindowSpec"/>. The pages it names are kept as
-    /// <see cref="WindowSpec.SpecPages"/> for <see cref="Resolve"/> to fill from the schema.
+    /// Reads the spec JSON a stub carries, or the window a schema declares (the same JSON), into a
+    /// <see cref="WindowSpec"/>. The pages it names are kept as <see cref="WindowSpec.SpecPages"/> for
+    /// <see cref="Resolve"/> to fill from the schema.
     /// </summary>
     public static class SpecJson
     {
-        public static WindowSpec Parse(string json, string settingsPath = null)
+        public static WindowSpec Parse(string json, string settingsPath = null) => Parse(Root(json), settingsPath);
+
+        /// <summary>The spec JSON as an object; empty text is an empty object.</summary>
+        public static JObject Root(string json)
         {
-            JObject root;
-            using (var reader = new JsonTextReader(new System.IO.StringReader(json ?? "{}")) { DateParseHandling = DateParseHandling.None })
-                root = JObject.Load(reader);
-            return Parse(root, settingsPath);
+            if (string.IsNullOrWhiteSpace(json)) return new JObject();
+            using (var reader = new JsonTextReader(new System.IO.StringReader(json)) { DateParseHandling = DateParseHandling.None })
+                return JObject.Load(reader);
         }
 
         public static WindowSpec Parse(JObject root, string settingsPath = null)
@@ -133,6 +136,7 @@ namespace UIFramework
             if (root["log"] is JObject log)
             {
                 spec.Log.Folder = (string)log["folder"];
+                spec.Log.Files = (string)log["files"];
                 spec.Log.WriteLogKey = (string)log["writeLogKey"];
                 if (log["writeLogLabel"] != null) spec.Log.WriteLogLabel = (string)log["writeLogLabel"];
                 spec.Log.WriteLogHelp = (string)log["writeLogHelp"];
@@ -158,6 +162,7 @@ namespace UIFramework
                     string key = (string)pill["key"];
                     string on = (string)pill["on"], off = (string)pill["off"], tooltip = (string)pill["tooltip"];
                     if (string.IsNullOrEmpty(key)) continue;
+                    spec.HeaderPillKeys.Add(key);
                     spec.HeaderPills.Add(new HeaderPill(tooltip, ctx => ctx.Fields.LiveSwitch(key)
                         ? (on, PillStyle.Success)
                         : (off, off == null ? PillStyle.None : PillStyle.Muted)));

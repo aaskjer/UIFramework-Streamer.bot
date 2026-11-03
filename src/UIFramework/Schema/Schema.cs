@@ -16,6 +16,9 @@ namespace UIFramework
         public string Host = "";
         public string Version = "";
         public string SettingsFile = "";
+        /// <summary>The window as the host declares it beside its settings (title, pages, help, about, log): the
+        /// same JSON a stub's spec carries. Null when the stub brings a spec of its own.</summary>
+        public JObject Window;
         public readonly List<Setting> Settings = new List<Setting>();
 
         public Setting Find(string key) => Settings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
@@ -56,7 +59,8 @@ namespace UIFramework
             {
                 Host = (string)root["host"] ?? "",
                 Version = (string)root["version"] ?? "",
-                SettingsFile = (string)root["settingsFile"] ?? ""
+                SettingsFile = (string)root["settingsFile"] ?? "",
+                Window = root["window"] as JObject
             };
             if (!(root["settings"] is JArray list))
                 throw new ArgumentException("The schema has no 'settings' array.");
@@ -83,6 +87,7 @@ namespace UIFramework
                 ["settingsFile"] = SettingsFile,
                 ["settings"] = new JArray(Settings.Select(s => s.ToJson()))
             };
+            if (Window != null) root["window"] = Window.DeepClone();
             return root;
         }
     }

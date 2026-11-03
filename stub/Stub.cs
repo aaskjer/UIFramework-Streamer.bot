@@ -8,23 +8,43 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Newtonsoft.Json.Linq;
 
-// UIFramework for streamer.bot: the settings action of a host.
+// UIFramework for streamer.bot: the settings action of a host. The same file for every project.
 //
 // This is the whole action. It compiles with no reference beyond what Streamer.bot gives every action, loads
-// UIFramework.dll at run time and hands it three things: the spec (how this window is called and laid out),
-// the schema (what the game knows, asked from the game action) and a Host object the DLL talks back to.
+// UIFramework.dll at run time and hands it the schema (the settings and the window, asked from the game action
+// through uiframework.request = describe) and a Host object the DLL talks back to. Everything the window needs
+// from the game (a Try button's answer, a check before saving, work after it, the log) goes back to the game
+// action the same way, so this file never changes per project: UiHost.Handle in the game answers.
 //
-// The action needs PresentationFramework, PresentationCore and WindowsBase in its references for the first-run
-// dialog (an export made from a WPF settings action has them). Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
-// hosts/<host>/host-section.cs and its spec from hosts/<host>/spec.json into this template. Everything outside
-// the markers is the same in every host; tools/check-stub.ps1 checks that.
+// To use it: paste this file as an action's Execute Code, put the name of the game action into GameActionName,
+// add PresentationFramework, PresentationCore and WindowsBase to the action's references (the first-run dialog
+// is a WPF message box), and trigger the action however you like.
 
 public class CPHInline
 {
-    // ==== HOST ====
+    // ==== The one line to fill in: the action that holds the game and answers the settings window. ====
     private const string GameActionName = "Demo Game";
-    private const string LogPrefix = "[Demo/Settings]";
-    private static readonly string SettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Demo", "settings.json");
+
+    // Known once the game has described itself: the log prefix the window asked for, the settings file, the
+    // window declaration (the generic host reads its log folder and cooldowns from it).
+    private static string LogPrefix = "[" + GameActionName + "/Settings]";
+    private static string SettingsPath;
+    private static JObject Window = new JObject();
+
+    private void ReadSchema(string schemaJson)
+    {
+        var schema = JObject.Parse(schemaJson);
+        Window = schema["window"] as JObject ?? new JObject();
+        string file = (string)schema["settingsFile"];
+        if (string.IsNullOrWhiteSpace(file))
+            throw new InvalidOperationException("The action '" + GameActionName + "' names no settings file (UiHost.Handle's settingsFile).");
+        SettingsPath = Path.IsPathRooted(file) ? file : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, file);
+        LogPrefix = (string)Window["logPrefix"] ?? "[" + ((string)Window["title"] ?? GameActionName) + "/Settings]";
+    }
+
+    // ================================================================================================
+    // HOST: what the DLL calls back. Every answer comes from the game action, asked on Streamer.bot's thread.
+    // ================================================================================================
 
     public sealed class Host
     {
@@ -38,15 +58,47 @@ public class CPHInline
             else _owner.CPH.LogInfo(message);
         }
 
-        public void OnSaved(string settingsJson) { }
-        public string Test(string name, string settingsJson) => null;
-        public string ReadTable(string key) => null;
-        public IEnumerable<string> ReadLogLines() => null;
-    }
-    // ==== END HOST ====
+        // The cooldowns the window declares are set here; the game then hears of the save.
+        public void OnSaved(string settingsJson)
+        {
+            var settings = JObject.Parse(settingsJson);
+            _owner.RunOnBot(() =>
+            {
+                foreach (var cooldown in Window["cooldowns"] as JArray ?? new JArray())
+                {
+                    string command = (string)cooldown["command"], global = (string)cooldown["global"], user = (string)cooldown["user"];
+                    if (string.IsNullOrEmpty(command)) continue;
+                    if (!string.IsNullOrEmpty(global)) _owner.CPH.CommandSetGlobalCooldownDuration(command, Math.Max(0, (int?)settings[global] ?? 0));
+                    if (!string.IsNullOrEmpty(user)) _owner.CPH.CommandSetUserCooldownDuration(command, Math.Max(0, (int?)settings[user] ?? 0));
+                }
+                _owner.AskGameNow("saved", null, settingsJson);
+            }, false);
+        }
 
-    // The spec: see docs/Spec.md. Written in by tools/embed-spec.ps1 from hosts/<host>/spec.json; edit the JSON.
-    private const string Spec = @"__SPEC_JSON__";
+        public string Test(string name, string settingsJson) => _owner.AskGame("test", name, settingsJson);
+        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson);
+        public string ReadTable(string key) => _owner.AskGame("table", key, null);
+        public string EmoteSources() => _owner.AskGame("emotes", null, null);
+
+        // The log as the window declares it: every file matching the pattern in the folder, oldest file first.
+        public IEnumerable<string> ReadLogLines()
+        {
+            var log = Window["log"] as JObject;
+            string folder = (string)log?["folder"], files = (string)log?["files"];
+            if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(files))
+                return null;
+            if (!Path.IsPathRooted(folder)) folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, folder);
+            if (!Directory.Exists(folder))
+                return new string[0];
+            return Directory.GetFiles(folder, files).OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .SelectMany(ReadLinesSafe).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+        }
+
+        private static IEnumerable<string> ReadLinesSafe(string file)
+        {
+            try { return File.ReadAllLines(file); } catch (Exception) { return new string[0]; }
+        }
+    }
 
     // ================================================================================================
     // JOBS: the window runs on its own thread; anything that needs CPH is queued here and run by Pump,
@@ -54,6 +106,7 @@ public class CPHInline
     // ================================================================================================
 
     private readonly ConcurrentQueue<Action> _jobs = new ConcurrentQueue<Action>();
+    private int _botThread;
 
     private void Enqueue(Action job) => _jobs.Enqueue(job);
 
@@ -66,22 +119,58 @@ public class CPHInline
         }
     }
 
-    // The game describes itself: the stub asks, the game answers through a non-persistent global.
-    // Streamer.bot keeps its globals in LiteDB, which refuses some characters in a name (brackets, a trailing
-    // space): the variable takes the action's name with those replaced. The game builds the same name.
-    public static string SchemaVar(string actionName) =>
-        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    /// <summary>Runs a job on Streamer.bot's thread: at once when this is that thread, else through the queue.
+    /// With <paramref name="wait"/> the call blocks until the job ran (five seconds at most) and rethrows what it threw.</summary>
+    private void RunOnBot(Action job, bool wait)
+    {
+        if (Thread.CurrentThread.ManagedThreadId == _botThread) { job(); return; }
+        if (!wait) { Enqueue(job); return; }
+        using (var done = new ManualResetEventSlim(false))
+        {
+            Exception failure = null;
+            Enqueue(() => { try { job(); } catch (Exception ex) { failure = ex; } finally { done.Set(); } });
+            if (!done.Wait(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("the action '" + GameActionName + "' did not answer within five seconds.");
+            if (failure != null) throw failure;
+        }
+    }
+
+    // The game answers the window's requests through non-persistent globals. Streamer.bot keeps its globals in
+    // LiteDB, which refuses some characters in a name (brackets, a trailing space): the variable takes the
+    // action's name with those replaced. The game's UiSchema.Var and UiHost.AnswerVar build the same names.
+    private static string Clean(string actionName) => System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    public static string SchemaVar(string actionName) => "uiframework.schema." + Clean(actionName);
+    public static string AnswerVar(string actionName) => "uiframework.answer." + Clean(actionName);
+
+    /// <summary>Sends a request to the game action on Streamer.bot's thread and returns its answer, null for none.</summary>
+    private string AskGameNow(string request, string name, string values)
+    {
+        string var = request == "describe" ? SchemaVar(GameActionName) : AnswerVar(GameActionName);
+        CPH.UnsetGlobalVar(var, false);
+        CPH.SetArgument("uiframework.request", request);
+        CPH.SetArgument("uiframework.name", name ?? "");
+        CPH.SetArgument("uiframework.values", values ?? "");
+        if (!CPH.RunAction(GameActionName, true))
+            throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled, and is GameActionName in the settings action its exact name?");
+        string answer = CPH.GetGlobalVar<string>(var, false);
+        return string.IsNullOrEmpty(answer) ? null : answer;
+    }
+
+    /// <summary>The same from any thread (the window's): waits for Streamer.bot's thread to run it; a failure is
+    /// logged and answered with null, so a Try button says "no answer" instead of the window dying.</summary>
+    private string AskGame(string request, string name, string values)
+    {
+        string answer = null;
+        try { RunOnBot(() => answer = AskGameNow(request, name, values), true); }
+        catch (Exception ex) { CPH.LogError(LogPrefix + " The game did not answer '" + request + "': " + ex.Message); }
+        return answer;
+    }
 
     private string AskSchema()
     {
-        string var = SchemaVar(GameActionName);
-        CPH.UnsetGlobalVar(var, false);
-        CPH.SetArgument("uiframework.describe", "1");
-        if (!CPH.RunAction(GameActionName, true))
-            throw new InvalidOperationException("The action '" + GameActionName + "' did not run, so there is no schema to show.");
-        string schema = CPH.GetGlobalVar<string>(var, false);
-        if (string.IsNullOrWhiteSpace(schema))
-            throw new InvalidOperationException("The action '" + GameActionName + "' did not describe its settings. Is it the current version?");
+        string schema = AskGameNow("describe", null, null);
+        if (schema == null)
+            throw new InvalidOperationException("The action '" + GameActionName + "' did not describe its settings: it must call UiHost.Handle first thing in Execute (UIFramework's stub/HostSchema.cs). Is it the current version?");
         return schema;
     }
 
@@ -383,6 +472,20 @@ public class CPHInline
 
     public bool Execute()
     {
+        _botThread = Thread.CurrentThread.ManagedThreadId;
+        // The game first: without its answer there is nothing to show, and the settings file is named in it.
+        string schema;
+        try
+        {
+            schema = AskSchema();
+            ReadSchema(schema);
+        }
+        catch (Exception ex)
+        {
+            CPH.LogError(LogPrefix + " The settings window cannot open: " + ex.Message);
+            Ask("The settings window cannot open.\n\n" + ex.Message, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return false;
+        }
         string dll;
         try { dll = EnsureFramework(); }
         catch (Exception ex)
@@ -403,19 +506,15 @@ public class CPHInline
                 CPH.LogError(LogPrefix + " " + dll + " has no UIFramework.Entry.Show; a newer or older build than this action expects.");
                 return false;
             }
-            string schema = AskSchema();
-            _show.Invoke(null, new object[] { Spec, schema, SettingsPath, new Host(this), new Action(Pump) });
+            _show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) });
             Pump();
             return true;
         }
-        catch (TargetInvocationException ex)
-        {
-            CPH.LogError(LogPrefix + " The settings window failed: " + (ex.InnerException ?? ex).Message);
-            return false;
-        }
         catch (Exception ex)
         {
-            CPH.LogError(LogPrefix + " The settings window failed: " + ex.Message);
+            string why = (ex as TargetInvocationException)?.InnerException?.Message ?? ex.Message;
+            CPH.LogError(LogPrefix + " The settings window failed: " + why);
+            Ask("The settings window failed.\n\n" + why, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             return false;
         }
     }
@@ -423,6 +522,6 @@ public class CPHInline
     // Streamer.bot recompiles or shuts down: close the window without asking.
     public void Dispose()
     {
-        try { _close?.Invoke(null, new object[] { SettingsPath }); } catch (Exception) { }
+        try { if (SettingsPath != null) _close?.Invoke(null, new object[] { SettingsPath }); } catch (Exception) { }
     }
 }

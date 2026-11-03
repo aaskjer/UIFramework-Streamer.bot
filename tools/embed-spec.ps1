@@ -1,5 +1,6 @@
-# Writes a host's settings action from the template: stub/Stub.cs with the host's section (hosts/<host>/host-section.cs,
-# between the HOST markers) and its spec (hosts/<host>/spec.json, as the Spec constant) spliced in.
+# Writes a host's settings action from the spec-carrying template: stub/Stub.spec.cs with the host's section
+# (hosts/<host>/host-section.cs, between the HOST markers) and its spec (hosts/<host>/spec.json, as the Spec constant)
+# spliced in. Hosts moved to the generic stub/Stub.cs (which asks the game for everything) do not need this.
 #
 #   tools\embed-spec.ps1 -HostName blackjack -Out "C:\...\Blackjack Game\BlackjackGame-GUI.cs"
 #
@@ -12,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $utf8 = New-Object Text.UTF8Encoding $false
-$template = [IO.File]::ReadAllText((Join-Path $root 'stub\Stub.cs'), [Text.Encoding]::UTF8)
+$template = [IO.File]::ReadAllText((Join-Path $root 'stub\Stub.spec.cs'), [Text.Encoding]::UTF8)
 $specPath = Join-Path $root "hosts\$HostName\spec.json"
 $sectionPath = Join-Path $root "hosts\$HostName\host-section.cs"
 if (-not (Test-Path -LiteralPath $specPath)) { throw "Not found: $specPath" }

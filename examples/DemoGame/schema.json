@@ -1,0 +1,99 @@
+{
+  "host": "demo",
+  "version": "v1.0.0",
+  "settingsFile": "Demo Game/DemoGame-Settings.json",
+  "settings": [
+    {
+      "key": "useBot",
+      "default": true
+    },
+    {
+      "key": "globalCooldown",
+      "default": 10
+    },
+    {
+      "key": "sides",
+      "default": 6,
+      "page": "game",
+      "section": "The die",
+      "label": "Sides of the die",
+      "help": "How many sides the die has; the highest one wins.",
+      "min": 2.0,
+      "max": 100.0
+    },
+    {
+      "key": "pointsPerWin",
+      "default": 10,
+      "page": "game",
+      "section": "The die",
+      "label": "Points per win",
+      "help": "What a roll of the highest side is worth.",
+      "min": 0.0,
+      "max": 100000.0
+    },
+    {
+      "key": "tryRoll",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Try a roll",
+      "label": "Roll",
+      "help": "Rolls once with the values as they stand in the window; nothing goes to chat.",
+      "live": true,
+      "panel": true
+    },
+    {
+      "key": "msgRoll",
+      "default": "@{user} rolls a {roll} on a d{sides}: {result}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Rolls",
+      "label": "Roll",
+      "help": "What chat gets after a roll.",
+      "placeholders": [
+        "user",
+        "roll",
+        "sides",
+        "result"
+      ]
+    }
+  ],
+  "window": {
+    "title": "Demo Game",
+    "releases": "aaskjer/UIFramework-Streamer.bot",
+    "pages": [
+      {
+        "id": "game",
+        "title": "Game",
+        "icon": "dice"
+      },
+      "messages",
+      "help",
+      "about"
+    ],
+    "samples": {
+      "user": "alice",
+      "roll": "6",
+      "sides": "6",
+      "result": "a win, 10 points"
+    },
+    "answers": {
+      "tryRoll": "@alice rolls a 6 on a d6: a win, 10 points."
+    },
+    "help": [
+      {
+        "heading": "Playing",
+        "lines": [
+          {
+            "command": "!roll",
+            "what": "Rolls the die once."
+          },
+          "The highest side wins the points; every other side is no luck."
+        ]
+      }
+    ],
+    "about": {
+      "credits": "An example game for UIFramework for streamer.bot."
+    }
+  }
+}

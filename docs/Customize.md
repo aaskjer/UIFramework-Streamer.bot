@@ -1,31 +1,32 @@
-# Anpassen-Modus und Layout-Datei
+# Customise mode and the layout file
 
-Der Stift-Knopf unten links schaltet den Anpassen-Modus ein. Darin lässt sich das Fenster umbauen, ohne ein
-Script anzufassen; jede Änderung landet sofort in `uiframework.layout.json` neben der Settings-Datei und
-überlebt jeden Import des Hosts.
+The pen button at the bottom left turns the customise mode on. In it the window can be rearranged without
+touching a script; every change lands at once in `uiframework.layout.json` next to the settings file and
+survives every import of the host.
 
-## Im Modus
+## In the mode
 
-- **Felder** haben einen Griff `⋮⋮`. Ziehen und irgendwo auf der Seite loslassen sortiert: über einem anderen
-  Feld nimmt es dessen Platz ein (von oben kommend dahinter, von unten kommend davor), über einer Überschrift
-  oder Lücke landet es dazwischen, unter dem letzten Feld ans Ende; am Rand scrollt die Seite langsam mit. Ziehen auf eine Seite in der Leiste verschiebt dorthin. Rechtsklick: *Rename*, *Hide* / *Show*,
-  *Move to page*, *Reset this field*. Werte sind im Modus nicht editierbar.
-- **Seiten** in der Leiste: Ziehen sortiert die obere Gruppe; Rechtsklick: *Rename*, *Change icon* (Emoji oder
-  Konventionsname wie `gear`, `dice`, `coins`), *Hide* / *Show*, *Reset this page*. `About` lässt sich nicht
-  ausblenden; `Help` und `About` bleiben unten.
-- **Ausgeblendetes** wird im Modus halbtransparent mit dem Vermerk `hidden` gezeigt, damit es sich wieder
-  einblenden lässt. Ein ausgeblendetes Feld behält seinen Wert in der Settings-Datei.
-- **Leiste oben:** Akzentfarbe (blaue Knöpfe, eingeschaltete Schalter, aktive Seite in der Leiste, Links, die
-  Leiste selbst; gilt für jedes UIFramework-Fenster dieses Streamer.bot; übernommen, sobald der Picker zu ist oder
-  das Tippen pausiert), Sprache (`en`, `de`), *Reset layout* (alles außer Theme), *Export* und *Import* der Settings (siehe docs/Schema.md), *Open file*, *Done*.
+- **Fields** have a handle `⋮⋮`. Dragging one and dropping it anywhere on the page sorts: over another field it
+  takes that field's place (behind it when coming from above, in front when coming from below), over a heading
+  or a gap it lands between, under the last field at the end; at the edge the page scrolls along slowly.
+  Dropping on a page in the rail moves it there. Right-click: *Rename*, *Hide* / *Show*, *Move to page*,
+  *Reset this field*. Values are not editable in the mode.
+- **Pages** in the rail: dragging sorts the top group; right-click: *Rename*, *Change icon* (an emoji or a
+  conventions name like `gear`, `dice`, `coins`), *Hide* / *Show*, *Reset this page*. `About` cannot be hidden;
+  `Help` and `About` stay at the bottom.
+- **Hidden things** are shown half-transparent with the note `hidden` in the mode, so they can be shown again.
+  A hidden field keeps its value in the settings file.
+- **The bar at the top:** the accent colour (blue buttons, switches that are on, the active page in the rail,
+  links, the bar itself; for every UIFramework window of this Streamer.bot; taken once the picker closes or the
+  typing pauses), the language (`en`, `de`), *Reset layout* (everything but the theme), *Export* and *Import* of
+  the settings (see docs/Schema.md), *Open file*, *Done*.
+- **Messages:** the templates can be sorted, renamed and hidden on their page; they cannot be dragged to
+  another page.
 
-- **Messages:** die Vorlagen lassen sich auf ihrer Seite umsortieren, umbenennen und ausblenden; auf eine andere
-  Seite ziehen lassen sie sich nicht.
+After every change the window's content is rebuilt in place, on the same page and at the same scroll position;
+the window itself stays where it is.
 
-Nach jeder Änderung baut sich der Inhalt des Fensters an Ort und Stelle neu auf, auf derselben Seite und
-an derselben Scrollposition; das Fenster selbst bleibt, wo es ist.
-
-## Die Datei
+## The file
 
 ```json
 {
@@ -44,22 +45,22 @@ an derselben Scrollposition; das Fenster selbst bleibt, wo es ist.
 }
 ```
 
-| Schlüssel                     | Bedeutung                                                                  |
-|-------------------------------|----------------------------------------------------------------------------|
-| `theme.dark`                  | dunkel (`true`) oder hell; fehlt: dunkel                                   |
-| `theme.rainbow`               | Regenbogen-Modus, nur für ein Öffnen                                       |
-| `theme.accent`                | Akzentfarbe `#rrggbb`; leer: Standardblau                                  |
-| `language`                    | Sprachcode für Labels und Hilfetexte der Konventionen; fehlt: `en`         |
-| `autoUpdate`                  | `false`: der Loader fragt nicht mehr nach neuen Versionen                   |
-| `skipVersion`                 | vom Update-Dialog mit *Abbrechen* gesetzt: diese Version wird nicht mehr angeboten |
-| `frameworkAvailable`          | vom Update-Dialog mit *Nein* gesetzt: diese Version zeigt das Fenster als Pille im Kopf, bis sie genommen oder übersprungen ist |
-| `pages.<id>.title`, `.icon`   | Anzeige der Seite                                                          |
-| `pages.<id>.order`            | Reihenfolge in der oberen Gruppe; Seiten mit `order` kommen zuerst         |
-| `pages.<id>.hidden`           | Seite weg (außer `about`)                                                  |
-| `fields.<key>.page`           | auf welche Seite das Feld gehört                                           |
-| `fields.<key>.order`          | Reihenfolge innerhalb der Seite                                            |
-| `fields.<key>.label`, `.section` | Beschriftung, Abschnittsüberschrift                                     |
-| `fields.<key>.hidden`         | Feld weg; der Wert bleibt in der Settings-Datei                            |
+| Key                            | Meaning                                                                      |
+|--------------------------------|------------------------------------------------------------------------------|
+| `theme.dark`                   | dark (`true`) or light; missing: dark                                        |
+| `theme.rainbow`                | rainbow mode, for one open only                                              |
+| `theme.accent`                 | the accent colour `#rrggbb`; empty: the default blue                         |
+| `language`                     | language code for the conventions' labels and help texts; missing: `en`      |
+| `autoUpdate`                   | `false`: the loader no longer asks about new versions                        |
+| `skipVersion`                  | set by the update dialog's *Cancel*: this version is not offered again       |
+| `frameworkAvailable`           | set by the update dialog's *No*: the window shows this version as a pill in the header until it is taken or skipped |
+| `pages.<id>.title`, `.icon`    | how the page is shown                                                        |
+| `pages.<id>.order`             | the order in the top group; pages with an `order` come first                 |
+| `pages.<id>.hidden`            | the page is gone (except `about`)                                            |
+| `fields.<key>.page`            | which page the field belongs to                                              |
+| `fields.<key>.order`           | the order within the page                                                    |
+| `fields.<key>.label`, `.section` | the label, the section heading                                             |
+| `fields.<key>.hidden`          | the field is gone; the value stays in the settings file                      |
 
-Die Layout-Datei ist die vierte und letzte Schicht über Konventionen, Schema und Spec. Keys, die das Schema nicht
-mehr kennt, werden ignoriert. Hand-Edits sind erlaubt; das Fenster liest die Datei bei jedem Öffnen.
+The layout file is the fourth and last layer over the conventions, the schema and the window declaration. Keys
+the schema no longer knows are ignored. Editing by hand is fine; the window reads the file on every open.

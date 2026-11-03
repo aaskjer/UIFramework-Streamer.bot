@@ -30,9 +30,24 @@ namespace UIFramework
         public static bool Show(string specJson, string schemaJson, string settingsPath, object host, Action pump = null)
         {
             var bridge = new ReflectionHost(host);
-            var spec = SpecJson.Parse(specJson, settingsPath);
             var schema = Schema.Parse(schemaJson);
+            var spec = SpecFor(specJson, schema, settingsPath);
             return Show(spec, schema, bridge, bridge, pump);
+        }
+
+        /// <summary>The spec the stub carries, or, when it carries none, the window the schema declares; a
+        /// window without a title is called after the host.</summary>
+        public static WindowSpec SpecFor(string specJson, Schema schema, string settingsPath)
+        {
+            var root = SpecJson.Root(specJson);
+            if (root.Count == 0 && schema.Window != null)
+                root = schema.Window;
+            var spec = SpecJson.Parse(root, settingsPath);
+            if (root["title"] == null && !string.IsNullOrWhiteSpace(schema.Host))
+                spec.Title = Conventions.Humanize(schema.Host);
+            if (root["logPrefix"] == null)
+                spec.LogPrefix = "[" + spec.Title + "/Settings]";
+            return spec;
         }
 
         /// <summary>Resolves the schema into the spec's pages, then opens the window.</summary>

@@ -78,6 +78,14 @@ namespace UIFramework
         public LogSpec Log = new LogSpec();
         public readonly List<HelpSection> Help = new List<HelpSection>();
 
+        /// <summary>What <see cref="Resolve"/> found wrong with the schema or the spec (an unknown kind, a
+        /// requirement on a key that is not there): shown in a banner and listed on the About page, so the
+        /// host's author sees it without reading Streamer.bot's log.</summary>
+        public readonly List<string> Problems = new List<string>();
+
+        /// <summary>The settings behind the header pills, for the checks.</summary>
+        public readonly List<string> HeaderPillKeys = new List<string>();
+
         /// <summary>Pills shown in the header next to the page title, redrawn when any control changes.</summary>
         public readonly List<HeaderPill> HeaderPills = new List<HeaderPill>();
 
@@ -189,8 +197,22 @@ namespace UIFramework
 
     public sealed class LogSpec
     {
-        /// <summary>Opened by the folder button. Null hides the button.</summary>
+        /// <summary>Opened by the folder button, watched for new entries. Null hides the button. Relative to the
+        /// Streamer.bot folder (<see cref="FullFolder"/>).</summary>
         public string Folder;
+        /// <summary>The log files in the folder, "BJG-log*.txt": what the generic stub reads and the watcher
+        /// follows. Null watches every file in the folder.</summary>
+        public string Files;
+
+        public string FullFolder
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Folder)) return null;
+                try { return System.IO.Path.IsPathRooted(Folder) ? Folder : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Folder); }
+                catch (Exception) { return null; }
+            }
+        }
         /// <summary>Columns after Time and Result: header and the field of <see cref="LogEntry.Fields"/> to show.</summary>
         public readonly List<LogColumn> Columns = new List<LogColumn>();
         /// <summary>Values for the Result filter, in order. Empty: built from the entries.</summary>

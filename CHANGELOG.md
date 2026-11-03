@@ -3,6 +3,35 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.9.0] - 2026-11-04
+
+The framework as a kit: a project binds it with two files and no tooling. Hosts that still carry a spec in
+their settings action run unchanged.
+
+- The game declares its window beside its settings: `UiSchema.Window`, built with `UiWindow` and the
+  shorthands `P`, `H`, `Cmd`, `Note`, `Link`, `C` in the host block, goes into the describe answer as `window`.
+  A stub that brings no spec takes the window from there; a spec it brings still wins. New there: `log.files`
+  (the log files' pattern) and `cooldowns` (commands whose cooldowns follow settings).
+- `stub/Stub.cs` is generic: one file for every project, `GameActionName` its only line to fill in. The settings
+  file, the log and the cooldowns come from the schema; a Try button, the check before a save, the work after it,
+  a table's rows and the emote sources go back to the game action as `uiframework.request` (`test`, `validate`,
+  `saved`, `table`, `emotes`), which `UiHost.Handle` in the host block answers. The spec-carrying template
+  moved to `stub/Stub.spec.cs`; `tools/embed-spec.ps1` reads it from there.
+- What the schema gets wrong (an unknown kind, a requirement on a key that is not a setting, a page naming a
+  pattern no setting matches, a minimum above a maximum, a pill or override on a missing key) is shown as a
+  banner over the window and listed on the About page; a settings action that cannot open its window says why in
+  a dialog instead of a log line.
+- The Log page follows its folder: a round played in chat shows up without the reload button (which stays). The
+  folder is watched for the files the window declares; a folder that is not there yet is looked for.
+- A page's `icon` given as a conventions name (`dice`, `cards`) is turned into its glyph; it was shown as the
+  word.
+- `tools/update-host-block.ps1` refreshes the host block in a game's file and keeps its Window and Table;
+  `tools/check-stub.ps1` compiles the generic stub, the spec stub and `examples/DemoGame`, and writes the demo's
+  schema for the preview (`-schema` alone now opens a window declared in the schema).
+- Docs in English: `docs/Schema.md` (settings, kinds, answers, the window, the game's side; `docs/Spec.md` went
+  into it), `docs/Loader.md`, `docs/Customize.md`, and `docs/Getting-Started.md` with `examples/DemoGame`.
+- 49 tests; the host block compiles inside the test project against a stand-in for Streamer.bot's CPH.
+
 ## [0.8.1] - 2026-11-03
 
 - The captions of a `slider` sit under its stops; they were spread evenly and missed the thumb.

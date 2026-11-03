@@ -57,6 +57,14 @@ namespace UIFramework
             foreach (var section in spec.About.Sections)
                 AddSection(page, section, ctx, false);
 
+            if (spec.Problems.Count > 0)
+            {
+                page.Children.Add(Ui.Section("Schema problems"));
+                page.Children.Add(Ui.Note("What the host declares does not all fit; the window works around it. For the host's author:"));
+                foreach (var problem in spec.Problems)
+                    page.Children.Add(new TextBlock { Text = "•  " + problem, FontSize = 12, Foreground = new SolidColorBrush(Theme.WarningText), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+            }
+
             page.Children.Add(Ui.Section("Links"));
             if (spec.RepoUrl != null)
             {
