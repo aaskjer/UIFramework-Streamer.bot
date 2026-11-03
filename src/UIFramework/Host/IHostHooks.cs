@@ -33,6 +33,10 @@ namespace UIFramework
         /// (the broadcaster, for the channel's 7TV, BTTV, FFZ and Twitch emotes), <c>clientId</c> and <c>token</c>
         /// (for the Twitch API). Null asks only the global 7TV, BTTV and FFZ sets.</summary>
         string EmoteSources();
+
+        /// <summary>Looks at the settings about to be saved and names what would not do what it looks like, one
+        /// problem per line; the window shows them and asks whether to save anyway. Null or empty: nothing to say.</summary>
+        string Validate(JObject settings);
     }
 
     /// <summary>A hooks implementation that does nothing, for previews and hosts without extras.</summary>
@@ -44,5 +48,6 @@ namespace UIFramework
         public virtual IEnumerable<LogEntry> ReadLog() => null;
         public virtual string ReadTable(string key) => null;
         public virtual string EmoteSources() => null;
+        public virtual string Validate(JObject settings) => null;
     }
 }

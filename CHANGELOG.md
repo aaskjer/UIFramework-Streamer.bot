@@ -3,6 +3,19 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.5.0] - 2026-11-03
+
+- `requires` takes a condition on any field, not only a switch: `numberOfSlots>=5`, `cpBetMode=fixed`,
+  `mode!=free`. The field is greyed out while it does not hold and follows the gate live.
+- A host can check the settings before a save: `Validate(settingsJson)` returns the problems, one per line, and
+  the window asks whether to save anyway. Slot Machine names a minimum above the maximum, Free mode off without a
+  points variable, the jackpot pool on with a bet of 0 to win it, and a smallest weight above the largest.
+- An action's panel draws an answer given as JSON: `lines` (a line can be a big headline figure) and `bar`
+  (segments with label, value, text and colour, drawn proportionally with a legend). Slot Machine's odds are a
+  bar of jackpot, win and loss again, with the return of a bet of 100 as the headline.
+- The `emote` field kind is rendered: a text box with the emote's picture beside it, `platform` saying where
+  the picture comes from, like an `emote` column.
+
 ## [0.4.1] - 2026-11-03
 
 - `emote` columns in a `list`: the picture of the emote beside its box. Kick from the `[emote:ID:name]` code, Twitch

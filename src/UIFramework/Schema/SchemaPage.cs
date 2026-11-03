@@ -177,6 +177,9 @@ namespace UIFramework
                 case "path":
                     element = PathField(ctx, s, label, help);
                     break;
+                case "emote":
+                    element = EmoteField(ctx, s, label, help);
+                    break;
                 case "text":
                 case "template":
                     var box = f.TemplateBox(label, s.Key);
@@ -211,15 +214,7 @@ namespace UIFramework
             if (s.Requires != null)
             {
                 var target = element;
-                ctx.AfterBuild.Add(() =>
-                {
-                    if (!ctx.Parts.Switches.TryGetValue(s.Requires, out var gate))
-                        return;
-                    void Apply() => target.IsEnabled = gate.IsChecked == true;
-                    gate.Checked += (sender, e) => Apply();
-                    gate.Unchecked += (sender, e) => Apply();
-                    Apply();
-                });
+                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, s.Requires, on => target.IsEnabled = on));
             }
             return element;
         }
@@ -240,6 +235,23 @@ namespace UIFramework
             foreach (var child in children)
                 panel.Children.Add(child);
             return panel;
+        }
+
+        /// <summary>A text box for one emote with its picture beside it (see <see cref="EmotePictures"/>).</summary>
+        private static FrameworkElement EmoteField(PageContext ctx, Setting s, string label, string help)
+        {
+            var box = ctx.Fields.SettingBox(label, s.Key, help);
+            string platform = (s.Platform ?? "twitch").ToLowerInvariant();
+            if (platform == "youtube")
+                return Ui.Labeled(label, box);
+            var image = EmotePictures.Picture(platform, box.Text, ctx.Hooks);
+            image.Margin = new Thickness(0, 2, 6, 0);
+            box.LostFocus += (sender, e) => EmotePictures.Show(image, platform, box.Text, ctx.Hooks);
+            var dock = new DockPanel();
+            DockPanel.SetDock(image, Dock.Left);
+            dock.Children.Add(image);
+            dock.Children.Add(box);
+            return Ui.Labeled(label, dock);
         }
 
         private static FrameworkElement PathField(PageContext ctx, Setting s, string label, string help)
@@ -267,9 +279,9 @@ namespace UIFramework
         /// no button, the host is asked when the page is shown and after every change, a moment after the last.</summary>
         private static FrameworkElement ActionButton(PageContext ctx, Setting s, string label, string help)
         {
-            TextBlock panel = null;
+            StackPanel panel = null;
             if (s.Panel || s.Auto)
-                panel = new TextBlock { FontSize = 12.5, Foreground = Theme.LabelFg, TextWrapping = TextWrapping.Wrap };
+                panel = new StackPanel();
 
             void Run()
             {
@@ -278,13 +290,13 @@ namespace UIFramework
                     var settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings;
                     string result = ctx.Hooks.Test(s.Key, settings);
                     if (panel != null)
-                        panel.Text = result ?? "";
+                        ResultPanel.Render(panel, result ?? "");
                     else
                         ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
                 }
                 catch (Exception ex)
                 {
-                    if (panel != null) panel.Text = label + " failed: " + ex.Message;
+                    if (panel != null) ResultPanel.Render(panel, label + " failed: " + ex.Message);
                     else ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
                 }
             }

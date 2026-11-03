@@ -13,7 +13,7 @@ public static class UiSchema
 {
     public sealed class Setting
     {
-        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm;
+        public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
@@ -27,18 +27,20 @@ public static class UiSchema
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
-    /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).</summary>
+    /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
-        string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false)
+        string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
+        string platform = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform
         };
     }
 
@@ -62,6 +64,7 @@ public static class UiSchema
             if (s.Min.HasValue) item["min"] = s.Min.Value;
             if (s.Max.HasValue) item["max"] = s.Max.Value;
             if (s.Unit != null) item["unit"] = s.Unit;
+            if (s.Platform != null) item["platform"] = s.Platform;
             if (s.Factor.HasValue) item["factor"] = s.Factor.Value;
             if (s.UnlimitedAtZero) item["unlimitedAtZero"] = true;
             if (s.Hidden) item["hidden"] = true;

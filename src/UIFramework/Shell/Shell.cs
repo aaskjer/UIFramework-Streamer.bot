@@ -714,6 +714,10 @@ namespace UIFramework
                 _spec.Clamp?.Invoke(settings);
 
                 var warnings = _spec.Warnings?.Invoke(settings) ?? new List<string>();
+                string fromHost = null;
+                SafeHook(() => fromHost = _hooks.Validate(settings));
+                if (!string.IsNullOrWhiteSpace(fromHost))
+                    warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
                 if (warnings.Count > 0)
                 {
                     var proceed = MessageBox.Show(

@@ -52,6 +52,27 @@
 
         public string ReadTable(string key) => null;
 
+        // What would not do what it looks like, one problem per line; the window asks before saving anyway.
+        public string Validate(string settingsJson)
+        {
+            var s = JObject.Parse(settingsJson);
+            var problems = new List<string>();
+            long min = (long?)s["minBet"] ?? 0, max = (long?)s["maxBet"] ?? 0;
+            if (min > 0 && max > 0 && min > max)
+                problems.Add("The minimum bet (" + min + ") is above the maximum (" + max + "), so every bet is refused.");
+            if (!((bool?)s["freeGame"] ?? false) && string.IsNullOrWhiteSpace((string)s["pointsVariable"]))
+                problems.Add("Free mode is off but the points variable is empty, so nobody can stake anything.");
+            if (((bool?)s["useJackpotPool"] ?? false) && ((long?)s["jackpotBet"] ?? 0) <= 0)
+                problems.Add("The jackpot pool is on with a bet of 0 to win it, so every jackpot takes the whole pool.");
+            if (((int?)s["minEmoteWeight"] ?? 1) > ((int?)s["maxEmoteWeight"] ?? 10))
+                problems.Add("The smallest emote weight is above the largest, so no emote is within the weights and all of them play.");
+            if (((bool?)s["isChannelPointsTrigger"] ?? false) && string.IsNullOrWhiteSpace((string)s["rewardId"]))
+                problems.Add("Channel points start a spin, but the reward ID is empty, so no redemption starts one.");
+            if (((bool?)s["isChannelPointsTrigger"] ?? false) && ((string)s["cpBetMode"] ?? "cost") == "fixed" && ((long?)s["fixedBetAmount"] ?? 0) <= 0)
+                problems.Add("Channel points bet a fixed amount, but it is 0, so no redemption can spin.");
+            return problems.Count == 0 ? null : string.Join("\n", problems);
+        }
+
         // What the emote pictures of the Twitch list are looked up with: the broadcaster for the channel's 7TV, BTTV,
         // FFZ and Twitch emotes, client id and token for the Twitch API. Read where the DLL asks, like the old window did.
         public string EmoteSources()
@@ -146,10 +167,22 @@
         if (emotes.Count == 0)
             return PlatformName(platform) + " has no emotes yet, so a spin there does nothing. Add some on the Emotes page.";
         var odds = SlotEngine.Simulate(rules, emotes, PayoutsOf(s), OddsSpins, 20261001);
-        return rules.Slots + " slots: " + SlotsDescription(rules.Slots) + "\n"
-             + "Jackpot " + Percent(odds.Jackpot) + "   ·   Win " + Percent(odds.Win) + "   ·   Loss " + Percent(odds.Loss) + "\n"
-             + "A bet of 100 comes back as about " + Amount(s, odds.Return) + ", over " + Amount(s, OddsSpins) + " test spins with the "
-             + PlatformName(platform) + " emotes, for a viewer without boosts, Addicted cut or jackpot pool.";
+        // The window draws this as a bar with a legend and the lines around it (UIFramework docs/Schema.md, action).
+        return new JObject
+        {
+            ["lines"] = new JArray
+            {
+                rules.Slots + " slots: " + SlotsDescription(rules.Slots),
+                new JObject { ["text"] = "A bet of 100 comes back as about " + Amount(s, odds.Return), ["big"] = true },
+                "Worked out from " + Amount(s, OddsSpins) + " test spins with the " + PlatformName(platform) + " emotes, for a viewer without boosts, Addicted cut or jackpot pool."
+            },
+            ["bar"] = new JArray
+            {
+                new JObject { ["label"] = "Jackpot", ["value"] = odds.Jackpot, ["text"] = Percent(odds.Jackpot), ["colour"] = "#F59E0B" },
+                new JObject { ["label"] = "Win", ["value"] = odds.Win, ["text"] = Percent(odds.Win), ["colour"] = "#22C55E" },
+                new JObject { ["label"] = "Loss", ["value"] = odds.Loss, ["text"] = Percent(odds.Loss), ["colour"] = "#6B7280" }
+            }
+        }.ToString(Newtonsoft.Json.Formatting.None);
     }
 
     private static string TrySpin(JObject s, Random dice)
