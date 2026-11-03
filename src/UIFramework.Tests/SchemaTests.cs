@@ -21,7 +21,8 @@ namespace UIFramework.Tests
             { ""key"": ""msgWin"", ""default"": ""@{user} wins {amount}"", ""kind"": ""template"", ""group"": ""Wins"", ""label"": ""Win"", ""placeholders"": [""user"", ""amount""] },
             { ""key"": ""resetBoard"", ""kind"": ""action"", ""page"": ""stats"", ""label"": ""Reset"" },
             { ""key"": ""tryBet"", ""default"": 1000, ""transient"": true },
-            { ""key"": ""odds"", ""kind"": ""action"", ""live"": true, ""panel"": true, ""auto"": true }
+            { ""key"": ""odds"", ""kind"": ""action"", ""live"": true, ""panel"": true, ""auto"": true },
+            { ""key"": ""emotes"", ""default"": [], ""kind"": ""list"", ""columns"": [ { ""key"": ""Code"", ""kind"": ""emote"", ""label"": ""Emote"", ""platform"": ""kick"" }, { ""key"": ""Weight"", ""kind"": ""int"" } ] }
           ] }";
 
         [Fact]
@@ -29,7 +30,11 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(SchemaJson);
             Assert.Equal("demo", schema.Host);
-            Assert.Equal(11, schema.Settings.Count);
+            Assert.Equal(12, schema.Settings.Count);
+            var emotes = schema.Find("emotes");
+            Assert.Equal("kick", emotes.Columns[0].Platform);
+            Assert.Equal("kick", (string)emotes.ToJson()["columns"][0]["platform"]);
+            Assert.Null(emotes.Clone().Columns[1].Platform);
             Assert.True(schema.Find("tryBet").Transient);
             var odds = schema.Find("odds");
             Assert.True(odds.Live && odds.Panel && odds.Auto);

@@ -3,6 +3,13 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [0.4.1] - 2026-11-03
+
+- `emote` columns in a `list`: the picture of the emote beside its box. Kick from the `[emote:ID:name]` code, Twitch
+  by name from the channel's and the global Twitch, 7TV, BTTV and FFZ emotes (the host hands over the broadcaster's
+  id, client id and token in `EmoteSources()`; without it only the global extension sets are asked), YouTube emoji
+  show themselves. Slot Machine's emote lists use them, as the old window did.
+
 ## [0.4.0] - 2026-11-03
 
 - `action` settings can be `live` (the host gets the values as they stand in the window, unsaved ones included),

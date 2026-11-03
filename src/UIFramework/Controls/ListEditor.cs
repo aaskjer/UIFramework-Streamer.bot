@@ -26,6 +26,7 @@ namespace UIFramework
         private readonly TextBlock _count;
         private readonly TextBlock _empty;
         private readonly string _label;
+        private readonly IHostHooks _hooks;
         private bool _loading;
 
         public event Action Changed;
@@ -37,9 +38,10 @@ namespace UIFramework
             public TextBlock Number;
         }
 
-        public ListEditor(string key, string label, List<SettingColumn> columns, JArray value, JArray defaults, string help)
+        public ListEditor(string key, string label, List<SettingColumn> columns, JArray value, JArray defaults, string help, IHostHooks hooks = null)
         {
             _label = label;
+            _hooks = hooks;
             _columns = columns != null && columns.Count > 0 ? columns : new List<SettingColumn> { new SettingColumn { Key = "value", Kind = "string", Label = "Value" } };
             _defaults = defaults;
             Tag = new FieldTag(key, FieldKind.List);
@@ -177,7 +179,7 @@ namespace UIFramework
             {
                 var control = Cell(column, item[column.Key]);
                 row.Cells[column.Key] = control;
-                cells.Add(control);
+                cells.Add(column.Kind == "emote" && control is TextBox emote ? WithPicture(column, emote) : control);
             }
             var remove = Ui.IconButton(Icons.Remove, Icons.Font, "Remove this row");
             remove.VerticalAlignment = VerticalAlignment.Top;
@@ -194,6 +196,22 @@ namespace UIFramework
             _items.Add(row);
             _rows.Children.Add(row.Element);
             return row;
+        }
+
+        /// <summary>An emote cell: its picture beside the box, fetched for the typed code and again when the box is
+        /// left. YouTube emotes are emoji and need no picture.</summary>
+        private FrameworkElement WithPicture(SettingColumn column, TextBox box)
+        {
+            string platform = (column.Platform ?? "twitch").ToLowerInvariant();
+            if (platform == "youtube")
+                return box;
+            var image = EmotePictures.Picture(platform, box.Text, _hooks);
+            box.LostFocus += (sender, e) => EmotePictures.Show(image, platform, box.Text, _hooks);
+            var dock = new DockPanel();
+            DockPanel.SetDock(image, Dock.Left);
+            dock.Children.Add(image);
+            dock.Children.Add(box);
+            return dock;
         }
 
         private Control Cell(SettingColumn column, JToken value)

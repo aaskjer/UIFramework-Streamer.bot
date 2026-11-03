@@ -16,8 +16,9 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
-        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool), and the file next
-        // to the settings file that holds the rows, with the property in it (no field: the file is the array).
+        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
+        // adds "|twitch", "|youtube" or "|kick" for its picture), and the file next to the settings file that holds
+        // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
         // its answer under the button, Auto asks it on show and after every change without a button.
@@ -83,7 +84,9 @@ public static class UiSchema
                 foreach (var column in s.Columns)
                 {
                     var parts = column.Split('|');
-                    columns.Add(new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] });
+                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] };
+                    if (parts.Length > 3) cell["platform"] = parts[3];
+                    columns.Add(cell);
                 }
                 item["columns"] = columns;
             }

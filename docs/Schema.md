@@ -43,7 +43,7 @@ Settings-Datei.
 | `live`         | nein    | für `action`: `Test` bekommt die Werte, wie sie im Fenster stehen, ungespeicherte und flüchtige eingeschlossen |
 | `panel`        | nein    | für `action`: die Antwort steht in einem Feld unter dem Button statt in der Fußzeile       |
 | `auto`         | nein    | für `action`: kein Button; der Host wird beim Anzeigen der Seite und kurz nach jeder Änderung im Fenster gefragt (Quoten, die mitlaufen) |
-| `columns`      | für `list`, `table` | `[{key, kind, label}]`; Kinds `string`, `text` (mehrzeilig, doppelt breit), `int`, `double`, `bool` |
+| `columns`      | für `list`, `table` | `[{key, kind, label}]`; Kinds `string`, `text` (mehrzeilig, doppelt breit), `int`, `double`, `bool`, `emote` (Textfeld mit Bild daneben; `platform` sagt `twitch`, `youtube` oder `kick`: Kick aus `[emote:ID:name]`, Twitch per Name aus Twitch/7TV/BTTV/FFZ mit dem, was `EmoteSources()` des Hosts liefert, YouTube zeigt das Emoji selbst) |
 | `file`         | nein    | Datei neben der Settings-Datei, in der dieser Wert liegt statt in ihr (Wortbank, Fragenliste); relativ oder absolut |
 | `field`        | nein    | mit `file`: die Property in dieser Datei, die den Wert hält; ohne `field` ist die Datei selbst der Wert |
 
