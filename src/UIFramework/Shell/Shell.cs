@@ -39,7 +39,7 @@ namespace UIFramework
             _hooks = hooks ?? new NoHooks();
             if (string.IsNullOrWhiteSpace(spec.SettingsPath))
                 throw new ArgumentException("WindowSpec.SettingsPath is required.");
-            _store = new SettingsStore(spec.SettingsPath, spec.Defaults).WithAliases(spec.Aliases, spec.AliasFactors);
+            _store = new SettingsStore(spec.SettingsPath, spec.Defaults).WithAliases(spec.Aliases, spec.AliasFactors, spec.AliasesShared);
             _gateKey = Path.GetFullPath(spec.SettingsPath);
         }
 
@@ -318,7 +318,7 @@ namespace UIFramework
             {
                 int index = i;
                 var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "•", () => ShowPage(index));
-                item.ToolTip = i < 9 ? pages[i].Spec.Title + " (Ctrl+" + (i + 1) + ")" : pages[i].Spec.Title;
+                item.ToolTip = i < 9 ? pages[i].Spec.Title + " (Ctrl+" + (i + 1) + ")" : i == 9 ? pages[i].Spec.Title + " (Ctrl+0)" : pages[i].Spec.Title;
                 if (customizing)
                     Customize.AttachRail(ctx, pages[i].Spec, item, () => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList());
                 if (pages[i].Spec.Bottom) railBottom.Children.Add(item);
@@ -597,6 +597,11 @@ namespace UIFramework
                 else if (e.Key >= Key.D1 && e.Key <= Key.D9 && e.Key - Key.D1 < pages.Count)
                 {
                     ShowPage(e.Key - Key.D1);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.D0 && pages.Count >= 10)
+                {
+                    ShowPage(9);
                     e.Handled = true;
                 }
             };

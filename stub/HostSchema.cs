@@ -23,6 +23,8 @@ public static class UiSchema
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
         // its answer under the button, Auto asks it on show and after every change without a button.
         public bool Transient, Live, Panel, Auto;
+        // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
+        public bool TwitchOnly;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -33,14 +35,14 @@ public static class UiSchema
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null)
+        string platform = null, bool twitchOnly = false)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly
         };
     }
 
@@ -98,6 +100,7 @@ public static class UiSchema
             if (s.Live) item["live"] = true;
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
+            if (s.TwitchOnly) item["twitchOnly"] = true;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
             if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };

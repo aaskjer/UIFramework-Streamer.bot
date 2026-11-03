@@ -97,6 +97,11 @@ namespace UIFramework
                 foreach (var property in samples.Properties())
                     spec.Samples[property.Name] = property.Value.ToString();
 
+            // What an action would answer, for the preview and the screenshots: text, or a JSON object as the host would send it.
+            if (root["answers"] is JObject answers)
+                foreach (var property in answers.Properties())
+                    spec.Answers[property.Name] = property.Value.Type == JTokenType.String ? (string)property.Value : property.Value.ToString(Newtonsoft.Json.Formatting.None);
+
             if (root["senders"] is JObject senders)
             {
                 spec.Senders.UseBot = (string)senders["useBot"] ?? spec.Senders.UseBot;

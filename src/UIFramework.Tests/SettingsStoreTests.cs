@@ -89,6 +89,21 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void SharedAliasFeedsEverySettingThatNamesIt()
+        {
+            var defaults = JObject.Parse(@"{ ""showPlayerRoster"": true, ""showEnemyRoster"": true }");
+            var store = new SettingsStore(File_, defaults)
+                .WithAliases(new System.Collections.Generic.Dictionary<string, string> { ["OverlayShowRoster"] = "showPlayerRoster" }, null,
+                             new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> { ["OverlayShowRoster"] = new System.Collections.Generic.List<string> { "showEnemyRoster" } });
+            var merged = store.Merged(JObject.Parse(@"{ ""OverlayShowRoster"": false }"));
+            Assert.False((bool)merged["showPlayerRoster"]);
+            Assert.False((bool)merged["showEnemyRoster"]);
+            Assert.Null(merged["OverlayShowRoster"]);
+            var kept = store.Merged(JObject.Parse(@"{ ""OverlayShowRoster"": false, ""showEnemyRoster"": true }"));
+            Assert.True((bool)kept["showEnemyRoster"]);                           // the canonical key in the file wins
+        }
+
+        [Fact]
         public void DatesStayText()
         {
             File.WriteAllText(File_, @"{ ""b"": ""2026-01-01"" }");

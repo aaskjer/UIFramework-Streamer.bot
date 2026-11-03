@@ -55,13 +55,24 @@ namespace UIFramework
             spec.Defaults = new JObject();
             spec.Aliases.Clear();
             spec.AliasFactors.Clear();
+            spec.AliasesShared.Clear();
             foreach (var setting in settings)
             {
                 if (setting.Kind != "table" && setting.Kind != "action" && setting.Kind != "note")
                     spec.Defaults[setting.Key] = setting.Default?.DeepClone() ?? JValue.CreateNull();
                 foreach (var alias in setting.Aliases)
+                {
                     if (!spec.Aliases.ContainsKey(alias))
                         spec.Aliases[alias] = setting.Key;
+                    else if (spec.Aliases[alias] != setting.Key)
+                    {
+                        // One old key for two settings: both take its value on the move.
+                        if (!spec.AliasesShared.TryGetValue(alias, out var more))
+                            spec.AliasesShared[alias] = more = new List<string>();
+                        if (!more.Contains(setting.Key))
+                            more.Add(setting.Key);
+                    }
+                }
                 foreach (var factor in setting.AliasFactors)
                     spec.AliasFactors[factor.Key] = factor.Value;
             }

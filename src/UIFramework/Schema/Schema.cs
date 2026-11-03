@@ -116,6 +116,8 @@ namespace UIFramework
         /// <summary>Shown and taken into a live snapshot, but never written to the file and never counted as a
         /// change: the inputs of a Try button.</summary>
         public bool Transient;
+        /// <summary>For a bool: the switch carries a "Twitch only" pill.</summary>
+        public bool TwitchOnly;
         /// <summary>For an action: the host gets the values as they stand in the window, unsaved ones included.</summary>
         public bool Live;
         /// <summary>For an action: the host's answer is shown in a panel under the button instead of the footer.</summary>
@@ -169,6 +171,7 @@ namespace UIFramework
                 ReadOnly = item["readonly"]?.Type == JTokenType.Boolean && (bool)item["readonly"],
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
+                TwitchOnly = item["twitchOnly"]?.Type == JTokenType.Boolean && (bool)item["twitchOnly"],
                 Live = item["live"]?.Type == JTokenType.Boolean && (bool)item["live"],
                 Panel = item["panel"]?.Type == JTokenType.Boolean && (bool)item["panel"],
                 Auto = item["auto"]?.Type == JTokenType.Boolean && (bool)item["auto"],
@@ -213,6 +216,7 @@ namespace UIFramework
             if (ReadOnly) item["readonly"] = true;
             if (Hidden) item["hidden"] = true;
             if (Transient) item["transient"] = true;
+            if (TwitchOnly) item["twitchOnly"] = true;
             if (Live) item["live"] = true;
             if (Panel) item["panel"] = true;
             if (Auto) item["auto"] = true;

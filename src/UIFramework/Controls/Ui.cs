@@ -177,6 +177,25 @@ namespace UIFramework
             return block;
         }
 
+        /// <summary>A note whose http(s) addresses are links.</summary>
+        public static TextBlock NoteWithLinks(string text, Action<string> open)
+        {
+            var note = Note("");
+            int at = 0;
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text ?? "", @"https?://[^\s)\]>""']+"))
+            {
+                if (m.Index > at) note.Inlines.Add(new Run(text.Substring(at, m.Index - at)));
+                string url = m.Value.TrimEnd('.', ',', ';', ':');
+                var link = new Hyperlink { Foreground = new SolidColorBrush(Theme.AccentText), Cursor = Cursors.Hand, ToolTip = url };
+                link.Inlines.Add(new Run(url));
+                link.Click += (s, e) => open?.Invoke(url);
+                note.Inlines.Add(link);
+                at = m.Index + url.Length;
+            }
+            if (at < (text ?? "").Length) note.Inlines.Add(new Run(text.Substring(at)));
+            return note;
+        }
+
         public static TextBlock LinkLine(string text, string url, Action<string> open)
         {
             var line = LinkText(text, url, null, open);

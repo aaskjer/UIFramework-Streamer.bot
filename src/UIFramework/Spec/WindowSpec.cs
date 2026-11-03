@@ -55,6 +55,11 @@ namespace UIFramework
         /// <summary>Old key to canonical key, for the store's migration on load.</summary>
         public readonly Dictionary<string, string> Aliases = new Dictionary<string, string>(StringComparer.Ordinal);
         public readonly Dictionary<string, double> AliasFactors = new Dictionary<string, double>(StringComparer.Ordinal);
+        /// <summary>An old key two or more settings share (one old switch that became two): the further canonical keys.</summary>
+        public readonly Dictionary<string, List<string>> AliasesShared = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
+        /// <summary>Sample answers for the preview: action key to what the host would answer (text or JSON).</summary>
+        public readonly Dictionary<string, string> Answers = new Dictionary<string, string>(StringComparer.Ordinal);
 
         /// <summary>The message templates for the Messages page, in picker order. Empty: no Messages page.</summary>
         public readonly List<MessageDef> Messages = new List<MessageDef>();
