@@ -17,7 +17,7 @@ Script anzufassen; jede Änderung landet sofort in `uiframework.layout.json` neb
   einblenden lässt. Ein ausgeblendetes Feld behält seinen Wert in der Settings-Datei.
 - **Leiste oben:** Akzentfarbe (blaue Knöpfe, eingeschaltete Schalter, aktive Seite in der Leiste, Links, die
   Leiste selbst; gilt für jedes UIFramework-Fenster dieses Streamer.bot; übernommen, sobald der Picker zu ist oder
-  das Tippen pausiert), Sprache (`en`, `de`), *Reset layout* (alles außer Theme), *Open file*, *Done*.
+  das Tippen pausiert), Sprache (`en`, `de`), *Reset layout* (alles außer Theme), *Export* und *Import* der Settings (siehe docs/Schema.md), *Open file*, *Done*.
 
 - **Messages:** die Vorlagen lassen sich auf ihrer Seite umsortieren, umbenennen und ausblenden; auf eine andere
   Seite ziehen lassen sie sich nicht.

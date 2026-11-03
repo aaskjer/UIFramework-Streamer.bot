@@ -513,19 +513,14 @@ namespace UIFramework
                 Rebuild(null);
             };
 
-            // Export writes every setting as it stands in the window to a file of the user's choosing; import reads
-            // such a file (or a settings file) into the window, as if typed, so Save is what keeps it.
-            var btnExport = Ui.IconButton(Icons.Export, Icons.Font, "Export every setting as it stands in the window to a file");
-            btnExport.Margin = new Thickness(6, 0, 0, 0);
-            var btnImport = Ui.IconButton(Icons.Import, Icons.Font, "Import settings from an exported file into the window; nothing is saved until you save");
-            btnImport.Margin = new Thickness(6, 0, 0, 0);
+            // Export and import live in the customise mode's bar. Export writes the saved settings to a file of the
+            // user's choosing; import replaces the saved settings with such a file (or a settings file) at once, old
+            // keys through the aliases, and rebuilds the window on them.
             string hostName = _spec.Schema?.Host ?? _spec.Title ?? "settings";
             string Folder() { try { return Path.GetDirectoryName(_spec.SettingsPath); } catch (Exception) { return null; } }
-            btnExport.Click += (s, e) =>
+            void Export()
             {
-                parts.CommitNames();
                 var live = (JObject)settings.DeepClone();
-                FieldBinding.Save(live, pageHost);
                 Sidecars.DropTransient(live, _spec.ResolvedSettings);
                 var export = new JObject
                 {
@@ -549,8 +544,7 @@ namespace UIFramework
                 try
                 {
                     File.WriteAllText(dialog.FileName, export.ToString(Formatting.Indented));
-                    int unsaved = Changes();
-                    SetStatus("Exported to " + Path.GetFileName(dialog.FileName) + (unsaved > 0 ? ", with " + unsaved + " unsaved change" + (unsaved == 1 ? "" : "s") : ""), Theme.SuccessText, dialog.FileName);
+                    SetStatus("Exported to " + Path.GetFileName(dialog.FileName), Theme.SuccessText, dialog.FileName);
                     _log.Info(_spec.LogPrefix + " Settings exported to " + dialog.FileName);
                 }
                 catch (Exception ex)
@@ -558,8 +552,8 @@ namespace UIFramework
                     SetStatus("Not exported", Theme.DangerText, ex.Message);
                     MessageBox.Show("The file could not be written:\n\n" + ex.Message, "Export Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
-            };
-            btnImport.Click += (s, e) =>
+            }
+            void Import()
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
@@ -610,21 +604,30 @@ namespace UIFramework
                     return;
                 }
                 var answer = MessageBox.Show(
-                    "Put " + known.Count + " setting" + (known.Count == 1 ? "" : "s") + " from " + Path.GetFileName(dialog.FileName) + " into the window?" +
+                    "Replace the saved settings with " + known.Count + " setting" + (known.Count == 1 ? "" : "s") + " from " + Path.GetFileName(dialog.FileName) + "?" +
                     (unknown > 0 ? "\n" + unknown + " entr" + (unknown == 1 ? "y" : "ies") + " the window does not know " + (unknown == 1 ? "is" : "are") + " skipped." : "") +
-                    "\nThe values replace what the window shows; nothing is saved until you save.",
+                    "\nThe file is written at once; the settings as they were are kept as " + Path.GetFileName(_spec.SettingsPath) + ".bak.",
                     "Import Settings", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes)
                     return;
-                var placed = FieldBinding.Apply(pageHost, known, true);
-                // A setting without a field (hidden) goes straight into the settings, for the next save.
-                foreach (var property in known.Properties().Where(p => !placed.Contains(p.Name)))
-                    settings[property.Name] = property.Value.DeepClone();
-                foreach (var page in pages)
-                    parts.Refresh(page.Spec.Id);
-                SetStatus("Imported " + known.Count + " setting" + (known.Count == 1 ? "" : "s") + " from " + Path.GetFileName(dialog.FileName) + "; save to keep them", Theme.UnsavedText, dialog.FileName);
-                _log.Info(_spec.LogPrefix + " Settings imported from " + dialog.FileName + " (" + known.Count + " taken, " + unknown + " skipped).");
-            };
+                var merged = (JObject)settings.DeepClone();
+                foreach (var property in known.Properties())
+                    merged[property.Name] = property.Value.DeepClone();
+                try
+                {
+                    _spec.Clamp?.Invoke(merged);
+                    _store.Save(Sidecars.Split(merged, _spec.ResolvedSettings, _spec.SettingsPath));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("The settings could not be written:\n\n" + ex.Message, "Import Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                SafeHook(() => _hooks.OnSaved(merged));
+                settings = merged;
+                _log.Info(_spec.LogPrefix + " Settings imported from " + dialog.FileName + " (" + known.Count + " taken, " + unknown + " skipped) and saved.");
+                Rebuild(null);
+            }
 
             btnSave.Click += (s, e) => SaveNow();
             btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = true; window.Close(); } };
@@ -728,8 +731,6 @@ namespace UIFramework
             leftButtons.Children.Add(btnReset);
             leftButtons.Children.Add(btnResetPage);
             leftButtons.Children.Add(btnCustomize);
-            leftButtons.Children.Add(btnExport);
-            leftButtons.Children.Add(btnImport);
             var rightButtons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             rightButtons.Children.Add(status);
             if (customizing)
@@ -738,7 +739,6 @@ namespace UIFramework
                 // Nothing to save in the customise mode: values are frozen, the layout file is written on every change.
                 btnReset.IsEnabled = false;
                 btnResetPage.IsEnabled = false;
-                btnImport.IsEnabled = false;
                 btnSave.Visibility = Visibility.Collapsed;
                 btnSaveExit.Visibility = Visibility.Collapsed;
                 btnCancel.Content = "Close";
@@ -764,7 +764,7 @@ namespace UIFramework
             root.Children.Add(headerBorder);
             if (customizing)
             {
-                var bar = Customize.Bar(ctx, () => { _spec.Customizing = false; Rebuild(null); });
+                var bar = Customize.Bar(ctx, () => { _spec.Customizing = false; Rebuild(null); }, Export, Import);
                 DockPanel.SetDock(bar, Dock.Top);
                 root.Children.Add(bar);
                 window.Title = _spec.Title + " – Settings  ·  Customise";

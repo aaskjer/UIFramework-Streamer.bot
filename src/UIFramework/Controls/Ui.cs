@@ -425,26 +425,39 @@ namespace UIFramework
             return template;
         }
 
+        public const int SliderThumb = 18;
+
         /// <summary>A thin track with the accent up to a round thumb, in the theme's colours.</summary>
         public static ControlTemplate SliderTemplate()
         {
             string xaml =
                 "<ControlTemplate TargetType=\"Slider\" xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">" +
                 "<Grid Background=\"Transparent\" VerticalAlignment=\"Center\" MinHeight=\"22\">" +
-                "<Border Height=\"4\" CornerRadius=\"2\" VerticalAlignment=\"Center\" Margin=\"9,0\" Background=\"" + Colours.ToHex(Theme.LineStrong) + "\"/>" +
+                "<Border Height=\"4\" CornerRadius=\"2\" VerticalAlignment=\"Center\" Margin=\"" + (SliderThumb / 2) + ",0\" Background=\"" + Colours.ToHex(Theme.LineStrong) + "\"/>" +
                 "<Track x:Name=\"PART_Track\">" +
                 "<Track.DecreaseRepeatButton><RepeatButton Command=\"Slider.DecreaseLarge\" Focusable=\"False\"><RepeatButton.Template><ControlTemplate TargetType=\"RepeatButton\">" +
-                "<Border Background=\"Transparent\"><Border Height=\"4\" CornerRadius=\"2\" VerticalAlignment=\"Center\" Margin=\"9,0,0,0\" Background=\"" + Colours.ToHex(Theme.Accent) + "\"/></Border>" +
+                "<Border Background=\"Transparent\"><Border Height=\"4\" CornerRadius=\"2\" VerticalAlignment=\"Center\" Margin=\"" + (SliderThumb / 2) + ",0,0,0\" Background=\"" + Colours.ToHex(Theme.Accent) + "\"/></Border>" +
                 "</ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>" +
                 "<Track.IncreaseRepeatButton><RepeatButton Command=\"Slider.IncreaseLarge\" Focusable=\"False\"><RepeatButton.Template><ControlTemplate TargetType=\"RepeatButton\">" +
                 "<Border Background=\"Transparent\"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>" +
-                "<Track.Thumb><Thumb Width=\"18\" Height=\"18\" Cursor=\"Hand\"><Thumb.Template><ControlTemplate TargetType=\"Thumb\">" +
+                "<Track.Thumb><Thumb Width=\"" + SliderThumb + "\" Height=\"" + SliderThumb + "\" Cursor=\"Hand\"><Thumb.Template><ControlTemplate TargetType=\"Thumb\">" +
                 "<Ellipse x:Name=\"Dot\" Fill=\"" + Colours.ToHex(Theme.ContentBg) + "\" Stroke=\"" + Colours.ToHex(Theme.Accent) + "\" StrokeThickness=\"2\"/>" +
                 "<ControlTemplate.Triggers><Trigger Property=\"IsMouseOver\" Value=\"True\"><Setter TargetName=\"Dot\" Property=\"Fill\" Value=\"" + Colours.ToHex(Theme.Accent) + "\"/></Trigger>" +
                 "<Trigger Property=\"IsDragging\" Value=\"True\"><Setter TargetName=\"Dot\" Property=\"Fill\" Value=\"" + Colours.ToHex(Theme.Accent) + "\"/></Trigger></ControlTemplate.Triggers>" +
                 "</ControlTemplate></Thumb.Template></Thumb></Track.Thumb>" +
                 "</Track></Grid></ControlTemplate>";
             return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        /// <summary>A glow in the accent colour that fades out, on a field another field or the host just changed, so
+        /// the eye finds what moved.</summary>
+        public static void Flash(FrameworkElement control)
+        {
+            var glow = new System.Windows.Media.Effects.DropShadowEffect { Color = Theme.Accent, BlurRadius = 22, ShadowDepth = 0, Opacity = 1.0 };
+            control.Effect = glow;
+            var fade = new System.Windows.Media.Animation.DoubleAnimation(1.0, 0, TimeSpan.FromMilliseconds(1400)) { BeginTime = TimeSpan.FromMilliseconds(900) };
+            fade.Completed += (sender, e) => { if (ReferenceEquals(control.Effect, glow)) control.Effect = null; };
+            glow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, fade);
         }
 
         // ---- Tooltips ----------------------------------------------------------------------------------
