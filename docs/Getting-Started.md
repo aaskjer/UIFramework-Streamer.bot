@@ -71,8 +71,7 @@ Make a second action, paste [`stub/Stub.cs`](../stub/Stub.cs) as its Execute Cod
 private const string GameActionName = "Demo Game";
 ```
 
-Add `PresentationFramework`, `PresentationCore` and `WindowsBase` to the action's references (the first-run
-dialog is a WPF message box). Give it a trigger: a command, a hotkey, a button in a deck.
+Nothing to add to the action's references. Give it a trigger: a command, a hotkey, a button in a deck.
 
 That is all. Run the settings action: the first time it asks whether to download `UIFramework.dll` into
 `<Streamer.bot>\UIFramework\lib\`; then the window opens with your pages, a Messages page with a chat preview,

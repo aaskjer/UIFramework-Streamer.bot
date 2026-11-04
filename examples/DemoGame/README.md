@@ -12,7 +12,6 @@ message, a Try button. The walk-through is [docs/Getting-Started.md](../../docs/
 In Streamer.bot:
 
 1. Action **Demo Game**, sub-action *Execute Code* with `DemoGame.cs`; trigger: command `!roll`.
-2. Action **Demo Game Settings**, sub-action *Execute Code* with `stub/Stub.cs`, references
-   `PresentationFramework`, `PresentationCore`, `WindowsBase` added; trigger: command `!demosettings`, or a
-   button.
+2. Action **Demo Game Settings**, sub-action *Execute Code* with `stub/Stub.cs`, no references to add; trigger:
+   command `!demosettings`, or a button.
 3. Run the settings action. It offers to download `UIFramework.dll`; the window opens.

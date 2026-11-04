@@ -29,9 +29,8 @@ whether it asked, skipped or is turned off.
 **Safety:** HTTPS, SHA-256 from `latest.json`, a global mutex so that several hosts do not download at once. The
 major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host.
 
-**References:** the dialog is a WPF message box; the settings action needs `PresentationFramework`,
-`PresentationCore` and `WindowsBase` in its references (an export grown out of a WPF settings action has them).
-The download runs through `System.Net.WebClient` from `System.dll`.
+**References:** none to add. The dialogs are Win32 message boxes (`user32.dll` through P/Invoke), the download
+runs through `System.Net.WebClient` from `System.dll`; both come with the references every action has.
 
 **Release:** a tag `vX.Y.Z` (the `<Version>` in `UIFramework.csproj` must match) makes
 `.github/workflows/release.yml` build, test, create the release with `UIFramework.dll` and write

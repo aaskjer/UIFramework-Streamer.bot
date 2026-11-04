@@ -46,10 +46,8 @@ $refs = @('Streamer.bot.Plugin.Interface.dll', 'Streamer.bot.Common.dll', 'Newto
     ForEach-Object { '-r:' + (Join-Path $StreamerBotPath $_) }
 $refs += '-r:' + [object].Assembly.Location
 $refs += '-r:' + [System.Linq.Enumerable].Assembly.Location
-# The stub's first-run dialog is a WPF message box; the settings action ships these references.
-$wpf = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\WPF'
-$stubRefs = @($refs) + @('PresentationFramework.dll', 'PresentationCore.dll', 'WindowsBase.dll' | ForEach-Object { '-r:' + (Join-Path $wpf $_) })
-$stubRefs += '-r:' + [Reflection.Assembly]::Load('System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089').Location
+# The stubs compile with the references every Streamer.bot action has; their dialogs are Win32 message boxes.
+$stubRefs = @($refs)
 $utf8 = New-Object Text.UTF8Encoding $false
 $failed = 0
 

@@ -3,6 +3,13 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [Unreleased]
+
+- The stubs (`stub/Stub.cs`, `stub/Stub.spec.cs`) compile without `PresentationFramework`, `PresentationCore`
+  and `WindowsBase` in the action's references: the first-run and update dialogs are Win32 message boxes
+  (`user32.dll`) instead of WPF ones. A fresh action with the generic stub pasted in compiled with
+  `MessageBoxButton does not exist in the namespace System.Windows` before.
+
 ## [0.9.0] - 2026-11-04
 
 The framework as a kit: a project binds it with two files and no tooling. Hosts that still carry a spec in
