@@ -150,8 +150,10 @@ public class CPHInline
         CPH.SetArgument("uiframework.name", name ?? "");
         CPH.SetArgument("uiframework.values", values ?? "");
         CPH.SetArgument("uiframework.var", var);   // where the answer goes; the game uses it over its own name
+        if (!CPH.ActionExists(GameActionName))
+            throw new InvalidOperationException("There is no action named '" + GameActionName + "' in this Streamer.bot. GameActionName in the settings action must be the game action's exact name.");
         if (!CPH.RunAction(GameActionName, true))
-            throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled, and is GameActionName in the settings action its exact name?");
+            throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled?");
         string answer = CPH.GetGlobalVar<string>(var, false);
         return string.IsNullOrEmpty(answer) ? null : answer;
     }
@@ -171,7 +173,8 @@ public class CPHInline
         string schema = AskGameNow("describe", null, null);
         if (schema == null)
             throw new InvalidOperationException("The action '" + GameActionName + "' ran but did not answer with its settings.\n\n" +
-                "Look in Streamer.bot's log just above this line: a compile error in '" + GameActionName + "' or an exception from it shows there.\n" +
+                "Look in Streamer.bot's log just above this line. A game action that ran shows there as 'InlineCode :: Running default entry point' (log level debug); " +
+                "nothing of the kind means the action has no enabled Execute Code sub-action with the game in it. A compile error or an exception from the game shows there too.\n" +
                 "Then check the action's code: Execute() must call UiHost.Handle(args, CPH, ...) before anything else, and the host block " +
                 "at its end must be the current one (UIFramework's stub/HostSchema.cs; tools/update-host-block.ps1 refreshes it).");
         return schema;

@@ -7,7 +7,8 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 - The settings action tells the game which global to answer into (`uiframework.var`), so the game's
   `ActionName` constant and the action's name in Streamer.bot cannot drift apart; the host block logs a line when
-  it has described its settings, and the stub's dialog for a game that did not answer says where to look.
+  it has described its settings, the stub says when no action of that name exists, and its dialog for a game that
+  did not answer says where to look.
 - The stubs (`stub/Stub.cs`, `stub/Stub.spec.cs`) compile without `PresentationFramework`, `PresentationCore`
   and `WindowsBase` in the action's references: the first-run and update dialogs are Win32 message boxes
   (`user32.dll`) instead of WPF ones. A fresh action with the generic stub pasted in compiled with
