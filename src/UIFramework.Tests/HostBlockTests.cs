@@ -91,6 +91,8 @@ namespace UIFramework.Tests
             Assert.Equal("Demo/settings.json", (string)described["settingsFile"]);
 
             Assert.True(Handle(new Dictionary<string, object> { ["uiframework.describe"] = "1" }));   // the old flag still describes
+            Assert.True(Handle(new Dictionary<string, object> { ["uiframework.request"] = "describe", ["uiframework.var"] = "uiframework.schema.Other Name" }));
+            Assert.Contains("\"host\"", (string)cph.Globals["uiframework.schema.Other Name"]);   // the stub names the global; the game's own name does not matter
 
             Assert.True(Handle(new Dictionary<string, object> { ["uiframework.request"] = "test", ["uiframework.name"] = "tryRoll", ["uiframework.values"] = "{\"sides\": 8}" }));
             Assert.Equal("tryRoll", tested);

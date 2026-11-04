@@ -149,6 +149,7 @@ public class CPHInline
         CPH.SetArgument("uiframework.request", request);
         CPH.SetArgument("uiframework.name", name ?? "");
         CPH.SetArgument("uiframework.values", values ?? "");
+        CPH.SetArgument("uiframework.var", var);   // where the answer goes; the game uses it over its own name
         if (!CPH.RunAction(GameActionName, true))
             throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled, and is GameActionName in the settings action its exact name?");
         string answer = CPH.GetGlobalVar<string>(var, false);
@@ -169,7 +170,10 @@ public class CPHInline
     {
         string schema = AskGameNow("describe", null, null);
         if (schema == null)
-            throw new InvalidOperationException("The action '" + GameActionName + "' did not describe its settings: it must call UiHost.Handle first thing in Execute (UIFramework's stub/HostSchema.cs). Is it the current version?");
+            throw new InvalidOperationException("The action '" + GameActionName + "' ran but did not answer with its settings.\n\n" +
+                "Look in Streamer.bot's log just above this line: a compile error in '" + GameActionName + "' or an exception from it shows there.\n" +
+                "Then check the action's code: Execute() must call UiHost.Handle(args, CPH, ...) before anything else, and the host block " +
+                "at its end must be the current one (UIFramework's stub/HostSchema.cs; tools/update-host-block.ps1 refreshes it).");
         return schema;
     }
 

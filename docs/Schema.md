@@ -169,7 +169,10 @@ builder, see the git history of `docs/Spec.md`) wins over the window in the sche
 
 `UiHost.Handle(args, CPH, actionName, host, version, settingsFile, …)` is the first thing the game's action calls.
 It answers the settings action's requests and returns true, so the action returns at once; otherwise it returns
-false and the game plays. Every request must leave the game as it was: no chat output, no state written.
+false and the game plays. Every request must leave the game as it was: no chat output, no state written. The
+request comes in the arguments `uiframework.request`, `uiframework.name`, `uiframework.values` and
+`uiframework.var` (the global the answer goes into, so the name the game knows itself by never matters); the
+describe answer leaves a line in Streamer.bot's log.
 
 | Request    | When                                     | The game's part                                                     |
 |------------|------------------------------------------|---------------------------------------------------------------------|
