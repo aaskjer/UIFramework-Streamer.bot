@@ -137,7 +137,14 @@ public class CPHInline
     // The game answers the window's requests through non-persistent globals. Streamer.bot keeps its globals in
     // LiteDB, which refuses some characters in a name (brackets, a trailing space): the variable takes the
     // action's name with those replaced. The game's UiSchema.Var and UiHost.AnswerVar build the same names.
-    private static string Clean(string actionName) => System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    // The same cleaning as UiSchema.Clean in the host block, without Regex: letters, digits, space, dot and dash stay.
+    private static string Clean(string actionName)
+    {
+        var chars = (actionName ?? "").Trim().ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_' && chars[i] != ' ' && chars[i] != '.' && chars[i] != '-') chars[i] = '_';
+        return new string(chars);
+    }
     public static string SchemaVar(string actionName) => "uiframework.schema." + Clean(actionName);
     public static string AnswerVar(string actionName) => "uiframework.answer." + Clean(actionName);
 

@@ -3,6 +3,16 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [Unreleased]
+
+- Classic Chat Gamble is the second host on the generic stub (v25.1.0, in German too); `hosts/chatgamble` lost its
+  `spec.json` and `host-section.cs`, the schema carries the window. `tools/spec-to-window.ps1` writes an answer
+  that is an object as its JSON and takes the log's file pattern from the old host section.
+- The host block and the stubs no longer use Regex to clean an action's name (`UiSchema.Clean`): a game action
+  that ships without a reference to System.dll compiles again. A game's own code must not use a `JArray`
+  collection initializer for the same reason (`new JArray(a, b)` does).
+- Conventions: the two boost percentages lost the "(%)" in their labels, which the percent field adds itself.
+
 ## [0.9.2] - 2026-11-05
 
 The window in German all the way, a game's own translations, a one-row customise bar.

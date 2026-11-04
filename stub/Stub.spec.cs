@@ -72,7 +72,7 @@ public class CPHInline
     // Streamer.bot keeps its globals in LiteDB, which refuses some characters in a name (brackets, a trailing
     // space): the variable takes the action's name with those replaced. The game builds the same name.
     public static string SchemaVar(string actionName) =>
-        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+        "uiframework.schema." + new string((actionName ?? "").Trim().Select(c => char.IsLetterOrDigit(c) || c == '_' || c == ' ' || c == '.' || c == '-' ? c : '_').ToArray());
 
     private string AskSchema()
     {
