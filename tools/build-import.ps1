@@ -10,10 +10,14 @@
 #   tools\build-import.ps1                                   # the demo's export, written when it is behind
 #   tools\build-import.ps1 -Check                            # fail when it is behind (check-stub runs this)
 #   tools\build-import.ps1 -Path C:\...\MyGame.sb -Map @{ 'My Game' = 'C:\...\MyGame.cs'; 'My Game Settings' = 'C:\...\Stub.cs' } -VersionFrom C:\...\MyGame.cs
+#
+# -ImportString names a Markdown file that carries the export as a string to paste (exactly one line starting
+# with U0JBRR); it is rewritten to the export after the export is current. The demo's README is the default.
 param(
     [string] $Path,
     [hashtable] $Map,
     [string] $VersionFrom,
+    [string] $ImportString,
     [switch] $Check
 )
 
@@ -25,6 +29,7 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 if (-not $Path) { $Path = Join-Path $root 'examples\DemoGame\DemoGame.sb' }
 if (-not $Map) { $Map = @{ 'Demo Game' = (Join-Path $root 'examples\DemoGame\DemoGame.cs'); '.Demo GUI' = (Join-Path $root 'stub\Stub.cs') } }
 if (-not $VersionFrom -and $Map.ContainsKey('Demo Game')) { $VersionFrom = $Map['Demo Game'] }
+if (-not $ImportString -and $Map.ContainsKey('Demo Game')) { $ImportString = Join-Path $root 'examples\DemoGame\README.md' }
 $name = Split-Path -Leaf $Path
 
 # An export is Base64 of "SBAE" followed by the gzipped JSON.
@@ -121,8 +126,27 @@ if ($VersionFrom) {
     } else { Write-Host "  note no CurrentVersion in $(Split-Path -Leaf $VersionFrom); the export's version stays" -ForegroundColor DarkYellow }
 }
 
+# The Markdown file's import string, held on the export's text.
+function Update-ImportString([string] $exportText) {
+    if (-not $ImportString) { return $true }
+    $mdName = Split-Path -Leaf $ImportString
+    if (-not (Test-Path -LiteralPath $ImportString)) { Write-Host "  FAIL $mdName is missing" -ForegroundColor Red; return $false }
+    $text = [System.IO.File]::ReadAllText($ImportString, $utf8)
+    $found = [regex]::Matches($text, 'U0JBRR[A-Za-z0-9+/=]+')
+    if ($found.Count -ne 1) { Write-Host "  FAIL $mdName holds $($found.Count) import strings, expected exactly one" -ForegroundColor Red; return $false }
+    if ($found[0].Value -ceq $exportText) { Write-Host "  ok   $mdName carries this export" -ForegroundColor Green; return $true }
+    if ($Check) { Write-Host "  FAIL $mdName carries another import string; run tools\build-import.ps1" -ForegroundColor Red; return $false }
+    $text = $text.Substring(0, $found[0].Index) + $exportText + $text.Substring($found[0].Index + $found[0].Length)
+    [System.IO.File]::WriteAllText($ImportString, $text, $utf8)
+    Write-Host "  ok   $mdName now carries this export" -ForegroundColor Green
+    return $true
+}
+
 if ($failed -gt 0) { throw "$name not written." }
-if ($changes.Count -eq 0) { Write-Host "  ok   $name carries the current scripts" -ForegroundColor Green; exit 0 }
+if ($changes.Count -eq 0) {
+    Write-Host "  ok   $name carries the current scripts" -ForegroundColor Green
+    if (Update-ImportString $raw.Trim()) { exit 0 } else { exit 1 }
+}
 if ($Check) {
     foreach ($line in $changes) { Write-Host $line }
     Write-Host "  FAIL $name is behind; run tools\build-import.ps1" -ForegroundColor Red
@@ -145,4 +169,4 @@ if ($raw -match '(\r?\n)+$') { $tail = $Matches[0] }
 [System.IO.File]::WriteAllText($Path, $encoded + $tail, [System.Text.Encoding]::ASCII)
 foreach ($line in $changes) { Write-Host $line }
 Write-Host "  ok   $name written" -ForegroundColor Green
-exit 0
+if (Update-ImportString $encoded) { exit 0 } else { exit 1 }
