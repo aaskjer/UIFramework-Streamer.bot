@@ -11,6 +11,7 @@ namespace UIFramework
         public const string Sun = "", Moon = "", Reset = "", Refresh = "";
         public const string Remove = "", Open = "", ChevronDown = "";
         public const string Edit = "", Pin = "", Folder = "", Check = "";
+        public const string Undo = "";
         public const string Export = "", Import = "";
     }
 }

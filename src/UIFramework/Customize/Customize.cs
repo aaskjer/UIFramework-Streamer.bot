@@ -327,14 +327,30 @@ namespace UIFramework
 
         // ---- The bar under the header ------------------------------------------------------------------
 
+        /// <summary>A small label to the left of a control, on one line with it.</summary>
+        private static FrameworkElement Beside(string label, FrameworkElement control, double gapBefore)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            row.Children.Add(new TextBlock
+            {
+                Text = label,
+                FontSize = 11,
+                Foreground = Theme.SubFg,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(gapBefore, 0, 6, 0)
+            });
+            row.Children.Add(control);
+            return row;
+        }
+
         public static FrameworkElement Bar(PageContext ctx, Action done, Action exportSettings = null, Action importSettings = null)
         {
             var text = new TextBlock
             {
-                FontSize = 12,
+                FontSize = 11,
                 Foreground = Theme.LabelFg,
                 TextWrapping = TextWrapping.Wrap,
-                VerticalAlignment = VerticalAlignment.Center
+                Margin = new Thickness(0, 8, 0, 0)
             };
             void DrawText()
             {
@@ -344,10 +360,11 @@ namespace UIFramework
             DrawText();
 
             var accentFields = new Fields(ctx.Parts, new JObject { ["accent"] = ctx.Layout.Accent }, new JObject { ["accent"] = "" }, ctx.OpenUrl);
-            var accent = accentFields.ColourField(Text.T("cust.accent"), "accent", Text.T("cust.accent.tip"));
+            var accent = accentFields.ColourField(Text.T("cust.accent"), "accent", Text.T("cust.accent.tip"), labelled: false);
             if (ctx.Parts.Boxes.TryGetValue("accent", out var accentBox))
             {
                 accentBox.Tag = null;   // not a setting; never saved into the host's file
+                accentBox.Width = 76;   // a hex code is seven characters; the bar is one row
                 var fields = accentFields;
                 // The picker writes into the box while it is open, and the box never had the focus then: the colour
                 // is taken once the picker has closed, when typing pauses, on Enter and on leaving the box.
@@ -380,7 +397,8 @@ namespace UIFramework
                 Commit(ctx, null);
             };
 
-            var reset = Ui.TextButton(Text.T("cust.resetLayout"), false);
+            // Icon buttons like the footer's: the texts are their tooltips, so the bar stays one row wide.
+            var reset = Ui.IconButton(Icons.Undo, Icons.Font, Text.T("cust.resetLayout"));
             reset.Click += (s, e) =>
             {
                 if (ctx.Layout.ChangeCount == 0) return;
@@ -389,34 +407,42 @@ namespace UIFramework
                 ctx.Layout.ResetLayout();
                 Commit(ctx, null);
             };
-            var open = Ui.TextButton(Text.T("cust.openFile"), false);
-            open.ToolTip = ctx.Layout.Path;
+            var open = Ui.IconButton(Icons.Open, Icons.Font, Text.T("cust.openFile") + "\n" + ctx.Layout.Path);
             open.Click += (s, e) => Web.OpenUrl(ctx.Layout.Path, ctx.Log, ctx.Spec.LogPrefix);
-            var export = Ui.TextButton(Text.T("cust.export"), false);
-            export.ToolTip = Text.T("cust.export.tip");
+            var export = Ui.IconButton(Icons.Export, Icons.Font, Text.T("cust.export") + ": " + Text.T("cust.export.tip"));
             export.Click += (s, e) => exportSettings?.Invoke();
-            var import = Ui.TextButton(Text.T("cust.import"), false);
-            import.ToolTip = Text.T("cust.import.tip");
+            var import = Ui.IconButton(Icons.Import, Icons.Font, Text.T("cust.import") + ": " + Text.T("cust.import.tip"));
             import.Click += (s, e) => importSettings?.Invoke();
             var finish = Ui.TextButton(Text.T("btn.done"), true);
+            finish.Margin = new Thickness(8, 0, 0, 0);
             finish.Click += (s, e) => done();
 
-            var controls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
-            controls.Children.Add(Ui.Labeled(Text.T("cust.language"), language));
+            // One row: the colour and the language on the left, the buttons on the right (wrapping under them
+            // when the window is narrow), and the hint as one line of its own underneath, over the full width.
+            var choices = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            choices.Children.Add(Beside(Text.T("cust.accent"), accent, 0));
+            choices.Children.Add(Beside(Text.T("cust.language"), language, 12));
+            var controls = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+            foreach (var button in new[] { reset, export, import, open })
+            {
+                button.Margin = new Thickness(1, 0, 1, 0);
+                button.Foreground = Theme.LabelFg;
+            }
             controls.Children.Add(reset);
             if (exportSettings != null) controls.Children.Add(export);
             if (importSettings != null) controls.Children.Add(import);
             controls.Children.Add(open);
             controls.Children.Add(finish);
 
-            var top = new DockPanel();
-            DockPanel.SetDock(controls, Dock.Right);
+            var top = new Grid();
+            top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(controls, 1);
+            top.Children.Add(choices);
             top.Children.Add(controls);
-            top.Children.Add(text);
             var panel = new StackPanel();
             panel.Children.Add(top);
-            accent.Margin = new Thickness(0, 8, 0, 0);
-            panel.Children.Add(accent);
+            panel.Children.Add(text);
 
             return new Border
             {

@@ -447,7 +447,8 @@ namespace UIFramework
         /// <summary>A colour picker of these fields is open and still writing into its box.</summary>
         public bool PickerOpen => _picker.IsOpen;
 
-        public FrameworkElement ColourField(string label, string key, string tooltip)
+        /// <param name="labelled">false: the row alone (box, swatch, picker), for a caller that labels it inline.</param>
+        public FrameworkElement ColourField(string label, string key, string tooltip, bool labelled = true)
         {
             var box = SettingBox(label, key, tooltip + "\nType a hex code, or click the swatch to pick one.");
             box.Width = 92;
@@ -477,6 +478,7 @@ namespace UIFramework
             row.Children.Add(box);
             row.Children.Add(swatch);
             row.Children.Add(pick);
+            if (!labelled) { AutomationProperties.SetName(box, label); return row; }
             return Ui.Labeled(label, row);
         }
 
