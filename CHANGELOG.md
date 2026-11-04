@@ -3,8 +3,15 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
-## [Unreleased]
+## [0.9.1] - 2026-11-04
 
+The demo as an import, the stubs without WPF references, and a points system the window knows about.
+
+- Points systems: `UiCurrency.Detect(CPH, settings)` in the host block finds StreamUP's Currency Core or Tawmae's
+  LOYALTY POINTS by their settings global and gives the user variable and the name of the points, the two
+  settings `pointsVariable` and `pointsName` as the fallback; the describe answer carries a detected system
+  (`currency`), the window shows it as a header pill and says on the two settings that they are not in use. The
+  demo pays a win into the viewer's points through it. Before, every game carried the same detection of its own.
 - `examples/DemoGame/DemoGame.sb`: the demo as one import (both actions, the `!roll` command with its cooldowns).
   `tools/build-import.ps1` keeps an export's Execute Code sub-actions on the files named for them and its meta
   version on the game's `CurrentVersion`; `check-stub.ps1` fails when the demo's export is behind.

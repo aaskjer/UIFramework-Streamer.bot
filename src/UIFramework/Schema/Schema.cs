@@ -19,6 +19,10 @@ namespace UIFramework
         /// <summary>The window as the host declares it beside its settings (title, pages, help, about, log): the
         /// same JSON a stub's spec carries. Null when the stub brings a spec of its own.</summary>
         public JObject Window;
+
+        /// <summary>The points system the game found installed (<c>currency</c>: source, variable, name), or null:
+        /// the window shows it as a pill and marks the two points settings as the fallback they are.</summary>
+        public JObject Currency;
         public readonly List<Setting> Settings = new List<Setting>();
 
         public Setting Find(string key) => Settings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
@@ -60,7 +64,8 @@ namespace UIFramework
                 Host = (string)root["host"] ?? "",
                 Version = (string)root["version"] ?? "",
                 SettingsFile = (string)root["settingsFile"] ?? "",
-                Window = root["window"] as JObject
+                Window = root["window"] as JObject,
+                Currency = root["currency"] as JObject
             };
             if (!(root["settings"] is JArray list))
                 throw new ArgumentException("The schema has no 'settings' array.");
@@ -88,6 +93,7 @@ namespace UIFramework
                 ["settings"] = new JArray(Settings.Select(s => s.ToJson()))
             };
             if (Window != null) root["window"] = Window.DeepClone();
+            if (Currency != null) root["currency"] = Currency.DeepClone();
             return root;
         }
     }

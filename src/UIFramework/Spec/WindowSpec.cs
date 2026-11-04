@@ -88,6 +88,8 @@ namespace UIFramework
 
         /// <summary>Pills shown in the header next to the page title, redrawn when any control changes.</summary>
         public readonly List<HeaderPill> HeaderPills = new List<HeaderPill>();
+        /// <summary>The pill for a detected points system, so a second resolve replaces it instead of adding one.</summary>
+        public HeaderPill CurrencyPill;
 
         /// <summary>Combinations the window should warn about before saving. Returns the problems, or empty.</summary>
         public Func<JObject, List<string>> Warnings;

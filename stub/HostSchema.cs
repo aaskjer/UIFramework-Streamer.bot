@@ -57,7 +57,10 @@ public static class UiSchema
         => new Setting { Key = key, Default = @default, Kind = "template", Page = "messages", Group = group, Label = label, Help = help,
                          Placeholders = placeholders, Aliases = alias == null ? null : new[] { alias }, File = file, Field = field };
 
-    public static string ToJson(string host, string version, string settingsFile)
+    public static string ToJson(string host, string version, string settingsFile) => ToJson(host, version, settingsFile, null);
+
+    /// <summary>The schema with the points system the window should show as detected (UiCurrency.Detect).</summary>
+    public static string ToJson(string host, string version, string settingsFile, UiCurrency currency)
     {
         var settings = new JArray();
         foreach (var s in Table)
@@ -115,6 +118,7 @@ public static class UiSchema
         }
         var root = new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
         if (Window != null) root["window"] = Window.ToJson();
+        if (currency != null && currency.Detected) root["currency"] = currency.ToJson();
         return root.ToString(Formatting.None);
     }
 
@@ -371,8 +375,9 @@ public static class UiHost
         string var = Arg(args, "uiframework.var");
         if (request == "describe")
         {
-            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile), false);
-            CPH.LogInfo("[" + actionName + "] Settings described for the window.");
+            var currency = UiCurrency.Detect(CPH, null);   // only a detected system goes into the answer; the window shows it
+            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile, currency), false);
+            CPH.LogInfo("[" + actionName + "] Settings described for the window" + (currency.Detected ? " (" + currency.Source + ": '" + currency.Variable + "')." : "."));
             return true;
         }
         string name = Arg(args, "uiframework.name") ?? "";
@@ -400,6 +405,61 @@ public static class UiHost
     }
 
     private static string Arg(IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
+}
+
+/// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and
+/// Tawmae's LOYALTY POINTS each keep their settings in a persisted global that names the user variable the points
+/// live in and what they are called; when one is installed, the game uses those and its own two settings
+/// (pointsVariable, pointsName) are only the fallback. Detect on every run: the streamer may install one later.
+/// Reading and writing a viewer's points stays the game's: CPH.GetTwitchUserVarById / SetTwitchUserVarById (and
+/// the YouTube and Kick ones) on Variable.</summary>
+public sealed class UiCurrency
+{
+    /// <summary>The user variable the points live in.</summary>
+    public string Variable = "points";
+    /// <summary>What the points are called in chat.</summary>
+    public string Name = "Points";
+    /// <summary>"Currency Core", "LOYALTY POINTS", or null when the settings are in use.</summary>
+    public string Source;
+    public bool Detected => Source != null;
+
+    /// <summary>Looks for an installed system; without one, the two settings (or their defaults when settings is null).</summary>
+    public static UiCurrency Detect(IInlineInvokeProxy CPH, UiSettings settings)
+    {
+        var currency = new UiCurrency();
+        string variable = settings?.String("pointsVariable"), name = settings?.String("pointsName");
+        if (!string.IsNullOrWhiteSpace(variable)) currency.Variable = variable.Trim();
+        if (!string.IsNullOrWhiteSpace(name)) currency.Name = name.Trim();
+        if (!currency.Read(CPH, "currency_ProductSettings", "pointsVar", "pointsName", "Currency Core"))
+            currency.Read(CPH, "tawmae_Settings_LOYALTY POINTS", "globalVariableName", "pointsName", "LOYALTY POINTS");
+        return currency;
+    }
+
+    private bool Read(IInlineInvokeProxy CPH, string global, string variableKey, string nameKey, string source)
+    {
+        string json;
+        try { json = CPH.GetGlobalVar<string>(global, true); }
+        catch (Exception) { return false; }
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try
+        {
+            var settings = JObject.Parse(json);
+            string variable = (string)settings[variableKey];
+            if (string.IsNullOrWhiteSpace(variable)) return false;
+            Variable = variable.Trim();
+            string name = (string)settings[nameKey];
+            if (!string.IsNullOrWhiteSpace(name)) Name = name.Trim();
+            Source = source;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            CPH.LogWarn("[UIFramework] The settings of " + source + " (" + global + ") could not be read: " + ex.Message);
+            return false;
+        }
+    }
+
+    public JObject ToJson() => new JObject { ["source"] = Source, ["variable"] = Variable, ["name"] = Name };
 }
 
 /// <summary>The settings file as the game reads it: every key through its default, old key names tolerated. Values

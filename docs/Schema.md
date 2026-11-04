@@ -183,6 +183,15 @@ describe answer leaves a line in Streamer.bot's log.
 | `table`    | a `table` field is shown                 | `table: key => …` answers a JSON array of objects whose fields the columns name |
 | `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitch": { "channelId": "…", "sources": ["twitch", "7tv", "bttv", "ffz"] } }` |
 
+**The points system.** `UiCurrency.Detect(CPH, settings)` gives the user variable the points live in
+(`Variable`), what they are called (`Name`) and where that came from (`Source`): StreamUP's Currency Core
+(`currency_ProductSettings`) or Tawmae's LOYALTY POINTS (`tawmae_Settings_LOYALTY POINTS`) when one is installed,
+else the settings `pointsVariable` and `pointsName` (declare both; they are conventions keys with a page of their
+own). Detect on every run. The describe answer carries a detected system as `currency`, and the window shows it
+as a pill (`Currency Core: points`) and says on the two settings that they are the fallback. Reading and
+writing a viewer's points stays the game's: `CPH.GetTwitchUserVarById<long>(userId, currency.Variable, true)` and
+`SetTwitchUserVarById` (the YouTube and Kick ones likewise); both systems keep the balance right there.
+
 The values arrive as `UiSettings` with `Bool`, `Int`, `Long`, `Double`, `String`, `Ceiling` (0 as "no limit"),
 `Clamp` and `Raw` (the JSON object). `UiSettings.Load(path)` reads the settings file the same way, old keys
 through the aliases.

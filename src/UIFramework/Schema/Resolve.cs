@@ -53,6 +53,7 @@ namespace UIFramework
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
             Check(spec, settings);
+            Currency(spec, schema, settings);
 
             // 2. Defaults and aliases for the store.
             spec.Defaults = new JObject();
@@ -237,6 +238,25 @@ namespace UIFramework
             foreach (var key in spec.Overrides.Keys)
                 if (!keys.Contains(key))
                     spec.Problems.Add("The spec overrides '" + key + "', which is not a setting.");
+        }
+
+        /// <summary>A points system the game found installed: a pill in the header, and the two points settings say
+        /// they are the fallback while it is there.</summary>
+        private static void Currency(WindowSpec spec, Schema schema, List<Setting> settings)
+        {
+            if (spec.CurrencyPill != null) { spec.HeaderPills.Remove(spec.CurrencyPill); spec.CurrencyPill = null; }
+            string source = (string)schema.Currency?["source"];
+            if (string.IsNullOrWhiteSpace(source)) return;
+            string variable = (string)schema.Currency["variable"] ?? "", name = (string)schema.Currency["name"] ?? "";
+            string note = source + " is installed: the points live in the user variable '" + variable + "' and are called '" + name + "'. " +
+                "This setting is used only without it.";
+            foreach (var s in settings)
+                if (s.Key == "pointsVariable" || s.Key == "pointsName")
+                    s.Help = string.IsNullOrEmpty(s.Help) ? note : s.Help + " " + note;
+            string text = source + ": " + variable;
+            string tooltip = "Points by " + source + ", in the user variable '" + variable + "', called '" + name + "'. The Points variable and Points name settings are not used while it is installed.";
+            spec.CurrencyPill = new HeaderPill(tooltip, ctx => (text, PillStyle.Accent));
+            spec.HeaderPills.Add(spec.CurrencyPill);
         }
 
         private static IEnumerable<Setting> Match(string pattern, List<Setting> settings)
