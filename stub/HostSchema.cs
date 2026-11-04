@@ -367,9 +367,12 @@ public static class UiHost
         if (request == null && args.ContainsKey("uiframework.describe")) request = "describe";
         if (string.IsNullOrEmpty(request))
             return false;
+        // The settings action names the global it will read; without that (an older stub) the name is built here.
+        string var = Arg(args, "uiframework.var");
         if (request == "describe")
         {
-            CPH.SetGlobalVar(UiSchema.Var(actionName), UiSchema.ToJson(host, version, settingsFile), false);
+            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile), false);
+            CPH.LogInfo("[" + actionName + "] Settings described for the window.");
             return true;
         }
         string name = Arg(args, "uiframework.name") ?? "";
@@ -392,7 +395,7 @@ public static class UiHost
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
         }
-        CPH.SetGlobalVar(AnswerVar(actionName), answer ?? "", false);
+        CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
         return true;
     }
 
