@@ -124,9 +124,9 @@ public static class UiSchema
     public static UiLine Cmd(string command, string what) => new UiLine(new JObject { ["command"] = command, ["what"] = what });
     public static UiLine Note(string note) => new UiLine(new JObject { ["note"] = note });
     public static UiLine Link(string text, string url) => new UiLine(new JObject { ["link"] = text, ["url"] = url });
-    /// <summary>A command's cooldowns, set after every save: its id in Streamer.bot, the setting of its global
-    /// cooldown and the setting of its per-user cooldown (either may be null).</summary>
-    public static string[] C(string commandId, string globalKey, string userKey) => new[] { commandId, globalKey, userKey };
+    /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
+    /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
+    public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>

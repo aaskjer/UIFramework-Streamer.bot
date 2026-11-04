@@ -5,6 +5,9 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- A command in `Cooldowns(C(…))` can be given as its text (`!roll`) or its name, not only its id: the generic stub
+  looks it up in Streamer.bot and warns when there is none. The demo game declares its two cooldowns that way;
+  before, its `globalCooldown` was saved but never reached the command.
 - The settings action tells the game which global to answer into (`uiframework.var`), so the game's
   `ActionName` constant and the action's name in Streamer.bot cannot drift apart; the host block logs a line when
   it has described its settings, the stub says when no action of that name exists, and its dialog for a game that

@@ -179,9 +179,9 @@ public static class UiSchema
     public static UiLine Cmd(string command, string what) => new UiLine(new JObject { ["command"] = command, ["what"] = what });
     public static UiLine Note(string note) => new UiLine(new JObject { ["note"] = note });
     public static UiLine Link(string text, string url) => new UiLine(new JObject { ["link"] = text, ["url"] = url });
-    /// <summary>A command's cooldowns, set after every save: its id in Streamer.bot, the setting of its global
-    /// cooldown and the setting of its per-user cooldown (either may be null).</summary>
-    public static string[] C(string commandId, string globalKey, string userKey) => new[] { commandId, globalKey, userKey };
+    /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
+    /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
+    public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
@@ -200,6 +200,7 @@ public static class UiSchema
         .Pages(P("game", "Game", "dice"), "messages", "help", "about")
         .Samples("user", "alice", "roll", "6", "sides", "6", "result", "a win, 10 points")
         .Answer("tryRoll", "@alice rolls a 6 on a d6: a win, 10 points.")
+        .Cooldowns(C("!roll", "globalCooldown", "userCooldown"))   // the two settings reach the command after every save
         .Help(H("Playing", Cmd("!roll", "Rolls the die once."), "The highest side wins the points; every other side is no luck."))
         .About(credits: "An example game for UIFramework for streamer.bot.");
 
@@ -208,6 +209,7 @@ public static class UiSchema
     {
         S("useBot", true),
         S("globalCooldown", 10),
+        S("userCooldown", 30),
         S("sides", 6, page: "game", label: "Sides of the die", help: "How many sides the die has; the highest one wins.", section: "The die", min: 2, max: 100),
         S("pointsPerWin", 10, page: "game", label: "Points per win", help: "What a roll of the highest side is worth.", section: "The die", min: 0, max: 100000),
         S("tryRoll", null, page: "game", label: "Roll", help: "Rolls once with the values as they stand in the window; nothing goes to chat.", kind: "action", section: "Try a roll", live: true, panel: true),
