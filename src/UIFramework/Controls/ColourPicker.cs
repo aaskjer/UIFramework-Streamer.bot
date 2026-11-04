@@ -151,7 +151,7 @@ namespace UIFramework
                 presets.Children.Add(chip);
             }
 
-            var done = Ui.TextButton("Done", true);
+            var done = Ui.TextButton(Text.T("btn.done"), true);
             done.Margin = new Thickness(0);
             var bottom = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
             DockPanel.SetDock(done, Dock.Right);

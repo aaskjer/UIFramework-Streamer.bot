@@ -258,7 +258,7 @@ namespace UIFramework
                 string text = box.Text.Trim();
                 bool valid = tag.Kind == FieldKind.Double ? TryParseFinite(text, out _) : IsDigits(text);
                 if (!valid)
-                    invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": empty" : ": '" + text + "'"));
+                    invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": " + Text.T("field.empty") : ": '" + text + "'"));
             });
             return invalid;
         }

@@ -163,20 +163,15 @@ namespace UIFramework
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
                 _log.Warn(_spec.LogPrefix + " " + fileName + " could not be opened: " + ex.Message);
-                MessageBox.Show(
-                    fileName + " could not be read or written:\n\n" + ex.Message + "\n\n" +
-                    "Nothing was changed. Close whatever has the file open, or check that Streamer.bot may write to its folder, then open the settings again.",
-                    "Settings Not Opened", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Text.T("dialog.notOpened.text", fileName, ex.Message), Text.T("dialog.notOpened.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             if (loaded.Damaged != null)
                 MessageBox.Show(
-                    "The saved settings could not be read:\n\n" + loaded.Damaged + "\n\n" +
-                    (loaded.FromBackup
-                        ? "The window shows the settings from before the last save (" + fileName + ".bak), and Save puts them back."
-                        : "The window shows the defaults, and Save writes a fresh file.") +
-                    " The damaged file was kept next to it as " + fileName + ".broken.",
-                    "Settings Damaged", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Text.T("dialog.damaged.text", loaded.Damaged) +
+                    (loaded.FromBackup ? Text.T("dialog.damaged.backup", fileName) : Text.T("dialog.damaged.defaults")) +
+                    Text.T("dialog.damaged.kept", fileName),
+                    Text.T("dialog.damaged.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
 
             var settings = loaded.Settings;
             // Every open resolves afresh, so a layout change made in the customise mode shows up after the rebuild.
@@ -195,7 +190,7 @@ namespace UIFramework
 
             var window = new Window
             {
-                Title = _spec.Title + " – Settings",
+                Title = _spec.Title + Text.T("title.settings"),
                 Width = _spec.Width,
                 Height = _spec.Height,
                 MinWidth = _spec.MinWidth,
@@ -240,7 +235,7 @@ namespace UIFramework
             rainbowTimer?.Stop();
             rainbowTimer = null;
             Theme.IsRainbow = false;
-            window.Title = _spec.Title + " – Settings";
+            window.Title = _spec.Title + Text.T("title.settings");
             window.Background = new SolidColorBrush(Theme.ContentBg);
 
             var parts = new WindowParts();
@@ -273,13 +268,13 @@ namespace UIFramework
                 catch (Exception ex)
                 {
                     _log.Error(_spec.LogPrefix + " Page '" + pageSpec.Id + "' could not be built: " + ex.Message);
-                    page = Ui.Scroll(Ui.Note("This page could not be built: " + ex.Message));
+                    page = Ui.Scroll(Ui.Note(Text.T("page.failed", ex.Message)));
                 }
                 if (page != null)
                     pages.Add((pageSpec, page));
             }
             if (pages.Count == 0)
-                pages.Add((new PageSpec("empty", "Settings", "⚙️", null), Ui.Scroll(Ui.Note("This window has no pages."))));
+                pages.Add((new PageSpec("empty", Text.T("page.none.title"), "⚙️", null), Ui.Scroll(Ui.Note(Text.T("page.none.text")))));
             foreach (var wire in ctx.AfterBuild)
             {
                 try { wire(); }
@@ -321,7 +316,7 @@ namespace UIFramework
             {
                 int index = i;
                 var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "•", () => ShowPage(index));
-                item.ToolTip = i < 9 ? pages[i].Spec.Title + " (Ctrl+" + (i + 1) + ")" : i == 9 ? pages[i].Spec.Title + " (Ctrl+0)" : pages[i].Spec.Title;
+                item.ToolTip = i < 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, i + 1) : i == 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, 0) : pages[i].Spec.Title;
                 if (customizing)
                     Customize.AttachRail(ctx, pages[i].Spec, item, () => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList());
                 if (pages[i].Spec.Bottom) railBottom.Children.Add(item);
@@ -368,10 +363,10 @@ namespace UIFramework
             {
                 if (string.IsNullOrEmpty(latestTag))
                     return;
-                window.Title = _spec.Title + " – Settings  ·  🔔 Update available (" + latestTag + ")";
-                var updatePill = Ui.Pill("Update " + latestTag, Theme.Danger, Colors.White);
+                window.Title = _spec.Title + Text.T("title.settings") + Text.T("title.update", latestTag);
+                var updatePill = Ui.Pill(Text.T("pill.update", latestTag), Theme.Danger, Colors.White);
                 updatePill.Cursor = Cursors.Hand;
-                updatePill.ToolTip = "Open the releases page";
+                updatePill.ToolTip = Text.T("pill.update.tip");
                 updatePill.MouseLeftButtonUp += (s, e) => Web.OpenUrl(_spec.ReleasesUrl, _log, _spec.LogPrefix);
                 pills.Children.Insert(0, updatePill);
             }
@@ -382,8 +377,8 @@ namespace UIFramework
                 if (running != null && available != null && available > running)
                 {
                     var colours = Ui.PillColours(PillStyle.Accent);
-                    var frameworkPill = Ui.Pill("UIFramework " + available + " available", colours.Background, colours.Foreground);
-                    frameworkPill.ToolTip = "A newer settings window is published (running: " + running + "). The next open of the window offers it again; click for the releases.";
+                    var frameworkPill = Ui.Pill(Text.T("pill.framework", available), colours.Background, colours.Foreground);
+                    frameworkPill.ToolTip = Text.T("pill.framework.tip", running);
                     frameworkPill.Cursor = Cursors.Hand;
                     frameworkPill.MouseLeftButtonUp += (s, e) => Web.OpenUrl("https://github.com/aaskjer/UIFramework-Streamer.bot/releases", _log, _spec.LogPrefix);
                     pills.Children.Add(frameworkPill);
@@ -447,8 +442,8 @@ namespace UIFramework
             void ShowChanges()
             {
                 int n = Changes();
-                if (n == 0) SetStatus("No unsaved changes", Theme.MutedColor);
-                else SetStatus(n == 1 ? "1 unsaved change" : n + " unsaved changes", Theme.UnsavedText);
+                if (n == 0) SetStatus(Text.T("status.clean"), Theme.MutedColor);
+                else SetStatus(n == 1 ? Text.T("status.unsaved.one") : Text.T("status.unsaved.many", n), Theme.UnsavedText);
                 DrawPills();
             }
             FieldBinding.HookChangeTracking(pageHost, () =>
@@ -467,34 +462,34 @@ namespace UIFramework
             };
 
             var btnTheme = layout.Rainbow
-                ? Ui.IconButton("🌈", null, "Switch between the light and dark theme")
-                : Ui.IconButton(Theme.IsDark ? Icons.Sun : Icons.Moon, Icons.Font, "Switch between the light and dark theme (Shift: rainbow)");
-            var btnReset = Ui.IconButton(Icons.Reset, Icons.Font, "Reset every setting on every page to its default");
+                ? Ui.IconButton("🌈", null, Text.T("tip.theme"))
+                : Ui.IconButton(Theme.IsDark ? Icons.Sun : Icons.Moon, Icons.Font, Text.T("tip.theme.rainbow"));
+            var btnReset = Ui.IconButton(Icons.Reset, Icons.Font, Text.T("tip.resetAll"));
             btnReset.Margin = new Thickness(6, 0, 0, 0);
-            var btnResetPage = Ui.IconButton(Icons.Refresh, Icons.Font, "Reset only the page you are looking at, without writing anything yet");
+            var btnResetPage = Ui.IconButton(Icons.Refresh, Icons.Font, Text.T("tip.resetPage"));
             btnResetPage.Margin = new Thickness(6, 0, 0, 0);
-            var btnCancel = Ui.TextButton("Cancel", false);
-            var btnSave = Ui.TextButton("Save", true);
-            var btnSaveExit = Ui.TextButton("Save & Exit", false);
+            var btnCancel = Ui.TextButton(Text.T("btn.cancel"), false);
+            var btnSave = Ui.TextButton(Text.T("btn.save"), true);
+            var btnSaveExit = Ui.TextButton(Text.T("btn.saveExit"), false);
 
             bool SaveNow()
             {
                 parts.CommitNames();
                 if (!ApplyAndSave(settings, pageHost, parts))
                 {
-                    SetStatus("Not saved", Theme.DangerText);
+                    SetStatus(Text.T("status.notSaved"), Theme.DangerText);
                     return false;
                 }
                 baseline.Clear();
                 FieldBinding.Snapshot(pageHost, baseline);
-                SetStatus("Saved", Theme.SuccessText);
+                SetStatus(Text.T("status.saved"), Theme.SuccessText);
                 return true;
             }
 
             // A layout change or the mode switch: the content is rebuilt in place on the given page.
             ctx.Reopen = Rebuild;
 
-            var btnCustomize = Ui.IconButton(Icons.Edit, Icons.Font, customizing ? "Leave the customise mode" : "Customise: rename, move and hide pages and fields");
+            var btnCustomize = Ui.IconButton(Icons.Edit, Icons.Font, customizing ? Text.T("tip.customise.leave") : Text.T("tip.customise"));
             btnCustomize.Margin = new Thickness(6, 0, 0, 0);
             if (customizing)
                 btnCustomize.Foreground = new SolidColorBrush(Theme.AccentText);
@@ -503,9 +498,7 @@ namespace UIFramework
             {
                 if (!customizing && Changes() > 0)
                 {
-                    var answer = MessageBox.Show(
-                        "Save your changes before customising?\nThe pages are rebuilt, and anything unsaved is lost.",
-                        "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    var answer = MessageBox.Show(Text.T("dialog.unsaved.customise"), Text.T("dialog.unsaved.title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                     if (answer == MessageBoxResult.Cancel) return;
                     if (answer == MessageBoxResult.Yes && !SaveNow()) return;
                 }
@@ -532,9 +525,9 @@ namespace UIFramework
                 };
                 var dialog = new Microsoft.Win32.SaveFileDialog
                 {
-                    Title = "Export settings",
+                    Title = Text.T("export.title"),
                     FileName = Regex.Replace(hostName, @"[^\w-]+", "-").Trim('-') + "-settings-" + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + ".json",
-                    Filter = "Settings export (*.json)|*.json|All files (*.*)|*.*",
+                    Filter = Text.T("export.filter"),
                     DefaultExt = ".json",
                     AddExtension = true
                 };
@@ -544,21 +537,21 @@ namespace UIFramework
                 try
                 {
                     File.WriteAllText(dialog.FileName, export.ToString(Formatting.Indented));
-                    SetStatus("Exported to " + Path.GetFileName(dialog.FileName), Theme.SuccessText, dialog.FileName);
+                    SetStatus(Text.T("status.exported", Path.GetFileName(dialog.FileName)), Theme.SuccessText, dialog.FileName);
                     _log.Info(_spec.LogPrefix + " Settings exported to " + dialog.FileName);
                 }
                 catch (Exception ex)
                 {
-                    SetStatus("Not exported", Theme.DangerText, ex.Message);
-                    MessageBox.Show("The file could not be written:\n\n" + ex.Message, "Export Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetStatus(Text.T("status.notExported"), Theme.DangerText, ex.Message);
+                    MessageBox.Show(Text.T("export.failed.text", ex.Message), Text.T("export.failed.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             void Import()
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = "Import settings",
-                    Filter = "Settings export (*.json)|*.json|All files (*.*)|*.*",
+                    Title = Text.T("import.title"),
+                    Filter = Text.T("export.filter"),
                     CheckFileExists = true
                 };
                 if (Folder() != null) dialog.InitialDirectory = Folder();
@@ -572,15 +565,14 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("The file could not be read as settings:\n\n" + ex.Message, "Import Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Text.T("import.unreadable", ex.Message), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 // An export carries the settings under "settings"; a settings file itself is the settings.
                 var incoming = root["settings"] as JObject ?? root;
                 string from = (string)root["host"];
                 if (from != null && !string.Equals(from, hostName, StringComparison.OrdinalIgnoreCase) &&
-                    MessageBox.Show("This file was exported from '" + from + "', not from '" + hostName + "'.\nImport it anyway? Only the settings this window knows are taken.",
-                        "Import Settings", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                    MessageBox.Show(Text.T("import.otherHost", from, hostName), Text.T("import.dialog.title"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                     return;
                 var known = new JObject();
                 int unknown = 0;
@@ -600,14 +592,14 @@ namespace UIFramework
                 }
                 if (known.Count == 0)
                 {
-                    MessageBox.Show("Nothing in " + Path.GetFileName(dialog.FileName) + " matches a setting of this window.", "Import Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Text.T("import.nothing", Path.GetFileName(dialog.FileName)), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
                 var answer = MessageBox.Show(
-                    "Replace the saved settings with " + known.Count + " setting" + (known.Count == 1 ? "" : "s") + " from " + Path.GetFileName(dialog.FileName) + "?" +
-                    (unknown > 0 ? "\n" + unknown + " entr" + (unknown == 1 ? "y" : "ies") + " the window does not know " + (unknown == 1 ? "is" : "are") + " skipped." : "") +
-                    "\nThe file is written at once; the settings as they were are kept as " + Path.GetFileName(_spec.SettingsPath) + ".bak.",
-                    "Import Settings", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    (known.Count == 1 ? Text.T("import.confirm.one", Path.GetFileName(dialog.FileName)) : Text.T("import.confirm.many", known.Count, Path.GetFileName(dialog.FileName))) +
+                    (unknown == 0 ? "" : unknown == 1 ? Text.T("import.skipped.one") : Text.T("import.skipped.many", unknown)) +
+                    Text.T("import.written", Path.GetFileName(_spec.SettingsPath)),
+                    Text.T("import.dialog.title"), MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes)
                     return;
                 var merged = (JObject)settings.DeepClone();
@@ -620,7 +612,7 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("The settings could not be written:\n\n" + ex.Message, "Import Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Text.T("import.notWritten", ex.Message), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 SafeHook(() => _hooks.OnSaved(merged));
@@ -637,8 +629,8 @@ namespace UIFramework
                 if (n > 0)
                 {
                     var confirm = MessageBox.Show(
-                        "Discard " + n + " unsaved change" + (n == 1 ? "" : "s") + "?",
-                        "Unsaved Changes", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        n == 1 ? Text.T("dialog.discard.one") : Text.T("dialog.discard.many", n),
+                        Text.T("dialog.unsaved.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (confirm != MessageBoxResult.Yes)
                         return;
                 }
@@ -647,10 +639,7 @@ namespace UIFramework
             };
             btnResetPage.Click += (s, e) =>
             {
-                var confirm = MessageBox.Show(
-                    "Reset every setting on '" + pages[current].Spec.Title + "' back to its default?\n" +
-                    "The other pages are left alone, and nothing is written until you save.",
-                    "Reset Page", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var confirm = MessageBox.Show(Text.T("dialog.resetPage.text", pages[current].Spec.Title), Text.T("dialog.resetPage.title"), MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (confirm != MessageBoxResult.Yes)
                     return;
                 FieldBinding.ResetToDefaults(pages[current].Page, defaults);
@@ -659,16 +648,14 @@ namespace UIFramework
             };
             btnReset.Click += (s, e) =>
             {
-                var confirm = MessageBox.Show(
-                    "Reset all settings to defaults?\nThis cannot be undone.",
-                    "Reset Settings", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var confirm = MessageBox.Show(Text.T("dialog.resetAll.text"), Text.T("dialog.resetAll.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (confirm != MessageBoxResult.Yes) return;
 
                 var fresh = (JObject)defaults.DeepClone();
                 try { _store.Save(Sidecars.Strip(fresh, _spec.ResolvedSettings)); }
                 catch (Exception ex)
                 {
-                    SetStatus("Not reset", Theme.DangerText, ex.Message);
+                    SetStatus(Text.T("status.notReset"), Theme.DangerText, ex.Message);
                     return;
                 }
                 SafeHook(() => _hooks.OnSaved(fresh));
@@ -681,9 +668,7 @@ namespace UIFramework
                 bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
                 if (Changes() > 0)
                 {
-                    var answer = MessageBox.Show(
-                        "Save your changes before switching?\nThe pages are rebuilt, and anything unsaved is lost.",
-                        "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    var answer = MessageBox.Show(Text.T("dialog.unsaved.switch"), Text.T("dialog.unsaved.title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                     if (answer == MessageBoxResult.Cancel) return;
                     if (answer == MessageBoxResult.Yes && !SaveNow()) return;
                 }
@@ -695,7 +680,7 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
-                    SetStatus("Not switched", Theme.DangerText, ex.Message);
+                    SetStatus(Text.T("status.notSwitched"), Theme.DangerText, ex.Message);
                     return;
                 }
                 Rebuild(null);
@@ -735,13 +720,13 @@ namespace UIFramework
             rightButtons.Children.Add(status);
             if (customizing)
             {
-                SetStatus("Customise mode", Theme.AccentText);
+                SetStatus(Text.T("status.customise"), Theme.AccentText);
                 // Nothing to save in the customise mode: values are frozen, the layout file is written on every change.
                 btnReset.IsEnabled = false;
                 btnResetPage.IsEnabled = false;
                 btnSave.Visibility = Visibility.Collapsed;
                 btnSaveExit.Visibility = Visibility.Collapsed;
-                btnCancel.Content = "Close";
+                btnCancel.Content = Text.T("btn.close");
             }
             rightButtons.Children.Add(btnCancel);
             rightButtons.Children.Add(btnSave);
@@ -767,12 +752,12 @@ namespace UIFramework
                 var bar = Customize.Bar(ctx, () => { _spec.Customizing = false; Rebuild(null); }, Export, Import);
                 DockPanel.SetDock(bar, Dock.Top);
                 root.Children.Add(bar);
-                window.Title = _spec.Title + " – Settings  ·  Customise";
+                window.Title = _spec.Title + Text.T("title.settings") + Text.T("title.customise");
             }
             if (_spec.Problems.Count > 0)
             {
                 // The host's author sees what the schema got wrong without opening Streamer.bot's log.
-                var banner = Ui.Banner(_spec.Problems.Count + " problem" + (_spec.Problems.Count == 1 ? "" : "s") + " in the schema: the About page lists " + (_spec.Problems.Count == 1 ? "it" : "them") + ".", PillStyle.Warning);
+                var banner = Ui.Banner(_spec.Problems.Count == 1 ? Text.T("banner.problems.one") : Text.T("banner.problems.many", _spec.Problems.Count), PillStyle.Warning);
                 DockPanel.SetDock(banner, Dock.Top);
                 root.Children.Add(banner);
                 foreach (var problem in _spec.Problems)
@@ -806,8 +791,8 @@ namespace UIFramework
                 if (n == 0)
                     return;
                 var confirm = MessageBox.Show(
-                    "Discard " + n + " unsaved change" + (n == 1 ? "" : "s") + "?",
-                    "Unsaved Changes", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    n == 1 ? Text.T("dialog.discard.one") : Text.T("dialog.discard.many", n),
+                    Text.T("dialog.unsaved.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (confirm != MessageBoxResult.Yes)
                     e.Cancel = true;
             };
@@ -837,8 +822,7 @@ namespace UIFramework
                 var invalid = FieldBinding.InvalidNumberFields(root);
                 if (invalid.Count > 0)
                 {
-                    MessageBox.Show("These fields do not hold a usable number, so nothing was saved:\n\n" + string.Join("\n", invalid),
-                        "Check the numbers", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Text.T("dialog.invalidNumbers.text", string.Join("\n", invalid)), Text.T("dialog.invalidNumbers.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
 
@@ -853,11 +837,7 @@ namespace UIFramework
                     warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
                 if (warnings.Count > 0)
                 {
-                    var proceed = MessageBox.Show(
-                        "These settings will not do what they look like they do:\n\n  • " +
-                        string.Join("\n  • ", warnings) +
-                        "\n\nSave anyway?",
-                        "Check your settings", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (proceed != MessageBoxResult.Yes)
                         return false;
                 }
@@ -870,7 +850,7 @@ namespace UIFramework
             catch (Exception ex)
             {
                 _log.Error(_spec.LogPrefix + " Save error: " + ex.Message);
-                MessageBox.Show("Could not save: " + ex.Message, "Settings", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Text.T("dialog.saveFailed.text", ex.Message), Text.T("dialog.saveFailed.title"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }

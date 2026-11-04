@@ -33,7 +33,7 @@ namespace UIFramework
                 Margin = new Thickness(0, 0, 8, 0),
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = Cursors.SizeAll,
-                ToolTip = "Drag to another place on this page, or onto a page in the rail"
+                ToolTip = Text.T("cust.drag.field")
             };
             var tag = new TextBlock
             {
@@ -67,14 +67,14 @@ namespace UIFramework
             };
 
             var menu = new ContextMenu();
-            menu.Items.Add(Item("Rename…", () =>
+            menu.Items.Add(Item(Text.T("cust.rename"), () =>
             {
-                string name = Prompt(box, "Rename '" + setting.Label + "'", "Label", setting.Label);
+                string name = Prompt(box, Text.T("cust.rename.field", setting.Label), Text.T("cust.label"), setting.Label);
                 if (name == null) return;
                 ctx.Layout.SetField(setting.Key, "label", name.Trim().Length == 0 ? null : (JToken)name.Trim());
                 Commit(ctx, pageId);
             }));
-            menu.Items.Add(Item(setting.Hidden ? "Show" : "Hide", () =>
+            menu.Items.Add(Item(setting.Hidden ? Text.T("cust.show") : Text.T("cust.hide"), () =>
             {
                 ctx.Layout.SetField(setting.Key, "hidden", setting.Hidden ? null : (JToken)true);
                 Commit(ctx, pageId);
@@ -82,12 +82,12 @@ namespace UIFramework
             bool message = setting.Kind == "template" && setting.Page == "messages";
             if (message)
             {
-                grip.ToolTip = "Drag to another place in the list";
-                menu.Items.Add(new MenuItem { Header = "Stays on the Messages page", IsEnabled = false });
+                grip.ToolTip = Text.T("cust.drag.message");
+                menu.Items.Add(new MenuItem { Header = Text.T("cust.staysMessages"), IsEnabled = false });
             }
             else
             {
-                var move = new MenuItem { Header = "Move to page" };
+                var move = new MenuItem { Header = Text.T("cust.moveTo") };
                 foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "messages"))
                 {
                     string targetId = page.Id;
@@ -103,7 +103,7 @@ namespace UIFramework
                 menu.Items.Add(move);
             }
             menu.Items.Add(new Separator());
-            var reset = Item("Reset this field", () => { ctx.Layout.ResetField(setting.Key); Commit(ctx, pageId); });
+            var reset = Item(Text.T("cust.resetField"), () => { ctx.Layout.ResetField(setting.Key); Commit(ctx, pageId); });
             reset.IsEnabled = ctx.Layout.Field(setting.Key) != null;
             menu.Items.Add(reset);
             box.ContextMenu = menu;
@@ -218,12 +218,12 @@ namespace UIFramework
         public static UIElement MessagesPage(PageContext ctx)
         {
             var page = Ui.PageStack();
-            page.Children.Add(Ui.Note("Drag a message to another place in the list; right-click it to rename, hide or reset it. Messages stay on this page."));
+            page.Children.Add(Ui.Note(Text.T("cust.messages.note")));
             string group = null;
             var templates = ctx.Spec.ResolvedSettings.Where(s => s.Kind == "template" && s.Page == "messages").OrderBy(s => s.Order).ToList();
             foreach (var setting in templates)
             {
-                string mine = setting.Group ?? "Messages";
+                string mine = setting.Group ?? Text.T("cust.messages.group");
                 if (mine != group)
                 {
                     group = mine;
@@ -240,7 +240,7 @@ namespace UIFramework
                 page.Children.Add(Wrap(ctx, setting, line, "messages"));
             }
             if (templates.Count == 0)
-                page.Children.Add(Ui.Note("This host has no message templates."));
+                page.Children.Add(Ui.Note(Text.T("cust.noTemplates")));
             var scroll = Ui.Scroll(page);
             AcceptDrops(ctx, scroll, page, "messages");
             return scroll;
@@ -252,25 +252,25 @@ namespace UIFramework
         {
             if (page.Hidden) item.Opacity = 0.5;
             item.AllowDrop = true;
-            item.ToolTip = page.Title + "  ·  right-click to rename, hide or reset; drag to reorder";
+            item.ToolTip = Text.T("cust.page.tip", page.Title);
             bool fixedPage = page.Id == "about";
 
             var menu = new ContextMenu();
-            menu.Items.Add(Item("Rename…", () =>
+            menu.Items.Add(Item(Text.T("cust.rename"), () =>
             {
-                string name = Prompt(item, "Rename the page '" + page.Title + "'", "Title", page.Title);
+                string name = Prompt(item, Text.T("cust.rename.page", page.Title), Text.T("cust.title"), page.Title);
                 if (name == null) return;
                 ctx.Layout.SetPage(page.Id, "title", name.Trim().Length == 0 ? null : (JToken)name.Trim());
                 Commit(ctx, page.Id);
             }));
-            menu.Items.Add(Item("Change icon…", () =>
+            menu.Items.Add(Item(Text.T("cust.changeIcon"), () =>
             {
-                string icon = Prompt(item, "Icon for '" + page.Title + "'", "An emoji, or a name like gear, dice, coins, clock, shield, chat, trophy, monitor, list, book, info, cards, chart", page.Glyph);
+                string icon = Prompt(item, Text.T("cust.iconFor", page.Title), Text.T("cust.iconHelp"), page.Glyph);
                 if (icon == null) return;
                 ctx.Layout.SetPage(page.Id, "icon", icon.Trim().Length == 0 ? null : (JToken)icon.Trim());
                 Commit(ctx, page.Id);
             }));
-            var hide = Item(page.Hidden ? "Show" : "Hide", () =>
+            var hide = Item(page.Hidden ? Text.T("cust.show") : Text.T("cust.hide"), () =>
             {
                 ctx.Layout.SetPage(page.Id, "hidden", page.Hidden ? null : (JToken)true);
                 Commit(ctx, page.Hidden ? page.Id : null);
@@ -278,7 +278,7 @@ namespace UIFramework
             hide.IsEnabled = !fixedPage;
             menu.Items.Add(hide);
             menu.Items.Add(new Separator());
-            var reset = Item("Reset this page", () => { ctx.Layout.ResetPage(page.Id); Commit(ctx, page.Id); });
+            var reset = Item(Text.T("cust.resetPage"), () => { ctx.Layout.ResetPage(page.Id); Commit(ctx, page.Id); });
             reset.IsEnabled = ctx.Layout.Page(page.Id) != null;
             menu.Items.Add(reset);
             item.ContextMenu = menu;
@@ -339,14 +339,12 @@ namespace UIFramework
             void DrawText()
             {
                 int n = ctx.Layout.ChangeCount;
-                text.Text = "Customise: drag a field to reorder it or onto a page in the rail to move it; right-click a field or a page to rename, hide or reset it. " +
-                            (n == 0 ? "Nothing changed yet." : n == 1 ? "1 change saved." : n + " changes saved.");
+                text.Text = Text.T("cust.bar") + (n == 0 ? Text.T("cust.changes.none") : n == 1 ? Text.T("cust.changes.one") : Text.T("cust.changes.many", n));
             }
             DrawText();
 
             var accentFields = new Fields(ctx.Parts, new JObject { ["accent"] = ctx.Layout.Accent }, new JObject { ["accent"] = "" }, ctx.OpenUrl);
-            var accent = accentFields.ColourField("Accent colour", "accent",
-                "The highlight colour of this and every other UIFramework window: the blue buttons, switches that are on, the active page in the rail, links and this bar. Empty: the default blue.");
+            var accent = accentFields.ColourField(Text.T("cust.accent"), "accent", Text.T("cust.accent.tip"));
             if (ctx.Parts.Boxes.TryGetValue("accent", out var accentBox))
             {
                 accentBox.Tag = null;   // not a setting; never saved into the host's file
@@ -371,7 +369,7 @@ namespace UIFramework
                 ctx.Parts.Boxes.Remove("accent");
             }
 
-            var language = Ui.PlainCombo("Language", "en", "de");
+            var language = Ui.PlainCombo(Text.T("cust.language"), "en", "de");
             language.SelectedItem = ctx.Layout.Language == "de" ? "de" : "en";
             language.Width = 70;
             language.SelectionChanged += (s, e) =>
@@ -382,29 +380,29 @@ namespace UIFramework
                 Commit(ctx, null);
             };
 
-            var reset = Ui.TextButton("Reset layout", false);
+            var reset = Ui.TextButton(Text.T("cust.resetLayout"), false);
             reset.Click += (s, e) =>
             {
                 if (ctx.Layout.ChangeCount == 0) return;
-                if (MessageBox.Show("Forget every renamed, moved and hidden page and field? The theme stays.", "Reset layout",
+                if (MessageBox.Show(Text.T("cust.resetLayout.confirm"), Text.T("cust.resetLayout"),
                         MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
                 ctx.Layout.ResetLayout();
                 Commit(ctx, null);
             };
-            var open = Ui.TextButton("Open file", false);
+            var open = Ui.TextButton(Text.T("cust.openFile"), false);
             open.ToolTip = ctx.Layout.Path;
             open.Click += (s, e) => Web.OpenUrl(ctx.Layout.Path, ctx.Log, ctx.Spec.LogPrefix);
-            var export = Ui.TextButton("Export", false);
-            export.ToolTip = "Write the saved settings to a file of your choosing";
+            var export = Ui.TextButton(Text.T("cust.export"), false);
+            export.ToolTip = Text.T("cust.export.tip");
             export.Click += (s, e) => exportSettings?.Invoke();
-            var import = Ui.TextButton("Import", false);
-            import.ToolTip = "Replace the saved settings with an exported file, or a settings file; the file as it was is kept as .bak";
+            var import = Ui.TextButton(Text.T("cust.import"), false);
+            import.ToolTip = Text.T("cust.import.tip");
             import.Click += (s, e) => importSettings?.Invoke();
-            var finish = Ui.TextButton("Done", true);
+            var finish = Ui.TextButton(Text.T("btn.done"), true);
             finish.Click += (s, e) => done();
 
             var controls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
-            controls.Children.Add(Ui.Labeled("Language", language));
+            controls.Children.Add(Ui.Labeled(Text.T("cust.language"), language));
             controls.Children.Add(reset);
             if (exportSettings != null) controls.Children.Add(export);
             if (importSettings != null) controls.Children.Add(import);
@@ -437,7 +435,7 @@ namespace UIFramework
             try { ctx.Layout.Save(); }
             catch (Exception ex)
             {
-                MessageBox.Show("The layout could not be written:\n" + ex.Message, "Customise", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Text.T("cust.layoutFailed.text", ex.Message), Text.T("cust.layoutFailed.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             ctx.Reopen?.Invoke(pageId);
@@ -455,8 +453,8 @@ namespace UIFramework
         {
             var box = new TextBox { Text = current ?? "", MinWidth = 320 };
             Ui.StyleInput(box);
-            var ok = Ui.TextButton("OK", true);
-            var cancel = Ui.TextButton("Cancel", false);
+            var ok = Ui.TextButton(Text.T("btn.ok"), true);
+            var cancel = Ui.TextButton(Text.T("btn.cancel"), false);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 14, 0, 0) };
             buttons.Children.Add(cancel);
             buttons.Children.Add(ok);

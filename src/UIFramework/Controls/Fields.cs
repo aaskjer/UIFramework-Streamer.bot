@@ -88,7 +88,7 @@ namespace UIFramework
         }
 
         /// <summary>A whole-number field for the money settings. With unlimitedAtZero the ceiling settings show
-        /// their "no limit" value as 0, which is what gets typed back in to lift it.</summary>
+        /// their Text.T("field.noLimit") value as 0, which is what gets typed back in to lift it.</summary>
         public TextBox LongBox(string label, string key, string tooltip, bool unlimitedAtZero = false)
         {
             var box = SettingBox(label, key, tooltip, FieldKind.Long);
@@ -130,8 +130,7 @@ namespace UIFramework
                 Text = FieldBinding.Display(tag, Token(key)),
                 Tag = tag,
                 MaxLength = 6,
-                ToolTip = tooltip + "\nBetween " + min.ToString("0.##", CultureInfo.InvariantCulture) +
-                          " and " + max.ToString("0.##", CultureInfo.InvariantCulture) + "%."
+                ToolTip = tooltip + Text.T("field.percentRange", min.ToString("0.##", CultureInfo.InvariantCulture), max.ToString("0.##", CultureInfo.InvariantCulture))
             };
             Ui.StyleInput(box);
             AutomationProperties.SetName(box, label);
@@ -331,9 +330,9 @@ namespace UIFramework
         {
             var label = new StackPanel { Orientation = Orientation.Horizontal };
             label.Children.Add(new TextBlock { Text = toggle.Content as string, VerticalAlignment = VerticalAlignment.Center });
-            label.Children.Add(Ui.Pill("Twitch only", Theme.AccentSoft, Theme.AccentText));
+            label.Children.Add(Ui.Pill(Text.T("field.twitchOnly"), Theme.AccentSoft, Theme.AccentText));
             toggle.Content = label;
-            AutomationProperties.SetName(toggle, AutomationProperties.GetName(toggle) + " (Twitch only)");
+            AutomationProperties.SetName(toggle, AutomationProperties.GetName(toggle) + " (" + Text.T("field.twitchOnly") + ")");
         }
 
         // ---- Name lists ----------------------------------------------------------------------------------
@@ -414,10 +413,10 @@ namespace UIFramework
                 Margin = new Thickness(4, 0, 0, 0),
                 Foreground = Theme.SubFg,
                 Cursor = Cursors.Hand,
-                ToolTip = "Remove " + name,
+                ToolTip = Text.T("field.remove", name),
                 Template = Ui.ButtonTemplate(Colors.Transparent, Theme.Hover, Colors.Transparent, 9, new Thickness(0))
             };
-            AutomationProperties.SetName(x, "Remove " + name);
+            AutomationProperties.SetName(x, Text.T("field.remove", name));
             x.PreviewMouseLeftButtonDown += (sender, e) =>
             {
                 e.Handled = true;
@@ -464,10 +463,10 @@ namespace UIFramework
                 BorderThickness = new Thickness(1),
                 Background = Colours.ParseHexBrush(box.Text),
                 Cursor = Cursors.Hand,
-                ToolTip = "Click to pick a colour"
+                ToolTip = Text.T("colour.pick.tip")
             };
-            AutomationProperties.SetName(swatch, "Pick a colour for " + label);
-            var pick = Ui.IconButton("🎨", null, "Pick " + label.ToLowerInvariant());
+            AutomationProperties.SetName(swatch, Text.T("colour.pickFor", label));
+            var pick = Ui.IconButton("🎨", null, Text.T("colour.pick", label.ToLowerInvariant()));
             pick.Margin = new Thickness(6, 0, 0, 0);
 
             box.TextChanged += (sender, e) => swatch.Background = Colours.ParseHexBrush(box.Text);

@@ -268,7 +268,7 @@ namespace UIFramework
                 ToolTip = tooltip,
                 Template = ButtonTemplate(Colors.Transparent, Theme.Hover, Theme.LineStrong, 5, new Thickness(8, 0, 8, 0))
             };
-            AutomationProperties.SetName(chip, "Insert " + text);
+            AutomationProperties.SetName(chip, Text.T("field.insert", text));
             return chip;
         }
 
