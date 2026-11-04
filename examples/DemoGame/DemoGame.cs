@@ -200,7 +200,7 @@ public static class UiSchema
         .Pages(P("game", "Game", "dice"), "messages", "help", "about")
         .Samples("user", "alice", "roll", "6", "sides", "6", "result", "a win, 10 points")
         .Answer("tryRoll", "@alice rolls a 6 on a d6: a win, 10 points.")
-        .Cooldowns(C("!roll", "globalCooldown", "userCooldown"))   // the two settings reach the command after every save
+        .Cooldowns(C("364c549b-0294-486b-80ae-ea838e14ec18", "globalCooldown", "userCooldown"))   // the !roll command's id: the two settings reach it after every save
         .Help(H("Playing", Cmd("!roll", "Rolls the die once."), "The highest side wins the points; every other side is no luck."))
         .About(credits: "An example game for UIFramework for streamer.bot.");
 
