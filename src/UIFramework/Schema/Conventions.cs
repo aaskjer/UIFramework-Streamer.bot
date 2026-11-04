@@ -175,6 +175,8 @@ namespace UIFramework
         public readonly Dictionary<string, (string Label, string Help)> Keys = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
         public readonly Dictionary<string, (string Label, string Help)> Framework = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
         public readonly Dictionary<string, string> Placeholders = new Dictionary<string, string>(StringComparer.Ordinal);
+        /// <summary>The window's own texts by key (<see cref="Text"/>).</summary>
+        public readonly Dictionary<string, string> Ui = new Dictionary<string, string>(StringComparer.Ordinal);
 
         public static Lang Parse(JObject root)
         {
@@ -193,6 +195,9 @@ namespace UIFramework
             if (root["placeholders"] is JObject placeholders)
                 foreach (var p in placeholders.Properties())
                     Placeholders[p.Name] = p.Value.ToString();
+            if (root["ui"] is JObject ui)
+                foreach (var p in ui.Properties())
+                    Ui[p.Name] = p.Value.ToString();
         }
 
         private static void Read(JObject section, Dictionary<string, (string, string)> into)

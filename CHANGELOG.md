@@ -12,6 +12,10 @@ host on the generic stub.
   the old spec by the new `tools/spec-to-window.ps1`, which turns a host's `spec.json` and the cooldowns of its
   host section into the `UiWindow` declaration), its game action answers through `UiHost.Handle`, its settings
   action is `stub/Stub.cs`. `hosts/highlow` keeps the block and the schema; its spec files are gone.
+- German: the language in the customise bar now translates the window itself (buttons, status line, dialogs,
+  menus, the Messages, Log and About pages' chrome, the customise mode), not only the conventions' labels. The
+  texts sit in `conventions/lang/<code>.json` under `ui`; the code reads them through `Text.T(key)`, English
+  where a language lacks one. What a game declares (labels, help, the help and about pages) is shown as declared.
 - Points systems: `UiCurrency.Detect(CPH, settings)` in the host block finds StreamUP's Currency Core or Tawmae's
   LOYALTY POINTS by their settings global and gives the user variable and the name of the points, the two
   settings `pointsVariable` and `pointsName` as the fallback; the describe answer carries a detected system

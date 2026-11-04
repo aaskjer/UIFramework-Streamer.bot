@@ -54,7 +54,7 @@ namespace UIFramework
             panel.Children.Add(header);
             panel.Children.Add(_rows);
 
-            _empty = Ui.Note("Nothing here yet. Add a row" + (_defaults != null && _defaults.Count > 0 ? ", or restore the defaults." : "."));
+            _empty = Ui.Note(_defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty"));
             _empty.Margin = new Thickness(0, 4, 0, 0);
             panel.Children.Add(_empty);
 
@@ -64,10 +64,10 @@ namespace UIFramework
             footer.Children.Add(_count);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            var add = Ui.TextButton("Add row", false);
+            var add = Ui.TextButton(Text.T("list.add"), false);
             add.Margin = new Thickness(0);
-            add.ToolTip = "Adds an empty row at the end.";
-            AutomationProperties.SetName(add, "Add row to " + label);
+            add.ToolTip = Text.T("list.add.tip");
+            AutomationProperties.SetName(add, Text.T("list.addTo", label));
             add.Click += (sender, e) =>
             {
                 var row = AddRow(new JObject());
@@ -79,13 +79,12 @@ namespace UIFramework
             buttons.Children.Add(add);
             if (_defaults != null && _defaults.Count > 0)
             {
-                var restore = Ui.TextButton("Restore defaults", false);
-                restore.ToolTip = "Puts the rows this came with back, replacing what is here now. Nothing is written until you save.";
-                AutomationProperties.SetName(restore, "Restore defaults of " + label);
+                var restore = Ui.TextButton(Text.T("list.restore"), false);
+                restore.ToolTip = Text.T("list.restore.tip");
+                AutomationProperties.SetName(restore, Text.T("list.restoreOf", label));
                 restore.Click += (sender, e) =>
                 {
-                    if (MessageBox.Show("Replace the rows of '" + label + "' with the defaults?\nNothing is written until you save.",
-                            "Restore defaults", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                    if (MessageBox.Show(Text.T("list.restore.confirm", label), Text.T("list.restore"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                         return;
                     Set(_defaults);
                 };
@@ -181,7 +180,7 @@ namespace UIFramework
                 row.Cells[column.Key] = control;
                 cells.Add(column.Kind == "emote" && control is TextBox emote ? WithPicture(column, emote) : control);
             }
-            var remove = Ui.IconButton(Icons.Remove, Icons.Font, "Remove this row");
+            var remove = Ui.IconButton(Icons.Remove, Icons.Font, Text.T("list.removeRow"));
             remove.VerticalAlignment = VerticalAlignment.Top;
             remove.Click += (sender, e) =>
             {
@@ -274,9 +273,9 @@ namespace UIFramework
             _empty.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             int usable = Value.Count;
             _count.Text = _items.Count == usable
-                ? (usable == 1 ? "1 row" : usable + " rows")
-                : usable + " of " + _items.Count + " filled in";
-            _count.ToolTip = "A row counts once something is typed into it; empty rows are dropped on save.";
+                ? (usable == 1 ? Text.T("list.count.one") : Text.T("list.count.many", usable))
+                : Text.T("list.count.filled", usable, _items.Count);
+            _count.ToolTip = Text.T("list.count.tip");
         }
 
         private void Notify()

@@ -34,7 +34,7 @@ namespace UIFramework
             names.Children.Add(new TextBlock { Text = spec.Title, FontSize = 17, FontWeight = FontWeights.SemiBold, Foreground = Theme.LabelFg });
             names.Children.Add(new TextBlock
             {
-                Text = "Version " + (spec.Version ?? "?") + "  ·  UIFramework " + Entry.FrameworkVersion,
+                Text = Text.T("about.version", spec.Version ?? "?", Entry.FrameworkVersion),
                 FontSize = 12,
                 Foreground = Theme.SubFg,
                 Margin = new Thickness(0, 2, 0, 0)
@@ -59,27 +59,27 @@ namespace UIFramework
 
             if (spec.Problems.Count > 0)
             {
-                page.Children.Add(Ui.Section("Schema problems"));
-                page.Children.Add(Ui.Note("What the host declares does not all fit; the window works around it. For the host's author:"));
+                page.Children.Add(Ui.Section(Text.T("about.problems")));
+                page.Children.Add(Ui.Note(Text.T("about.problems.note")));
                 foreach (var problem in spec.Problems)
                     page.Children.Add(new TextBlock { Text = "•  " + problem, FontSize = 12, Foreground = new SolidColorBrush(Theme.WarningText), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
             }
 
-            page.Children.Add(Ui.Section("Links"));
+            page.Children.Add(Ui.Section(Text.T("about.links")));
             if (spec.RepoUrl != null)
             {
-                page.Children.Add(ctx.Fields.LinkLine(spec.Title + " on GitHub", spec.RepoUrl));
-                page.Children.Add(ctx.Fields.LinkLine("Releases", spec.ReleasesUrl));
+                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.onGitHub", spec.Title), spec.RepoUrl));
+                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.releases"), spec.ReleasesUrl));
             }
             foreach (var link in spec.About.Links)
                 page.Children.Add(ctx.Fields.LinkLine(link.Text, link.Url));
             if (spec.RepoUrl != null)
-                page.Children.Add(ctx.Fields.LinkLine("Report something that looks wrong", spec.RepoUrl + "/issues"));
+                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.report"), spec.RepoUrl + "/issues"));
             if (spec.About.ShowAuthorLink)
-                page.Children.Add(ctx.Fields.LinkLine("aaskjer on Twitch", "https://twitch.tv/aaskjer"));
+                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.author"), "https://twitch.tv/aaskjer"));
             if (spec.About.ShowStreamerBotLink)
                 page.Children.Add(ctx.Fields.LinkLine("Streamer.bot", "https://streamer.bot"));
-            page.Children.Add(ctx.Fields.LinkLine("UIFramework for streamer.bot", "https://github.com/aaskjer/UIFramework-Streamer.bot"));
+            page.Children.Add(ctx.Fields.LinkLine(Text.T("about.framework"), "https://github.com/aaskjer/UIFramework-Streamer.bot"));
 
             return Ui.Scroll(page);
         }
@@ -172,13 +172,13 @@ namespace UIFramework
             ComboBox separator = null;
             if (!string.IsNullOrEmpty(keys.NumberSeparator))
             {
-                separator = f.StringCombo("Numbers", keys.NumberSeparator,
+                separator = f.StringCombo(Text.T("messages.numbers"), keys.NumberSeparator,
                     new[] { (".", "12.345"), (",", "12,345"), (" ", "12 345"), ("", "12345") },
-                    "The thousands separator used in every amount that is posted.");
-                top = Ui.Row(new[] { 2.4, 1.0 }, Ui.Labeled("Message", picker), Ui.Labeled("Numbers", separator));
+                    Text.T("messages.numbers.tip"));
+                top = Ui.Row(new[] { 2.4, 1.0 }, Ui.Labeled(Text.T("messages.message"), picker), Ui.Labeled(Text.T("messages.numbers"), separator));
             }
             else
-                top = Ui.Row(Ui.Labeled("Message", picker));
+                top = Ui.Row(Ui.Labeled(Text.T("messages.message"), picker));
             top.Margin = new Thickness(0, 12, 0, 0);
 
             var help = new TextBlock { FontSize = 12, Foreground = Theme.MutedFg, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
@@ -207,14 +207,12 @@ namespace UIFramework
             var gameSender = new StackPanel { Orientation = Orientation.Horizontal };
             if (keys.UseBot != null)
             {
-                useBot = f.Toggle("Bot account", keys.UseBot,
-                    "Sends the messages from your Streamer.bot bot account instead of the broadcaster account.\n(Platforms > Any platform > Accounts > Bot)");
+                useBot = f.Toggle(Text.T("messages.botAccount"), keys.UseBot, Text.T("messages.botAccount.tip"));
                 gameSender.Children.Add(useBot);
             }
             if (keys.SendAction != null)
             {
-                sendAction = f.Toggle("Send as /me", keys.SendAction,
-                    "Twitch only: YouTube and Kick have no /me, so there the messages always go out as plain chat.");
+                sendAction = f.Toggle(Text.T("messages.sendMe"), keys.SendAction, Text.T("messages.sendMe.tip"));
                 Fields.TwitchOnly(sendAction);
                 sendAction.Margin = new Thickness(18, 0, 0, 0);
                 gameSender.Children.Add(sendAction);
@@ -223,11 +221,11 @@ namespace UIFramework
             var cooldownSender = new StackPanel { Orientation = Orientation.Horizontal };
             if (hasCooldownSenders)
             {
-                useBotCd = f.Toggle("Bot account", keys.CooldownUseBot, "Sends the cooldown replies from your bot account, separately from the other messages.");
+                useBotCd = f.Toggle(Text.T("messages.botAccount"), keys.CooldownUseBot, Text.T("messages.cooldownBot.tip"));
                 cooldownSender.Children.Add(useBotCd);
                 if (keys.CooldownSendAction != null)
                 {
-                    sendActionCd = f.Toggle("Send as /me", keys.CooldownSendAction, "Twitch only, and separate from the other messages.");
+                    sendActionCd = f.Toggle(Text.T("messages.sendMe"), keys.CooldownSendAction, Text.T("messages.cooldownMe.tip"));
                     Fields.TwitchOnly(sendActionCd);
                     sendActionCd.Margin = new Thickness(18, 0, 0, 0);
                     cooldownSender.Children.Add(sendActionCd);
@@ -271,7 +269,7 @@ namespace UIFramework
 
                 tokens.Children.Clear();
                 if (current.Tokens.Length == 0)
-                    tokens.Children.Add(new TextBlock { Text = "Sent as written: this one has no placeholders.", FontSize = 12, Foreground = Theme.MutedFg });
+                    tokens.Children.Add(new TextBlock { Text = Text.T("messages.noPlaceholders"), FontSize = 12, Foreground = Theme.MutedFg });
                 string target = current.Key;
                 foreach (var token in current.Tokens)
                 {
@@ -288,7 +286,7 @@ namespace UIFramework
                 bool cooldown = hasCooldownSenders && current.Group == keys.CooldownGroup;
                 gameSender.Visibility = cooldown ? Visibility.Collapsed : Visibility.Visible;
                 cooldownSender.Visibility = cooldown ? Visibility.Visible : Visibility.Collapsed;
-                scope.Text = cooldown ? "Only for cooldown replies" : "Not for cooldown replies";
+                scope.Text = cooldown ? Text.T("messages.scope.cooldown") : Text.T("messages.scope.game");
                 Render();
             }
 
@@ -312,10 +310,10 @@ namespace UIFramework
             page.Children.Add(help);
             page.Children.Add(editors);
             page.Children.Add(tokens);
-            page.Children.Add(Ui.Section("Chat preview"));
+            page.Children.Add(Ui.Section(Text.T("messages.preview")));
             page.Children.Add(previewBox);
             page.Children.Add(senders);
-            page.Children.Add(Ui.Note("The preview fills every placeholder with a sample, so a stray brace or a misspelt name shows up here before chat sees it."));
+            page.Children.Add(Ui.Note(Text.T("messages.preview.note")));
 
             picker.SelectedItem = picker.Items.OfType<ComboBoxItem>().First(i => defs[0].Key.Equals(i.Tag));
             return Ui.Scroll(page);
@@ -334,10 +332,10 @@ namespace UIFramework
             target.Inlines.Clear();
             if (string.IsNullOrWhiteSpace(message))
             {
-                target.Inlines.Add(new Run("Empty, so nothing is sent.") { Foreground = Theme.MutedFg, FontStyle = FontStyles.Italic });
+                target.Inlines.Add(new Run(Text.T("messages.empty")) { Foreground = Theme.MutedFg, FontStyle = FontStyles.Italic });
                 return;
             }
-            target.Inlines.Add(new Run(bot ? "YourBot" : "YourChannel") { FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Theme.AccentText) });
+            target.Inlines.Add(new Run(bot ? Text.T("messages.yourBot") : Text.T("messages.yourChannel")) { FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Theme.AccentText) });
             target.Inlines.Add(new Run(action ? " " : ": ") { Foreground = Theme.LabelFg });
             var body = new Run(message) { Foreground = action ? new SolidColorBrush(Theme.AccentText) : Theme.LabelFg };
             if (action)

@@ -224,7 +224,8 @@ namespace UIFramework
         public string WriteLogKey;
         public string WriteLogLabel = "Write a log file per day";
         public string WriteLogHelp;
-        public string EmptyText = "Nothing logged yet.";
+        /// <summary>Null: the framework's own text, in its language.</summary>
+        public string EmptyText;
         /// <summary>Colours a result: success, warning, muted or accent. Null uses <see cref="LogPage.DefaultStyle"/>.</summary>
         public Func<string, PillStyle> ResultStyle;
         /// <summary>Shortens a raw result to the filter value and the pill text, e.g. "DUEL WIN" to "WIN". Null keeps it.</summary>

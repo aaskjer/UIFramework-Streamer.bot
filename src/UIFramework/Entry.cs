@@ -66,6 +66,7 @@ namespace UIFramework
             spec.Schema = schema;
             spec.Conventions = conventions;
             spec.Layout = layout;
+            Text.Use(conventions.Lang);
             Resolve.Apply(spec, schema, conventions, layout);
         }
 

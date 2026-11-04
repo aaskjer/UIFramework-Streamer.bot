@@ -45,9 +45,9 @@ namespace UIFramework
             if (read == null)
                 return null;
 
-            const string AllDates = "All days";
-            const string AllResults = "All results";
-            const string AllPlatforms = "All platforms";
+            string AllDates = Text.T("log.allDays");
+            string AllResults = Text.T("log.allResults");
+            string AllPlatforms = Text.T("log.allPlatforms");
             Func<string, string> outcome = spec.Outcome ?? (r => (r ?? "").Trim().ToUpperInvariant());
             Func<string, PillStyle> style = spec.ResultStyle ?? DefaultStyle;
 
@@ -55,26 +55,26 @@ namespace UIFramework
             var entries = new ObservableCollection<LogEntry>(read.OrderByDescending(x => x.Timestamp));
             var view = CollectionViewSource.GetDefaultView(entries);
 
-            var search = new TextBox { ToolTip = "Finds names, platforms, results and amounts." };
+            var search = new TextBox { ToolTip = Text.T("log.search.tip") };
             Ui.StyleInput(search);
-            AutomationProperties.SetName(search, "Search the log");
-            var searchHost = Ui.WithHint(search, "Search the log");
+            AutomationProperties.SetName(search, Text.T("log.search"));
+            var searchHost = Ui.WithHint(search, Text.T("log.search"));
 
             var resultOptions = new List<string> { AllResults };
             resultOptions.AddRange(spec.Results.Count > 0
                 ? spec.Results
                 : entries.Select(e => outcome(e.Result)).Where(r => r.Length > 0).Distinct().OrderBy(r => r).Select(Title));
-            var results = Ui.PlainCombo("Result", resultOptions.ToArray());
-            var platforms = Ui.PlainCombo("Platform", new[] { AllPlatforms }.Concat(spec.Platforms).ToArray());
-            var dates = Ui.PlainCombo("Day", AllDates);
+            var results = Ui.PlainCombo(Text.T("log.result"), resultOptions.ToArray());
+            var platforms = Ui.PlainCombo(Text.T("log.platform"), new[] { AllPlatforms }.Concat(spec.Platforms).ToArray());
+            var dates = Ui.PlainCombo(Text.T("log.day"), AllDates);
 
-            var reload = Ui.IconButton(Icons.Refresh, Icons.Font, "Read the log again");
+            var reload = Ui.IconButton(Icons.Refresh, Icons.Font, Text.T("log.reload"));
             reload.Margin = new Thickness(8, 0, 0, 0);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
             buttons.Children.Add(reload);
             if (!string.IsNullOrEmpty(spec.Folder))
             {
-                var openFolder = Ui.IconButton(Icons.Open, Icons.Font, "Open the log folder");
+                var openFolder = Ui.IconButton(Icons.Open, Icons.Font, Text.T("log.openFolder"));
                 openFolder.Margin = new Thickness(6, 0, 0, 0);
                 openFolder.Click += (sender, e) => Web.OpenFolder(spec.Folder, ctx.Log, ctx.Spec.LogPrefix);
                 buttons.Children.Add(openFolder);
@@ -115,9 +115,9 @@ namespace UIFramework
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
-            grid.Columns.Add(TextColumn("Time", new Binding("Timestamp") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, cellText));
+            grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, cellText));
             grid.Columns.Add(ResultColumn(outcome, style));
-            var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn("User", "User"), new LogColumn("Platform", "Platform") };
+            var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn(Text.T("log.user"), "User"), new LogColumn(Text.T("log.platform"), "Platform") };
             foreach (var column in columns)
                 grid.Columns.Add(TextColumn(column.Header, new Binding { Converter = new FieldReader(column.Field) }, cellText));
 
@@ -144,10 +144,10 @@ namespace UIFramework
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 Margin = new Thickness(0, 8, 0, 0),
                 FontSize = 12,
-                ToolTip = "The whole line behind the entry picked above."
+                ToolTip = Text.T("log.line.tip")
             };
             Ui.StyleColors(details);
-            AutomationProperties.SetName(details, "Log line");
+            AutomationProperties.SetName(details, Text.T("log.line"));
 
             DockPanel.SetDock(toolbar, Dock.Top);
             root.Children.Add(toolbar);
@@ -184,7 +184,7 @@ namespace UIFramework
                     return true;
                 };
                 view.Refresh();
-                empty.Text = entries.Count == 0 ? spec.EmptyText : "No entries match.";
+                empty.Text = entries.Count == 0 ? (spec.EmptyText ?? Text.T("log.nothingYet")) : Text.T("log.noMatch");
                 empty.Visibility = view.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
             }
 
@@ -308,7 +308,7 @@ namespace UIFramework
             pill.AppendChild(text);
             return new DataGridTemplateColumn
             {
-                Header = "Result",
+                Header = Text.T("log.result"),
                 CellTemplate = new DataTemplate { VisualTree = pill },
                 Width = DataGridLength.Auto,
                 MinWidth = 90,
