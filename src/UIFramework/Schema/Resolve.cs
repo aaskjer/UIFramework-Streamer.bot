@@ -38,6 +38,19 @@ namespace UIFramework
                     if (over.Hidden.HasValue) setting.Hidden = over.Hidden.Value;
                     if (over.Order.HasValue) setting.Order = over.Order.Value;
                 }
+                // Another language than the game's: the conventions (and the game's own translations, laid over
+                // them) translate what they know; the rest stays as declared. The options are the setting's own copy.
+                if (lang.Translates)
+                {
+                    var text = lang.Key(setting.Key);
+                    setting.Label = text.Label ?? lang.Text(setting.Label);
+                    setting.Help = text.Help ?? lang.Text(setting.Help);
+                    setting.Section = lang.Text(setting.Section);
+                    setting.Group = lang.Text(setting.Group);
+                    if (setting.Options != null)
+                        foreach (var option in setting.Options)
+                            option.Label = lang.Text(option.Label);
+                }
                 // The user's layout has the last word on where a field sits and what it is called.
                 var mine = layout?.Field(setting.Key);
                 if (mine != null)
@@ -53,6 +66,8 @@ namespace UIFramework
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
             Check(spec, settings);
+            foreach (var pill in spec.HeaderPills)
+                pill.Tooltip = lang.Text(pill.Declared);
             Currency(spec, schema, settings);
 
             // 2. Defaults and aliases for the store.
@@ -168,7 +183,9 @@ namespace UIFramework
                 bool hidden = userPage?.Hidden == true && page.Id != "about";
                 if (hidden && !customizing)
                     continue;
-                string title = userPage?.Title ?? page.Title ?? lang.Page(page.Id) ?? Conventions.Humanize(page.Id);
+                string title = userPage?.Title
+                    ?? (lang.Translates ? lang.TextOrNull(page.Title) ?? lang.Page(page.Id) ?? page.Title : page.Title ?? lang.Page(page.Id))
+                    ?? Conventions.Humanize(page.Id);
                 string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
                 // Help and About sit in their own group at the bottom of the rail, apart from the settings pages.
                 bool bottom = page.Bottom || page.Id == "about" || page.Id == "help";

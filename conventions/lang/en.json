@@ -2,7 +2,8 @@
   "version": 1,
   "pages": {
     "general": "General", "game": "Game", "points": "Points & Bets", "cooldowns": "Cooldowns", "access": "Access",
-    "messages": "Messages", "leaderboard": "Leaderboard", "overlay": "Overlay", "log": "Log", "help": "Help", "about": "About"
+    "messages": "Messages", "leaderboard": "Leaderboard", "overlay": "Overlay", "log": "Log", "help": "Help", "about": "About",
+    "stats": "Stats", "channelPoints": "Channel points"
   },
   "framework": {
     "darkMode": { "label": "Dark mode" },
@@ -73,7 +74,23 @@
     "overlayTextColour":     { "label": "Text colour" },
     "overlayBackgroundColour": { "label": "Background colour" },
     "overlayBackgroundOpacity":{ "label": "Background opacity" },
-    "overlayAccentColour":   { "label": "Accent colour" }
+    "overlayAccentColour":   { "label": "Accent colour" },
+
+    "logToFile":             { "label": "Write a log file per day", "help": "One file per day in the game's log folder." },
+    "obsConnectionId":       { "label": "OBS connection", "help": "The number of the OBS connection in Streamer.bot; 0 is the first." },
+    "obsSceneName":          { "label": "Scene" },
+    "obsSourceName":         { "label": "Source" },
+    "setupObsOverlay":       { "label": "Create the browser source in OBS" },
+    "refundFailedRedemptions": { "label": "Refund redemptions that don't play", "help": "The channel points go back when the redemption does not turn into a game." },
+    "duelEnabled":           { "label": "Duels" },
+    "resetLeaderboard":      { "label": "Reset the leaderboard now" },
+    "subscriberBoostEnabled": { "label": "Subscriber boost" },
+    "subscriberBoostPercent": { "label": "Subscriber boost (%)" },
+    "vipBoostEnabled":       { "label": "VIP boost" },
+    "vipBoostPercent":       { "label": "VIP boost (%)" },
+    "tryBet":                { "label": "Bet to try" },
+    "tryRole":               { "label": "Play as" },
+    "rewardId":              { "label": "Reward ID", "help": "The id of the channel point reward; the game fills it in when it creates the reward." }
   },
   "placeholders": {
     "user": "The viewer's display name", "target": "The other player", "pointsName": "Name of the points",

@@ -153,7 +153,28 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Answer(action, text)` | what an action would answer, for the framework's preview and screenshots only                      |
 | `Override(key, …)`   | `page`, `label`, `help`, `section`, `hidden`, `order` of one setting, where the table should not say it |
 | `Help(H(heading, lines…), …)` | the Help page: a line is a note (a string), `Cmd(command, what)` or `Link(text, url)`         |
+| `Lang(code, texts…)` | the game's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)` |
 | `About(credits, sections, links, streamerBotLink, authorLink)` | the About page; sections like help; the Streamer.bot and author links are on unless turned off |
+
+### Languages
+
+What the game declares is English. When the layout file names another language (`de`), the window translates
+what the conventions know: the texts of the conventions' keys (`conventions/lang/de.json`, `keys`) replace the
+declared label and help of those keys, pages are titled by id (`pages`), and short declared texts are looked up
+by their English wording (`texts`): section headings, pill texts, page titles, option labels, message groups.
+What nothing knows stays as declared. The user's own layout (a renamed field or page) still has the last word.
+
+A game adds what the conventions cannot know, its own keys and sections, with `Lang` on the window; several
+calls add up, and these texts are laid over the conventions' for that language:
+
+```csharp
+    .Lang("de", K("numDecks", "Decks im Schuh", "Wie viele Decks der Dealer mischt."), K("egg", "Ei"),
+                Pg("fleet", "Flotte"), Tx("Shoe", "Schuh"), Tx("Free game on", "Freispiel an"))
+```
+
+In the schema this is `lang: { "de": { "keys": …, "pages": …, "texts": … } }`, the shape of a conventions
+language file. The help and about pages are shown as declared; a game that wants them in another language
+declares them in that language.
 
 Settings the window puts on a standard page (a switch on `log`) sit above that page's own content. Within a
 page the table's order holds (`Override(order:)` moves one); a heading where `section` changes.

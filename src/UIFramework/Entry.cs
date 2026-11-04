@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 
 namespace UIFramework
 {
@@ -63,6 +64,11 @@ namespace UIFramework
             var layout = !string.IsNullOrEmpty(spec.SettingsPath) ? LayoutFile.Load(spec.SettingsPath) : new LayoutFile("layout");
             string language = spec.Language ?? layout.Language;
             var conventions = string.IsNullOrEmpty(language) || language == "en" ? Conventions.Default : Conventions.Load(language);
+            if (!ReferenceEquals(conventions, Conventions.Default) && schema.Lang?[language] is JObject mine)
+            {
+                conventions.Lang.Overlay(mine);   // the game's own translations over the conventions'
+                conventions.Lang.Code = language;
+            }
             spec.Schema = schema;
             spec.Conventions = conventions;
             spec.Layout = layout;

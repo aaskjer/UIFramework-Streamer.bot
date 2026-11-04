@@ -419,18 +419,22 @@ namespace UIFramework
             body.Children.Add(pageHost);
 
             // ---- Footer ----
+            // The status takes what the footer's buttons leave, so a long text in a narrow window is cut with an
+            // ellipsis (the whole text is in its tooltip) instead of running under the buttons on the left.
             var status = new TextBlock
             {
                 FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 6, 0),
+                TextAlignment = TextAlignment.Right,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Margin = new Thickness(10, 0, 6, 0),
                 Foreground = Theme.MutedFg
             };
             void SetStatus(string text, Color color, string why = null)
             {
                 status.Text = text;
                 status.Foreground = new SolidColorBrush(color);
-                status.ToolTip = why;
+                status.ToolTip = why ?? text;
             }
             ctx.SetStatus = (text, colour, why) => SetStatus(text, colour, why);
 
@@ -717,7 +721,6 @@ namespace UIFramework
             leftButtons.Children.Add(btnResetPage);
             leftButtons.Children.Add(btnCustomize);
             var rightButtons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            rightButtons.Children.Add(status);
             if (customizing)
             {
                 SetStatus(Text.T("status.customise"), Theme.AccentText);
@@ -733,8 +736,10 @@ namespace UIFramework
             rightButtons.Children.Add(btnSaveExit);
             var footerDock = new DockPanel();
             DockPanel.SetDock(leftButtons, Dock.Left);
+            DockPanel.SetDock(rightButtons, Dock.Right);
             footerDock.Children.Add(leftButtons);
             footerDock.Children.Add(rightButtons);
+            footerDock.Children.Add(status);
             var footer = new Border
             {
                 Padding = new Thickness(12, 9, 12, 10),
