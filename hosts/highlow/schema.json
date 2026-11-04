@@ -78,7 +78,7 @@
       "default": "points",
       "page": "game",
       "section": "Currency",
-      "help": "The Streamer.bot user variable that winnings are added to and losses taken from. Currency Core by StreamUP is found on its own and overrides this.",
+      "help": "The Streamer.bot user variable that winnings are added to and losses taken from. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own and override this; the window shows which one is installed.",
       "aliases": [
         "PointsVar"
       ]
@@ -88,7 +88,7 @@
       "default": "Points",
       "page": "game",
       "section": "Currency",
-      "help": "What your currency is called in chat; it fills {currency} and {pointsName}. Overridden by Currency Core when it is installed.",
+      "help": "What your currency is called in chat; it fills {currency} and {pointsName}. Overridden by Currency Core or LOYALTY POINTS when one of them is installed.",
       "aliases": [
         "PointsName"
       ]
