@@ -8,14 +8,15 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Newtonsoft.Json.Linq;
 
-// UIFramework for streamer.bot: the settings action of a host.
+// UIFramework for streamer.bot: the settings action of a host that carries its spec and host code itself. Hosts
+// not yet moved to the generic stub/Stub.cs use this template through tools/embed-spec.ps1.
 //
 // This is the whole action. It compiles with no reference beyond what Streamer.bot gives every action, loads
 // UIFramework.dll at run time and hands it three things: the spec (how this window is called and laid out),
 // the schema (what the game knows, asked from the game action) and a Host object the DLL talks back to.
 //
-// The action needs PresentationFramework, PresentationCore and WindowsBase in its references for the first-run
-// dialog (an export made from a WPF settings action has them). Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
+// No references to add: the dialogs are Win32 message boxes.
+// Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
 // hosts/<host>/host-section.cs and its spec from hosts/<host>/spec.json into this template. Everything outside
 // the markers is the same in every host; tools/check-stub.ps1 checks that.
 
@@ -107,6 +108,31 @@ public class CPHInline
         }
 
         public string ReadTable(string key) => null;
+
+        // What would not do what it looks like, one problem per line; the window asks before saving anyway.
+        public string Validate(string settingsJson)
+        {
+            var s = JObject.Parse(settingsJson);
+            var problems = new List<string>();
+            if (!((bool?)s["freeGame"] ?? false) && string.IsNullOrWhiteSpace((string)s["pointsVariable"]))
+                problems.Add("Free Game is off but the points variable is empty, so no stake can ever be taken.");
+            Stakes(s, "minBet", "maxBet", "defaultBet", "the table", problems);
+            Stakes(s, "duelMinBet", "duelMaxBet", null, "a duel", problems);
+            Stakes(s, "houseMinBet", "houseMaxBet", null, "a House seat", problems);
+            return problems.Count == 0 ? null : string.Join("\n", problems);
+        }
+
+        // A minimum above the maximum refuses every stake; a default outside them is reshaped on every hand.
+        private static void Stakes(JObject s, string minKey, string maxKey, string defaultKey, string what, List<string> problems)
+        {
+            long min = (long?)s[minKey] ?? 0, max = (long?)s[maxKey] ?? 0;
+            if (max > 0 && min > max)
+                problems.Add("The minimum stake of " + what + " (" + min + ") is above its maximum (" + max + "), so every stake is refused.");
+            if (defaultKey == null) return;
+            long fallback = (long?)s[defaultKey] ?? 0;
+            if (fallback > 0 && (fallback < min || (max > 0 && fallback > max)))
+                problems.Add("The default bet (" + fallback + ") is outside the minimum and maximum of " + what + ", so a hand without an amount is reshaped every time.");
+        }
 
         public IEnumerable<string> ReadLogLines()
         {
@@ -217,8 +243,9 @@ public class CPHInline
     }
     // ==== END HOST ====
 
-    // The spec: see docs/Spec.md. Written in by tools/embed-spec.ps1 from hosts/<host>/spec.json; edit the JSON.
-    private const string Spec = @"{""title"":""Blackjack Game"",""version"":""v16.3.1"",""releases"":""aaskjer/Blackjack-Game"",""logo"":""https://github.com/aaskjer/Blackjack-Game/blob/main/Assets/logo.png?raw=true"",""logPrefix"":""[Blackjack Game/Settings]"",""pages"":[{""id"":""table"",""title"":""Table"",""icon"":""🃏""},{""id"":""duel"",""title"":""Duel"",""icon"":""⚔️""},{""id"":""house"",""title"":""House"",""icon"":""🏠""},{""id"":""access"",""title"":""Access"",""icon"":""👥""},{""id"":""overlay"",""title"":""Overlay"",""icon"":""📺""},{""id"":""messages"",""title"":""Messages"",""icon"":""💬""},{""id"":""stats"",""title"":""Stats"",""icon"":""🏆"",""fields"":[""leaderboard*"",""statsTable"",""resetLeaderboard""]},{""id"":""log"",""title"":""Log"",""icon"":""📜""},{""id"":""help"",""title"":""How to play"",""icon"":""📖""},{""id"":""about"",""title"":""About"",""icon"":""ℹ️""}],""senders"":{""useBot"":""useBot"",""sendAction"":""sendAction"",""cooldownUseBot"":""cooldownUseBot"",""cooldownSendAction"":""cooldownSendAction"",""numberSeparator"":""numberSeparator"",""cooldownGroup"":""Cooldown""},""samples"":{""cards"":""🂫(10) 🂺(10)"",""card"":""🂺(10)"",""value"":""20"",""total"":""22"",""handnum"":""2"",""hands"":""Tie on Hand 1!"",""card1"":""🂫(10)"",""card2"":""🂺(10)"",""challenger"":""alice"",""opponent"":""bob"",""challengercards"":""🂫(10) 🂺(10) (20)"",""opponentcards"":""🂱(11) 🂸(8) (19)"",""challengervalue"":""20"",""opponentvalue"":""19"",""winner"":""alice"",""loser"":""bob"",""pot"":""3,000"",""bet"":""1,500"",""newbet"":""3,000"",""raise"":""doubles down"",""turn"":""bob"",""round"":""1"",""seconds"":""60"",""required"":""1,500"",""available"":""820"",""var"":""points"",""action"":""insurance"",""extra"":"", double or split"",""addictedCutPercent"":""50"",""menu"":""1) Vegas Strip | 2) Atlantic City | 3) European"",""rules"":""Vegas Strip"",""rulesdetail"":""4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2"",""seats"":""alice: 20 win | bob: 19 lose"",""seatnum"":""2"",""dealer"":""🂱(11) 🂸(8)"",""dealervalue"":""19"",""playercards"":""🂫(10) 🂺(10)"",""playervalue"":""20"",""FormatNumber(bet)"":""1,500"",""0"":""alice"",""1"":""12"",""balance"":""11,500""},""headerPills"":[{""key"":""freeGame"",""on"":""Free game on"",""off"":""Free game off"",""tooltip"":""Free Game, from the Table page. While it is on, nobody stakes or wins anything.""}],""log"":{""folder"":""Chat Games/Logs"",""writeLogKey"":""logToFile"",""writeLogHelp"":""Writes every settled hand to a dated \u0027BJG-log-yyyy-MM-dd.txt\u0027 in the Logs folder, one file per day."",""columns"":[{""header"":""Player"",""field"":""User""},{""header"":""Bet"",""field"":""Bet""},{""header"":""Change"",""field"":""Change""},{""header"":""After"",""field"":""After""}],""results"":[""Win"",""Blackjack"",""Loss"",""Bust"",""Push"",""Charlie"",""Three 7s"",""Insurance"",""Surrender"",""Quit"",""Timeout""]},""help"":[{""heading"":""The idea"",""lines"":[{""note"":""Get closer to 21 than the dealer without going past it. Number cards count their face value, Jack, Queen and King count 10, and an Ace counts 11 until that would bust the hand, at which point it drops to 1 on its own.""}]},{""heading"":""Playing a hand"",""lines"":[{""command"":""!blackjack \u003cbet\u003e"",""what"":""Deals in. The bet takes a number, one of the shortcuts below, or nothing at all to use the Default bet.""},{""command"":""hit"",""what"":""Draw another card.""},{""command"":""stand"",""what"":""Stop and keep the total you have.""},{""command"":""double"",""what"":""Double the bet for exactly one more card, then stand. First move on a two-card hand only.""},{""command"":""split"",""what"":""Split a starting pair of equal-value cards into two hands, each played out for the same bet.""},{""command"":""insurance"",""what"":""Stake half the bet against a dealer blackjack, paying 2:1. Only against an Ace, and only before anything else.""},{""command"":""surrender"",""what"":""Fold a fresh two-card hand and keep half the bet.""},{""command"":""quit"",""what"":""Cancel and take the bet back, before hit, stand, double or split.""},{""command"":""repeat"",""what"":""Post the last game message again. In a duel it posts both hands, the pot and whose turn it is.""},{""command"":""stats / allstats"",""what"":""Your own record, or the leaderboard.""},{""note"":""Those are the default trigger words; your streamer may have bound them to something else.""}]},{""heading"":""Bet shortcuts"",""lines"":[{""command"":""all / allin"",""what"":""The whole balance.""},{""command"":""half"",""what"":""Half the balance.""},{""command"":""quarter / 25%"",""what"":""A quarter of it.""},{""command"":""50%, any percentage"",""what"":""That much of the balance.""},{""command"":""double / 2x"",""what"":""Twice the minimum bet.""},{""command"":""random / rand"",""what"":""Somewhere between a tenth of the balance and all of it.""},{""command"":""max / maximum"",""what"":""As much as the balance and the Maximum bet allow.""},{""command"":""1.5k / 2m"",""what"":""1,500 and 2,000,000 - k for thousand, m for million.""}]},{""heading"":""Bonus hands"",""lines"":[{""note"":""Both settle the moment they happen, whatever the dealer is holding.""},{""command"":""5-card Charlie"",""what"":""Five cards without busting. Pays the bet back plus a 1.5x bonus.""},{""command"":""Three 7s"",""what"":""Three or more sevens without busting. Pays the bet back plus a 2x bonus.""}]},{""heading"":""Insurance, in full"",""lines"":[{""note"":""Insurance is only offered when the dealer\u0027s upcard is an Ace, because that is the only time a dealer blackjack - Ace plus a ten-value card - is one card away. It costs half the original bet.""},{""command"":""Dealer has blackjack"",""what"":""Insurance pays 2:1, so three times the insurance stake comes back. That roughly covers losing the main hand.""},{""command"":""Dealer does not"",""what"":""The insurance stake is gone and the hand plays on as normal.""},{""note"":""It has to be decided before hitting, standing, doubling or splitting. Over many hands it loses the player money, which is why plenty of streamers leave it off.""}]},{""heading"":""Surrender, in full"",""lines"":[{""note"":""Surrender is a way out of a hand that looks lost before any of it has been played. It is available on the first two cards only, before hitting, doubling, splitting or insuring, and returns half the bet.""},{""note"":""A 16 against a dealer\u0027s 10 is the usual case: almost any card busts it, and standing on 16 rarely beats a ten either. Half the bet back is the better of two bad outcomes.""}]}],""about"":{""credits"":""Responsible: aaskjer\nCredits: nate1280 / Streamer.bot and YOU ♡"",""sections"":[{""heading"":""Needs a points system"",""lines"":[{""note"":""Hands are played with the points of a currency system. These two are picked up without any setup:""},{""link"":""Currency Core by StreamUP"",""url"":""https://streamup.tips/product/currency-core""},{""link"":""LOYALTY POINTS by tawmae"",""url"":""https://tawmae.xyz/loyalty-points""},{""note"":""Anything else works too - name its variable on the Access page.""}]},{""heading"":null,""lines"":[{""command"":null,""what"":null},{""link"":null,""url"":""string url""}]}],""links"":[{""text"":""Blackjack Game on the Streamer.bot Discord"",""url"":""https://discord.com/channels/834650675224248362/1447648588694818836/1447648588694818836""}]}}";
+    // The spec: the same parts as the window declaration in docs/Schema.md, as JSON. Written in by
+    // tools/embed-spec.ps1 from hosts/<host>/spec.json; edit the JSON.
+    private const string Spec = @"{""title"":""Blackjack Game"",""version"":""v17.0.0"",""releases"":""aaskjer/Blackjack-Game"",""logo"":""https://github.com/aaskjer/Blackjack-Game/blob/main/Assets/logo.png?raw=true"",""logPrefix"":""[Blackjack Game/Settings]"",""pages"":[{""id"":""table"",""title"":""Table"",""icon"":""🃏""},{""id"":""duel"",""title"":""Duel"",""icon"":""⚔️""},{""id"":""house"",""title"":""House"",""icon"":""🏠""},{""id"":""access"",""title"":""Access"",""icon"":""👥""},{""id"":""overlay"",""title"":""Overlay"",""icon"":""📺""},{""id"":""messages"",""title"":""Messages"",""icon"":""💬""},{""id"":""stats"",""title"":""Stats"",""icon"":""🏆"",""fields"":[""leaderboard*"",""statsTable"",""resetLeaderboard""]},{""id"":""log"",""title"":""Log"",""icon"":""📜""},{""id"":""help"",""title"":""How to play"",""icon"":""📖""},{""id"":""about"",""title"":""About"",""icon"":""ℹ️""}],""senders"":{""useBot"":""useBot"",""sendAction"":""sendAction"",""cooldownUseBot"":""cooldownUseBot"",""cooldownSendAction"":""cooldownSendAction"",""numberSeparator"":""numberSeparator"",""cooldownGroup"":""Cooldown""},""samples"":{""cards"":""🂫(10) 🂺(10)"",""card"":""🂺(10)"",""value"":""20"",""total"":""22"",""handnum"":""2"",""hands"":""Tie on Hand 1!"",""card1"":""🂫(10)"",""card2"":""🂺(10)"",""challenger"":""alice"",""opponent"":""bob"",""challengercards"":""🂫(10) 🂺(10) (20)"",""opponentcards"":""🂱(11) 🂸(8) (19)"",""challengervalue"":""20"",""opponentvalue"":""19"",""winner"":""alice"",""loser"":""bob"",""pot"":""3,000"",""bet"":""1,500"",""newbet"":""3,000"",""raise"":""doubles down"",""turn"":""bob"",""round"":""1"",""seconds"":""60"",""required"":""1,500"",""available"":""820"",""var"":""points"",""action"":""insurance"",""extra"":"", double or split"",""addictedCutPercent"":""50"",""menu"":""1) Vegas Strip | 2) Atlantic City | 3) European"",""rules"":""Vegas Strip"",""rulesdetail"":""4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2"",""seats"":""alice: 20 win | bob: 19 lose"",""seatnum"":""2"",""dealer"":""🂱(11) 🂸(8)"",""dealervalue"":""19"",""playercards"":""🂫(10) 🂺(10)"",""playervalue"":""20"",""FormatNumber(bet)"":""1,500"",""0"":""alice"",""1"":""12"",""balance"":""11,500""},""headerPills"":[{""key"":""freeGame"",""on"":""Free game on"",""off"":""Free game off"",""tooltip"":""Free Game, from the Table page. While it is on, nobody stakes or wins anything.""}],""log"":{""folder"":""Chat Games/Logs"",""writeLogKey"":""logToFile"",""writeLogHelp"":""Writes every settled hand to a dated \u0027BJG-log-yyyy-MM-dd.txt\u0027 in the Logs folder, one file per day."",""columns"":[{""header"":""Player"",""field"":""User""},{""header"":""Bet"",""field"":""Bet""},{""header"":""Change"",""field"":""Change""},{""header"":""After"",""field"":""After""}],""results"":[""Win"",""Blackjack"",""Loss"",""Bust"",""Push"",""Charlie"",""Three 7s"",""Insurance"",""Surrender"",""Quit"",""Timeout""]},""help"":[{""heading"":""The idea"",""lines"":[{""note"":""Get closer to 21 than the dealer without going past it. Number cards count their face value, Jack, Queen and King count 10, and an Ace counts 11 until that would bust the hand, at which point it drops to 1 on its own.""}]},{""heading"":""Playing a hand"",""lines"":[{""command"":""!blackjack \u003cbet\u003e"",""what"":""Deals in. The bet takes a number, one of the shortcuts below, or nothing at all to use the Default bet.""},{""command"":""hit"",""what"":""Draw another card.""},{""command"":""stand"",""what"":""Stop and keep the total you have.""},{""command"":""double"",""what"":""Double the bet for exactly one more card, then stand. First move on a two-card hand only.""},{""command"":""split"",""what"":""Split a starting pair of equal-value cards into two hands, each played out for the same bet.""},{""command"":""insurance"",""what"":""Stake half the bet against a dealer blackjack, paying 2:1. Only against an Ace, and only before anything else.""},{""command"":""surrender"",""what"":""Fold a fresh two-card hand and keep half the bet.""},{""command"":""quit"",""what"":""Cancel and take the bet back, before hit, stand, double or split.""},{""command"":""repeat"",""what"":""Post the last game message again. In a duel it posts both hands, the pot and whose turn it is.""},{""command"":""stats / allstats"",""what"":""Your own record, or the leaderboard.""},{""note"":""Those are the default trigger words; your streamer may have bound them to something else.""}]},{""heading"":""Bet shortcuts"",""lines"":[{""command"":""all / allin"",""what"":""The whole balance.""},{""command"":""half"",""what"":""Half the balance.""},{""command"":""quarter / 25%"",""what"":""A quarter of it.""},{""command"":""50%, any percentage"",""what"":""That much of the balance.""},{""command"":""double / 2x"",""what"":""Twice the minimum bet.""},{""command"":""random / rand"",""what"":""Somewhere between a tenth of the balance and all of it.""},{""command"":""max / maximum"",""what"":""As much as the balance and the Maximum bet allow.""},{""command"":""1.5k / 2m"",""what"":""1,500 and 2,000,000 - k for thousand, m for million.""}]},{""heading"":""Bonus hands"",""lines"":[{""note"":""Both settle the moment they happen, whatever the dealer is holding.""},{""command"":""5-card Charlie"",""what"":""Five cards without busting. Pays the bet back plus a 1.5x bonus.""},{""command"":""Three 7s"",""what"":""Three or more sevens without busting. Pays the bet back plus a 2x bonus.""}]},{""heading"":""Insurance, in full"",""lines"":[{""note"":""Insurance is only offered when the dealer\u0027s upcard is an Ace, because that is the only time a dealer blackjack - Ace plus a ten-value card - is one card away. It costs half the original bet.""},{""command"":""Dealer has blackjack"",""what"":""Insurance pays 2:1, so three times the insurance stake comes back. That roughly covers losing the main hand.""},{""command"":""Dealer does not"",""what"":""The insurance stake is gone and the hand plays on as normal.""},{""note"":""It has to be decided before hitting, standing, doubling or splitting. Over many hands it loses the player money, which is why plenty of streamers leave it off.""}]},{""heading"":""Surrender, in full"",""lines"":[{""note"":""Surrender is a way out of a hand that looks lost before any of it has been played. It is available on the first two cards only, before hitting, doubling, splitting or insuring, and returns half the bet.""},{""note"":""A 16 against a dealer\u0027s 10 is the usual case: almost any card busts it, and standing on 16 rarely beats a ten either. Half the bet back is the better of two bad outcomes.""}]}],""about"":{""credits"":""Responsible: aaskjer\nCredits: nate1280 / Streamer.bot and YOU ♡"",""sections"":[{""heading"":""Needs a points system"",""lines"":[{""note"":""Hands are played with the points of a currency system. These two are picked up without any setup:""},{""link"":""Currency Core by StreamUP"",""url"":""https://streamup.tips/product/currency-core""},{""link"":""LOYALTY POINTS by tawmae"",""url"":""https://tawmae.xyz/loyalty-points""},{""note"":""Anything else works too - name its variable on the Access page.""}]},{""heading"":null,""lines"":[{""command"":null,""what"":null},{""link"":null,""url"":""string url""}]}],""links"":[{""text"":""Blackjack Game on the Streamer.bot Discord"",""url"":""https://discord.com/channels/834650675224248362/1447648588694818836/1447648588694818836""}]}}";
 
     // ================================================================================================
     // JOBS: the window runs on its own thread; anything that needs CPH is queued here and run by Pump,
@@ -239,9 +266,14 @@ public class CPHInline
     }
 
     // The game describes itself: the stub asks, the game answers through a non-persistent global.
+    // Streamer.bot keeps its globals in LiteDB, which refuses some characters in a name (brackets, a trailing
+    // space): the variable takes the action's name with those replaced. The game builds the same name.
+    public static string SchemaVar(string actionName) =>
+        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+
     private string AskSchema()
     {
-        string var = "uiframework.schema." + GameActionName;
+        string var = SchemaVar(GameActionName);
         CPH.UnsetGlobalVar(var, false);
         CPH.SetArgument("uiframework.describe", "1");
         if (!CPH.RunAction(GameActionName, true))
@@ -259,6 +291,9 @@ public class CPHInline
     // ================================================================================================
 
     private const string FrameworkName = "UIFramework for streamer.bot";
+    // The API answers with the file as it is on main right now; the raw CDN keeps a copy for up to five minutes and
+    // ignores a cache-busting query, so it is the fallback only (rate limit on the API, or the API unreachable).
+    private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/v1/latest.json?ref=main";
     private const string LatestUrl = "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/v1/latest.json";
     private const string FrameworkReleasesUrl = "https://github.com/aaskjer/UIFramework-Streamer.bot/releases";
     private static readonly string LibRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
@@ -292,8 +327,8 @@ public class CPHInline
             "The settings window is built by UIFramework.dll, which is not installed in this Streamer.bot yet.\n\n" +
             "Yes: download it now from GitHub into\n" + LibRoot + "\n\n" +
             "No: I already have the file; show me the folder it belongs in.",
-            System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Question);
-        if (answer == System.Windows.MessageBoxResult.Yes)
+            MbYesNoCancel, MbIconQuestion);
+        if (answer == IdYes)
         {
             try
             {
@@ -306,16 +341,16 @@ public class CPHInline
                 CPH.LogError(LogPrefix + " UIFramework.dll could not be downloaded: " + ex.Message);
                 Ask("The download failed:\n\n" + ex.Message + "\n\nGet UIFramework.dll by hand from\n" + FrameworkReleasesUrl +
                     "\nand put it into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll, then open the settings again.",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    MbOk, MbIconWarning);
                 OpenFolder(LibRoot);
                 return null;
             }
         }
-        if (answer == System.Windows.MessageBoxResult.No)
+        if (answer == IdNo)
         {
             Ask("Put UIFramework.dll into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll\n\n" +
                 "The folder opens now. Then open the settings again.\nDownloads: " + FrameworkReleasesUrl,
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                MbOk, MbIconInformation);
             OpenFolder(LibRoot);
         }
         return null;
@@ -331,11 +366,22 @@ public class CPHInline
         catch (Exception) { }
     }
 
-    // A message box on a thread of its own: the action runs on Streamer.bot's thread, which is no place for a dialog.
-    private static System.Windows.MessageBoxResult Ask(string text, System.Windows.MessageBoxButton buttons, System.Windows.MessageBoxImage image)
+    // The dialogs are Win32 message boxes (user32), so the action needs no WPF references. Each runs on a thread
+    // of its own: the action runs on Streamer.bot's thread, which is no place for a dialog.
+    private const uint MbOk = 0x0, MbYesNoCancel = 0x3, MbIconQuestion = 0x20, MbIconWarning = 0x30, MbIconInformation = 0x40;
+    private const int IdCancel = 2, IdYes = 6, IdNo = 7;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int MessageBoxW(IntPtr owner, string text, string caption, uint type);
+
+    private static int Ask(string text, uint buttons, uint icon)
     {
-        var result = System.Windows.MessageBoxResult.None;
-        var thread = new Thread(() => { result = System.Windows.MessageBox.Show(text, FrameworkName, buttons, image); });
+        int result = 0;
+        var thread = new Thread(() =>
+        {
+            try { result = MessageBoxW(IntPtr.Zero, text, FrameworkName, buttons | icon | 0x10000 /* MB_SETFOREGROUND */ | 0x40000 /* MB_TOPMOST */); }
+            catch (Exception) { }
+        });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
@@ -358,15 +404,22 @@ public class CPHInline
     private static JObject FetchLatest()
     {
         System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
+        string json;
         using (var client = new QuickWebClient())
         {
             client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
-            string json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
-            var latest = JObject.Parse(json);
-            if (string.IsNullOrWhiteSpace((string)latest["version"]) || string.IsNullOrWhiteSpace((string)latest["url"]))
-                throw new InvalidOperationException("latest.json names no version or url; no release has been published yet.");
-            return latest;
+            client.Headers.Add("Accept", "application/vnd.github.raw");
+            try { json = client.DownloadString(LatestApiUrl); }
+            catch (Exception)
+            {
+                client.Headers.Remove("Accept");
+                json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
+            }
         }
+        var latest = JObject.Parse(json);
+        if (string.IsNullOrWhiteSpace((string)latest["version"]) || string.IsNullOrWhiteSpace((string)latest["url"]))
+            throw new InvalidOperationException("latest.json names no version or url; no release has been published yet.");
+        return latest;
     }
 
     /// <summary>Downloads the release latest.json names into lib\<version>\, checks its hash, returns the path.
@@ -431,12 +484,17 @@ public class CPHInline
     // "Cancel" in the update dialog: that version is not offered again.
     private static string SkippedVersion() => (string)ReadLayout()["skipVersion"];
 
-    private static void SkipVersion(string version)
+    private static void SkipVersion(string version) => WriteLayout(layout => layout["skipVersion"] = version);
+
+    // The note for the window's header pill: a release the user answered "No" to; removed again otherwise.
+    private static void NoteLayout(string key, string value) => WriteLayout(layout => { if (value == null) layout.Remove(key); else layout[key] = value; });
+
+    private static void WriteLayout(Action<JObject> change)
     {
         try
         {
             var layout = ReadLayout();
-            layout["skipVersion"] = version;
+            change(layout);
             Directory.CreateDirectory(Path.GetDirectoryName(LayoutPath));
             File.WriteAllText(LayoutPath, layout.ToString(Newtonsoft.Json.Formatting.Indented));
         }
@@ -447,21 +505,33 @@ public class CPHInline
     /// the new one when it could be loaded now, else the one that is there.</summary>
     private string OfferUpdate(string installed)
     {
+        var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (!AutoUpdateEnabled())
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in uiframework.layout.json).");
             return installed;
+        }
         JObject latest;
         try { latest = FetchLatest(); }
         catch (Exception ex)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework update check skipped: " + ex.Message);
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; the release check failed: " + ex.Message);
             return installed;
         }
         var newest = ParseVersion((string)latest["version"]);
-        var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (newest == null || have == null || newest <= have)
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
+            NoteLayout("frameworkAvailable", null);
             return installed;
+        }
         if (string.Equals(SkippedVersion(), newest.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in uiframework.layout.json).");
+            NoteLayout("frameworkAvailable", null);
             return installed;
+        }
+        CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
 
         bool loaded;
         lock (BridgeGate) loaded = _show != null;
@@ -470,25 +540,33 @@ public class CPHInline
             "Yes: download it now" + (loaded ? "; it is used from the next start of Streamer.bot." : " and open the settings with it.") + "\n" +
             "No: ask again next time.\n" +
             "Cancel: skip version " + newest + ".",
-            System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Information);
-        if (answer == System.Windows.MessageBoxResult.Cancel)
+            MbYesNoCancel, MbIconInformation);
+        if (answer == IdCancel)
         {
             SkipVersion(newest.ToString());
+            NoteLayout("frameworkAvailable", null);
+            CPH.LogInfo(LogPrefix + " UIFramework " + newest + " skipped; the next release will be offered again.");
             return installed;
         }
-        if (answer != System.Windows.MessageBoxResult.Yes)
+        if (answer != IdYes)
+        {
+            NoteLayout("frameworkAvailable", newest.ToString());   // the window shows a pill until it is taken
+            CPH.LogInfo(LogPrefix + " UIFramework " + newest + " not downloaded now; asked again next time.");
             return installed;
+        }
         try
         {
             string path = Download(latest);
+            NoteLayout("frameworkAvailable", null);
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + (loaded ? "; it is used from the next start of Streamer.bot." : "."));
             return loaded ? installed : path;
         }
         catch (Exception ex)
         {
+            NoteLayout("frameworkAvailable", newest.ToString());
             CPH.LogError(LogPrefix + " UIFramework " + newest + " could not be downloaded: " + ex.Message);
             Ask("The download failed:\n\n" + ex.Message + "\n\nThe installed version " + have + " is used. Releases: " + FrameworkReleasesUrl,
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                MbOk, MbIconWarning);
             return installed;
         }
     }

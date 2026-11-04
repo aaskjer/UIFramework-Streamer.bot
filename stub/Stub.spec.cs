@@ -15,8 +15,8 @@ using Newtonsoft.Json.Linq;
 // UIFramework.dll at run time and hands it three things: the spec (how this window is called and laid out),
 // the schema (what the game knows, asked from the game action) and a Host object the DLL talks back to.
 //
-// The action needs PresentationFramework, PresentationCore and WindowsBase in its references for the first-run
-// dialog (an export made from a WPF settings action has them). Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
+// No references to add: the dialogs are Win32 message boxes.
+// Between the HOST markers sits what differs per project; tools/embed-spec.ps1 splices a host's section from
 // hosts/<host>/host-section.cs and its spec from hosts/<host>/spec.json into this template. Everything outside
 // the markers is the same in every host; tools/check-stub.ps1 checks that.
 
@@ -130,8 +130,8 @@ public class CPHInline
             "The settings window is built by UIFramework.dll, which is not installed in this Streamer.bot yet.\n\n" +
             "Yes: download it now from GitHub into\n" + LibRoot + "\n\n" +
             "No: I already have the file; show me the folder it belongs in.",
-            System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Question);
-        if (answer == System.Windows.MessageBoxResult.Yes)
+            MbYesNoCancel, MbIconQuestion);
+        if (answer == IdYes)
         {
             try
             {
@@ -144,16 +144,16 @@ public class CPHInline
                 CPH.LogError(LogPrefix + " UIFramework.dll could not be downloaded: " + ex.Message);
                 Ask("The download failed:\n\n" + ex.Message + "\n\nGet UIFramework.dll by hand from\n" + FrameworkReleasesUrl +
                     "\nand put it into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll, then open the settings again.",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    MbOk, MbIconWarning);
                 OpenFolder(LibRoot);
                 return null;
             }
         }
-        if (answer == System.Windows.MessageBoxResult.No)
+        if (answer == IdNo)
         {
             Ask("Put UIFramework.dll into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll\n\n" +
                 "The folder opens now. Then open the settings again.\nDownloads: " + FrameworkReleasesUrl,
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                MbOk, MbIconInformation);
             OpenFolder(LibRoot);
         }
         return null;
@@ -169,11 +169,22 @@ public class CPHInline
         catch (Exception) { }
     }
 
-    // A message box on a thread of its own: the action runs on Streamer.bot's thread, which is no place for a dialog.
-    private static System.Windows.MessageBoxResult Ask(string text, System.Windows.MessageBoxButton buttons, System.Windows.MessageBoxImage image)
+    // The dialogs are Win32 message boxes (user32), so the action needs no WPF references. Each runs on a thread
+    // of its own: the action runs on Streamer.bot's thread, which is no place for a dialog.
+    private const uint MbOk = 0x0, MbYesNoCancel = 0x3, MbIconQuestion = 0x20, MbIconWarning = 0x30, MbIconInformation = 0x40;
+    private const int IdCancel = 2, IdYes = 6, IdNo = 7;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int MessageBoxW(IntPtr owner, string text, string caption, uint type);
+
+    private static int Ask(string text, uint buttons, uint icon)
     {
-        var result = System.Windows.MessageBoxResult.None;
-        var thread = new Thread(() => { result = System.Windows.MessageBox.Show(text, FrameworkName, buttons, image); });
+        int result = 0;
+        var thread = new Thread(() =>
+        {
+            try { result = MessageBoxW(IntPtr.Zero, text, FrameworkName, buttons | icon | 0x10000 /* MB_SETFOREGROUND */ | 0x40000 /* MB_TOPMOST */); }
+            catch (Exception) { }
+        });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
@@ -332,15 +343,15 @@ public class CPHInline
             "Yes: download it now" + (loaded ? "; it is used from the next start of Streamer.bot." : " and open the settings with it.") + "\n" +
             "No: ask again next time.\n" +
             "Cancel: skip version " + newest + ".",
-            System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Information);
-        if (answer == System.Windows.MessageBoxResult.Cancel)
+            MbYesNoCancel, MbIconInformation);
+        if (answer == IdCancel)
         {
             SkipVersion(newest.ToString());
             NoteLayout("frameworkAvailable", null);
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " skipped; the next release will be offered again.");
             return installed;
         }
-        if (answer != System.Windows.MessageBoxResult.Yes)
+        if (answer != IdYes)
         {
             NoteLayout("frameworkAvailable", newest.ToString());   // the window shows a pill until it is taken
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " not downloaded now; asked again next time.");
@@ -358,7 +369,7 @@ public class CPHInline
             NoteLayout("frameworkAvailable", newest.ToString());
             CPH.LogError(LogPrefix + " UIFramework " + newest + " could not be downloaded: " + ex.Message);
             Ask("The download failed:\n\n" + ex.Message + "\n\nThe installed version " + have + " is used. Releases: " + FrameworkReleasesUrl,
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                MbOk, MbIconWarning);
             return installed;
         }
     }
