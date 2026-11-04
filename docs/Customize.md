@@ -16,10 +16,11 @@ survives every import of the host.
   `Help` and `About` stay at the bottom.
 - **Hidden things** are shown half-transparent with the note `hidden` in the mode, so they can be shown again.
   A hidden field keeps its value in the settings file.
-- **The bar at the top:** the accent colour (blue buttons, switches that are on, the active page in the rail,
-  links, the bar itself; for every UIFramework window of this Streamer.bot; taken once the picker closes or the
-  typing pauses), the language (`en`, `de`), *Reset layout* (everything but the theme), *Export* and *Import* of
-  the settings (see docs/Schema.md), *Open file*, *Done*.
+- **The bar at the top**, one row: the accent colour (blue buttons, switches that are on, the active page in
+  the rail, links, the bar itself; for every UIFramework window of this Streamer.bot; taken once the picker
+  closes or the typing pauses), the language (`en`, `de`), then four icon buttons named by their tooltips: *Reset
+  layout* (everything but the theme), *Export* and *Import* of the settings (see docs/Schema.md), *Open file*
+  (the layout file); then *Done*. The hint with the count of changes is the line under them.
 - **Messages:** the templates can be sorted, renamed and hidden on their page; they cannot be dragged to
   another page.
 

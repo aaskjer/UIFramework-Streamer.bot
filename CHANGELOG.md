@@ -3,6 +3,12 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
+## [Unreleased]
+
+- The customise bar is one row: colour and language with their labels beside them, the layout and file actions
+  as icon buttons with tooltips (like the footer's), *Done*, and the hint as the line underneath over the full
+  width, so the bar no longer takes a third of a narrow window.
+
 ## [0.9.1] - 2026-11-04
 
 The demo as an import, the stubs without WPF references, a points system the window knows about, and the first
