@@ -302,8 +302,10 @@ namespace UIFramework
     public sealed class HeaderPill
     {
         public string Tooltip;
+        /// <summary>The tooltip as declared; <see cref="Tooltip"/> is it in the window's language.</summary>
+        public readonly string Declared;
         /// <summary>Returns text and style; null text hides the pill.</summary>
         public Func<PageContext, (string Text, PillStyle Style)> Read;
-        public HeaderPill(string tooltip, Func<PageContext, (string, PillStyle)> read) { Tooltip = tooltip; Read = read; }
+        public HeaderPill(string tooltip, Func<PageContext, (string, PillStyle)> read) { Tooltip = tooltip; Declared = tooltip; Read = read; }
     }
 }

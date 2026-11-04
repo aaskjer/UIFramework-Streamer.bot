@@ -23,6 +23,9 @@ namespace UIFramework
         /// <summary>The points system the game found installed (<c>currency</c>: source, variable, name), or null:
         /// the window shows it as a pill and marks the two points settings as the fallback they are.</summary>
         public JObject Currency;
+        /// <summary>The game's own translations by language code, in the shape of a conventions language file
+        /// (<c>keys</c>, <c>pages</c>, <c>texts</c>), laid over the conventions' when the window is in that language.</summary>
+        public JObject Lang;
         public readonly List<Setting> Settings = new List<Setting>();
 
         public Setting Find(string key) => Settings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
@@ -65,7 +68,8 @@ namespace UIFramework
                 Version = (string)root["version"] ?? "",
                 SettingsFile = (string)root["settingsFile"] ?? "",
                 Window = root["window"] as JObject,
-                Currency = root["currency"] as JObject
+                Currency = root["currency"] as JObject,
+                Lang = root["lang"] as JObject
             };
             if (!(root["settings"] is JArray list))
                 throw new ArgumentException("The schema has no 'settings' array.");
@@ -94,6 +98,7 @@ namespace UIFramework
             };
             if (Window != null) root["window"] = Window.DeepClone();
             if (Currency != null) root["currency"] = Currency.DeepClone();
+            if (Lang != null) root["lang"] = Lang.DeepClone();
             return root;
         }
     }

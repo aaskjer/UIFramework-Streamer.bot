@@ -208,6 +208,7 @@ public static class UiSchema
         }
         var root = new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
         if (Window != null) root["window"] = Window.ToJson();
+        if (Window != null && Window.LangMap.Count > 0) root["lang"] = Window.LangMap;
         if (currency != null && currency.Detected) root["currency"] = currency.ToJson();
         return root.ToString(Formatting.None);
     }
@@ -221,6 +222,11 @@ public static class UiSchema
     /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
     /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
     public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
+
+    // ---- Shorthands for UiWindow.Lang: a key's texts, a page title, a declared text. ----
+    public static UiText K(string key, string label, string help = null) => new UiText("keys", key, help == null ? (JToken)label : new JObject { ["label"] = label, ["help"] = help });
+    public static UiText Pg(string id, string title) => new UiText("pages", id, title);
+    public static UiText Tx(string declared, string translation) => new UiText("texts", declared, translation);
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
@@ -269,6 +275,7 @@ public sealed class UiWindow
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
     public JObject SenderMap, LogMap, AboutMap;
     public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+    public readonly JObject LangMap = new JObject();
 
     /// <param name="title">Window title and About heading.</param>
     /// <param name="releases">"owner/repo" on GitHub: the repository and releases links, the update check.</param>
@@ -276,6 +283,22 @@ public sealed class UiWindow
     public UiWindow(string title, string releases = null, string logo = null, string logPrefix = null, double? width = null, double? height = null)
     {
         Title = title; Releases = releases; Logo = logo; LogPrefix = logPrefix; Width = width; Height = height;
+    }
+
+    /// <summary>The game's own texts in another language, laid over the conventions' when the window is in it:
+    /// UiSchema.K (a key's label and help), Pg (a page's title by id), Tx (a declared text by its English wording:
+    /// a section, a pill text, a page title, an option label, a message group). Several calls add up.</summary>
+    public UiWindow Lang(string code, params UiText[] texts)
+    {
+        var lang = LangMap[code] as JObject;
+        if (lang == null) LangMap[code] = lang = new JObject();
+        foreach (var t in texts)
+        {
+            var section = lang[t.Section] as JObject;
+            if (section == null) lang[t.Section] = section = new JObject();
+            section[t.Name] = t.Value;
+        }
+        return this;
     }
 
     /// <summary>The pages in order: a UiPage (UiSchema.P) or the id of a standard page ("messages", "log", "help", "about").</summary>
@@ -436,6 +459,13 @@ public sealed class UiSection
     public string Heading; public object[] Lines;
     public UiSection(string heading, object[] lines) { Heading = heading; Lines = lines; }
     public JObject ToJson() => new JObject { ["heading"] = Heading, ["lines"] = new JArray(Lines.Select(l => l is UiLine line ? line.Json : (JToken)l.ToString())) };
+}
+
+/// <summary>One translated text for UiWindow.Lang: the section of the language file it goes into, its name there, its value.</summary>
+public sealed class UiText
+{
+    public readonly string Section, Name; public readonly JToken Value;
+    public UiText(string section, string name, JToken value) { Section = section; Name = name; Value = value; }
 }
 
 public sealed class UiLine

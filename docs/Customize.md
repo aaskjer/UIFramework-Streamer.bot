@@ -51,7 +51,7 @@ the window itself stays where it is.
 | `theme.dark`                   | dark (`true`) or light; missing: dark                                        |
 | `theme.rainbow`                | rainbow mode, for one open only                                              |
 | `theme.accent`                 | the accent colour `#rrggbb`; empty: the default blue                         |
-| `language`                     | `en` or `de`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome) and the conventions' labels and help texts; missing: `en`. What the game declares (its labels and help, the help and about pages) stays as declared |
+| `language`                     | `en` or `de`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome), the labels and help of the conventions' keys, and the declared sections, page titles, pills, option labels and message groups the conventions or the game translate (docs/Schema.md, *Languages*); missing: `en`. What nothing translates, and the help and about pages, stay as declared |
 | `autoUpdate`                   | `false`: the loader no longer asks about new versions                        |
 | `skipVersion`                  | set by the update dialog's *Cancel*: this version is not offered again       |
 | `frameworkAvailable`           | set by the update dialog's *No*: the window shows this version as a pill in the header until it is taken or skipped |

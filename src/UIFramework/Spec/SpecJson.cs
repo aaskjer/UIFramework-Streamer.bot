@@ -164,8 +164,8 @@ namespace UIFramework
                     if (string.IsNullOrEmpty(key)) continue;
                     spec.HeaderPillKeys.Add(key);
                     spec.HeaderPills.Add(new HeaderPill(tooltip, ctx => ctx.Fields.LiveSwitch(key)
-                        ? (on, PillStyle.Success)
-                        : (off, off == null ? PillStyle.None : PillStyle.Muted)));
+                        ? (ctx.Spec.Conventions.Lang.Text(on), PillStyle.Success)
+                        : (ctx.Spec.Conventions.Lang.Text(off), off == null ? PillStyle.None : PillStyle.Muted)));
                 }
 
             return spec;

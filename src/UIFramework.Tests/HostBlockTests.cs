@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace UIFramework.Tests
@@ -19,6 +20,23 @@ namespace UIFramework.Tests
             ] }");
             if (window != null) root["window"] = window;
             return root;
+        }
+
+        [Fact]
+        public void TheWindowCarriesTheGamesOwnTranslations()
+        {
+            var window = new UiWindow("Demo")
+                .Lang("de", UiSchema.K("numDecks", "Decks im Schuh", "Wie viele."), UiSchema.K("egg", "Ei"), UiSchema.Pg("fleet", "Flotte"), UiSchema.Tx("Shoe", "Schuh"))
+                .Lang("de", UiSchema.Tx("Ships", "Schiffe"));
+            var lang = window.LangMap["de"];
+            Assert.Equal("Wie viele.", (string)lang["keys"]["numDecks"]["help"]);
+            Assert.Equal("Ei", (string)lang["keys"]["egg"]);
+            Assert.Equal("Flotte", (string)lang["pages"]["fleet"]);
+            Assert.Equal("Schuh", (string)lang["texts"]["Shoe"]);
+            Assert.Equal("Schiffe", (string)lang["texts"]["Ships"]);
+            var parsed = Schema.Parse(JObject.Parse("{ \"host\": \"demo\", \"version\": \"1\", \"settings\": [], \"lang\": " + window.LangMap.ToString(Newtonsoft.Json.Formatting.None) + " }"));
+            Assert.Equal("Schuh", (string)parsed.Lang["de"]["texts"]["Shoe"]);
+            Assert.Equal("Schuh", (string)parsed.ToJson()["lang"]["de"]["texts"]["Shoe"]);
         }
 
         [Fact]

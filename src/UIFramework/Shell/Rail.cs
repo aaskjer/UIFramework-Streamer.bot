@@ -14,6 +14,22 @@ namespace UIFramework
         public readonly List<Border> Items = new List<Border>();
         private Border _active;
 
+        /// <summary>A word longer than the label is wide ("Abklingzeiten") would be broken mid-word by the wrapping:
+        /// the label's font shrinks instead, as far as the longest word needs, so every title reads as its words.</summary>
+        private static void Fit(TextBlock label, double width)
+        {
+            double longest = 0;
+            var typeface = new Typeface(label.FontFamily, label.FontStyle, label.FontWeight, label.FontStretch);
+            double dip = VisualTreeHelper.GetDpi(label).PixelsPerDip;
+            foreach (var word in (label.Text ?? "").Split(' '))
+            {
+                var measured = new FormattedText(word, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, label.FontSize, Brushes.Black, dip);
+                longest = System.Math.Max(longest, measured.Width);
+            }
+            if (longest > width)
+                label.FontSize = System.Math.Max(8.5, label.FontSize * width / longest);
+        }
+
         public Border Item(string title, string glyph, System.Action select)
         {
             var icon = new TextBlock
@@ -31,6 +47,7 @@ namespace UIFramework
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 3, 0, 0)
             };
+            Fit(label, 58);
             // Sized so ten entries fit the window's default 720 px with its title bar, header and footer.
             var item = new Border
             {

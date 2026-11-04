@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -23,6 +24,75 @@ namespace UIFramework.Tests
                 var theirs = System.Text.RegularExpressions.Regex.Matches(german.Ui[key], @"\{\d\}").Cast<System.Text.RegularExpressions.Match>().Select(m => m.Value).OrderBy(v => v);
                 Assert.True(mine.SequenceEqual(theirs), key + " has other placeholders in German");
             }
+        }
+
+        [Fact]
+        public void GermanCarriesEveryKeyPageAndPlaceholder()
+        {
+            var english = Conventions.Default.Lang;
+            var german = Conventions.Load("de").Lang;
+            Assert.Equal("de", german.Code);
+            Assert.True(german.Translates && !english.Translates);
+            Assert.Empty(english.Keys.Keys.Where(k => !german.Keys.ContainsKey(k)));
+            Assert.Empty(english.Keys.Where(k => k.Value.Help != null && german.Keys[k.Key].Help == null).Select(k => k.Key));
+            Assert.Empty(english.Pages.Keys.Where(k => !german.Pages.ContainsKey(k)));
+            Assert.Empty(english.Framework.Keys.Where(k => !german.Framework.ContainsKey(k)));
+            Assert.Empty(english.Placeholders.Keys.Where(k => !german.Placeholders.ContainsKey(k)));
+            Assert.True(german.Texts.Count > 80, "the German texts (sections, pills, page titles) are missing or thin");
+            Assert.Equal("Punkte", german.Text("Points"));
+            Assert.Equal("Shoe", german.Text("Shoe"));
+            Assert.Null(german.TextOrNull("Shoe"));
+        }
+
+        private const string DeclaredSchema = @"{
+          ""host"": ""demo"", ""version"": ""1"",
+          ""settings"": [
+            { ""key"": ""globalCooldown"", ""default"": 10, ""page"": ""game"", ""section"": ""Cooldowns"", ""label"": ""Everyone"", ""help"": ""Seconds."" },
+            { ""key"": ""numDecks"", ""default"": 6, ""page"": ""game"", ""section"": ""Shoe"", ""label"": ""Decks"" },
+            { ""key"": ""freeGame"", ""default"": false, ""page"": ""game"" },
+            { ""key"": ""resetScope"", ""default"": ""all"", ""page"": ""game"", ""options"": [ { ""value"": ""all"", ""label"": ""Everything"" }, { ""value"": ""wins"", ""label"": ""Wins only"" } ] },
+            { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""group"": ""Wins"", ""label"": ""Win"" }
+          ],
+          ""lang"": { ""de"": { ""keys"": { ""numDecks"": { ""label"": ""Decks im Schuh"", ""help"": ""Wie viele."" } }, ""texts"": { ""Shoe"": ""Schuh"", ""Wins only"": ""Nur Gewinne"" } } } }";
+        private const string DeclaredWindow = @"{ ""title"": ""Demo"", ""language"": ""LANG"",
+          ""pages"": [ { ""id"": ""game"", ""title"": ""Game"" }, { ""id"": ""help"", ""title"": ""How to play"" } ],
+          ""headerPills"": [ { ""key"": ""freeGame"", ""on"": ""Free game on"", ""off"": ""Free game off"", ""tooltip"": ""Free game, from the Game page."" } ] }";
+
+        [Fact]
+        public void GermanTranslatesWhatTheGameDeclaredAndTheGamesOwnTextsComeFirst()
+        {
+            var spec = SpecJson.Parse(DeclaredWindow.Replace("LANG", "de"), Path.GetTempFileName());
+            var schema = Schema.Parse(DeclaredSchema);
+            try
+            {
+                Entry.Prepare(spec, schema);
+                var cooldown = spec.ResolvedSettings.First(s => s.Key == "globalCooldown");
+                Assert.Equal("Globale Abklingzeit", cooldown.Label);           // the conventions' key text over the declared label
+                Assert.Equal("Abklingzeiten", cooldown.Section);              // a section by its wording
+                Assert.StartsWith("Zeit", cooldown.Help);                      // the conventions' help over the declared one
+                var decks = spec.ResolvedSettings.First(s => s.Key == "numDecks");
+                Assert.Equal("Decks im Schuh", decks.Label);                   // the game's own translation of its own key
+                Assert.Equal("Wie viele.", decks.Help);
+                Assert.Equal("Schuh", decks.Section);                          // the game's own text
+                Assert.Equal("Freispiel", spec.ResolvedSettings.First(s => s.Key == "freeGame").Label);
+                var scope = spec.ResolvedSettings.First(s => s.Key == "resetScope");
+                Assert.Equal(new[] { "Alles", "Nur Gewinne" }, scope.Options.Select(o => o.Label));
+                Assert.Equal("Gewinne", spec.Messages.Single().Group);
+                Assert.Equal("Spiel", spec.Pages.First(p => p.Id == "game").Title);
+                Assert.Equal("Anleitung", spec.Pages.First(p => p.Id == "help").Title);
+                Assert.Equal("Free game, from the Game page.", spec.HeaderPills.Single().Tooltip);   // no translation known: as declared
+                Assert.Equal("Freispiel an", spec.Conventions.Lang.Text("Free game on"));
+
+                // Back in English nothing of that sticks: the schema's own texts were never changed.
+                var english = SpecJson.Parse(DeclaredWindow.Replace("LANG", "en"), Path.GetTempFileName());
+                Entry.Prepare(english, schema);
+                Assert.Equal("Everyone", english.ResolvedSettings.First(s => s.Key == "globalCooldown").Label);
+                Assert.Equal("Shoe", english.ResolvedSettings.First(s => s.Key == "numDecks").Section);
+                Assert.Equal(new[] { "Everything", "Wins only" }, english.ResolvedSettings.First(s => s.Key == "resetScope").Options.Select(o => o.Label));
+                Assert.Equal("How to play", english.Pages.First(p => p.Id == "help").Title);
+                Assert.Equal("Wins", english.Messages.Single().Group);
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
         }
 
         [Fact]

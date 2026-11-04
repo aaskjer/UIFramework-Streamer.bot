@@ -5,6 +5,17 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- German all the way: in another language than English the window now translates what the game declared, not
+  only what it left out. The conventions' key texts replace the declared label and help of those keys, pages are
+  titled by id, and a new `texts` section of `conventions/lang/de.json` translates declared sections, pill
+  texts, page titles, option labels and message groups by their English wording; what nothing knows stays as
+  declared, the user's layout still has the last word. A game ships its own translations with
+  `Window.Lang("de", K(…), Pg(…), Tx(…))`, which the schema carries under `lang` and the window lays over the
+  conventions' texts. The conventions gained the keys the games share (`logToFile`, the OBS trio and
+  `setupObsOverlay`, `refundFailedRedemptions`, `duelEnabled`, `resetLeaderboard`, the subscriber and VIP
+  boosts, `tryBet`, `tryRole`, `rewardId`), the pages `stats` and `channelPoints`, and German for the sections
+  and pills of the six games.
+
 - The customise bar is one row: colour and language with their labels beside them, the layout and file actions
   as icon buttons with tooltips (like the footer's), *Done*, and the hint as the line underneath over the full
   width, so the bar no longer takes a third of a narrow window.

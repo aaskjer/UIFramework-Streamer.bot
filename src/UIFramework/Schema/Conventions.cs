@@ -42,7 +42,10 @@ namespace UIFramework
             {
                 string other = TryReadEmbedded("conventions.lang." + languageCode + ".json");
                 if (other != null)
+                {
                     conventions.Lang.Overlay(JObject.Parse(other));
+                    conventions.Lang.Code = languageCode;
+                }
             }
             return conventions;
         }
@@ -111,10 +114,11 @@ namespace UIFramework
                 foreach (var factor in known.AliasFactors)
                     if (!setting.AliasFactors.ContainsKey(factor.Key))
                         setting.AliasFactors[factor.Key] = factor.Value;
-                var text = Lang.Key(setting.Key);
-                setting.Label = setting.Label ?? text.Label;
-                setting.Help = setting.Help ?? text.Help;
             }
+            // The texts the conventions have for the key fill what the game left out, known key or not.
+            var text = Lang.Key(setting.Key);
+            setting.Label = setting.Label ?? text.Label;
+            setting.Help = setting.Help ?? text.Help;
             if (setting.Kind == null)
                 setting.Kind = Setting.KindOf(setting.Default);
             if (setting.Kind == "template" && setting.Page == null)
@@ -177,6 +181,13 @@ namespace UIFramework
         public readonly Dictionary<string, string> Placeholders = new Dictionary<string, string>(StringComparer.Ordinal);
         /// <summary>The window's own texts by key (<see cref="Text"/>).</summary>
         public readonly Dictionary<string, string> Ui = new Dictionary<string, string>(StringComparer.Ordinal);
+        /// <summary>Short declared texts by their English wording: section headings, pill texts, page titles,
+        /// option labels, message groups. Read when <see cref="Translates"/>.</summary>
+        public readonly Dictionary<string, string> Texts = new Dictionary<string, string>(StringComparer.Ordinal);
+        /// <summary>The language these texts are in; "en" is the language the games declare their texts in.</summary>
+        public string Code = "en";
+        /// <summary>Another language than the games': what they declared is translated where these texts know it.</summary>
+        public bool Translates => Code != "en";
 
         public static Lang Parse(JObject root)
         {
@@ -198,7 +209,15 @@ namespace UIFramework
             if (root["ui"] is JObject ui)
                 foreach (var p in ui.Properties())
                     Ui[p.Name] = p.Value.ToString();
+            if (root["texts"] is JObject texts)
+                foreach (var p in texts.Properties())
+                    Texts[p.Name] = p.Value.ToString();
         }
+
+        /// <summary>The declared text in this language where the texts know it, else as declared (null stays null).</summary>
+        public string Text(string declared) => declared != null && Texts.TryGetValue(declared, out var text) ? text : declared;
+        /// <summary>The declared text in this language, or null where the texts do not know it.</summary>
+        public string TextOrNull(string declared) => declared != null && Texts.TryGetValue(declared, out var text) ? text : null;
 
         private static void Read(JObject section, Dictionary<string, (string, string)> into)
         {
