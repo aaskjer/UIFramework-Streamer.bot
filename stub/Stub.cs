@@ -65,7 +65,7 @@ public class CPHInline
             {
                 foreach (var cooldown in Window["cooldowns"] as JArray ?? new JArray())
                 {
-                    string command = (string)cooldown["command"], global = (string)cooldown["global"], user = (string)cooldown["user"];
+                    string command = _owner.CommandId((string)cooldown["command"]), global = (string)cooldown["global"], user = (string)cooldown["user"];
                     if (string.IsNullOrEmpty(command)) continue;
                     if (!string.IsNullOrEmpty(global)) _owner.CPH.CommandSetGlobalCooldownDuration(command, Math.Max(0, (int?)settings[global] ?? 0));
                     if (!string.IsNullOrEmpty(user)) _owner.CPH.CommandSetUserCooldownDuration(command, Math.Max(0, (int?)settings[user] ?? 0));
@@ -140,6 +140,22 @@ public class CPHInline
     private static string Clean(string actionName) => System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
     public static string SchemaVar(string actionName) => "uiframework.schema." + Clean(actionName);
     public static string AnswerVar(string actionName) => "uiframework.answer." + Clean(actionName);
+
+    /// <summary>The id of a command the window names: as its id, as its text ("!roll") or as its name in Streamer.bot
+    /// (the first enabled or not, case ignored). Null, with a warning, when there is no such command.</summary>
+    private string CommandId(string command)
+    {
+        if (string.IsNullOrWhiteSpace(command)) return null;
+        Guid id;
+        if (Guid.TryParse(command, out id)) return command;
+        foreach (var known in CPH.GetCommands() ?? new List<Streamer.bot.Plugin.Interface.Model.CommandData>())
+        {
+            if (string.Equals(known.Name, command, StringComparison.OrdinalIgnoreCase)) return known.Id.ToString();
+            if (known.Commands != null && known.Commands.Any(text => string.Equals(text, command, StringComparison.OrdinalIgnoreCase))) return known.Id.ToString();
+        }
+        CPH.LogWarn(LogPrefix + " There is no command '" + command + "' in this Streamer.bot; its cooldowns were not set.");
+        return null;
+    }
 
     /// <summary>Sends a request to the game action on Streamer.bot's thread and returns its answer, null for none.</summary>
     private string AskGameNow(string request, string name, string values)

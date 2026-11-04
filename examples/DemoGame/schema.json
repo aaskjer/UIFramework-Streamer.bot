@@ -12,6 +12,10 @@
       "default": 10
     },
     {
+      "key": "userCooldown",
+      "default": 30
+    },
+    {
       "key": "sides",
       "default": 6,
       "page": "game",
@@ -80,6 +84,13 @@
     "answers": {
       "tryRoll": "@alice rolls a 6 on a d6: a win, 10 points."
     },
+    "cooldowns": [
+      {
+        "command": "!roll",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      }
+    ],
     "help": [
       {
         "heading": "Playing",
