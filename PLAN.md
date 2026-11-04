@@ -398,8 +398,11 @@ Log-Auto-Refresh (FileSystemWatcher auf `log.folder`, der Button bleibt als Fall
 
 Stand 04.11.2026: 7.1 bis 7.4 mit Release 0.9.0 erledigt (Window-Builder, generischer `stub/Stub.cs`,
 `UiHost.Handle`, Banner und Dialog, Log-Watcher, englische Doku, `examples/DemoGame`, `tools/update-host-block.ps1`);
-das Demo-`.sb` liegt bei (`tools/build-import.ps1` hält es aktuell). Offen: 7.5, die
-Umstellung der Hosts (`tools/spec-to-window.ps1` kommt mit dem ersten Host).
+das Demo-`.sb` liegt bei (`tools/build-import.ps1` hält es aktuell). 7.5 begonnen: `tools/spec-to-window.ps1`
+schreibt den Window-Block aus der Spec; High-Low ist umgestellt (Host-Block mit Window in `hosts/highlow/HostBlock.cs`,
+Spiel-Action mit `UiHost.Handle` und `UiCurrency`, GUI-Action = `stub/Stub.cs`, `spec.json` und `host-section.cs`
+gelöscht, `schema.json` schreibt der Testlauf des Spiels). Offen: RhymeTime, Classic Chat Gamble, Slot Machine,
+Blackjack, Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
 
 ## 9. Tests und Werkzeuge
 
