@@ -36,11 +36,12 @@ src/UIFramework.Tests    xUnit
 src/UIFramework.Preview  opens the window without Streamer.bot
 stub/                    Stub.cs, the generic settings action (loader + bridge); HostSchema.cs, the host block a
                          game pastes in; Stub.spec.cs, the template of hosts that still carry a spec
-examples/DemoGame/       the smallest game with a window: DemoGame.cs, its schema.json, a README
+examples/DemoGame/       the smallest game with a window: DemoGame.cs, DemoGame.sb (the import), schema.json, a README
 hosts/<name>/            schema.json, spec.json, host-section.cs and the generated Stub.cs of each host
 conventions/             keys.json and lang/<code>.json, embedded into the DLL
 tools/                   update-host-block.ps1 (refresh the block in a game, keeping its table), check-stub.ps1
-                         (compile the stubs and the demo the Streamer.bot way), embed-spec.ps1 (spec into Stub.spec.cs)
+                         (compile the stubs and the demo the Streamer.bot way), build-import.ps1 (keep an export's
+                         code on the files), embed-spec.ps1 (spec into Stub.spec.cs)
 lib/v1/latest.json       what the loader reads: version, download url, sha256
 docs/                    Getting-Started, Schema, Loader, Customize, Phase0-Konventionen (German)
 ```

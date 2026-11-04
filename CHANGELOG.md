@@ -5,6 +5,9 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- `examples/DemoGame/DemoGame.sb`: the demo as one import (both actions, the `!roll` command with its cooldowns).
+  `tools/build-import.ps1` keeps an export's Execute Code sub-actions on the files named for them and its meta
+  version on the game's `CurrentVersion`; `check-stub.ps1` fails when the demo's export is behind.
 - A command in `Cooldowns(C(…))` is named by its id, as the hosts do; the generic stub also takes its text
   (`!roll`) or its name for a command made by hand, looked up in Streamer.bot, and warns when there is none. The
   demo game declares its two cooldowns; before, its `globalCooldown` was saved but never reached the command.
