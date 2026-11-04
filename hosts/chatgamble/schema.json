@@ -1,6 +1,6 @@
 {
   "host": "chatgamble",
-  "version": "25.0.0",
+  "version": "25.1.0",
   "settingsFile": "Chat Games/Classic Chat Gamble/configs.json",
   "settings": [
     {
@@ -905,5 +905,470 @@
       "file": "messages.json",
       "field": "RedemptionRefunded"
     }
-  ]
+  ],
+  "window": {
+    "title": "Classic Chat Gamble",
+    "releases": "aaskjer/Classic-Chat-Gamble",
+    "logo": "https://github.com/aaskjer/Classic-Chat-Gamble/blob/main/Assets/CCG/Classic-Chat-Gamble-Logo.png?raw=true",
+    "logPrefix": "[Classic Chat Gamble/Settings]",
+    "pages": [
+      {
+        "id": "game",
+        "title": "Game",
+        "icon": "🎲"
+      },
+      {
+        "id": "access",
+        "title": "Access",
+        "icon": "👥"
+      },
+      {
+        "id": "messages",
+        "title": "Messages",
+        "icon": "💬"
+      },
+      {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
+      },
+      {
+        "id": "help",
+        "title": "How to play",
+        "icon": "📖"
+      },
+      {
+        "id": "about",
+        "title": "About",
+        "icon": "ℹ️"
+      }
+    ],
+    "senders": {
+      "useBot": "useBot",
+      "sendAction": "sendAction",
+      "cooldownUseBot": "cooldownUseBot",
+      "cooldownSendAction": "cooldownSendAction",
+      "numberSeparator": "numberSeparator",
+      "cooldownGroup": "Cooldown"
+    },
+    "samples": {
+      "user": "alice",
+      "amount": "2,150",
+      "currentPoints": "12,150",
+      "addictedCut": "50",
+      "target": "bob",
+      "reason": "your bet is below the allowed minimum (10 Points).",
+      "seconds": "12",
+      "min": "10",
+      "max": "9,999,999"
+    },
+    "answers": {
+      "odds": {
+        "set": {
+          "fairness": "classic"
+        },
+        "lines": [
+          {
+            "text": "Classic · A bet of 100 comes back as about 188",
+            "big": true
+          },
+          "Jackpot 1 %, win 30 %, so a 69 % chance to lose; a win pays ×1.5 to ×2.5, a jackpot 43 times that."
+        ],
+        "bar": [
+          {
+            "label": "Jackpot",
+            "value": 1,
+            "text": "1 %",
+            "colour": "#F59E0B"
+          },
+          {
+            "label": "Win",
+            "value": 30,
+            "text": "30 %",
+            "colour": "#22C55E"
+          },
+          {
+            "label": "Loss",
+            "value": 69,
+            "text": "69 %",
+            "colour": "#6B7280"
+          }
+        ]
+      },
+      "tryRoll": "alice has 12,340 Points and bets 1,000 Points.\nRoll 4,812 of 10,000 · @alice, unlucky! You LOST 1,000 Points. New balance: 11,340 Points."
+    },
+    "headerPills": [
+      {
+        "key": "freeGame",
+        "on": "Free game on",
+        "off": "Free game off",
+        "tooltip": "Free Game Mode, from the Game page or !SetFreeGamble. While it is on, nobody pays or wins anything."
+      },
+      {
+        "key": "isChannelPointsTrigger",
+        "on": "Channel points",
+        "off": "!gamble in chat",
+        "tooltip": "How viewers play on Twitch, from the Access page. YouTube and Kick always use !gamble."
+      }
+    ],
+    "cooldowns": [
+      {
+        "command": "df4181fc-651f-4fc3-98ea-4dec9b242836",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      }
+    ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "CCG-log*.txt",
+      "writeLogKey": "logToFile",
+      "emptyText": "No gambles logged yet. Every gamble lands here once 'Write a log file per day' is on.",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Platform",
+          "field": "Platform"
+        },
+        {
+          "header": "Trigger",
+          "field": "Trigger"
+        },
+        {
+          "header": "Bet",
+          "field": "Bet"
+        },
+        {
+          "header": "Change",
+          "field": "Change"
+        },
+        {
+          "header": "After",
+          "field": "After"
+        }
+      ],
+      "results": [
+        "WIN",
+        "LOSS",
+        "JACKPOT",
+        "REFUND"
+      ],
+      "platforms": [
+        "twitch",
+        "youtube",
+        "kick"
+      ]
+    },
+    "help": [
+      {
+        "heading": "A gamble",
+        "lines": [
+          {
+            "note": "A viewer runs !gamble with a bet, and the bet rolls against the odds on the Game page: jackpot, win or loss. Wins and jackpots are paid on top of the bet; a loss takes it."
+          },
+          {
+            "command": "!gamble",
+            "what": "plays for the Default bet. With a Default bet of 0, viewers always have to name an amount."
+          },
+          {
+            "command": "!gamble 500",
+            "what": "plays for 500, within the minimum and maximum. Also 50%, 10k, 2.5m, 1b, all, half, third, quarter and random."
+          },
+          {
+            "command": "!SetFreeGamble",
+            "what": "moderators: turns Free Game Mode on. !EndFreeGamble turns it off and brings the Default bet back."
+          },
+          {
+            "command": "!gambleaddict add <user>",
+            "what": "moderators: puts a viewer on the addicted list; remove takes them off."
+          }
+        ]
+      },
+      {
+        "heading": "How a gamble is decided",
+        "lines": [
+          {
+            "note": "The game rolls 1 to 10,000. A roll within the jackpot chance is a jackpot: the bet times a multiplier between Min × and Max ×, times the Jackpot ×. A roll within the win chance on top of that is a win: the bet times the multiplier. Everything else loses the bet. Twitch subscribers and VIPs can get a boost on wins and jackpots; viewers on the Addicted list get a cut."
+          }
+        ]
+      },
+      {
+        "heading": "After a gamble",
+        "lines": [
+          {
+            "note": "GetLastGambleResult, run with an Execute C# Method sub-action, hands your own actions the outcome, the amounts and the balances as arguments. The custom triggers CCG: Gamble Win, Gamble Loss, Gamble Jackpot, Free Game Start and Free Game End start your actions at the right moment."
+          }
+        ]
+      },
+      {
+        "heading": "Where things are kept",
+        "lines": [
+          {
+            "command": "configs.json",
+            "what": "everything on these pages but the messages."
+          },
+          {
+            "command": "messages.json",
+            "what": "every chat message."
+          },
+          {
+            "command": "uiframework.layout.json",
+            "what": "your layout of this window: theme, renamed or hidden pages and fields."
+          },
+          {
+            "command": "Logs\\CCG-log-yyyy-MM-dd.txt",
+            "what": "every gamble and refund, one file per day, while 'Write a log file per day' is on."
+          },
+          {
+            "note": "All of it sits in Streamer.bot's folder under Chat Games. A damaged file falls back to the .bak beside it and the broken one is kept as .broken."
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "Classic Chat Gamble by aaskjer / yBO",
+      "sections": [
+        {
+          "heading": "Needs a points system",
+          "lines": [
+            {
+              "note": "!gamble plays with the points of a currency system; Twitch channel points work without one. These two are found on their own:"
+            },
+            {
+              "link": "Currency Core by StreamUP",
+              "url": "https://streamup.tips/product/currency-core"
+            },
+            {
+              "link": "LOYALTY POINTS by tawmae",
+              "url": "https://tawmae.xyz/loyalty-points"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "Classic Chat Gamble on the Streamer.bot Discord",
+          "url": "https://discord.com/channels/834650675224248362/1446874050310836396/1446874050310836396"
+        }
+      ]
+    }
+  },
+  "lang": {
+    "de": {
+      "keys": {
+        "fairness": {
+          "label": "Voreinstellung",
+          "help": "Ein Regler für die Chancen, von Streng, wo das Haus gewinnt und Punkte versickern, bis Klassisch, dem Standard mit seltenen, riesigen Jackpots, bei dem Punkte schnell wachsen. Eine Stufe füllt die fünf Zahlen darunter aus; gespeichert wird erst, wenn du speicherst. Eigene zeigt der Regler, wenn die Zahlen deine eigenen sind."
+        },
+        "presetNote": {
+          "label": null,
+          "help": "Eine Stufe des Reglers setzt Jackpot- und Gewinnchance, den Jackpot-Multiplikator und den Bereich des Gewinn-Multiplikators auf einmal. Das Spiel liest nur diese fünf Zahlen, du kannst sie also weiter feinjustieren: der Regler zeigt dann Eigene oder die Stufe, zu der sie passen."
+        },
+        "jackpotPercent": {
+          "label": "Jackpot-Chance",
+          "help": "Chance in Prozent, von 0 (nie) bis 100 (immer), dass ein Gamble den Jackpot trifft. Klein halten, damit Jackpots selten bleiben: '1' ist 1 von 100."
+        },
+        "jackpotMultiplier": {
+          "label": "Jackpot ×",
+          "help": "Multiplikator, der bei einem Jackpot auf den Gewinnwurf draufkommt. Mit '43' zahlt ein 2×-Wurf 2 × 43 = das 86-Fache des Einsatzes."
+        },
+        "winPercent": {
+          "label": "Gewinnchance",
+          "help": "Chance in Prozent, dass ein Gamble ein normaler Gewinn ist, zusätzlich zur Jackpot-Chance. Jackpot '1' und Gewinn '30' lassen 69 % Verlustchance."
+        },
+        "rndMin": {
+          "label": "Min ×",
+          "help": "Der kleinste Gewinn-Multiplikator. Jeder Gewinn würfelt einen Multiplikator zwischen Min und Max, ein Jackpot kommt auf diesen Wurf drauf."
+        },
+        "rndMax": {
+          "label": "Max ×",
+          "help": "Der größte Gewinn-Multiplikator."
+        },
+        "odds": {
+          "label": "Was wirklich rauskommt",
+          "help": "Die Chance auf Jackpot, Gewinn und Verlust und was ein Einsatz von 100 im Schnitt zurückbringt, aus den fünf Zahlen, wie sie stehen, für einen Zuschauer ohne Abonnenten-/VIP-Bonus oder Süchtigen-Kürzung."
+        },
+        "previousDefaultBet": {
+          "label": null,
+          "help": "Der Standardeinsatz von vor !SetFreeGamble, den !EndFreeGamble zurückbringt."
+        },
+        "tryRoll": {
+          "label": "Würfeln",
+          "help": "Spielt ein Gamble mit den Einstellungen, wie sie auf dieser Seite stehen, gespeichert oder nicht, und zeigt den Wurf und die Nachricht, die der Chat bekäme. Nichts wird gesendet, nichts gespeichert."
+        },
+        "platformsNote": {
+          "label": null,
+          "help": "Twitch, YouTube und Kick spielen alle, und jede Antwort geht in den Chat, aus dem der Befehl oder die Einlösung kam. Um eine Plattform auszulassen, entferne den Haken am Befehl !gamble in Streamer.bot, zum Beispiel 'Kick Message'."
+        },
+        "cooldownNote": {
+          "label": null,
+          "help": "Was der Chat während einer Abklingzeit erfährt, steht auf der Seite Nachrichten unter Abklingzeit."
+        },
+        "minBet": {
+          "label": "Mindesteinsatz",
+          "help": "Der kleinste erlaubte Einsatz. 0 schaltet die Grenze ab. Gilt auch für Kanalpunkte in den Modi 'Eingegebener Betrag' und 'Fest'."
+        },
+        "subscriberBoostEnabled": {
+          "label": "Abonnenten-Bonus",
+          "help": "Gibt Twitch-Abonnenten eine höhere Auszahlung bei Gewinnen und Jackpots. Nur Twitch: auf YouTube und Kick prüft das Spiel nicht auf Abonnenten."
+        },
+        "vipBoostEnabled": {
+          "label": "VIP-Bonus",
+          "help": "Gibt Twitch-VIPs eine höhere Auszahlung bei Gewinnen und Jackpots. Nur Twitch: auf YouTube und Kick prüft das Spiel nicht auf VIPs."
+        },
+        "subscriberBoostPercent": {
+          "label": "Abonnenten-Bonus",
+          "help": "Um wie viel größer der Gewinn eines Abonnenten ist: '10' macht aus 100 110. Addiert sich mit dem VIP-Bonus, wenn jemand beides ist."
+        },
+        "vipBoostPercent": {
+          "label": "VIP-Bonus",
+          "help": "Um wie viel größer der Gewinn eines VIPs ist: '20' macht aus 100 120. Addiert sich mit dem Abonnenten-Bonus, wenn jemand beides ist."
+        },
+        "tryBet": {
+          "label": "Einsatz zum Ausprobieren",
+          "help": "Ein Einsatz, um Chancen und Nachrichten auszuprobieren. Wird nicht gespeichert."
+        },
+        "tryRole": {
+          "label": "Spielen als",
+          "help": "Wer spielt: Boni und die Süchtigen-Kürzung ändern, was ein Gewinn zahlt."
+        },
+        "cpBetMode": {
+          "label": "Was gesetzt wird",
+          "help": "Preis der Belohnung: der Preis ist der Einsatz, Zuschauer tippen nichts; ein Verlust rührt ihre Punkte nicht an, ein Gewinn wird in Punkten gezahlt. Eingegebener Betrag: Zuschauer tippen einen Einsatz in die Belohnung, gezahlt aus eigenen Punkten und gegen den Kontostand geprüft; ohne genug Punkte wird die Einlösung erstattet. Fest: jede Einlösung setzt den festen Betrag unten, Preis und Text werden ignoriert, ein Verlust rührt die Punkte nicht an. Frei: nichts wird gewonnen oder verloren. Mindest- und Höchsteinsatz gelten für Eingegebener Betrag und Fest."
+        },
+        "fixedBetAmount": {
+          "label": "Fester Einsatz",
+          "help": "Was jede Einlösung im Modus Fest setzt. Muss mehr als 0 sein."
+        },
+        "userCooldown": {
+          "label": "Pro Zuschauer",
+          "help": "Wie lange ein Zuschauer bis zum nächsten Gamble wartet, in Sekunden. 0 schaltet sie ab. Speichern schreibt sie auf den Befehl !gamble. Eine Kanalpunkte-Einlösung während der Abklingzeit wird erstattet."
+        },
+        "addictedGroups": {
+          "label": "Süchtigen-Gruppen",
+          "help": "Mitglieder dieser Streamer.bot-Gruppen zählen auch als süchtig."
+        },
+        "winMessage": {
+          "label": "Gewinn",
+          "help": "Bei einem normalen Gewinn gesendet."
+        },
+        "lossMessage": {
+          "label": "Verlust",
+          "help": "Bei einem Verlust gesendet."
+        },
+        "jackpotMessage": {
+          "label": "Jackpot",
+          "help": "Bei einem Jackpot gesendet."
+        },
+        "freeGameMessage": {
+          "label": "Hinweis, einmal je Zuschauer",
+          "help": "Einmal an jeden Zuschauer gesendet, der im Freispiel-Modus spielt."
+        },
+        "freeGameWinMessage": {
+          "label": "Gewinn",
+          "help": "Bei einem Gewinn im Freispiel-Modus gesendet."
+        },
+        "freeGameLossMessage": {
+          "label": "Verlust",
+          "help": "Bei einem Verlust im Freispiel-Modus gesendet. Nichts wird abgezogen."
+        },
+        "freeGameJackpotMessage": {
+          "label": "Jackpot",
+          "help": "Bei einem Jackpot im Freispiel-Modus gesendet."
+        },
+        "freeGameStartMessage": {
+          "label": "Gestartet",
+          "help": "Einmal gesendet, wenn der Freispiel-Modus eingeschaltet wird, in den Chat, aus dem der Befehl oder die Einlösung kam. Anders gestartet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit Konto in Streamer.bot, an YouTube nur während ein Stream überwacht wird."
+        },
+        "freeGameEndMessage": {
+          "label": "Beendet",
+          "help": "Einmal gesendet, wenn der Freispiel-Modus endet und der Standardeinsatz zurück ist, in den Chat, aus dem der Befehl oder die Einlösung kam. Anders beendet, etwa per Execute C# Method auf EndFreeGame in einer eigenen Action, geht sie an jede Plattform mit Konto in Streamer.bot, an YouTube nur während ein Stream überwacht wird."
+        },
+        "addictedWinMessage": {
+          "label": "Gewinn",
+          "help": "Statt der Gewinn-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."
+        },
+        "addictedJackpotMessage": {
+          "label": "Jackpot",
+          "help": "Statt der Jackpot-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."
+        },
+        "addictedAdded": {
+          "label": "Hinzugefügt",
+          "help": "Gesendet, wenn !gambleaddict jemanden auf die Liste setzt."
+        },
+        "addictedRemoved": {
+          "label": "Entfernt",
+          "help": "Gesendet, wenn !gambleaddict remove jemanden von der Liste nimmt."
+        },
+        "addictedAlreadyOnList": {
+          "label": "Schon auf der Liste",
+          "help": "Gesendet, wenn !gambleaddict jemanden nennt, der schon auf der Liste steht."
+        },
+        "addictedNotOnList": {
+          "label": "Nicht auf der Liste",
+          "help": "Gesendet, wenn !gambleaddict remove jemanden nennt, der nicht auf der Liste steht."
+        },
+        "addictedUsage": {
+          "label": "Verwendung",
+          "help": "Gesendet, wenn !gambleaddict ohne Namen kommt."
+        },
+        "invalidBetMessage": {
+          "label": "Einsatz abgelehnt",
+          "help": "Der Rahmen um die fünf Gründe darunter; {reason} wird durch den zutreffenden ersetzt."
+        },
+        "reasonNegativeAmount": {
+          "label": "Grund: kein gültiger Betrag",
+          "help": "Füllt {reason}, wenn der Betrag negativ, keine Zahl, mit Nachkommastellen oder zu groß ist."
+        },
+        "reasonInsufficientFunds": {
+          "label": "Grund: nicht genug Punkte",
+          "help": "Füllt {reason}, wenn der Einsatz mehr ist, als der Zuschauer hat."
+        },
+        "reasonBelowMinimum": {
+          "label": "Grund: unter dem Minimum",
+          "help": "Füllt {reason}, wenn der Einsatz unter dem Minimum auf der Seite Spiel liegt."
+        },
+        "reasonAboveMaximum": {
+          "label": "Grund: über dem Maximum",
+          "help": "Füllt {reason}, wenn der Einsatz über dem Maximum auf der Seite Spiel liegt."
+        },
+        "reasonNoInput": {
+          "label": "Grund: kein Betrag",
+          "help": "Füllt {reason}, wenn kein Betrag angegeben wurde: Standardeinsatz ist 0, oder eine Einlösung mit eingegebenem Betrag kam ohne einen."
+        },
+        "globalCooldownMessage": {
+          "label": "Alle",
+          "help": "Gesendet, während die Abklingzeit für alle läuft."
+        },
+        "userCooldownMessage": {
+          "label": "Pro Zuschauer",
+          "help": "Gesendet, während die eigene Abklingzeit dieses Zuschauers läuft."
+        },
+        "redemptionRefundedMessage": {
+          "label": "Erstattet",
+          "help": "Gesendet, wenn eine Einlösung erstattet wird."
+        }
+      },
+      "texts": {
+        "Strict": "Streng",
+        "House Edge": "Hausvorteil",
+        "Generous": "Großzügig",
+        "Classic": "Klassisch",
+        "Custom": "Eigene",
+        "Viewer": "Zuschauer",
+        "Subscriber": "Abonnent",
+        "Addicted": "Süchtig",
+        "Reward cost": "Preis der Belohnung",
+        "Typed amount": "Eingegebener Betrag",
+        "Fixed": "Fest",
+        "Free": "Frei",
+        "Results": "Ergebnisse",
+        "Free game": "Freispiel",
+        "Free Game Mode, from the Game page or !SetFreeGamble. While it is on, nobody pays or wins anything.": "Freispiel-Modus, von der Seite Spiel oder !SetFreeGamble. Solange er an ist, zahlt und gewinnt niemand etwas.",
+        "How viewers play on Twitch, from the Access page. YouTube and Kick always use !gamble.": "Wie Zuschauer auf Twitch spielen, von der Seite Zugriff. YouTube und Kick nutzen immer !gamble."
+      }
+    }
+  }
 }

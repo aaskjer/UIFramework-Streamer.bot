@@ -26,7 +26,8 @@ $spec = $serializer.DeserializeObject([IO.File]::ReadAllText($specPath, [Text.En
 function Q($value) {
     # A C# string literal, or null.
     if ($null -eq $value) { return 'null' }
-    $s = [string]$value
+    # An answer that is an object (the odds panel) is its JSON, as the game answers it.
+    $s = if ($value -is [System.Collections.IDictionary] -or $value -is [array]) { $serializer.Serialize($value) } else { [string]$value }
     return '"' + $s.Replace('\', '\\').Replace('"', '\"').Replace("`r", '').Replace("`n", '\n') + '"'
 }
 function Has($map, [string] $key) { return ($map -is [System.Collections.IDictionary]) -and $map.ContainsKey($key) -and ($null -ne $map[$key]) }
@@ -119,7 +120,13 @@ elseif ($cooldowns.Count -gt 1) {
 # The log page.
 if (Has $spec 'log') {
     $log = $spec['log']
-    $args = @((Q $log['folder']), (Q $log['files']))
+    $files = $log['files']
+    if (-not $files -and (Test-Path -LiteralPath $sectionPath)) {
+        # The old stub's ReadLogLines knew the file pattern: Directory.GetFiles(LogsDir, "CCG-log*.txt").
+        $m = [regex]::Match([IO.File]::ReadAllText($sectionPath), 'GetFiles\([^,]+,\s*"([^"]+)"')
+        if ($m.Success) { $files = $m.Groups[1].Value }
+    }
+    $args = @((Q $log['folder']), (Q $files))
     foreach ($name in 'writeLogKey', 'writeLogHelp') { if (Has $log $name) { $args += "${name}: " + (Q $log[$name]) } }
     if (Has $log 'columns') {
         $cols = @()

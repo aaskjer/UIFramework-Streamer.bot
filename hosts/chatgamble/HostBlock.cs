@@ -140,8 +140,17 @@ public static class UiSchema
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
-    public static string Var(string actionName) =>
-        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    public static string Var(string actionName) => "uiframework.schema." + Clean(actionName);
+
+    /// <summary>An action's name as a global's name: letters, digits, space, dot and dash stay, the rest is "_".
+    /// No Regex: a game action may ship without a reference to System.dll.</summary>
+    public static string Clean(string actionName)
+    {
+        var chars = (actionName ?? "").Trim().ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_' && chars[i] != ' ' && chars[i] != '.' && chars[i] != '-') chars[i] = '_';
+        return new string(chars);
+    }
 
     public static Setting Find(string key)
     {
@@ -151,7 +160,107 @@ public static class UiSchema
     }
 
     // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
-    public static readonly UiWindow Window = null; // __WINDOW__
+    public static readonly UiWindow Window = new UiWindow("Classic Chat Gamble", releases: "aaskjer/Classic-Chat-Gamble", logo: "https://github.com/aaskjer/Classic-Chat-Gamble/blob/main/Assets/CCG/Classic-Chat-Gamble-Logo.png?raw=true", logPrefix: "[Classic Chat Gamble/Settings]")
+        .Pages(P("game", "Game", "🎲"), P("access", "Access", "👥"), P("messages", "Messages", "💬"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
+        .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free Game Mode, from the Game page or !SetFreeGamble. While it is on, nobody pays or wins anything.")
+        .Pill("isChannelPointsTrigger", "Channel points", "!gamble in chat", tooltip: "How viewers play on Twitch, from the Access page. YouTube and Kick always use !gamble.")
+        .Cooldowns(C("df4181fc-651f-4fc3-98ea-4dec9b242836", "globalCooldown", "userCooldown"))   // !gamble, where the cooldowns live
+        // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
+        .Lang("de",
+            K("fairness", "Voreinstellung", "Ein Regler für die Chancen, von Streng, wo das Haus gewinnt und Punkte versickern, bis Klassisch, dem Standard mit seltenen, riesigen Jackpots, bei dem Punkte schnell wachsen. Eine Stufe füllt die fünf Zahlen darunter aus; gespeichert wird erst, wenn du speicherst. Eigene zeigt der Regler, wenn die Zahlen deine eigenen sind."),
+            K("presetNote", null, "Eine Stufe des Reglers setzt Jackpot- und Gewinnchance, den Jackpot-Multiplikator und den Bereich des Gewinn-Multiplikators auf einmal. Das Spiel liest nur diese fünf Zahlen, du kannst sie also weiter feinjustieren: der Regler zeigt dann Eigene oder die Stufe, zu der sie passen."),
+            K("jackpotPercent", "Jackpot-Chance", "Chance in Prozent, von 0 (nie) bis 100 (immer), dass ein Gamble den Jackpot trifft. Klein halten, damit Jackpots selten bleiben: '1' ist 1 von 100."),
+            K("jackpotMultiplier", "Jackpot ×", "Multiplikator, der bei einem Jackpot auf den Gewinnwurf draufkommt. Mit '43' zahlt ein 2×-Wurf 2 × 43 = das 86-Fache des Einsatzes."),
+            K("winPercent", "Gewinnchance", "Chance in Prozent, dass ein Gamble ein normaler Gewinn ist, zusätzlich zur Jackpot-Chance. Jackpot '1' und Gewinn '30' lassen 69 % Verlustchance."),
+            K("rndMin", "Min ×", "Der kleinste Gewinn-Multiplikator. Jeder Gewinn würfelt einen Multiplikator zwischen Min und Max, ein Jackpot kommt auf diesen Wurf drauf."),
+            K("rndMax", "Max ×", "Der größte Gewinn-Multiplikator."),
+            K("odds", "Was wirklich rauskommt", "Die Chance auf Jackpot, Gewinn und Verlust und was ein Einsatz von 100 im Schnitt zurückbringt, aus den fünf Zahlen, wie sie stehen, für einen Zuschauer ohne Abonnenten-/VIP-Bonus oder Süchtigen-Kürzung."),
+            K("previousDefaultBet", null, "Der Standardeinsatz von vor !SetFreeGamble, den !EndFreeGamble zurückbringt."),
+            K("tryRoll", "Würfeln", "Spielt ein Gamble mit den Einstellungen, wie sie auf dieser Seite stehen, gespeichert oder nicht, und zeigt den Wurf und die Nachricht, die der Chat bekäme. Nichts wird gesendet, nichts gespeichert."),
+            K("platformsNote", null, "Twitch, YouTube und Kick spielen alle, und jede Antwort geht in den Chat, aus dem der Befehl oder die Einlösung kam. Um eine Plattform auszulassen, entferne den Haken am Befehl !gamble in Streamer.bot, zum Beispiel 'Kick Message'."),
+            K("cooldownNote", null, "Was der Chat während einer Abklingzeit erfährt, steht auf der Seite Nachrichten unter Abklingzeit."),
+            K("minBet", "Mindesteinsatz", "Der kleinste erlaubte Einsatz. 0 schaltet die Grenze ab. Gilt auch für Kanalpunkte in den Modi 'Eingegebener Betrag' und 'Fest'."),
+            K("subscriberBoostEnabled", "Abonnenten-Bonus", "Gibt Twitch-Abonnenten eine höhere Auszahlung bei Gewinnen und Jackpots. Nur Twitch: auf YouTube und Kick prüft das Spiel nicht auf Abonnenten."),
+            K("vipBoostEnabled", "VIP-Bonus", "Gibt Twitch-VIPs eine höhere Auszahlung bei Gewinnen und Jackpots. Nur Twitch: auf YouTube und Kick prüft das Spiel nicht auf VIPs."),
+            K("subscriberBoostPercent", "Abonnenten-Bonus", "Um wie viel größer der Gewinn eines Abonnenten ist: '10' macht aus 100 110. Addiert sich mit dem VIP-Bonus, wenn jemand beides ist."),
+            K("vipBoostPercent", "VIP-Bonus", "Um wie viel größer der Gewinn eines VIPs ist: '20' macht aus 100 120. Addiert sich mit dem Abonnenten-Bonus, wenn jemand beides ist."),
+            K("tryBet", "Einsatz zum Ausprobieren", "Ein Einsatz, um Chancen und Nachrichten auszuprobieren. Wird nicht gespeichert."),
+            K("tryRole", "Spielen als", "Wer spielt: Boni und die Süchtigen-Kürzung ändern, was ein Gewinn zahlt."),
+            K("cpBetMode", "Was gesetzt wird", "Preis der Belohnung: der Preis ist der Einsatz, Zuschauer tippen nichts; ein Verlust rührt ihre Punkte nicht an, ein Gewinn wird in Punkten gezahlt. Eingegebener Betrag: Zuschauer tippen einen Einsatz in die Belohnung, gezahlt aus eigenen Punkten und gegen den Kontostand geprüft; ohne genug Punkte wird die Einlösung erstattet. Fest: jede Einlösung setzt den festen Betrag unten, Preis und Text werden ignoriert, ein Verlust rührt die Punkte nicht an. Frei: nichts wird gewonnen oder verloren. Mindest- und Höchsteinsatz gelten für Eingegebener Betrag und Fest."),
+            K("fixedBetAmount", "Fester Einsatz", "Was jede Einlösung im Modus Fest setzt. Muss mehr als 0 sein."),
+            K("userCooldown", "Pro Zuschauer", "Wie lange ein Zuschauer bis zum nächsten Gamble wartet, in Sekunden. 0 schaltet sie ab. Speichern schreibt sie auf den Befehl !gamble. Eine Kanalpunkte-Einlösung während der Abklingzeit wird erstattet."),
+            K("addictedGroups", "Süchtigen-Gruppen", "Mitglieder dieser Streamer.bot-Gruppen zählen auch als süchtig."),
+            K("winMessage", "Gewinn", "Bei einem normalen Gewinn gesendet."),
+            K("lossMessage", "Verlust", "Bei einem Verlust gesendet."),
+            K("jackpotMessage", "Jackpot", "Bei einem Jackpot gesendet."),
+            K("freeGameMessage", "Hinweis, einmal je Zuschauer", "Einmal an jeden Zuschauer gesendet, der im Freispiel-Modus spielt."),
+            K("freeGameWinMessage", "Gewinn", "Bei einem Gewinn im Freispiel-Modus gesendet."),
+            K("freeGameLossMessage", "Verlust", "Bei einem Verlust im Freispiel-Modus gesendet. Nichts wird abgezogen."),
+            K("freeGameJackpotMessage", "Jackpot", "Bei einem Jackpot im Freispiel-Modus gesendet."),
+            K("freeGameStartMessage", "Gestartet", "Einmal gesendet, wenn der Freispiel-Modus eingeschaltet wird, in den Chat, aus dem der Befehl oder die Einlösung kam. Anders gestartet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit Konto in Streamer.bot, an YouTube nur während ein Stream überwacht wird."),
+            K("freeGameEndMessage", "Beendet", "Einmal gesendet, wenn der Freispiel-Modus endet und der Standardeinsatz zurück ist, in den Chat, aus dem der Befehl oder die Einlösung kam. Anders beendet, etwa per Execute C# Method auf EndFreeGame in einer eigenen Action, geht sie an jede Plattform mit Konto in Streamer.bot, an YouTube nur während ein Stream überwacht wird."),
+            K("addictedWinMessage", "Gewinn", "Statt der Gewinn-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."),
+            K("addictedJackpotMessage", "Jackpot", "Statt der Jackpot-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."),
+            K("addictedAdded", "Hinzugefügt", "Gesendet, wenn !gambleaddict jemanden auf die Liste setzt."),
+            K("addictedRemoved", "Entfernt", "Gesendet, wenn !gambleaddict remove jemanden von der Liste nimmt."),
+            K("addictedAlreadyOnList", "Schon auf der Liste", "Gesendet, wenn !gambleaddict jemanden nennt, der schon auf der Liste steht."),
+            K("addictedNotOnList", "Nicht auf der Liste", "Gesendet, wenn !gambleaddict remove jemanden nennt, der nicht auf der Liste steht."),
+            K("addictedUsage", "Verwendung", "Gesendet, wenn !gambleaddict ohne Namen kommt."),
+            K("invalidBetMessage", "Einsatz abgelehnt", "Der Rahmen um die fünf Gründe darunter; {reason} wird durch den zutreffenden ersetzt."),
+            K("reasonNegativeAmount", "Grund: kein gültiger Betrag", "Füllt {reason}, wenn der Betrag negativ, keine Zahl, mit Nachkommastellen oder zu groß ist."),
+            K("reasonInsufficientFunds", "Grund: nicht genug Punkte", "Füllt {reason}, wenn der Einsatz mehr ist, als der Zuschauer hat."),
+            K("reasonBelowMinimum", "Grund: unter dem Minimum", "Füllt {reason}, wenn der Einsatz unter dem Minimum auf der Seite Spiel liegt."),
+            K("reasonAboveMaximum", "Grund: über dem Maximum", "Füllt {reason}, wenn der Einsatz über dem Maximum auf der Seite Spiel liegt."),
+            K("reasonNoInput", "Grund: kein Betrag", "Füllt {reason}, wenn kein Betrag angegeben wurde: Standardeinsatz ist 0, oder eine Einlösung mit eingegebenem Betrag kam ohne einen."),
+            K("globalCooldownMessage", "Alle", "Gesendet, während die Abklingzeit für alle läuft."),
+            K("userCooldownMessage", "Pro Zuschauer", "Gesendet, während die eigene Abklingzeit dieses Zuschauers läuft."),
+            K("redemptionRefundedMessage", "Erstattet", "Gesendet, wenn eine Einlösung erstattet wird."),
+            Tx("Strict", "Streng"),
+            Tx("House Edge", "Hausvorteil"),
+            Tx("Generous", "Großzügig"),
+            Tx("Classic", "Klassisch"),
+            Tx("Custom", "Eigene"),
+            Tx("Viewer", "Zuschauer"),
+            Tx("Subscriber", "Abonnent"),
+            Tx("Addicted", "Süchtig"),
+            Tx("Reward cost", "Preis der Belohnung"),
+            Tx("Typed amount", "Eingegebener Betrag"),
+            Tx("Fixed", "Fest"),
+            Tx("Free", "Frei"),
+            Tx("Results", "Ergebnisse"),
+            Tx("Free game", "Freispiel"),
+            Tx("Free Game Mode, from the Game page or !SetFreeGamble. While it is on, nobody pays or wins anything.", "Freispiel-Modus, von der Seite Spiel oder !SetFreeGamble. Solange er an ist, zahlt und gewinnt niemand etwas."),
+            Tx("How viewers play on Twitch, from the Access page. YouTube and Kick always use !gamble.", "Wie Zuschauer auf Twitch spielen, von der Seite Zugriff. YouTube und Kick nutzen immer !gamble."))
+        .Samples("user", "alice", "amount", "2,150", "currentPoints", "12,150", "addictedCut", "50", "target", "bob", "reason", "your bet is below the allowed minimum (10 Points).", "seconds", "12", "min", "10", "max", "9,999,999")
+        .Answer("odds", "{\"set\":{\"fairness\":\"classic\"},\"lines\":[{\"text\":\"Classic · A bet of 100 comes back as about 188\",\"big\":true},\"Jackpot 1 %, win 30 %, so a 69 % chance to lose; a win pays ×1.5 to ×2.5, a jackpot 43 times that.\"],\"bar\":[{\"label\":\"Jackpot\",\"value\":1,\"text\":\"1 %\",\"colour\":\"#F59E0B\"},{\"label\":\"Win\",\"value\":30,\"text\":\"30 %\",\"colour\":\"#22C55E\"},{\"label\":\"Loss\",\"value\":69,\"text\":\"69 %\",\"colour\":\"#6B7280\"}]}")
+        .Answer("tryRoll", "alice has 12,340 Points and bets 1,000 Points.\nRoll 4,812 of 10,000 · @alice, unlucky! You LOST 1,000 Points. New balance: 11,340 Points.")
+        .Log("Chat Games/Logs", "CCG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Trigger|Trigger", "Bet|Bet", "Change|Change", "After|After" }, results: new[] { "WIN", "LOSS", "JACKPOT", "REFUND" }, platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No gambles logged yet. Every gamble lands here once 'Write a log file per day' is on.")
+        .Help(
+            H("A gamble",
+                Note("A viewer runs !gamble with a bet, and the bet rolls against the odds on the Game page: jackpot, win or loss. Wins and jackpots are paid on top of the bet; a loss takes it."),
+                Cmd("!gamble", "plays for the Default bet. With a Default bet of 0, viewers always have to name an amount."),
+                Cmd("!gamble 500", "plays for 500, within the minimum and maximum. Also 50%, 10k, 2.5m, 1b, all, half, third, quarter and random."),
+                Cmd("!SetFreeGamble", "moderators: turns Free Game Mode on. !EndFreeGamble turns it off and brings the Default bet back."),
+                Cmd("!gambleaddict add <user>", "moderators: puts a viewer on the addicted list; remove takes them off.")),
+            H("How a gamble is decided",
+                Note("The game rolls 1 to 10,000. A roll within the jackpot chance is a jackpot: the bet times a multiplier between Min × and Max ×, times the Jackpot ×. A roll within the win chance on top of that is a win: the bet times the multiplier. Everything else loses the bet. Twitch subscribers and VIPs can get a boost on wins and jackpots; viewers on the Addicted list get a cut.")),
+            H("After a gamble",
+                Note("GetLastGambleResult, run with an Execute C# Method sub-action, hands your own actions the outcome, the amounts and the balances as arguments. The custom triggers CCG: Gamble Win, Gamble Loss, Gamble Jackpot, Free Game Start and Free Game End start your actions at the right moment.")),
+            H("Where things are kept",
+                Cmd("configs.json", "everything on these pages but the messages."),
+                Cmd("messages.json", "every chat message."),
+                Cmd("uiframework.layout.json", "your layout of this window: theme, renamed or hidden pages and fields."),
+                Cmd("Logs\\CCG-log-yyyy-MM-dd.txt", "every gamble and refund, one file per day, while 'Write a log file per day' is on."),
+                Note("All of it sits in Streamer.bot's folder under Chat Games. A damaged file falls back to the .bak beside it and the broken one is kept as .broken.")))
+        .About(credits: "Classic Chat Gamble by aaskjer / yBO",
+            sections: new[]
+            {
+                H("Needs a points system",
+                    Note("!gamble plays with the points of a currency system; Twitch channel points work without one. These two are found on their own:"),
+                    Link("Currency Core by StreamUP", "https://streamup.tips/product/currency-core"),
+                    Link("LOYALTY POINTS by tawmae", "https://tawmae.xyz/loyalty-points"))
+            }, links: new[] { Link("Classic Chat Gamble on the Streamer.bot Discord", "https://discord.com/channels/834650675224248362/1446874050310836396/1446874050310836396") });
 
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =
@@ -449,8 +558,7 @@ public sealed class UiLine
 /// Every request must leave the game as it was: no chat output, no state written.</summary>
 public static class UiHost
 {
-    public static string AnswerVar(string actionName) =>
-        "uiframework.answer." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    public static string AnswerVar(string actionName) => "uiframework.answer." + UiSchema.Clean(actionName);
 
     /// <param name="args">The action's arguments.</param>
     /// <param name="CPH">The action's CPH.</param>

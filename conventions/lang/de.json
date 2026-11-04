@@ -85,9 +85,9 @@
     "duelEnabled":           { "label": "Duelle" },
     "resetLeaderboard":      { "label": "Bestenliste jetzt zurücksetzen" },
     "subscriberBoostEnabled": { "label": "Abonnenten-Bonus" },
-    "subscriberBoostPercent": { "label": "Abonnenten-Bonus (%)" },
+    "subscriberBoostPercent": { "label": "Abonnenten-Bonus", "help": "In Prozent; das Feld hängt die Einheit an." },
     "vipBoostEnabled":       { "label": "VIP-Bonus" },
-    "vipBoostPercent":       { "label": "VIP-Bonus (%)" },
+    "vipBoostPercent":       { "label": "VIP-Bonus", "help": "In Prozent; das Feld hängt die Einheit an." },
     "tryBet":                { "label": "Einsatz zum Ausprobieren" },
     "tryRole":               { "label": "Spielen als" },
     "rewardId":              { "label": "Belohnungs-ID", "help": "Die ID der Kanalpunkte-Belohnung; das Spiel trägt sie ein, wenn es die Belohnung anlegt." }

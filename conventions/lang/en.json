@@ -85,9 +85,9 @@
     "duelEnabled":           { "label": "Duels" },
     "resetLeaderboard":      { "label": "Reset the leaderboard now" },
     "subscriberBoostEnabled": { "label": "Subscriber boost" },
-    "subscriberBoostPercent": { "label": "Subscriber boost (%)" },
+    "subscriberBoostPercent": { "label": "Subscriber boost", "help": "In percent; the field adds the unit." },
     "vipBoostEnabled":       { "label": "VIP boost" },
-    "vipBoostPercent":       { "label": "VIP boost (%)" },
+    "vipBoostPercent":       { "label": "VIP boost", "help": "In percent; the field adds the unit." },
     "tryBet":                { "label": "Bet to try" },
     "tryRole":               { "label": "Play as" },
     "rewardId":              { "label": "Reward ID", "help": "The id of the channel point reward; the game fills it in when it creates the reward." }

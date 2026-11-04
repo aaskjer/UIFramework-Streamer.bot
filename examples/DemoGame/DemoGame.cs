@@ -230,8 +230,17 @@ public static class UiSchema
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
-    public static string Var(string actionName) =>
-        "uiframework.schema." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    public static string Var(string actionName) => "uiframework.schema." + Clean(actionName);
+
+    /// <summary>An action's name as a global's name: letters, digits, space, dot and dash stay, the rest is "_".
+    /// No Regex: a game action may ship without a reference to System.dll.</summary>
+    public static string Clean(string actionName)
+    {
+        var chars = (actionName ?? "").Trim().ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_' && chars[i] != ' ' && chars[i] != '.' && chars[i] != '-') chars[i] = '_';
+        return new string(chars);
+    }
 
     public static Setting Find(string key)
     {
@@ -482,8 +491,7 @@ public sealed class UiLine
 /// Every request must leave the game as it was: no chat output, no state written.</summary>
 public static class UiHost
 {
-    public static string AnswerVar(string actionName) =>
-        "uiframework.answer." + System.Text.RegularExpressions.Regex.Replace((actionName ?? "").Trim(), @"[^\w .-]", "_");
+    public static string AnswerVar(string actionName) => "uiframework.answer." + UiSchema.Clean(actionName);
 
     /// <param name="args">The action's arguments.</param>
     /// <param name="CPH">The action's CPH.</param>
