@@ -12,9 +12,10 @@ The demo as an import, the stubs without WPF references, and a points system the
   settings `pointsVariable` and `pointsName` as the fallback; the describe answer carries a detected system
   (`currency`), the window shows it as a header pill and says on the two settings that they are not in use. The
   demo pays a win into the viewer's points through it. Before, every game carried the same detection of its own.
-- `examples/DemoGame/DemoGame.sb`: the demo as one import (both actions, the `!roll` command with its cooldowns).
-  `tools/build-import.ps1` keeps an export's Execute Code sub-actions on the files named for them and its meta
-  version on the game's `CurrentVersion`; `check-stub.ps1` fails when the demo's export is behind.
+- `examples/DemoGame/DemoGame.sb`: the demo as one import (both actions, the `!roll` command with its cooldowns),
+  also as an import string to paste in the demo's README. `tools/build-import.ps1` keeps an export's Execute Code
+  sub-actions on the files named for them, its meta version on the game's `CurrentVersion` and the README's
+  string on the export; `check-stub.ps1` fails when either is behind.
 - A command in `Cooldowns(C(…))` is named by its id, as the hosts do; the generic stub also takes its text
   (`!roll`) or its name for a command made by hand, looked up in Streamer.bot, and warns when there is none. The
   demo game declares its two cooldowns; before, its `globalCooldown` was saved but never reached the command.
