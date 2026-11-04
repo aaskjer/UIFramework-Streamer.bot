@@ -21,5 +21,8 @@ By hand, which is what a project of your own does:
    a command, a hotkey, a button.
 3. Run the settings action. It offers to download `UIFramework.dll`; the window opens.
 
+A win pays `pointsPerWin` into the viewer's points: the user variable of Currency Core or LOYALTY POINTS when
+one is installed (the window shows which), else the one named in the Points settings.
+
 The command's cooldowns follow the window's settings through the command's id in `DemoGame.cs` (`Cooldowns(C(…))`);
 a command you make by hand has another id, so name it by its text there (`C("!roll", …)`) or copy its id.

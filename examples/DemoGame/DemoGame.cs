@@ -30,21 +30,56 @@ public class CPHInline
     {
         // The settings window asks here for the settings, the window, a test roll: answered, nothing else runs.
         if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, SettingsFile,
-                test: (name, s) => name == "tryRoll" ? Roll(s, "alice") : null))
+                test: (name, s) => name == "tryRoll" ? Roll(s, UiCurrency.Detect(CPH, s), "alice", null) : null))
             return true;
 
         var settings = UiSettings.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFile));
+        // The points system: Currency Core or LOYALTY POINTS when installed, else the two settings.
+        var currency = UiCurrency.Detect(CPH, settings);
         string user = args.ContainsKey("user") ? Convert.ToString(args["user"]) : "someone";
-        CPH.SendMessage(Roll(settings, user), settings.Bool("useBot"));
+        string userId = args.ContainsKey("userId") ? Convert.ToString(args["userId"]) : "";
+        string platform = args.ContainsKey("userType") ? Convert.ToString(args["userType"]) : "twitch";
+        CPH.SendMessage(Roll(settings, currency, user, won =>
+        {
+            // A win pays into the viewer's points: the user variable, by platform and id (Streamer.bot's
+            // by-name calls are retired). Both points systems keep the balance right there.
+            long points = Points(platform, userId, currency.Variable);
+            SetPoints(platform, userId, currency.Variable, points + won);
+        }), settings.Bool("useBot"));
         return true;
     }
 
-    /// <summary>One roll with the settings as given: the chat line.</summary>
-    private static string Roll(UiSettings s, string user)
+    private long Points(string platform, string userId, string variable)
+    {
+        switch (platform)
+        {
+            case "youtube": return CPH.GetYouTubeUserVarById<long>(userId, variable, true);
+            case "kick": return CPH.GetKickUserVarById<long>(userId, variable, true);
+            default: return CPH.GetTwitchUserVarById<long>(userId, variable, true);
+        }
+    }
+
+    private void SetPoints(string platform, string userId, string variable, long value)
+    {
+        switch (platform)
+        {
+            case "youtube": CPH.SetYouTubeUserVarById(userId, variable, value, true); break;
+            case "kick": CPH.SetKickUserVarById(userId, variable, value, true); break;
+            default: CPH.SetTwitchUserVarById(userId, variable, value, true); break;
+        }
+    }
+
+    /// <summary>One roll with the settings as given: the chat line; pay gets the points of a win (null: a dry run).</summary>
+    private static string Roll(UiSettings s, UiCurrency currency, string user, Action<long> pay)
     {
         int sides = UiSettings.Clamp(s.Int("sides"), 2, 100);
         int roll = Dice.Next(1, sides + 1);
-        string result = roll == sides ? "a win, " + s.Int("pointsPerWin") + " points" : "no luck";
+        string result = "no luck";
+        if (roll == sides)
+        {
+            result = "a win, " + s.Int("pointsPerWin") + " " + currency.Name;
+            pay?.Invoke(s.Int("pointsPerWin"));
+        }
         return s.String("msgRoll")
             .Replace("{user}", user)
             .Replace("{roll}", roll.ToString(CultureInfo.InvariantCulture))
@@ -112,7 +147,10 @@ public static class UiSchema
         => new Setting { Key = key, Default = @default, Kind = "template", Page = "messages", Group = group, Label = label, Help = help,
                          Placeholders = placeholders, Aliases = alias == null ? null : new[] { alias }, File = file, Field = field };
 
-    public static string ToJson(string host, string version, string settingsFile)
+    public static string ToJson(string host, string version, string settingsFile) => ToJson(host, version, settingsFile, null);
+
+    /// <summary>The schema with the points system the window should show as detected (UiCurrency.Detect).</summary>
+    public static string ToJson(string host, string version, string settingsFile, UiCurrency currency)
     {
         var settings = new JArray();
         foreach (var s in Table)
@@ -170,6 +208,7 @@ public static class UiSchema
         }
         var root = new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
         if (Window != null) root["window"] = Window.ToJson();
+        if (currency != null && currency.Detected) root["currency"] = currency.ToJson();
         return root.ToString(Formatting.None);
     }
 
@@ -212,6 +251,8 @@ public static class UiSchema
         S("userCooldown", 30),
         S("sides", 6, page: "game", label: "Sides of the die", help: "How many sides the die has; the highest one wins.", section: "The die", min: 2, max: 100),
         S("pointsPerWin", 10, page: "game", label: "Points per win", help: "What a roll of the highest side is worth.", section: "The die", min: 0, max: 100000),
+        S("pointsVariable", "points"),   // the fallback: a detected Currency Core or LOYALTY POINTS names the variable itself
+        S("pointsName", "Points"),
         S("tryRoll", null, page: "game", label: "Roll", help: "Rolls once with the values as they stand in the window; nothing goes to chat.", kind: "action", section: "Try a roll", live: true, panel: true),
         Msg("Rolls", "msgRoll", "@{user} rolls a {roll} on a d{sides}: {result}.", "Roll", "What chat gets after a roll.", new[] { "user", "roll", "sides", "result" }),
     };
@@ -438,8 +479,9 @@ public static class UiHost
         string var = Arg(args, "uiframework.var");
         if (request == "describe")
         {
-            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile), false);
-            CPH.LogInfo("[" + actionName + "] Settings described for the window.");
+            var currency = UiCurrency.Detect(CPH, null);   // only a detected system goes into the answer; the window shows it
+            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile, currency), false);
+            CPH.LogInfo("[" + actionName + "] Settings described for the window" + (currency.Detected ? " (" + currency.Source + ": '" + currency.Variable + "')." : "."));
             return true;
         }
         string name = Arg(args, "uiframework.name") ?? "";
@@ -467,6 +509,61 @@ public static class UiHost
     }
 
     private static string Arg(IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
+}
+
+/// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and
+/// Tawmae's LOYALTY POINTS each keep their settings in a persisted global that names the user variable the points
+/// live in and what they are called; when one is installed, the game uses those and its own two settings
+/// (pointsVariable, pointsName) are only the fallback. Detect on every run: the streamer may install one later.
+/// Reading and writing a viewer's points stays the game's: CPH.GetTwitchUserVarById / SetTwitchUserVarById (and
+/// the YouTube and Kick ones) on Variable.</summary>
+public sealed class UiCurrency
+{
+    /// <summary>The user variable the points live in.</summary>
+    public string Variable = "points";
+    /// <summary>What the points are called in chat.</summary>
+    public string Name = "Points";
+    /// <summary>"Currency Core", "LOYALTY POINTS", or null when the settings are in use.</summary>
+    public string Source;
+    public bool Detected => Source != null;
+
+    /// <summary>Looks for an installed system; without one, the two settings (or their defaults when settings is null).</summary>
+    public static UiCurrency Detect(IInlineInvokeProxy CPH, UiSettings settings)
+    {
+        var currency = new UiCurrency();
+        string variable = settings?.String("pointsVariable"), name = settings?.String("pointsName");
+        if (!string.IsNullOrWhiteSpace(variable)) currency.Variable = variable.Trim();
+        if (!string.IsNullOrWhiteSpace(name)) currency.Name = name.Trim();
+        if (!currency.Read(CPH, "currency_ProductSettings", "pointsVar", "pointsName", "Currency Core"))
+            currency.Read(CPH, "tawmae_Settings_LOYALTY POINTS", "globalVariableName", "pointsName", "LOYALTY POINTS");
+        return currency;
+    }
+
+    private bool Read(IInlineInvokeProxy CPH, string global, string variableKey, string nameKey, string source)
+    {
+        string json;
+        try { json = CPH.GetGlobalVar<string>(global, true); }
+        catch (Exception) { return false; }
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try
+        {
+            var settings = JObject.Parse(json);
+            string variable = (string)settings[variableKey];
+            if (string.IsNullOrWhiteSpace(variable)) return false;
+            Variable = variable.Trim();
+            string name = (string)settings[nameKey];
+            if (!string.IsNullOrWhiteSpace(name)) Name = name.Trim();
+            Source = source;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            CPH.LogWarn("[UIFramework] The settings of " + source + " (" + global + ") could not be read: " + ex.Message);
+            return false;
+        }
+    }
+
+    public JObject ToJson() => new JObject { ["source"] = Source, ["variable"] = Variable, ["name"] = Name };
 }
 
 /// <summary>The settings file as the game reads it: every key through its default, old key names tolerated. Values

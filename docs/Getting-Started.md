@@ -85,6 +85,14 @@ That is all. Run the settings action: the first time it asks whether to download
 Help and About, a customise mode (the pen) and export/import. Whenever a newer framework is released, the stub
 offers it on the next open ([docs/Loader.md](Loader.md)).
 
+## Points
+
+A game that pays out declares `S("pointsVariable", "points")` and `S("pointsName", "Points")` and asks
+`UiCurrency.Detect(CPH, settings)` on every run: when the streamer runs StreamUP's Currency Core or Tawmae's
+LOYALTY POINTS, `Variable` and `Name` come from there and the window shows a pill saying so; otherwise the two
+settings apply. The demo pays a win into that variable with `CPH.GetTwitchUserVarById`/`SetTwitchUserVarById`
+(YouTube and Kick likewise).
+
 ## What you get without writing it
 
 - Pages from the table, sections where `section` changes, numbers three to a line, switches two.

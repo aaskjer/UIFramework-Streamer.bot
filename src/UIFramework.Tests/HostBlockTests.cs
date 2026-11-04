@@ -22,6 +22,40 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void APointsSystemIsDetectedFromItsGlobal()
+        {
+            var cph = new FakeCph();
+            var none = UiCurrency.Detect(cph, null);
+            Assert.False(none.Detected);
+            Assert.Equal("points", none.Variable);
+
+            cph.Globals["tawmae_Settings_LOYALTY POINTS"] = "{\"globalVariableName\": \"loyalty\", \"pointsName\": \"Gems\"}";
+            var tawmae = UiCurrency.Detect(cph, null);
+            Assert.Equal("LOYALTY POINTS", tawmae.Source);
+            Assert.Equal("loyalty", tawmae.Variable);
+            Assert.Equal("Gems", tawmae.Name);
+
+            cph.Globals["currency_ProductSettings"] = "{\"pointsVar\": \"coins\", \"pointsName\": \"Coins\"}";
+            var core = UiCurrency.Detect(cph, null);   // Currency Core wins when both are there
+            Assert.Equal("Currency Core", core.Source);
+            Assert.Equal("coins", core.Variable);
+
+            cph.Globals["currency_ProductSettings"] = "not json";
+            Assert.Equal("LOYALTY POINTS", UiCurrency.Detect(cph, null).Source);   // a broken one is skipped with a warning
+            Assert.Contains(cph.Log, line => line.StartsWith("warn"));
+
+            Assert.True(UiHost.Handle(new Dictionary<string, object> { ["uiframework.request"] = "describe" }, cph, "Demo Game", "demo", "v1.0.0", "Demo/settings.json"));
+            var described = JObject.Parse((string)cph.Globals[UiSchema.Var("Demo Game")]);
+            Assert.Equal("LOYALTY POINTS", (string)described["currency"]["source"]);
+            ((JArray)described["settings"]).Add(new JObject { ["key"] = "pointsVariable", ["default"] = "points" });   // the template's table is empty
+            var schema = Schema.Parse(described.ToString());
+            var spec = Entry.SpecFor(null, schema, null);
+            Entry.Prepare(spec, schema);
+            Assert.Contains(spec.HeaderPills, pill => pill.Read(null).Text == "LOYALTY POINTS: loyalty");
+            Assert.Contains(spec.ResolvedSettings, s => s.Key == "pointsVariable" && s.Help.Contains("LOYALTY POINTS is installed"));
+        }
+
+        [Fact]
         public void TheWindowBuilderReachesTheSpec()
         {
             var window = new UiWindow("Demo Game", releases: "aaskjer/Demo", logo: "https://example.test/logo.png", width: 700)

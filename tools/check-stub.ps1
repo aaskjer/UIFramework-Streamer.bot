@@ -78,7 +78,7 @@ if (Compile 'examples/DemoGame/DemoGame.cs compiles as a Streamer.bot action (ho
         $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Newtonsoft.Json.dll'))
         $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Streamer.bot.Plugin.Interface.dll'))
         $assembly = [Reflection.Assembly]::LoadFrom((Join-Path $out 'Demo.dll'))
-        $json = $assembly.GetType('UiSchema').GetMethod('ToJson').Invoke($null, @('demo', 'v1.0.0', 'Demo Game/DemoGame-Settings.json'))
+        $json = $assembly.GetType('UiSchema').GetMethod('ToJson', [type[]]@([string], [string], [string])).Invoke($null, @('demo', 'v1.0.0', 'Demo Game/DemoGame-Settings.json'))
         $pretty = [Newtonsoft.Json.Linq.JObject]::Parse($json).ToString()
         $schemaPath = Join-Path $root 'examples\DemoGame\schema.json'
         $before = if (Test-Path -LiteralPath $schemaPath) { [IO.File]::ReadAllText($schemaPath, [Text.Encoding]::UTF8) } else { '' }

@@ -36,6 +36,14 @@
       "max": 100000.0
     },
     {
+      "key": "pointsVariable",
+      "default": "points"
+    },
+    {
+      "key": "pointsName",
+      "default": "Points"
+    },
+    {
       "key": "tryRoll",
       "default": null,
       "kind": "action",
