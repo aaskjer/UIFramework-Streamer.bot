@@ -5,8 +5,13 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [0.9.1] - 2026-11-04
 
-The demo as an import, the stubs without WPF references, and a points system the window knows about.
+The demo as an import, the stubs without WPF references, a points system the window knows about, and the first
+host on the generic stub.
 
+- High-Low is the first host moved to the generic stub: its window is declared in its host block (written from
+  the old spec by the new `tools/spec-to-window.ps1`, which turns a host's `spec.json` and the cooldowns of its
+  host section into the `UiWindow` declaration), its game action answers through `UiHost.Handle`, its settings
+  action is `stub/Stub.cs`. `hosts/highlow` keeps the block and the schema; its spec files are gone.
 - Points systems: `UiCurrency.Detect(CPH, settings)` in the host block finds StreamUP's Currency Core or Tawmae's
   LOYALTY POINTS by their settings global and gives the user variable and the name of the points, the two
   settings `pointsVariable` and `pointsName` as the fallback; the describe answer carries a detected system
