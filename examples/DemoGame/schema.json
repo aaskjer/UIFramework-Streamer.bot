@@ -86,7 +86,7 @@
     },
     "cooldowns": [
       {
-        "command": "!roll",
+        "command": "364c549b-0294-486b-80ae-ea838e14ec18",
         "global": "globalCooldown",
         "user": "userCooldown"
       }

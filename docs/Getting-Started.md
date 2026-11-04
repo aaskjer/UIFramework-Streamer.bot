@@ -39,14 +39,15 @@ colours, paths, emotes, lists with a row editor, buttons that ask your game some
 ```csharp
 public static readonly UiWindow Window = new UiWindow("Demo Game", releases: "you/your-repo")
     .Pages(P("game", "Game", "dice"), "messages", "help", "about")
-    .Cooldowns(C("!roll", "globalCooldown", "userCooldown"))
+    .Cooldowns(C("364c549b-0294-486b-80ae-ea838e14ec18", "globalCooldown", "userCooldown"))
     .Help(H("Playing", Cmd("!roll", "Rolls the die once.")))
     .About(credits: "By you.");
 ```
 
 `Cooldowns` is how the cooldown settings reach the command: after every save the settings action sets the
 `!roll` command's global and per-user cooldown in Streamer.bot from those two keys. Without it they are just
-numbers in the file.
+numbers in the file. The command is named by its id (right-click it in Streamer.bot, *Copy Id*); an export and
+import keep the id, so this is what to ship. For a command made by hand its text (`"!roll"`) works too.
 
 `releases` is your GitHub repository: it gives the About page its links and the window its "new version of the
 game" check.
