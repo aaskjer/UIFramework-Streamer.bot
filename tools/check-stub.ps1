@@ -90,5 +90,11 @@ if (Compile 'examples/DemoGame/DemoGame.cs compiles as a Streamer.bot action (ho
     catch { Write-Host "  FAIL the demo game's schema could not be read: $($_.Exception.Message)" -ForegroundColor Red; $failed++ }
 } else { $failed++ }
 
+# The demo's export must carry the scripts as they are.
+if (Test-Path -LiteralPath (Join-Path $root 'examples\DemoGame\DemoGame.sb')) {
+    & (Join-Path $PSScriptRoot 'build-import.ps1') -Check
+    if ($LASTEXITCODE -ne 0) { $failed++ }
+}
+
 if ($failed -gt 0) { exit 1 }
 exit 0

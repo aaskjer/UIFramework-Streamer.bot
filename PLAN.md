@@ -398,7 +398,7 @@ Log-Auto-Refresh (FileSystemWatcher auf `log.folder`, der Button bleibt als Fall
 
 Stand 04.11.2026: 7.1 bis 7.4 mit Release 0.9.0 erledigt (Window-Builder, generischer `stub/Stub.cs`,
 `UiHost.Handle`, Banner und Dialog, Log-Watcher, englische Doku, `examples/DemoGame`, `tools/update-host-block.ps1`);
-das Demo-`.sb` folgt, sobald die beiden Actions einmal aus Streamer.bot exportiert sind. Offen: 7.5, die
+das Demo-`.sb` liegt bei (`tools/build-import.ps1` hält es aktuell). Offen: 7.5, die
 Umstellung der Hosts (`tools/spec-to-window.ps1` kommt mit dem ersten Host).
 
 ## 9. Tests und Werkzeuge

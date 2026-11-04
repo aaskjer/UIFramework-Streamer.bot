@@ -4,7 +4,8 @@ Ten minutes from a game that reads a JSON file to a settings window with pages, 
 automatic updates of the window itself. Nothing to install: the settings action fetches `UIFramework.dll` on
 first use and keeps it current.
 
-You need two actions in Streamer.bot. `examples/DemoGame` has both as files; everything below is what they do.
+You need two actions in Streamer.bot. `examples/DemoGame` has both as files and as an import (`DemoGame.sb`);
+everything below is what they do.
 
 ## 1. The game action gets the host block
 
