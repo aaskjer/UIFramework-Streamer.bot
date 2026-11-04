@@ -155,6 +155,36 @@ public static class UiSchema
         .Pages(P("game", "Game", "🎲"), P("channelPoints", "Channel points", "💜"), P("cooldowns", "Cooldowns", "⏳"), P("access", "Access", "👥"), P("leaderboard", "Scoreboard", "🏆"), P("messages", "Messages", "💬"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Pill("isChannelPointsTrigger", "Channel points", "Chat commands", tooltip: "How guesses come in on Twitch. YouTube and Kick always use the chat commands.")
+        // German: the game's own keys and texts; the conventions already carry the shared keys, sections and pages.
+        .Lang("de",
+            K("awardPoints", "Punkte vergeben", "Aus, und es wird zum Spaß gespielt: niemand gewinnt oder verliert Punkte, die Tipps zählen trotzdem für die Bestenlisten."),
+            K("wonPoints", "Gewinnbetrag", "Wird für ein richtiges !high oder !low im Chat gezahlt. Ein richtiges !equal zahlt das Doppelte, ein falsches !equal kostet diesen Betrag. Ein falsches !high oder !low kostet nichts."),
+            K("equalChance", "Chance auf Gleichstand", "Wie oft ein !equal-Tipp dieselbe Zahl noch einmal zieht. Jede andere Ziehung ist eine freie Wahl von 1 bis 100."),
+            K("rewardIdHigh", "Belohnungs-ID für höher", "Die ID der Belohnung, die auf höher tippt. Einlösungen anderer Belohnungen bleiben unberührt."),
+            K("rewardIdLow", "Belohnungs-ID für niedriger", "Die ID der Belohnung, die auf niedriger tippt."),
+            K("rewardIdEqual", "Belohnungs-ID für gleich", "Die ID der Belohnung, die auf dieselbe Zahl tippt."),
+            K("highGlobalCooldown", "Alle", "Wird beim Speichern auf den Befehl geschrieben und für die passende Belohnung übernommen. 0 schaltet sie ab."),
+            K("highUserCooldown", "Pro Zuschauer"),
+            K("lowGlobalCooldown", "Alle", "Wird beim Speichern auf den Befehl geschrieben und für die passende Belohnung übernommen. 0 schaltet sie ab."),
+            K("lowUserCooldown", "Pro Zuschauer"),
+            K("equalGlobalCooldown", "Alle", "Wird beim Speichern auf den Befehl geschrieben und für die passende Belohnung übernommen. 0 schaltet sie ab."),
+            K("equalUserCooldown", "Pro Zuschauer"),
+            K("alltimeGlobalCooldown", "Alle", "Wird beim Speichern auf den Befehl geschrieben. 0 schaltet sie ab."),
+            K("alltimeUserCooldown", "Pro Zuschauer"),
+            K("sessionGlobalCooldown", "Alle", "Wird beim Speichern auf den Befehl geschrieben. 0 schaltet sie ab."),
+            K("sessionUserCooldown", "Pro Zuschauer"),
+            K("personalGlobalCooldown", "Alle", "Wird beim Speichern auf den Befehl geschrieben. 0 schaltet sie ab."),
+            K("personalUserCooldown", "Pro Zuschauer"),
+            K("fixedBetAmount", "Fester Einsatz", "Der Einsatz im Modus Fest, was auch immer die Belohnung kostet."),
+            K("minBet", "Mindesteinsatz", "Nur bei Eingabe und Fest: Einsätze darunter werden abgelehnt und erstattet. 0 schaltet die Untergrenze ab."),
+            K("leaderboardSize", "Angezeigte Plätze", "Wie viele Spieler !hlgsession und !hlgalltime auflisten."),
+            K("leaderboardExcludeBroadcaster", "Broadcaster auslassen", "Deine eigenen Tipps zählen weiterhin; du wirst nur nicht gelistet."),
+            K("isChannelPointsTrigger", "Mit Kanalpunkten tippen", "Nur Twitch. Tipps kommen aus den drei Belohnungen unten, und auf Twitch tun die Chat-Befehle !high, !low und !equal nichts. YouTube und Kick spielen weiter im Chat."),
+            K("cpBetMode", "Einsatz", "Kosten: der Preis der Belohnung ist der Einsatz. Fest: der feste Einsatz unten. In beiden Fällen sind die Kanalpunkte ausgegeben, ein richtiger Tipp zahlt den Einsatz in Punkten (doppelt bei !equal), ein falscher kostet nichts weiter. Eingabe: der Zuschauer tippt in die Einlösung einen Einsatz in eigenen Punkten (eine Zahl, all, half, third, quarter oder random); nur ein falsches !equal nimmt ihn. Frei: spielt wie die Chat-Befehle mit dem Gewinnbetrag."),
+            K("maxBet", "Höchsteinsatz", "Nur bei Eingabe und Fest: Einsätze darüber werden abgelehnt und erstattet. 0 schaltet die Obergrenze ab."),
+            K("refundFailedRedemptions", "Einlösungen ohne Tipp erstatten", "Eine Einlösung, die ohne Tipp endet (blockierter Zuschauer, Abklingzeit, abgelehnter Einsatz, Fehler), bekommt ihre Kanalpunkte zurück. Twitch erstattet nur, solange die Einlösung in der Warteschlange steht; die Belohnungen dürfen sie also nicht überspringen."),
+            Tx("Cost of the reward", "Kosten der Belohnung"), Tx("Fixed bet", "Fester Einsatz"), Tx("Viewer types a bet", "Zuschauer tippt einen Einsatz"), Tx("Free, like chat", "Frei, wie im Chat"),
+            Tx("How guesses come in on Twitch. YouTube and Kick always use the chat commands.", "Wie Tipps auf Twitch ankommen. YouTube und Kick nutzen immer die Chat-Befehle."))
         .Samples("guess", "!high", "result", "correct", "emoji", "🙂", "previousNumber", "42", "newNumber", "77", "number", "42", "sessionGuesses", "3", "alltimeGuesses", "57", "sign", "won", "pointsDelta", "1.234", "pointsSection", " won 1.234 Points", "currency", "Points", "seconds", "12", "amount", "500")
         .Cooldowns(
             C("dc2d4f17-d5f1-4228-923e-5c03652bb30f", "highGlobalCooldown", "highUserCooldown"),
