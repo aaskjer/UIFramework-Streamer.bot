@@ -773,5 +773,104 @@
         }
       ]
     }
+  },
+  "lang": {
+    "de": {
+      "keys": {
+        "awardPoints": {
+          "label": "Punkte vergeben",
+          "help": "Aus, und es wird zum Spaß gespielt: niemand gewinnt oder verliert Punkte, die Tipps zählen trotzdem für die Bestenlisten."
+        },
+        "wonPoints": {
+          "label": "Gewinnbetrag",
+          "help": "Wird für ein richtiges !high oder !low im Chat gezahlt. Ein richtiges !equal zahlt das Doppelte, ein falsches !equal kostet diesen Betrag. Ein falsches !high oder !low kostet nichts."
+        },
+        "equalChance": {
+          "label": "Chance auf Gleichstand",
+          "help": "Wie oft ein !equal-Tipp dieselbe Zahl noch einmal zieht. Jede andere Ziehung ist eine freie Wahl von 1 bis 100."
+        },
+        "rewardIdHigh": {
+          "label": "Belohnungs-ID für höher",
+          "help": "Die ID der Belohnung, die auf höher tippt. Einlösungen anderer Belohnungen bleiben unberührt."
+        },
+        "rewardIdLow": {
+          "label": "Belohnungs-ID für niedriger",
+          "help": "Die ID der Belohnung, die auf niedriger tippt."
+        },
+        "rewardIdEqual": {
+          "label": "Belohnungs-ID für gleich",
+          "help": "Die ID der Belohnung, die auf dieselbe Zahl tippt."
+        },
+        "highGlobalCooldown": {
+          "label": "Alle",
+          "help": "Wird beim Speichern auf den Befehl geschrieben und für die passende Belohnung übernommen. 0 schaltet sie ab."
+        },
+        "highUserCooldown": "Pro Zuschauer",
+        "lowGlobalCooldown": {
+          "label": "Alle",
+          "help": "Wird beim Speichern auf den Befehl geschrieben und für die passende Belohnung übernommen. 0 schaltet sie ab."
+        },
+        "lowUserCooldown": "Pro Zuschauer",
+        "equalGlobalCooldown": {
+          "label": "Alle",
+          "help": "Wird beim Speichern auf den Befehl geschrieben und für die passende Belohnung übernommen. 0 schaltet sie ab."
+        },
+        "equalUserCooldown": "Pro Zuschauer",
+        "alltimeGlobalCooldown": {
+          "label": "Alle",
+          "help": "Wird beim Speichern auf den Befehl geschrieben. 0 schaltet sie ab."
+        },
+        "alltimeUserCooldown": "Pro Zuschauer",
+        "sessionGlobalCooldown": {
+          "label": "Alle",
+          "help": "Wird beim Speichern auf den Befehl geschrieben. 0 schaltet sie ab."
+        },
+        "sessionUserCooldown": "Pro Zuschauer",
+        "personalGlobalCooldown": {
+          "label": "Alle",
+          "help": "Wird beim Speichern auf den Befehl geschrieben. 0 schaltet sie ab."
+        },
+        "personalUserCooldown": "Pro Zuschauer",
+        "fixedBetAmount": {
+          "label": "Fester Einsatz",
+          "help": "Der Einsatz im Modus Fest, was auch immer die Belohnung kostet."
+        },
+        "minBet": {
+          "label": "Mindesteinsatz",
+          "help": "Nur bei Eingabe und Fest: Einsätze darunter werden abgelehnt und erstattet. 0 schaltet die Untergrenze ab."
+        },
+        "leaderboardSize": {
+          "label": "Angezeigte Plätze",
+          "help": "Wie viele Spieler !hlgsession und !hlgalltime auflisten."
+        },
+        "leaderboardExcludeBroadcaster": {
+          "label": "Broadcaster auslassen",
+          "help": "Deine eigenen Tipps zählen weiterhin; du wirst nur nicht gelistet."
+        },
+        "isChannelPointsTrigger": {
+          "label": "Mit Kanalpunkten tippen",
+          "help": "Nur Twitch. Tipps kommen aus den drei Belohnungen unten, und auf Twitch tun die Chat-Befehle !high, !low und !equal nichts. YouTube und Kick spielen weiter im Chat."
+        },
+        "cpBetMode": {
+          "label": "Einsatz",
+          "help": "Kosten: der Preis der Belohnung ist der Einsatz. Fest: der feste Einsatz unten. In beiden Fällen sind die Kanalpunkte ausgegeben, ein richtiger Tipp zahlt den Einsatz in Punkten (doppelt bei !equal), ein falscher kostet nichts weiter. Eingabe: der Zuschauer tippt in die Einlösung einen Einsatz in eigenen Punkten (eine Zahl, all, half, third, quarter oder random); nur ein falsches !equal nimmt ihn. Frei: spielt wie die Chat-Befehle mit dem Gewinnbetrag."
+        },
+        "maxBet": {
+          "label": "Höchsteinsatz",
+          "help": "Nur bei Eingabe und Fest: Einsätze darüber werden abgelehnt und erstattet. 0 schaltet die Obergrenze ab."
+        },
+        "refundFailedRedemptions": {
+          "label": "Einlösungen ohne Tipp erstatten",
+          "help": "Eine Einlösung, die ohne Tipp endet (blockierter Zuschauer, Abklingzeit, abgelehnter Einsatz, Fehler), bekommt ihre Kanalpunkte zurück. Twitch erstattet nur, solange die Einlösung in der Warteschlange steht; die Belohnungen dürfen sie also nicht überspringen."
+        }
+      },
+      "texts": {
+        "Cost of the reward": "Kosten der Belohnung",
+        "Fixed bet": "Fester Einsatz",
+        "Viewer types a bet": "Zuschauer tippt einen Einsatz",
+        "Free, like chat": "Frei, wie im Chat",
+        "How guesses come in on Twitch. YouTube and Kick always use the chat commands.": "Wie Tipps auf Twitch ankommen. YouTube und Kick nutzen immer die Chat-Befehle."
+      }
+    }
   }
 }
