@@ -3,7 +3,9 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
 
-## [Unreleased]
+## [0.9.2] - 2026-11-05
+
+The window in German all the way, a game's own translations, a one-row customise bar.
 
 - German all the way: in another language than English the window now translates what the game declared, not
   only what it left out. The conventions' key texts replace the declared label and help of those keys, pages are
