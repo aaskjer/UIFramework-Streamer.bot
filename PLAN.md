@@ -405,7 +405,10 @@ gelöscht, `schema.json` schreibt der Testlauf des Spiels). Stand 05.11.2026: Cl
 mit `.Lang("de", …)`; die Antworten des alten Stubs sitzen als `WindowAnswers` neben dem Block im Spiel, der Test-
 Harness spielt das Spiel über `RunAction`). RhymeTime ebenso (v2.1.0; die Overlay-Buttons laufen jetzt im Spiel
 auf Streamer.bots Thread, die URL geht per `clipboard` in der Antwort über das Fenster in die Zwischenablage).
-Offen: Slot Machine, Blackjack, Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
+Slot Machine ebenso (v16.1.0; der Test-Spin kommt aus der Engine im Spiel, die Emote-Quellen über `emotes:` von
+`UiHost.Handle`; dazu Custom Trigger und Statistik-Variablen je Zuschauer wie bei den anderen Spielen). Dabei
+gesehen, noch offen im Framework: Spaltenköpfe einer `list` und die Platzhalter der Tag-Felder ("Add a Streamer.bot
+group") bleiben englisch. Offen: Blackjack, Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
 
 ## 9. Tests und Werkzeuge
 

@@ -1,6 +1,6 @@
 {
   "host": "slotmachine",
-  "version": "16.0.0",
+  "version": "16.1.0",
   "settingsFile": "Chat Games/Slot Machine Game/SMG-Settings.json",
   "settings": [
     {
@@ -1133,5 +1133,521 @@
         "RedemptionRefundedMessage"
       ]
     }
-  ]
+  ],
+  "window": {
+    "title": "Slot Machine Game",
+    "releases": "aaskjer/Slot-Machine-Game",
+    "logo": "https://github.com/aaskjer/Slot-Machine-Game/blob/main/Assets/logo-small.png?raw=true",
+    "logPrefix": "[Slot Machine Game/Settings]",
+    "pages": [
+      {
+        "id": "game",
+        "title": "Game",
+        "icon": "🎰"
+      },
+      {
+        "id": "emotes",
+        "title": "Emotes",
+        "icon": "😀"
+      },
+      {
+        "id": "access",
+        "title": "Access",
+        "icon": "👥"
+      },
+      {
+        "id": "messages",
+        "title": "Messages",
+        "icon": "💬"
+      },
+      {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
+      },
+      {
+        "id": "help",
+        "title": "How to play",
+        "icon": "📖"
+      },
+      {
+        "id": "about",
+        "title": "About",
+        "icon": "ℹ️"
+      }
+    ],
+    "senders": {
+      "useBot": "useBot",
+      "sendAction": "sendAction",
+      "cooldownUseBot": "cooldownUseBot",
+      "cooldownSendAction": "cooldownSendAction",
+      "numberSeparator": "numberSeparator",
+      "cooldownGroup": "Cooldown"
+    },
+    "samples": {
+      "user": "alice",
+      "amount": "1,500",
+      "currency": "Points",
+      "newBalance": "12,345",
+      "jackpotMinBet": "50,000",
+      "jackpotLossContribution": "100",
+      "jackpotPoolCurrent": "23,400",
+      "jackpotPoolWinAmount": "23,400",
+      "addictedCutPercent": "50",
+      "jackpot": "",
+      "/jackpot": "",
+      "reason": "your bet is below the minimum (1 Points).",
+      "seconds": "12",
+      "min": "1",
+      "max": "9,999,999"
+    },
+    "answers": {
+      "trySpin": {
+        "lines": [
+          "alice has 12,340 Points and spins for 1,000 Points on Twitch.",
+          {
+            "emotes": [
+              "Kappa",
+              "LUL",
+              "Kappa",
+              "FailFish"
+            ],
+            "platform": "twitch"
+          },
+          "No match · @alice spun Kappa || LUL || Kappa || FailFish and lost 1,000 Points. New balance: 11,340 Points."
+        ]
+      }
+    },
+    "headerPills": [
+      {
+        "key": "freeGame",
+        "on": "Free mode on",
+        "off": "Free mode off",
+        "tooltip": "Free mode, from the Game page. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow."
+      },
+      {
+        "key": "isChannelPointsTrigger",
+        "on": "Channel points",
+        "off": "Chat command",
+        "tooltip": "How viewers spin on Twitch, from the Access page. YouTube and Kick always use the chat command."
+      }
+    ],
+    "cooldowns": [
+      {
+        "command": "f8a9c5fa-edb7-4de5-bb92-c0fdf53f005e",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      }
+    ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "SMG-log*.txt",
+      "writeLogKey": "logToFile",
+      "emptyText": "No spins logged yet. Every spin lands here once 'Write a log file per day' is on.",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Platform",
+          "field": "Platform"
+        },
+        {
+          "header": "Trigger",
+          "field": "Trigger"
+        },
+        {
+          "header": "Bet",
+          "field": "Bet"
+        },
+        {
+          "header": "Change",
+          "field": "Change"
+        },
+        {
+          "header": "After",
+          "field": "After"
+        }
+      ],
+      "results": [
+        "WIN",
+        "LOSS",
+        "JACKPOT"
+      ],
+      "platforms": [
+        "twitch",
+        "youtube",
+        "kick"
+      ]
+    },
+    "help": [
+      {
+        "heading": "A spin",
+        "lines": [
+          {
+            "note": "A viewer runs the slots command with a bet. The bet is taken, the reels roll, and the game settles on the spot: two or more matching slots win, all of them alike is the jackpot, anything else loses the bet. The slots go out as one message and the result as the next."
+          },
+          {
+            "command": "!slots",
+            "what": "spins at the default bet."
+          },
+          {
+            "command": "!slots 500",
+            "what": "spins for 500, within the minimum and maximum."
+          },
+          {
+            "command": "!slots all",
+            "what": "also half, third, quarter and random."
+          },
+          {
+            "note": "A trigger of your own can pass the argument free=1 for a single free spin; Free mode on the Game page makes every spin free."
+          }
+        ]
+      },
+      {
+        "heading": "What a win pays",
+        "lines": [
+          {
+            "note": "The bet × the payout % of the tier (2, 3, 4 or 5 alike, or the jackpot) × the emote's weight ÷ 100, and never less than the bet. A low weight comes up often and pays little, a high one is rare and pays a lot; which weights play is set on the Game page, the weights themselves on the Emotes page."
+          },
+          {
+            "note": "With the jackpot pool on, every lost bet goes into a pool per platform, and a jackpot with a bet at or above 'Bet to win the pool' takes the pool on top. Twitch subscribers and VIPs can get a boost; viewers on the Addicted list get a cut."
+          },
+          {
+            "note": "'Try a spin' on the Game page plays one round with the game's own engine and the exact chat message, from the settings as they stand in the window, without sending or saving anything."
+          }
+        ]
+      },
+      {
+        "heading": "Channel points",
+        "lines": [
+          {
+            "note": "On Twitch a channel point reward can start the spin instead of the command (Access page): the reward's price is the bet, or a typed amount, a fixed amount, or nothing at all. YouTube and Kick keep the chat command. A redemption that can't end in a spin is refunded while it is still in the request queue."
+          }
+        ]
+      },
+      {
+        "heading": "For your own actions",
+        "lines": [
+          {
+            "note": "Every settled spin fires a custom trigger - SMG: Spin Win, SMG: Spin Loss or SMG: Spin Jackpot (Custom > Chat Game > Slot Machine Game) - with the spin as arguments: spinOutcome, spinUser, spinPlatform, spinSlots, spinBet, spinAmount, spinPreviousPoints, spinNewPoints, spinCurrency, spinJackpotPoolWon and spinFree. GetLastSpinResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
+          },
+          {
+            "note": "Every spin also updates the viewer's own variables for a leaderboard of your own, on the platform the spin was made (Streamer.bot's user variables, Twitch, YouTube and Kick): smg_spins, smg_wins, smg_losses, smg_jackpots, smg_totalBet, smg_totalWon, smg_totalLost, smg_netProfit, smg_biggestWin, smg_biggestBet, smg_poolWon, smg_currentStreak, smg_bestStreak, smg_userName, smg_firstPlayed and smg_lastPlayed. Free spins count as spins, wins and jackpots but move no points."
+          }
+        ]
+      },
+      {
+        "heading": "Where things are kept",
+        "lines": [
+          {
+            "command": "SMG-Settings.json",
+            "what": "everything on these pages, the emotes included."
+          },
+          {
+            "command": "uiframework.layout.json",
+            "what": "your layout of this window: theme, renamed or hidden pages and fields."
+          },
+          {
+            "command": "Logs\\SMG-log-yyyy-MM-dd.txt",
+            "what": "every spin, one file per day, while 'Write a log file per day' is on."
+          },
+          {
+            "note": "All of it sits in Streamer.bot's folder under Chat Games. A damaged settings file falls back to the .bak beside it and the broken one is kept as .broken."
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "Slot Machine Game by aaskjer / yBO",
+      "sections": [
+        {
+          "heading": "Needs a points system",
+          "lines": [
+            {
+              "note": "The slot machine plays with the points of a currency system - channel point spins too, unless they're free. These two are found on their own:"
+            },
+            {
+              "link": "Currency Core by StreamUP",
+              "url": "https://streamup.tips/product/currency-core"
+            },
+            {
+              "link": "LOYALTY POINTS by tawmae",
+              "url": "https://tawmae.xyz/loyalty-points"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "Slot Machine Game on the Streamer.bot Discord",
+          "url": "https://discord.com/channels/834650675224248362/1446889756297527530/1446889756297527530"
+        }
+      ]
+    }
+  },
+  "lang": {
+    "de": {
+      "pages": {
+        "emotes": "Emotes"
+      },
+      "keys": {
+        "numberOfSlots": {
+          "label": "Walzen",
+          "help": "Wie viele Walzen eine Drehung zeigt. Alle gleich ist der Jackpot."
+        },
+        "matchChance": {
+          "label": "Treffer-Chance",
+          "help": "Chance in Prozent, dass eine Drehung gleiche Walzen zeigen darf: sie werden dann frei gezogen, ein Treffer ist also wahrscheinlich, aber nicht sicher. Sonst wird eine Wiederholung neu gezogen, um einen Treffer zu vermeiden. Die Quoten darunter zeigen, was wirklich herauskommt."
+        },
+        "jackpotChance": {
+          "label": "Jackpot-Chance",
+          "help": "Chance in Prozent, dass jede Walze dasselbe Emote zeigt - der Jackpot. '1' ist 1 von 100. Auch eine freie Ziehung kann alle gleich landen, die echte Chance ist also etwas höher."
+        },
+        "rerollAttempts": {
+          "label": "Neuziehungen",
+          "help": "Wie hartnäckig eine Drehung, die nicht treffen soll, eine Wiederholung vermeidet: jede Walze wird bis zu so oft gezogen. Eine Wiederholung kann trotzdem durchrutschen, vor allem mit wenigen Emotes im Spiel."
+        },
+        "emotePoolSize": {
+          "label": "Emote-Pool (0 = alle)",
+          "help": "Wie viele der Emotes im Spiel für jede Drehung gezogen werden. Weniger Emotes machen Treffer wahrscheinlicher. 0, oder mehr als es gibt, nimmt alle."
+        },
+        "minEmoteWeight": {
+          "label": "Mindestgewicht",
+          "help": "Nur Emotes mit mindestens diesem Gewicht spielen. Niedrige Gewichte kommen oft und zahlen wenig, ein höherer Wert nimmt also die billigsten Emotes heraus."
+        },
+        "maxEmoteWeight": {
+          "label": "Höchstgewicht",
+          "help": "Nur Emotes mit höchstens diesem Gewicht spielen. Hohe Gewichte sind selten und zahlen viel, ein niedrigerer Wert nimmt also die wertvollsten Emotes heraus."
+        },
+        "defaultBet": {
+          "label": "Standardeinsatz",
+          "help": "Der Einsatz für eine Drehung ohne Betrag. Zuschauer können auch eine Zahl, all, half, third, quarter oder random setzen."
+        },
+        "minBet": {
+          "label": "Minimum (0 = keins)",
+          "help": "Der kleinste erlaubte Einsatz. 0 schaltet die Grenze ab. 'random' setzt zwischen Minimum und Maximum. Gilt auch für Kanalpunkte in den Modi 'Eingegebener Betrag' und 'Fest'."
+        },
+        "maxBet": {
+          "label": "Maximum (0 = keins)",
+          "help": "Der größte erlaubte Einsatz. 0 schaltet die Grenze ab. Gilt auch für Kanalpunkte in den Modi 'Eingegebener Betrag' und 'Fest'."
+        },
+        "freeGame": {
+          "label": "Freier Modus",
+          "help": "Jede Drehung ist frei: niemand zahlt oder gewinnt Punkte, der Jackpot-Topf wächst nicht, und der Chat bekommt die Nachrichten unter Freier Modus. Für eine einzelne freie Drehung kann ein eigener Trigger stattdessen das Argument free=1 mitgeben."
+        },
+        "pointsVariable": {
+          "label": "Punkte-Variable",
+          "help": "Die Variable, in der deine Punkte liegen. Currency Core von StreamUP und LOYALTY POINTS von tawmae werden von selbst gefunden; nur für ein eigenes Punktesystem ändern."
+        },
+        "pointsName": {
+          "label": "Im Chat genannt als",
+          "help": "Der Name, den {currency} in den Chat setzt, etwa 'Coins' oder 'Gems'. Currency Core und LOYALTY POINTS bringen ihren eigenen Namen mit, der dann gilt."
+        },
+        "twoMatchPayout": {
+          "label": "2 gleiche",
+          "help": "Ein Gewinn zahlt Einsatz × Auszahlung % × Gewicht des Emotes ÷ 100, und nie weniger als den Einsatz. Alle Walzen gleich ist der Jackpot, der die Jackpot-Stufe zahlt, egal wie viele Walzen."
+        },
+        "threeMatchPayout": {
+          "label": "3 gleiche",
+          "help": "Mit 3 Walzen ist drei gleich der Jackpot und diese Stufe wird nicht gebraucht."
+        },
+        "fourMatchPayout": {
+          "label": "4 gleiche",
+          "help": "Nur mit 5 oder 6 Walzen; weniger Walzen landen vier gleiche nur als Jackpot."
+        },
+        "fiveMatchPayout": {
+          "label": "5 gleiche",
+          "help": "Nur mit 6 Walzen."
+        },
+        "sixMatchPayout": {
+          "label": "Jackpot",
+          "help": "Alle Walzen gleich, egal wie viele: 3 von 3 genauso wie 6 von 6."
+        },
+        "subscriberBoostEnabled": {
+          "label": "Abonnenten-Bonus",
+          "help": "Gibt Twitch-Abonnenten eine größere Auszahlung bei Gewinnen und Jackpots. Nur Twitch: auf YouTube und Kick prüft das Spiel keine Abonnenten."
+        },
+        "vipBoostEnabled": {
+          "label": "VIP-Bonus",
+          "help": "Gibt Twitch-VIPs eine größere Auszahlung bei Gewinnen und Jackpots. Nur Twitch: auf YouTube und Kick prüft das Spiel keine VIPs."
+        },
+        "subscriberBoostPercent": {
+          "label": "Abonnenten-Bonus",
+          "help": "Um wie viel größer der Gewinn eines Abonnenten ist: '10' macht aus 100 110. Addiert sich mit dem VIP-Bonus, wer beides ist."
+        },
+        "vipBoostPercent": {
+          "label": "VIP-Bonus",
+          "help": "Um wie viel größer der Gewinn eines VIPs ist: '20' macht aus 100 120. Addiert sich mit dem Abonnenten-Bonus, wer beides ist."
+        },
+        "addictedPayoutCut": {
+          "label": "Abzug für Süchtige",
+          "help": "Wie viel vom Gewinn eines süchtigen Zuschauers abgezogen wird, von 0 (nichts) bis 99 - ein Gewinn zahlt immer etwas. Wird zuletzt angewandt, kürzt also auch einen Bonus-Gewinn und den Jackpot-Topf. Wer als süchtig gilt, steht auf der Seite Zugriff."
+        },
+        "useJackpotPool": {
+          "label": "Jackpot-Topf",
+          "help": "Jeder verlorene Einsatz geht in einen Topf, einen je Plattform, und ein Jackpot mit groß genugem Einsatz gewinnt ihn obendrauf. Verluste von Süchtigen und freie Drehungen gehen nicht hinein. Nachrichten können, was sie über den Topf sagen, in {jackpot}…{/jackpot} einschließen: mit dem Topf aus bleibt dieser Teil weg."
+        },
+        "jackpotBet": {
+          "label": "Einsatz für den Topf",
+          "help": "Der kleinste Einsatz, der mit einem Jackpot den Topf gewinnt. Ein kleinerer Einsatz bekommt trotzdem die Jackpot-Auszahlung, nur nicht den Topf."
+        },
+        "tryPlatform": {
+          "label": "Plattform",
+          "help": "Wessen Emotes die Probedrehung nimmt: ein Twitch-Emote gibt es nur auf Twitch, ein Kick-Emote nur auf Kick. Abonnenten- und VIP-Bonus gibt es nur auf Twitch. Wird nicht gespeichert."
+        },
+        "tryBet": {
+          "label": "Probeeinsatz",
+          "help": "Ein Einsatz, um Quoten und Nachrichten auszuprobieren. Wird nicht gespeichert."
+        },
+        "tryRole": {
+          "label": "Drehen als",
+          "help": "Wer dreht: Boni und der Abzug für Süchtige ändern, was ein Gewinn zahlt."
+        },
+        "trySpin": {
+          "label": "Drehen",
+          "help": "Spielt eine Drehung mit den Einstellungen, wie sie auf dieser Seite stehen, gespeichert oder nicht, und zeigt die Walzen und die Nachricht, die der Chat bekäme. Nichts wird gesendet, nichts gespeichert."
+        },
+        "emotesTwitch": {
+          "label": "Twitch",
+          "help": "Das Emote genau, wie es im Chat getippt wird, etwa Kappa, mit seinem Gewicht: ein niedriges Gewicht kommt oft und zahlt wenig, ein hohes ist selten und zahlt viel. Sein Bild erscheint daneben, sobald Twitch, 7TV, BTTV oder FFZ es kennt. Der Chat zeigt es nur als Emote, wenn der sendende Account es nutzen darf, und ein 7TV-, BTTV- oder FFZ-Emote nur Zuschauern mit der Erweiterung. Welche Gewichte spielen, steht auf der Seite Spiel."
+        },
+        "emotesYoutube": {
+          "label": "YouTube",
+          "help": "Das Emoji oder der Text, den der Chat für diese Walze bekommt, etwa 🍒, mit seinem Gewicht."
+        },
+        "emotesKick": {
+          "label": "Kick",
+          "help": "Kick zeigt [emote:ID:name] als Emote. Das Bild des Emotes in einem neuen Browser-Tab öffnen: die Zahl in seiner Adresse ist die ID (https://files.kick.com/emotes/1730803/fullsize ist emojiRich)."
+        },
+        "blockedGroups": {
+          "label": "Gesperrte Gruppen",
+          "help": "Jeder in diesen Streamer.bot-Gruppen wird ignoriert, wenn er den Befehl ausführt oder die Belohnung einlöst (Settings > Groups). Eine Gruppe, die es nicht gibt, wird übersprungen und protokolliert."
+        },
+        "addictedUsers": {
+          "label": "Süchtige Zuschauer",
+          "help": "Diese Zuschauer spielen weiter, aber jeder Gewinn wird um den Abzug für Süchtige von der Seite Spiel gekürzt, ihre Verluste füllen den Jackpot-Topf nicht, und die Abklingzeit je Zuschauer hält sie auch bei Kanalpunkt-Einlösungen."
+        },
+        "addictedGroups": {
+          "label": "Süchtige Gruppen",
+          "help": "Jeder in diesen Streamer.bot-Gruppen gilt als süchtig."
+        },
+        "isChannelPointsTrigger": {
+          "label": "Kanalpunkte starten eine Drehung",
+          "help": "Auf Twitch dreht eine Einlösung der Belohnung darunter statt des Chat-Befehls, der dann auf Twitch aus ist. Die Slot Machine nimmt Einlösungen nur von Twitch, auf YouTube und Kick läuft der Befehl also weiter."
+        },
+        "rewardId": {
+          "label": "Belohnungs-ID",
+          "help": "Die ID der Kanalpunkt-Belohnung, die eine Drehung startet. Andere Belohnungen werden ignoriert; ohne eine startet keine Einlösung eine Drehung. https://ayrtonalexis.com/reward_checker/reward_check.html listet deine Belohnungen mit ihren IDs."
+        },
+        "cpBetMode": {
+          "label": "Was gesetzt wird",
+          "help": "Preis der Belohnung: der Preis ist der Einsatz, bezahlt in Kanalpunkten; ein Verlust rührt weder die Punkte des Zuschauers noch den Jackpot-Topf an, ein Gewinn wird in Punkten gezahlt. Eingegebener Betrag: Zuschauer tippen einen Einsatz in eigenen Punkten in die Belohnung, geprüft gegen ihr Guthaben wie eine Chat-Drehung; reicht es nicht, wird die Einlösung erstattet. Fest: jede Einlösung setzt den festen Betrag darunter, Preis und Text werden ignoriert, die Kanalpunkte sind der Einsatz. Frei: nichts wird gewonnen oder verloren und die Nachrichten unter Freier Modus werden genutzt."
+        },
+        "fixedBetAmount": {
+          "label": "Fester Einsatz",
+          "help": "Was jede Einlösung im Modus Fest setzt. Muss über 0 liegen."
+        },
+        "refundFailedRedemptions": {
+          "label": "Einlösungen erstatten, die keine Drehung ergeben",
+          "help": "Wenn eine Einlösung keine Drehung ergeben kann - eine gesperrte Gruppe, ein Einsatz, der nicht geht, ein Süchtiger noch in der Abklingzeit, ein Guthaben, das nicht lesbar ist, oder keine Emotes - wird sie abgebrochen und die Kanalpunkte gehen zurück. Das geht nur, solange die Einlösung noch in der Warteschlange steht: eine Belohnung, die die Warteschlange überspringt, lässt sich nicht erstatten."
+        },
+        "globalCooldown": {
+          "label": "Alle",
+          "help": "Wie lange nach einer Drehung niemand drehen kann, in Sekunden. 0 schaltet sie ab. Speichern schreibt sie auf den Chat-Befehl in Streamer.bot, Kanalpunkt-Einlösungen warten also nicht darauf."
+        },
+        "userCooldown": {
+          "label": "Je Zuschauer",
+          "help": "Wie lange ein Zuschauer bis zur nächsten Drehung wartet, in Sekunden. 0 schaltet sie ab. Speichern schreibt sie auf den Chat-Befehl in Streamer.bot, Kanalpunkt-Einlösungen warten also nicht darauf - außer süchtige Zuschauer, die das Spiel selbst daran hält."
+        },
+        "logToFile": {
+          "label": "Eine Protokolldatei pro Tag schreiben",
+          "help": "Schreibt jede Drehung - Gewinn, Verlust, Jackpot - mit Einsatz und Guthaben in eine datierte 'SMG-log-yyyy-MM-dd.txt' im Ordner Logs, eine Datei pro Tag."
+        },
+        "winMessage": {
+          "label": "Gewinn",
+          "help": "Nach den Walzen gesendet bei einem Gewinn, der kein Jackpot ist. Die Walzen selbst gehen kurz davor als eigene Nachricht raus."
+        },
+        "lossMessage": {
+          "label": "Verlust",
+          "help": "Nach den Walzen gesendet bei einem Verlust. Mit dem Jackpot-Topf an geht der verlorene Einsatz hinein."
+        },
+        "jackpotMessage": {
+          "label": "Jackpot",
+          "help": "Nach den Walzen gesendet, wenn alle gleich sind."
+        },
+        "freeGameWinMessage": {
+          "label": "Gewinn",
+          "help": "Nach den Walzen gesendet bei einem Gewinn, solange der freie Modus an ist."
+        },
+        "freeGameLossMessage": {
+          "label": "Verlust",
+          "help": "Nach den Walzen gesendet bei einem Verlust, solange der freie Modus an ist. Nichts wird abgezogen."
+        },
+        "freeGameJackpotMessage": {
+          "label": "Jackpot",
+          "help": "Nach den Walzen gesendet bei einem Jackpot, solange der freie Modus an ist."
+        },
+        "addictedWinMessage": {
+          "label": "Gewinn",
+          "help": "Statt der Gewinn-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."
+        },
+        "addictedLossMessage": {
+          "label": "Verlust",
+          "help": "Statt der Verlust-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet. Ihre Verluste gehen nicht in den Topf."
+        },
+        "addictedJackpotMessage": {
+          "label": "Jackpot",
+          "help": "Statt der Jackpot-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."
+        },
+        "invalidBetMessage": {
+          "label": "Einsatz abgelehnt",
+          "help": "Der Rahmen um die vier Gründe darunter; {reason} wird durch den zutreffenden ersetzt."
+        },
+        "reasonNegativeAmount": {
+          "label": "Grund: kein gültiger Betrag",
+          "help": "Füllt {reason}, wenn der Betrag negativ, keine Zahl, mit Dezimalstellen oder zu groß ist."
+        },
+        "reasonInsufficientFunds": {
+          "label": "Grund: nicht genug Punkte",
+          "help": "Füllt {reason}, wenn der Einsatz mehr ist, als der Zuschauer hat."
+        },
+        "reasonBelowMinimum": {
+          "label": "Grund: unter dem Minimum",
+          "help": "Füllt {reason}, wenn der Einsatz unter dem Minimum auf der Seite Spiel liegt."
+        },
+        "reasonAboveMaximum": {
+          "label": "Grund: über dem Maximum",
+          "help": "Füllt {reason}, wenn der Einsatz über dem Maximum auf der Seite Spiel liegt."
+        },
+        "globalCooldownMessage": {
+          "label": "Abklingzeit für alle",
+          "help": "Gesendet, solange die Abklingzeit für alle läuft."
+        },
+        "userCooldownMessage": {
+          "label": "Abklingzeit eines Zuschauers",
+          "help": "Gesendet, solange die eigene Abklingzeit dieses Zuschauers läuft."
+        },
+        "redemptionRefundedMessage": {
+          "label": "Erstattet",
+          "help": "Gesendet, wenn eine Einlösung erstattet wird."
+        }
+      },
+      "texts": {
+        "Slots and odds": "Walzen und Quoten",
+        "Bets and points": "Einsätze und Punkte",
+        "Free mode": "Freier Modus",
+        "Results": "Ergebnisse",
+        "Viewer": "Zuschauer",
+        "Subscriber": "Abonnent",
+        "Reward cost": "Preis der Belohnung",
+        "Typed amount": "Eingegebener Betrag",
+        "Fixed": "Fest",
+        "Free": "Frei",
+        "Free mode, from the Game page. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow.": "Freier Modus, von der Seite Spiel. Solange er an ist, setzt und gewinnt niemand etwas, und der Jackpot-Topf wächst nicht.",
+        "How viewers spin on Twitch, from the Access page. YouTube and Kick always use the chat command.": "Wie Zuschauer auf Twitch drehen, von der Seite Zugriff. YouTube und Kick nutzen immer den Chat-Befehl."
+      }
+    }
+  }
 }
