@@ -1,6 +1,6 @@
 {
   "host": "battleship",
-  "version": "v2.1.0",
+  "version": "v2.2.0",
   "settingsFile": "Chat Games/Battleship Game/BSG-Settings.json",
   "settings": [
     {
@@ -44,7 +44,7 @@
       "page": "game",
       "section": "Points",
       "label": "Free game",
-      "help": "Battles for bragging rights: ships still sink and the overlay still runs, but no points are won or lost. Chat gets the Free game messages instead, so nothing mentions points.",
+      "help": "Battles for bragging rights: ships still sink and the overlay still runs, but no points are won or lost. Chat gets the Free game messages instead, so nothing mentions points. !SetFreeBattleship and !EndFreeBattleship switch it from chat (moderators).",
       "aliases": [
         "FreeGame"
       ]
@@ -1915,6 +1915,34 @@
       ]
     },
     {
+      "key": "freeGameStartMessage",
+      "default": "🆓 Free game is ON! Battles cost nothing and pay nothing - sink ships for the glory!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Started",
+      "help": "Sent once when Free game is turned on by !SetFreeBattleship, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [],
+      "aliases": [
+        "FreeGameStartMessage"
+      ]
+    },
+    {
+      "key": "freeGameEndMessage",
+      "default": "⏹️ Free game has ended. Ships are worth {currency} again!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free game",
+      "label": "Ended",
+      "help": "Sent once when Free game is turned off by !EndFreeBattleship, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "FreeGameEndMessage"
+      ]
+    },
+    {
       "key": "msgDeployTimeout",
       "default": "⚓ {user} never gave the order to fire — the fleet returns to port. Nothing lost.",
       "kind": "template",
@@ -2966,7 +2994,7 @@
         "key": "freeGame",
         "on": "Free game on",
         "off": "Free game off",
-        "tooltip": "Free game, from the Game page. While it is on, ships still sink but no points are won or lost."
+        "tooltip": "Free game, from the Game page or !SetFreeBattleship. While it is on, ships still sink but no points are won or lost."
       },
       {
         "key": "heatEnabled",
@@ -3094,6 +3122,10 @@
             "what": "moderators: ends whatever is running and pays nothing more out. A duel's entries are refunded."
           },
           {
+            "command": "!SetFreeBattleship",
+            "what": "moderators: turns Free game on, battles cost and pay nothing. !EndFreeBattleship turns it off."
+          },
+          {
             "command": "!fire link",
             "what": "with Click to Fire on: links your clicks on stream to you, once. Twitch only."
           },
@@ -3105,6 +3137,9 @@
       {
         "heading": "For your own actions",
         "lines": [
+          {
+            "note": "BSG: Free Game Start and BSG: Free Game End fire when Free game is switched by !SetFreeBattleship or !EndFreeBattleship, or by an Execute C# Method on StartFreeGame or EndFreeGame of the game action."
+          },
           {
             "note": "Every finished battle fires a custom trigger (Custom > Chat Game > Battleship Game): BSG: Battle Won, BSG: Battle Lost, BSG: Battle Timed Out or BSG: Battle Stopped for a solo battle, BSG: Chat Battle Settled for the chat's battle, BSG: Duel Settled for a team duel, and BSG: Battle Settled for every one of them. The trigger carries the battle as arguments: battleOutcome (the log's result: WIN, LOSS, TIMEOUT, NO-SHOW, STOPPED), battleMode (solo, chat or duel), battleUser, battleUserId, battlePlatform, battleTrigger (fire, timeout or stop), battleBoard, battleShots, battleHits, battleAccuracy, battleShipsSunk, battleShipsLost, battleNet (the battle's total, or a duel's pot), battleWinner (a duel's winning side) and battleCurrency. GetLastBattleResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
           }
@@ -3611,6 +3646,14 @@
           "label": "Zeit abgelaufen (Freispiel)",
           "help": "Stattdessen genutzt, solange das Freispiel an ist."
         },
+        "freeGameStartMessage": {
+          "label": "Gestartet",
+          "help": "Einmal gesendet, wenn !SetFreeBattleship das Freispiel einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
+        "freeGameEndMessage": {
+          "label": "Beendet",
+          "help": "Einmal gesendet, wenn !EndFreeBattleship das Freispiel ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
         "msgDeployTimeout": {
           "label": "Nie das Feuer eröffnet",
           "help": "Nichts war gesunken, also wird nichts berechnet, und es zählt nicht als Schlacht."
@@ -3840,7 +3883,8 @@
         "Points won, ignoring losses": "Gewonnene Punkte, ohne Verluste",
         "Ships sunk": "Versenkte Schiffe",
         "Accuracy, from 25 shots on": "Trefferquote, ab 25 Schüssen",
-        "Free game, from the Game page. While it is on, ships still sink but no points are won or lost.": "Freispiel, von der Seite Spiel. Solange es an ist, sinken Schiffe weiterhin, aber keine Punkte werden gewonnen oder verloren.",
+        "Free game, from the Game page or !SetFreeBattleship. While it is on, ships still sink but no points are won or lost.": "Freispiel, von der Seite Spiel oder !SetFreeBattleship. Solange es an ist, sinken Schiffe weiterhin, aber keine Punkte werden gewonnen oder verloren.",
+        "Free game": "Freispiel",
         "Fire by clicking the stream, from the Clicks page. Twitch only, through the Heat extension.": "Per Klick auf den Stream feuern, von der Seite Klicks. Nur Twitch, über die Erweiterung Heat.",
         "Player": "Spieler",
         "Platform": "Plattform",

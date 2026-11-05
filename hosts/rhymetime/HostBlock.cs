@@ -164,12 +164,14 @@ public static class UiSchema
         .Pages(P("game", "Game", "🎮"), P("battle", "Battle", "⚔️"), P("words", "Word banks", "📚"), P("access", "Access", "👥"), P("overlay", "Overlay", "📺"), P("messages", "Messages", "💬"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Cooldowns(C("15e49f3a-389a-4190-ac15-c50b1fd4eee6", "globalCooldown", "userCooldown"))   // !Rhyme, where the cooldowns live
+        .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well.")
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
         K("timeLimit", "Sekunden zum Antworten", "Wie lange ein Chatter Zeit hat, einen Reim zu finden, bevor die Runde verloren ist."),
         K("maxAttempts", "Versuche", "Wie viele falsche Reime ein Chatter anbieten darf, bevor die Runde verloren ist. Nur Tipps, die nach einem Versuch aussehen, zählen; alles andere im Chat wird ignoriert."),
         K("difficulty", "Schwierigkeit", "Aus welcher Wortliste eine Runde zieht. Zufall nimmt eine der drei, die Wörter enthält."),
         K("checkRealWords", "Tipps gegen ein Wörterbuch prüfen", "Ein Tipp, der nur richtig endet, wird bei wordotron.com nachgeschlagen, bevor er zählt. Tipps, die du selbst als Reime gelistet hast, zählen immer; ist das aus, gewinnt alles mit der richtigen Endung. Ist die Abfrage langsam oder nicht erreichbar, wird der Tipp angenommen, ein Ausfall des Wörterbuchs lehnt also nie einen richtigen Reim ab."),
+        K("freeGame", "Freier Modus", "Jede Runde ist frei: nichts wird gesetzt und nichts ausgezahlt, egal welcher Einsatz. !SetFreeRhyme und !EndFreeRhyme schalten ihn aus dem Chat (Moderatoren). Ein Standardeinsatz von 0 ist ebenfalls frei."),
         K("minBet", "Mindesteinsatz", "Einsätze darunter werden abgelehnt. 0 schaltet die Untergrenze ab."),
         K("easyMultiplier", "Leicht ×", "Der Einsatz wird bei einem Gewinn aus der leichten Liste damit multipliziert."),
         K("mediumMultiplier", "Mittel ×", "Der Einsatz wird bei einem Gewinn aus der mittleren Liste damit multipliziert."),
@@ -210,6 +212,8 @@ public static class UiSchema
         K("battleStartMessage", "Battle eröffnet", "Eröffnet ein Battle für den ganzen Chat."),
         K("battleWinMessage", "Battle gewonnen", "An den gesendet, der den ersten gültigen Reim geschafft hat."),
         K("battleTimeoutMessage", "Battle abgelaufen", "Gesendet, wenn niemand rechtzeitig gereimt hat. Ein Einsatz des Moderators geht zurück."),
+        K("freeGameStartMessage", "Gestartet", "Einmal gesendet, wenn !SetFreeRhyme den freien Modus einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."),
+        K("freeGameEndMessage", "Beendet", "Einmal gesendet, wenn !EndFreeRhyme den freien Modus ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."),
         K("battleAlreadyActiveMessage", "Battle läuft schon", "Gesendet, wenn ein Moderator ein Battle eröffnet, während auf dieser Plattform noch eines läuft."),
         K("invalidBetMessage", "Einsatz abgelehnt", "Der Rahmen um die vier Gründe darunter; {reason} wird durch den zutreffenden ersetzt."),
         K("reasonNegativeAmount", "Grund: keine Zahl", "Füllt {reason}, wenn der Betrag nicht lesbar oder nicht über null ist."),
@@ -225,6 +229,8 @@ public static class UiSchema
         Tx("Left", "Links"),
         Tx("Centre", "Mitte"),
         Tx("Right", "Rechts"),
+        Tx("Free mode", "Freier Modus"),
+        Tx("Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well.", "Freier Modus, von der Seite Spiel oder !SetFreeRhyme. Solange er an ist, wird nichts gesetzt und nichts ausgezahlt; ein Standardeinsatz von 0 ist ebenfalls frei."),
         Tx("Round", "Runde"))
         .Samples("word", "STREAM", "guess", "DREAM", "timeLimit", "30", "winAmount", "3,000", "attempts", "1", "maxAttempts", "3", "examples", "DREAM, TEAM, THEME, CREAM, BEAM", "difficulty", "medium", "reward", "500", "winner", "bob", "seconds", "12", "reason", "minimum bet is 10 Points.")
         .Help(
@@ -232,7 +238,8 @@ public static class UiSchema
                 Note("A chatter runs !Rhyme and gets one word. They answer in ordinary chat; only the last word of their message is read, so \"hmm maybe DREAM\" works. A rhyme you listed for that word always counts; anything else counts when it ends the same way as the listed rhymes and, with the dictionary check on, is a real word. Getting it right pays the stake times the bank's multiplier; running out of time or attempts costs the stake."),
                 Cmd("!Rhyme", "starts a round at the default bet."),
                 Cmd("!Rhyme 250", "starts one at 250, within the minimum and maximum."),
-                Cmd("!Rhyme all", "also half, third, quarter and random.")),
+                Cmd("!Rhyme all", "also half, third, quarter and random."),
+                Cmd("!SetFreeRhyme", "moderators: turns Free mode on, every round is free. !EndFreeRhyme turns it off.")),
             H("Lines to finish",
                 Note("A target with spaces in it is a line to finish rather than a word to rhyme: \"ROSES ARE RED VIOLETS ARE BLUE ...\" expects the whole answer. There the chatter's entire message is read, punctuation ignored, and it has to match one of the answers you listed.")),
             H("A battle",
@@ -240,6 +247,10 @@ public static class UiSchema
                 Cmd("!RhymeBattle", "opens a battle. Moderators only, set on the command itself."),
                 Cmd("!RhymeBattle 500", "opens one and stakes 500 of your own; the winner takes the stake."),
                 Note("Permissions and cooldowns belong to the commands themselves, in Streamer.bot's Commands tab. The two cooldowns on the Game page are written onto !Rhyme when you save.")),
+            H("For your own actions",
+                Note("Every settled round fires a custom trigger - RT: Round Won, RT: Round Lost or RT: Round Timeout, and RT: Round Settled every time (Custom > Chat Game > RhymeTime) - with the round as arguments: roundOutcome, roundUser, roundUserId, roundPlatform, roundWord, roundGuess, roundDifficulty, roundBet, roundAmount, roundAttempts, roundPreviousPoints, roundNewPoints, roundCurrency and roundFree. GetLastRoundResult, run with an Execute C# Method sub-action on RhymeTime Game, hands the same arguments to any other action."),
+                Note("A battle fires RT: Battle Won or RT: Battle Timeout, and RT: Battle Settled every time, with battleOutcome, battleWinner, battleWinnerId, battlePlatform, battleWord, battleGuess, battleDifficulty, battleStake, battleReward, battleStarter, battleStarterId, battlePreviousPoints, battleNewPoints and battleCurrency; GetLastBattleResult on RhymeTime Battle hands them over again."),
+                Note("RT: Free Game Start and RT: Free Game End fire when Free mode is switched from chat or by an Execute C# Method on StartFreeGame or EndFreeGame of RhymeTime Game.")),
             H("Where things are kept",
                 Cmd("RT-settings.json", "everything on these pages."),
                 Cmd("RT-wordbank.json", "the three word banks."),
@@ -270,6 +281,7 @@ public static class UiSchema
         S("pointsVariable", "points", page: "game", help: "The Streamer.bot user variable the stake is taken from and the winnings are added to. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own and override this.", section: "Currency", aliases: new[] { "PointsVar" }),
         S("pointsName", "Points", page: "game", help: "What your currency is called in chat; it fills the {currency} placeholder. Overridden by Currency Core or LOYALTY POINTS when one of them is installed.", section: "Currency", aliases: new[] { "PointsName" }),
         S("defaultBet", 100, page: "game", help: "Staked when a chatter runs the command without naming an amount. 0 makes the whole game free: nothing is staked and nothing is paid out. Chatters may also type all, half, third, quarter or random.", section: "Bets", min: 0.0, aliases: new[] { "DefaultBet" }),
+        S("freeGame", false, page: "game", label: "Free mode", help: "Every round is free: nothing is staked and nothing is paid out, whatever the bet. !SetFreeRhyme and !EndFreeRhyme switch it from chat (moderators). A default bet of 0 is free as well.", section: "Bets", aliases: new[] { "FreeGame" }),
         S("minBet", 10, page: "game", help: "Bets below this are refused. 0 turns the floor off.", section: "Bets", min: 0.0, aliases: new[] { "MinBet" }),
         S("maxBet", 10000, page: "game", help: "Bets above this are refused. 0 turns the ceiling off.", section: "Bets", min: 0.0, aliases: new[] { "MaxBet" }),
         S("easyMultiplier", 1.5, page: "game", label: "Easy ×", help: "The stake is multiplied by this on a win from the easy bank.", section: "Payout", min: 0.0, aliases: new[] { "EasyMultiplier" }),
@@ -322,6 +334,8 @@ public static class UiSchema
         Msg("Battle", "battleWinMessage", "🏆 {winner} won the battle by rhyming '{word}' with '{guess}'! +{reward} {currency} (Total: {currentPoints} {currency})", "Battle won", "Sent to whoever got the first valid rhyme in.", new[] { "winner", "word", "guess", "reward", "currency", "currentPoints" }, alias: "BattleWinMessage"),
         Msg("Battle", "battleTimeoutMessage", "⏰ Nobody rhymed with '{word}' in time! Some valid rhymes: {examples}", "Battle expired", "Sent when nobody rhymed in time. Any stake the moderator put up goes back.", new[] { "word", "examples", "currency" }, alias: "BattleTimeoutMessage"),
         Msg("Battle", "battleAlreadyActiveMessage", "⚔️ A battle is already in progress! Type your rhyme in chat!", "Battle already running", "Sent when a moderator opens a battle while one is still going on that platform.", new string[0], alias: "BattleAlreadyActiveMessage"),
+        Msg("Free mode", "freeGameStartMessage", "🎤 Free mode is ON! Rhyme for free - no {currency} needed!", "Started", "Sent once when Free mode is turned on by !SetFreeRhyme, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }, alias: "FreeGameStartMessage"),
+        Msg("Free mode", "freeGameEndMessage", "⏹️ Free mode has ended. Rounds stake {currency} again!", "Ended", "Sent once when Free mode is turned off by !EndFreeRhyme, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }, alias: "FreeGameEndMessage"),
         Msg("Bets", "invalidBetMessage", "{user}, {reason}", "Bet refused", "The frame around the four reasons below; {reason} is replaced by whichever one applies.", new[] { "user", "reason", "currency" }, alias: "InvalidBetMessage"),
         Msg("Bets", "reasonNegativeAmount", "please specify a valid bet amount greater than 0.", "Reason: not a number", "Fills {reason} when the amount could not be read, or is not above zero.", new[] { "currency" }, alias: "ReasonNegativeAmount"),
         Msg("Bets", "reasonInsufficientFunds", "you don't have enough {currency}.", "Reason: cannot afford it", "Fills {reason} when the bet is more than the chatter has.", new[] { "currency" }, alias: "ReasonInsufficientFunds"),

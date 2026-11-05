@@ -20,6 +20,21 @@ public sealed class Settings
 
     public static Settings Load() => new Settings(UiSettings.Load(FilePath));
 
+    /// <summary>Writes the Free mode switch into HLG-Settings.json and leaves everything else in the file as it
+    /// is, so the window's pill and the next guess agree. Written beside the file and swapped in, the replaced
+    /// file kept as .bak, like the window saves.</summary>
+    public static void WriteFreeMode(bool on)
+    {
+        JObject root;
+        try { root = File.Exists(FilePath) ? JObject.Parse(File.ReadAllText(FilePath)) : new JObject(); }
+        catch (Exception) { root = new JObject(); }
+        root["freeGame"] = on;
+        string temp = FilePath + ".tmp";
+        File.WriteAllText(temp, root.ToString(Newtonsoft.Json.Formatting.Indented));
+        if (File.Exists(FilePath)) File.Replace(temp, FilePath, FilePath + ".bak");
+        else File.Move(temp, FilePath);
+    }
+
     public bool UseBot => _s.Bool("useBot");
     public bool SendAction => _s.Bool("sendAction");
     public bool UseBotCD => _s.Bool("cooldownUseBot");
@@ -27,6 +42,7 @@ public sealed class Settings
     public string NumberSeparator => _s.String("numberSeparator");
 
     public bool AwardPoints => _s.Bool("awardPoints");
+    public bool FreeGame => _s.Bool("freeGame");
     public long WonPoints => Math.Max(0L, _s.Long("wonPoints"));
     public double EqualChance => UiSettings.Clamp(_s.Double("equalChance"), 0.0, 100.0) / 100.0;
     public string PointsVar => _s.String("pointsVariable");
@@ -75,6 +91,8 @@ public sealed class Settings
 
     public string OutcomeTemplate => _s.String("outcomeTemplate");
     public string StartMessage => _s.String("startMessage");
+    public string FreeGameStartMessage => _s.String("freeGameStartMessage");
+    public string FreeGameEndMessage => _s.String("freeGameEndMessage");
     public string RedemptionRefunded => _s.String("redemptionRefunded");
     public string ReasonNoInput => _s.String("reasonNoInput");
     public string ReasonNegativeAmount => _s.String("reasonNegativeAmount");
