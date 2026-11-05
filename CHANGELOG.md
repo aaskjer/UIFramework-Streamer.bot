@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- Blackjack Game is the fifth host on the generic stub (v17.1.0, in German, 215 of its keys translated in the
+  block): the leaderboard reset and the OBS setup run in the game and answer with what happened, the window
+  declares the cooldowns of three commands. `hosts/blackjack` lost its `spec.json`, `host-section.cs` and the
+  embedded `Stub.cs`; Battleship is the last host on the spec-carrying stub.
 - Slot Machine Game is the fourth host on the generic stub (v16.1.0, in German): its test spin is answered by the
   game with the engine that spins in chat, the emote pictures' sources come through `emotes:` of `UiHost.Handle`,
   and `hosts/slotmachine` lost its `spec.json` and `host-section.cs`. Gaps seen there, for a later release: the
