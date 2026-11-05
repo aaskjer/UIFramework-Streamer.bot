@@ -57,8 +57,9 @@ namespace UIFramework
             foreach (var section in spec.About.Sections)
                 AddSection(page, section, ctx, false);
 
-            if (spec.Problems.Count > 0)
+            if (spec.Problems.Count > 0 && !LogPage.Shows(spec))
             {
+                // Without a log page the About page is where the problems are listed.
                 page.Children.Add(Ui.Section(Text.T("about.problems")));
                 page.Children.Add(Ui.Note(Text.T("about.problems.note")));
                 foreach (var problem in spec.Problems)

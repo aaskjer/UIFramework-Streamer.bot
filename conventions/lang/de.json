@@ -283,6 +283,8 @@
     "import.written": "\nDie Datei wird sofort geschrieben; die bisherigen Einstellungen bleiben als {0}.bak erhalten.",
     "banner.problems.one": "1 Problem im Schema: die Seite Über zeigt es.",
     "banner.problems.many": "{0} Probleme im Schema: die Seite Über zeigt sie.",
+    "banner.problems.one.log": "1 Problem im Schema: die Seite Protokoll zeigt es.",
+    "banner.problems.many.log": "{0} Probleme im Schema: die Seite Protokoll zeigt sie.",
     "field.noLimit": "keine Grenze",
     "field.percentRange": "\nZwischen {0} und {1} %.",
     "field.twitchOnly": "Nur Twitch",

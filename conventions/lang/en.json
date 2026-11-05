@@ -173,6 +173,8 @@
     "import.written": "\nThe file is written at once; the settings as they were are kept as {0}.bak.",
     "banner.problems.one": "1 problem in the schema: the About page lists it.",
     "banner.problems.many": "{0} problems in the schema: the About page lists them.",
+    "banner.problems.one.log": "1 problem in the schema: the Log page lists it.",
+    "banner.problems.many.log": "{0} problems in the schema: the Log page lists them.",
     "field.noLimit": "no limit",
     "field.percentRange": "\nBetween {0} and {1}%.",
     "field.twitchOnly": "Twitch only",
