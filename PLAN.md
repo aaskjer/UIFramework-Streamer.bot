@@ -408,7 +408,9 @@ auf Streamer.bots Thread, die URL geht per `clipboard` in der Antwort über das 
 Slot Machine ebenso (v16.1.0; der Test-Spin kommt aus der Engine im Spiel, die Emote-Quellen über `emotes:` von
 `UiHost.Handle`; dazu Custom Trigger und Statistik-Variablen je Zuschauer wie bei den anderen Spielen). Dabei
 gesehen, noch offen im Framework: Spaltenköpfe einer `list` und die Platzhalter der Tag-Felder ("Add a Streamer.bot
-group") bleiben englisch. Offen: Blackjack, Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
+group") bleiben englisch. Blackjack ebenso (v17.1.0; 215 Keys im Block übersetzt, Bestenlisten-Reset und OBS-
+Einrichtung laufen im Spiel und antworten mit dem Ergebnis, drei Befehle in `.Cooldowns`; dazu Custom Trigger für
+jede abgerechnete Hand). Offen: Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
 
 ## 9. Tests und Werkzeuge
 

@@ -8,9 +8,9 @@
 # Needs a Streamer.bot install for its assemblies and Roslyn, and a RoslynHost front-end, which the game projects
 # build with their tools\build-roslyn-host.ps1 (pass the project folder in -RoslynHostTools).
 #
-#   tools\check-stub.ps1 -HostName blackjack
+#   tools\check-stub.ps1 -HostName battleship
 param(
-    [string] $HostName = 'blackjack',
+    [string] $HostName = 'battleship',
     [string] $StreamerBotPath = 'C:\Users\Administrator\Downloads\Streamer.bot-x64-1.0.7',
     [string] $RoslynHostTools = 'C:\Users\Administrator\Downloads\RhymeTime\tools'
 )

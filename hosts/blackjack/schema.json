@@ -1,6 +1,6 @@
 {
   "host": "blackjack",
-  "version": "v17.0.0",
+  "version": "v17.1.0",
   "settingsFile": "Chat Games/Blackjack Game/BJG-Settings.json",
   "settings": [
     {
@@ -3888,5 +3888,1264 @@
         "LogToFile"
       ]
     }
-  ]
+  ],
+  "window": {
+    "title": "Blackjack Game",
+    "releases": "aaskjer/Blackjack-Game",
+    "logo": "https://github.com/aaskjer/Blackjack-Game/blob/main/Assets/logo.png?raw=true",
+    "logPrefix": "[Blackjack Game/Settings]",
+    "pages": [
+      {
+        "id": "table",
+        "title": "Table",
+        "icon": "🃏"
+      },
+      {
+        "id": "duel",
+        "title": "Duel",
+        "icon": "⚔️"
+      },
+      {
+        "id": "house",
+        "title": "House",
+        "icon": "🏠"
+      },
+      {
+        "id": "access",
+        "title": "Access",
+        "icon": "👥"
+      },
+      {
+        "id": "overlay",
+        "title": "Overlay",
+        "icon": "📺"
+      },
+      {
+        "id": "messages",
+        "title": "Messages",
+        "icon": "💬"
+      },
+      {
+        "id": "stats",
+        "title": "Stats",
+        "icon": "🏆",
+        "fields": [
+          "leaderboard*",
+          "statsTable",
+          "resetLeaderboard"
+        ]
+      },
+      {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
+      },
+      {
+        "id": "help",
+        "title": "How to play",
+        "icon": "📖"
+      },
+      {
+        "id": "about",
+        "title": "About",
+        "icon": "ℹ️"
+      }
+    ],
+    "senders": {
+      "useBot": "useBot",
+      "sendAction": "sendAction",
+      "cooldownUseBot": "cooldownUseBot",
+      "cooldownSendAction": "cooldownSendAction",
+      "numberSeparator": "numberSeparator",
+      "cooldownGroup": "Cooldown"
+    },
+    "samples": {
+      "cards": "🂫(10) 🂺(10)",
+      "card": "🂺(10)",
+      "value": "20",
+      "total": "22",
+      "handnum": "2",
+      "hands": "Tie on Hand 1!",
+      "card1": "🂫(10)",
+      "card2": "🂺(10)",
+      "challenger": "alice",
+      "opponent": "bob",
+      "challengercards": "🂫(10) 🂺(10) (20)",
+      "opponentcards": "🂱(11) 🂸(8) (19)",
+      "challengervalue": "20",
+      "opponentvalue": "19",
+      "winner": "alice",
+      "loser": "bob",
+      "pot": "3,000",
+      "bet": "1,500",
+      "newbet": "3,000",
+      "raise": "doubles down",
+      "turn": "bob",
+      "round": "1",
+      "seconds": "60",
+      "required": "1,500",
+      "available": "820",
+      "var": "points",
+      "action": "insurance",
+      "extra": ", double or split",
+      "addictedCutPercent": "50",
+      "menu": "1) Vegas Strip | 2) Atlantic City | 3) European",
+      "rules": "Vegas Strip",
+      "rulesdetail": "4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2",
+      "seats": "alice: 20 win | bob: 19 lose",
+      "seatnum": "2",
+      "dealer": "🂱(11) 🂸(8)",
+      "dealervalue": "19",
+      "playercards": "🂫(10) 🂺(10)",
+      "playervalue": "20",
+      "FormatNumber(bet)": "1,500",
+      "0": "alice",
+      "1": "12",
+      "balance": "11,500"
+    },
+    "headerPills": [
+      {
+        "key": "freeGame",
+        "on": "Free game on",
+        "off": "Free game off",
+        "tooltip": "Free Game, from the Table page. While it is on, nobody stakes or wins anything."
+      }
+    ],
+    "cooldowns": [
+      {
+        "command": "c6497fbd-c4b0-4c96-a398-e52d573cfe85",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      },
+      {
+        "command": "8ba7b2b7-f9f9-4b70-8cca-ee2aaebe4892",
+        "global": "duelGlobalCooldown",
+        "user": "duelUserCooldown"
+      },
+      {
+        "command": "57cccfe6-3ece-428e-8567-b99823a12dac",
+        "global": "houseGlobalCooldown",
+        "user": "houseUserCooldown"
+      }
+    ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "BJG-log*.txt",
+      "writeLogKey": "logToFile",
+      "writeLogHelp": "Writes every settled hand to a dated 'BJG-log-yyyy-MM-dd.txt' in the Logs folder, one file per day.",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Bet",
+          "field": "Bet"
+        },
+        {
+          "header": "Change",
+          "field": "Change"
+        },
+        {
+          "header": "After",
+          "field": "After"
+        }
+      ],
+      "results": [
+        "Win",
+        "Blackjack",
+        "Loss",
+        "Bust",
+        "Push",
+        "Charlie",
+        "Three 7s",
+        "Insurance",
+        "Surrender",
+        "Quit",
+        "Timeout"
+      ]
+    },
+    "help": [
+      {
+        "heading": "The idea",
+        "lines": [
+          {
+            "note": "Get closer to 21 than the dealer without going past it. Number cards count their face value, Jack, Queen and King count 10, and an Ace counts 11 until that would bust the hand, at which point it drops to 1 on its own."
+          }
+        ]
+      },
+      {
+        "heading": "Playing a hand",
+        "lines": [
+          {
+            "command": "!blackjack <bet>",
+            "what": "Deals in. The bet takes a number, one of the shortcuts below, or nothing at all to use the Default bet."
+          },
+          {
+            "command": "hit",
+            "what": "Draw another card."
+          },
+          {
+            "command": "stand",
+            "what": "Stop and keep the total you have."
+          },
+          {
+            "command": "double",
+            "what": "Double the bet for exactly one more card, then stand. First move on a two-card hand only."
+          },
+          {
+            "command": "split",
+            "what": "Split a starting pair of equal-value cards into two hands, each played out for the same bet."
+          },
+          {
+            "command": "insurance",
+            "what": "Stake half the bet against a dealer blackjack, paying 2:1. Only against an Ace, and only before anything else."
+          },
+          {
+            "command": "surrender",
+            "what": "Fold a fresh two-card hand and keep half the bet."
+          },
+          {
+            "command": "quit",
+            "what": "Cancel and take the bet back, before hit, stand, double or split."
+          },
+          {
+            "command": "repeat",
+            "what": "Post the last game message again. In a duel it posts both hands, the pot and whose turn it is."
+          },
+          {
+            "command": "stats / allstats",
+            "what": "Your own record, or the leaderboard."
+          },
+          {
+            "note": "Those are the default trigger words; your streamer may have bound them to something else."
+          }
+        ]
+      },
+      {
+        "heading": "For your own actions",
+        "lines": [
+          {
+            "note": "Every settled hand fires a custom trigger (Custom > Chat Game > Blackjack Game): BJG: Hand Won, BJG: Hand Lost or BJG: Hand Push for a hand at the table, BJG: Blackjack on top of Hand Won for a natural, BJG: Duel Settled once per duellist, BJG: House Hand Settled once per seat, and BJG: Hand Settled for every one of them, insurance, surrender, quit and timeout included. The trigger carries the hand as arguments: handOutcome (the log's result, WIN, BUST, DUEL PUSH, HOUSE BLACKJACK, ...), handUser, handPlatform, handMode (table, duel or house), handTrigger, handBet, handChange, handPreviousPoints, handNewPoints and handCurrency. GetLastHandResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
+          }
+        ]
+      },
+      {
+        "heading": "Bet shortcuts",
+        "lines": [
+          {
+            "command": "all / allin",
+            "what": "The whole balance."
+          },
+          {
+            "command": "half",
+            "what": "Half the balance."
+          },
+          {
+            "command": "quarter / 25%",
+            "what": "A quarter of it."
+          },
+          {
+            "command": "50%, any percentage",
+            "what": "That much of the balance."
+          },
+          {
+            "command": "double / 2x",
+            "what": "Twice the minimum bet."
+          },
+          {
+            "command": "random / rand",
+            "what": "Somewhere between a tenth of the balance and all of it."
+          },
+          {
+            "command": "max / maximum",
+            "what": "As much as the balance and the Maximum bet allow."
+          },
+          {
+            "command": "1.5k / 2m",
+            "what": "1,500 and 2,000,000 - k for thousand, m for million."
+          }
+        ]
+      },
+      {
+        "heading": "Bonus hands",
+        "lines": [
+          {
+            "note": "Both settle the moment they happen, whatever the dealer is holding."
+          },
+          {
+            "command": "5-card Charlie",
+            "what": "Five cards without busting. Pays the bet back plus a 1.5x bonus."
+          },
+          {
+            "command": "Three 7s",
+            "what": "Three or more sevens without busting. Pays the bet back plus a 2x bonus."
+          }
+        ]
+      },
+      {
+        "heading": "Insurance, in full",
+        "lines": [
+          {
+            "note": "Insurance is only offered when the dealer's upcard is an Ace, because that is the only time a dealer blackjack - Ace plus a ten-value card - is one card away. It costs half the original bet."
+          },
+          {
+            "command": "Dealer has blackjack",
+            "what": "Insurance pays 2:1, so three times the insurance stake comes back. That roughly covers losing the main hand."
+          },
+          {
+            "command": "Dealer does not",
+            "what": "The insurance stake is gone and the hand plays on as normal."
+          },
+          {
+            "note": "It has to be decided before hitting, standing, doubling or splitting. Over many hands it loses the player money, which is why plenty of streamers leave it off."
+          }
+        ]
+      },
+      {
+        "heading": "Surrender, in full",
+        "lines": [
+          {
+            "note": "Surrender is a way out of a hand that looks lost before any of it has been played. It is available on the first two cards only, before hitting, doubling, splitting or insuring, and returns half the bet."
+          },
+          {
+            "note": "A 16 against a dealer's 10 is the usual case: almost any card busts it, and standing on 16 rarely beats a ten either. Half the bet back is the better of two bad outcomes."
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "Responsible: aaskjer\nCredits: nate1280 / Streamer.bot and YOU ♡",
+      "sections": [
+        {
+          "heading": "Needs a points system",
+          "lines": [
+            {
+              "note": "Hands are played with the points of a currency system. These two are picked up without any setup:"
+            },
+            {
+              "link": "Currency Core by StreamUP",
+              "url": "https://streamup.tips/product/currency-core"
+            },
+            {
+              "link": "LOYALTY POINTS by tawmae",
+              "url": "https://tawmae.xyz/loyalty-points"
+            },
+            {
+              "note": "Anything else works too - name its variable on the Access page."
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "Blackjack Game on the Streamer.bot Discord",
+          "url": "https://discord.com/channels/834650675224248362/1447648588694818836/1447648588694818836"
+        }
+      ]
+    }
+  },
+  "lang": {
+    "de": {
+      "pages": {
+        "table": "Tisch",
+        "duel": "Duell",
+        "house": "Haus"
+      },
+      "keys": {
+        "dealerStandsOn": {
+          "label": "Bleibt stehen bei",
+          "help": "Der Dealer zieht, bis die Hand diesen Wert erreicht, dann hört er auf. 17 ist der Casino-Standard."
+        },
+        "numDecks": {
+          "label": "Decks im Schuh",
+          "help": "Wie viele Decks zu 52 Karten zusammengemischt werden."
+        },
+        "reshuffleThreshold": {
+          "label": "Neu mischen bei",
+          "help": "Wie wenig vom Schuh übrig sein darf, bevor die gespielten Karten wieder hineingemischt werden.\nNiedrig heißt lange Strecken zwischen den Mischungen und ein Zählen, das sich lohnt; hoch heißt, es wird so oft gemischt, dass Zählen niemandem etwas bringt."
+        },
+        "dealerDrawDelayMs": {
+          "label": "Pause beim Aufdecken",
+          "help": "Pause zwischen den Karten des Dealers, in Millisekunden, damit der Chat mitkommt. 0 = alles auf einmal."
+        },
+        "tieDrawOnlyOneCard": {
+          "label": "Gleichstand mit nur einer Karte brechen",
+          "help": "An: der Dealer zieht bei Gleichstand genau eine Karte, und ein Gleichstand, der sie überlebt, zählt als Sieg des Dealers.\nAus: der Dealer zieht weiter, bis der Gleichstand in die eine oder andere Richtung bricht."
+        },
+        "showAceMsg": {
+          "label": "Sagen, wenn ein Ass auf 1 fällt",
+          "help": "Postet eine Zeile, wann immer ein Ass als 1 statt 11 zählt, um eine Hand unter 22 zu halten."
+        },
+        "allowDoubleDown": {
+          "label": "Verdoppeln",
+          "help": "Verdoppelt den Einsatz für genau eine weitere Karte, dann wird gehalten. Nur auf einer frischen Hand aus zwei Karten, vor allem anderen."
+        },
+        "allowSplit": {
+          "label": "Teilen",
+          "help": "Teilt ein Startpaar gleichwertiger Karten in zwei Hände, jede für denselben Einsatz ausgespielt."
+        },
+        "allowResplit": {
+          "label": "Erneut teilen",
+          "help": "Lässt eine geteilte Hand noch einmal teilen, wenn sie wieder ein passendes Paar zieht. Gilt auch für geteilte Asse."
+        },
+        "maxSplitHands": {
+          "label": "Hände durch Teilen",
+          "help": "Wie viele Hände eine Runde durch Teilen höchstens erreicht. Vier ist der Casino-Standard."
+        },
+        "allowInsurance": {
+          "label": "Versicherung",
+          "help": "Zeigt der Dealer ein Ass, darf ein Spieler die Hälfte seines Einsatzes gegen einen Blackjack des Dealers setzen. Zahlt 2:1.\nAuf Dauer ist es eine Nebenwette, die der Spieler verliert, deshalb ist sie standardmäßig aus."
+        },
+        "allowSurrender": {
+          "label": "Aufgeben",
+          "help": "Lässt einen Spieler eine frische Hand aus zwei Karten aufgeben und die Hälfte des Einsatzes behalten, vor Ziehen, Verdoppeln, Teilen oder Versichern."
+        },
+        "dealerPeeks": {
+          "label": "Dealer prüft auf Blackjack",
+          "help": "An: der Dealer nimmt beim Geben eine verdeckte Karte und prüft sie, sobald die offene Karte ein Ass oder eine Zehn ist."
+        },
+        "timeoutRefundIfNoAction": {
+          "label": "Ungespielte Hand erstatten",
+          "help": "An: ein Spieler, der nie gezogen, gehalten, verdoppelt oder geteilt hat, bekommt den Einsatz zurück, genau als hätte er aufgehört."
+        },
+        "blackjackPayout": {
+          "label": "Blackjack zahlt",
+          "help": "Der Bonus auf einen echten Blackjack - 21 mit den ersten zwei Karten - zusätzlich zum zurückgezahlten Einsatz.\nEin normaler Gewinn zahlt immer 1:1."
+        },
+        "duelCountsTowardGamesPerHour": {
+          "label": "Duelle zählen zu den Spielen pro Stunde",
+          "help": "Zählt ein Duell für beide Spieler als Spiel gegen die Grenze Spiele pro Stunde auf der Seite Tisch."
+        },
+        "duelApplyAddictedCut": {
+          "label": "Duellgewinne Süchtiger kürzen",
+          "help": "Standardmäßig aus. Die Punkte in einem Duell kommen vom anderen Spieler, nicht vom Haus, der Abzug würde sie also aus dem Umlauf löschen statt sie zu bewegen."
+        },
+        "duelMinBet": {
+          "label": "Mindesteinsatz im Duell",
+          "help": "Alles darunter wird darauf angehoben. Getrennt vom Tisch-Minimum, damit Duelle eine eigene Untergrenze haben können."
+        },
+        "duelMaxBet": {
+          "label": "Höchsteinsatz im Duell",
+          "help": "Alles darüber wird darauf gekürzt.\n0 = keine Obergrenze."
+        },
+        "duelAcceptTimeoutSec": {
+          "label": "Auf eine Herausforderung antworten",
+          "help": "Wie lange der Herausgeforderte Zeit hat, bevor die Herausforderung verfällt und der Einsatz zurückgeht, in Sekunden.\nMindestens 10."
+        },
+        "duelTurnTimeoutSec": {
+          "label": "Am Zug sein",
+          "help": "Wie lange ein Spieler handeln kann, bevor er automatisch hält, in Sekunden. 0 = keine Grenze."
+        },
+        "duelConsentTimeoutSec": {
+          "label": "Auf eine Erhöhung antworten",
+          "help": "Wie lange der Gegner Zeit hat, auf ein Teilen oder Verdoppeln zu antworten, und wie lange beide für ein Sudden-Death-Angebot haben.\nMindestens 5."
+        },
+        "duelAllowDoubleDown": {
+          "label": "Verdoppeln",
+          "help": "Lässt einen Spieler seinen Einsatz für eine weitere Karte verdoppeln, sobald der Gegner zustimmt."
+        },
+        "duelAllowSplit": {
+          "label": "Teilen",
+          "help": "Lässt einen Spieler ein Paar teilen, sobald der Gegner zustimmt. Jede Hand spielt dann um einen eigenen, gleich gefüllten Nebentopf, und ein Spieler mit weniger Händen verteidigt jeden Topf mit der einen, die er hat."
+        },
+        "duelSuddenDeathEnabled": {
+          "label": "Bei Gleichstand anbieten",
+          "help": "Nur bei einem ungeteilten Duell - ein einziger Topf - das in einem echten Gleichstand endet. Duelle mit Teilungen enden immer unentschieden."
+        },
+        "duelMaxSuddenDeathRounds": {
+          "label": "Höchstens Runden",
+          "help": "Wie oft Sudden Death sich wiederholen darf, solange die Spieler weiter gleichziehen. Nach der letzten wird der Topf geteilt."
+        },
+        "houseEnabled": {
+          "label": "Haus-Modus",
+          "help": "Aus: der Haus-Befehl antwortet nur noch, dass der Haus-Modus abgeschaltet ist."
+        },
+        "houseCountsTowardGamesPerHour": {
+          "label": "Plätze zählen zu den Spielen pro Stunde",
+          "help": "Zählt das Platznehmen für diesen Spieler als Spiel gegen die Grenze Spiele pro Stunde auf der Seite Tisch."
+        },
+        "houseMaxSeats": {
+          "label": "Plätze",
+          "help": "Wie viele Spieler sich setzen können. Der Tisch gibt, sobald der letzte Platz belegt ist, ohne das Beitrittsfenster abzuwarten."
+        },
+        "houseRulePickTimeoutSec": {
+          "label": "Regelwahl",
+          "help": "Wie lange der Moderator Zeit hat, auf das Regelsatz-Menü zu antworten, in Sekunden. Noch ist nichts gesetzt, der Tisch wird einfach fallen gelassen.\nMindestens 10."
+        },
+        "houseJoinWindowSec": {
+          "label": "Beitrittsfenster",
+          "help": "Wie lange Zuschauer Zeit haben, Platz zu nehmen, bevor der Tisch von selbst gibt, in Sekunden. Ohne Besetzung schließt er wieder.\nMindestens 15."
+        },
+        "houseInsuranceWindowSec": {
+          "label": "Versicherungsfenster",
+          "help": "Wie lange die Plätze zum Versichern haben, wenn der Dealer ein Ass zeigt, bevor der Dealer die verdeckte Karte ansieht, in Sekunden.\nNur bei Regelsätzen mit Versicherung. Mindestens 5."
+        },
+        "houseTurnTimeoutSec": {
+          "label": "Bedenkzeit je Platz",
+          "help": "Wie lange ein Platz überlegen darf, bevor er automatisch hält und das Spiel weitergeht, in Sekunden. 0 = keine Grenze."
+        },
+        "houseMinBet": {
+          "label": "Mindesteinsatz je Platz",
+          "help": "Alles darunter wird darauf angehoben. Der Spieler braucht trotzdem das Guthaben dafür."
+        },
+        "houseMaxBet": {
+          "label": "Höchsteinsatz je Platz",
+          "help": "Alles darüber wird darauf gekürzt.\n0 = keine Obergrenze."
+        },
+        "houseRuleVegasEnabled": {
+          "label": "Vegas Strip",
+          "help": "4 Decks im Schuh, Dealer hält bei Soft 17, Versicherung angeboten, Blackjack zahlt 3:2."
+        },
+        "houseRuleAtlanticEnabled": {
+          "label": "Atlantic City",
+          "help": "8 Decks im Schuh, Dealer hält bei Soft 17, spätes Aufgeben, erneut teilen bis drei Hände."
+        },
+        "houseRuleEuropeanEnabled": {
+          "label": "Europäisch",
+          "help": "2 Decks im Schuh, keine verdeckte Karte, Verdoppeln nur auf 9 bis 11, kein Aufgeben."
+        },
+        "cardDisplayMode": {
+          "label": "Karten im Chat",
+          "help": "Wie Karten im Chat geschrieben werden, in jedem Modus. Lohnt sich weg von den Kartenzeichen, wenn dein Chat sie als Kästchen zeigt."
+        },
+        "duelGlobalCooldown": {
+          "label": "Duell, alle",
+          "help": "Wie lange nach einer Herausforderung niemand eine weitere aussprechen kann, in Sekunden."
+        },
+        "duelUserCooldown": {
+          "label": "Duell, je Spieler",
+          "help": "Wie lange ein Spieler zwischen zwei Herausforderungen wartet, in Sekunden.\nEine Herausforderung anzunehmen wird nie blockiert, ein Duell lässt sich also immer zu Ende spielen."
+        },
+        "houseGlobalCooldown": {
+          "label": "Haus, alle",
+          "help": "Wie lange nach dem Öffnen eines Tisches niemand einen weiteren öffnen kann, in Sekunden."
+        },
+        "houseUserCooldown": {
+          "label": "Haus, je Spieler",
+          "help": "Wie lange ein Spieler zwischen dem Öffnen zweier Tische wartet, in Sekunden.\nAm Tisch eines anderen Platz zu nehmen wird nie blockiert."
+        },
+        "overlayShowPoints": {
+          "label": "Punkte und Einsätze",
+          "help": "Zeigt Einsatz und Versicherungsbeträge. Ausschalten, um Zahlen aus dem Stream zu halten."
+        },
+        "overlayShowHandValues": {
+          "label": "Handwerte",
+          "help": "Zeigt den laufenden Wert neben jeder Hand und der des Dealers."
+        },
+        "overlayShowOutcomeBadges": {
+          "label": "Ergebnis-Plaketten",
+          "help": "Zeigt BLACKJACK, BUST, WIN, LOSE und PUSH neben einer Hand, sobald sie abgerechnet ist."
+        },
+        "overlayShowInsurance": {
+          "label": "Versicherungszeile",
+          "help": "Zeigt eine Zeile unter den Karten des Dealers, solange ein Spieler versichert ist."
+        },
+        "overlayDealerName": {
+          "label": "Der Dealer heißt",
+          "help": "Die Beschriftung über den Karten des Dealers."
+        },
+        "overlayCardRedColor": {
+          "label": "Rote Farben",
+          "help": "Herz und Karo."
+        },
+        "overlayCardBlackColor": {
+          "label": "Schwarze Farben",
+          "help": "Pik und Kreuz."
+        },
+        "msgGameStart": {
+          "label": "Hand gegeben",
+          "help": "Eröffnet eine Runde. Die Hand und die offene Karte des Dealers werden angehängt."
+        },
+        "msgDrawCard": {
+          "label": "Karte",
+          "help": "Jedes Mal gesendet, wenn der Spieler zieht, Bust oder nicht."
+        },
+        "msgDoubleDown": {
+          "label": "Verdoppelt",
+          "help": "Gesendet, wenn der Einsatz für genau eine weitere Karte verdoppelt wird."
+        },
+        "msgSplit": {
+          "label": "Geteilt",
+          "help": "Gesendet bei einem Teilen oder erneuten Teilen, beschreibt die erste der zwei Hände."
+        },
+        "msgMovingToHand": {
+          "label": "Nächste geteilte Hand",
+          "help": "Gesendet, wenn das Spiel zur nächsten Hand weitergeht. Hände, die von selbst halten, wie geteilte Asse, werden übersprungen."
+        },
+        "msgAceReduced": {
+          "label": "Ass auf 1 gefallen",
+          "help": "Nur gesendet, solange 'Sagen, wenn ein Ass auf 1 fällt' an ist, und nur, wenn es wirklich passiert ist."
+        },
+        "msgQuitRefund": {
+          "label": "Aufgehört",
+          "help": "Gesendet, wenn ein Spieler aufhört, bevor er gehandelt hat. Alles Gesetzte kommt zurück, geteilte Einsätze eingeschlossen."
+        },
+        "msgBlackjackWin": {
+          "label": "Blackjack",
+          "help": "Gesendet bei einem echten Blackjack - 21 mit den ersten zwei Karten - bezahlt zum Verhältnis von Blackjack zahlt statt 1:1."
+        },
+        "msgRegularWin": {
+          "label": "Gewinn",
+          "help": "Gesendet bei einem normalen 1:1-Gewinn: die Hand des Spielers schlägt die des Dealers, keine davon ein Blackjack."
+        },
+        "msgHandWin": {
+          "label": "Geteilte Hand gewonnen",
+          "help": "Angehängt, wenn eine Hand aus einer Teilung ihren eigenen Vergleich gegen den Dealer gewinnt."
+        },
+        "msgSpecialWin5Card": {
+          "label": "5-Karten-Charlie",
+          "help": "Gesendet, sobald eine Hand fünf Karten erreicht, ohne zu busten. Zahlt den Einsatz zurück plus einen 1,5-fachen Bonus, egal was der Dealer hält."
+        },
+        "msgSpecialWin3Sevens": {
+          "label": "Drei 7er",
+          "help": "Gesendet, sobald eine Hand drei 7er hält, ohne zu busten. Zahlt den Einsatz zurück plus einen 2-fachen Bonus, egal was der Dealer hält."
+        },
+        "msgLoss": {
+          "label": "Verlust",
+          "help": "Gesendet, wenn die Hand des Spielers schlicht nicht reicht - kein Bust, kein Gleichstand."
+        },
+        "msgBust": {
+          "label": "Bust",
+          "help": "Gesendet, sobald eine Hand bei einem Zug oder Verdoppeln über 21 geht. Der Einsatz ist weg, bevor der Dealer spielt."
+        },
+        "msgHandBust": {
+          "label": "Geteilte Hand gebustet",
+          "help": "Statt Bust gesendet, wenn die Hand, die über 21 ging, Teil einer Teilung war."
+        },
+        "msgHandLost": {
+          "label": "Geteilte Hand verloren",
+          "help": "Angehängt, wenn eine Hand aus einer Teilung ihren eigenen Vergleich gegen den Dealer verliert."
+        },
+        "msgHandTie": {
+          "label": "Geteilte Hand im Gleichstand",
+          "help": "Geht als {hands} in die Ansage des Stechens ein und nennt die Hand, die gleichgezogen hat."
+        },
+        "msgDealerDraws": {
+          "label": "Dealer zieht",
+          "help": "Für jede Karte des Dealers gesendet, beim Ziehen bis zum Haltewert wie beim Brechen eines Gleichstands."
+        },
+        "msgDealerReveal": {
+          "label": "Verdeckte Karte aufgedeckt",
+          "help": "Nur mit 'Dealer prüft auf Blackjack' an zu sehen, denn nur dann gibt es eine verdeckte Karte."
+        },
+        "msgDealerBusts": {
+          "label": "Dealer bustet",
+          "help": "Gesendet, wenn eine Stechkarte den Dealer über 21 bringt, sodass die Hand, die gleichgezogen hatte, doch gewinnt."
+        },
+        "msgDealerWins": {
+          "label": "Dealer gewinnt unberührt",
+          "help": "Gesendet, wenn jede Spielerhand schon gebustet war, sodass der Dealer nie ziehen muss."
+        },
+        "msgDealerDrawCard": {
+          "label": "Gleichstand brechen",
+          "help": "Kündigt die zusätzliche Karte an. {hands} ist die Zeile Geteilte Hand im Gleichstand darüber."
+        },
+        "msgDealerTieWin": {
+          "label": "Gleichstand bleibt",
+          "help": "Gesendet, wenn das Stechen den Dealer auf Augenhöhe mit dem Spieler lässt, was der Dealer gewinnt."
+        },
+        "msgDealerBeatsYou": {
+          "label": "Gleichstand für den Dealer gebrochen",
+          "help": "Gesendet, wenn das Stechen den Dealer wirklich nach vorn bringt."
+        },
+        "msgDealerPeekBlackjack": {
+          "label": "Prüfung fand einen Blackjack",
+          "help": "Gesendet, wenn der Dealer auf ein Ass oder eine Zehn die verdeckte Karte prüft und Blackjack hält, was die Hand dort beendet."
+        },
+        "msgDealerBlackjackPush": {
+          "label": "Beide haben Blackjack",
+          "help": "Gesendet, wenn Dealer und Spieler beide Blackjack halten: unentschieden, der Einsatz kommt direkt zurück."
+        },
+        "msgFinalSummary": {
+          "label": "Schlussbilanz",
+          "help": "Kurz vor den meisten Ergebnissen gesendet, beide Endhände nebeneinander."
+        },
+        "msgInsuranceOffer": {
+          "label": "Versicherung angeboten",
+          "help": "Direkt nach dem Geben gesendet, nur mit Versicherung an und einem Ass beim Dealer. Die einzige Gelegenheit, sie zu nehmen."
+        },
+        "msgInsuranceTaken": {
+          "label": "Versicherung genommen",
+          "help": "Gesendet, wenn der Spieler sich versichert. Die Hälfte des ursprünglichen Einsatzes wird beiseitegelegt."
+        },
+        "msgInsuranceWin": {
+          "label": "Versicherung zahlt",
+          "help": "Gesendet, wenn der Dealer tatsächlich Blackjack hält. Zahlt 2:1 auf den Versicherungseinsatz, egal was die Haupthand macht."
+        },
+        "msgInsuranceLose": {
+          "label": "Versicherung verloren",
+          "help": "Gesendet, wenn der Dealer doch keinen Blackjack hat. Nur der Versicherungseinsatz ist weg; die Hand spielt weiter."
+        },
+        "msgInsuranceNotAvailable": {
+          "label": "Versicherung abgelehnt",
+          "help": "Gesendet, wenn Versicherung nicht gilt: die Regel ist aus, sie wurde nicht angeboten, sie ist schon genommen, oder der Spieler hat gehandelt."
+        },
+        "msgInsuranceInsufficientFunds": {
+          "label": "Versicherung zu teuer",
+          "help": "Gesendet, wenn der Spieler die Hälfte seines Einsatzes nicht decken kann."
+        },
+        "msgSurrenderResult": {
+          "label": "Aufgegeben",
+          "help": "Gesendet, wenn ein Spieler eine frische Hand aufgibt und die Hälfte des Einsatzes behält."
+        },
+        "msgSurrenderNotAvailable": {
+          "label": "Aufgeben abgelehnt",
+          "help": "Gesendet, wenn Aufgeben nicht gilt: die Regel ist aus, die Versicherung ist schon genommen, oder die Hand hat nicht mehr zwei Karten."
+        },
+        "msgBettingAll": {
+          "label": "all / allin",
+          "help": "Bestätigt einen Einsatz des ganzen Guthabens. Die Zahl ist schon auf den Höchsteinsatz gekürzt."
+        },
+        "msgBettingHalf": {
+          "label": "half",
+          "help": "Bestätigt einen Einsatz der Hälfte des Guthabens."
+        },
+        "msgBettingQuarter": {
+          "label": "quarter / 25%",
+          "help": "Bestätigt einen Einsatz eines Viertels des Guthabens."
+        },
+        "msgBettingRandom": {
+          "label": "random / rand",
+          "help": "Bestätigt einen Zufallseinsatz zwischen einem Zehntel des Guthabens und dem, was der Spieler sich leisten kann."
+        },
+        "msgBettingDouble": {
+          "label": "double / 2x",
+          "help": "Bestätigt einen Einsatz des doppelten Minimums."
+        },
+        "msgBettingMax": {
+          "label": "max / maximum",
+          "help": "Bestätigt den größten erlaubten Einsatz, begrenzt durch Guthaben und Höchsteinsatz."
+        },
+        "msgBetMinApplied": {
+          "label": "Stattdessen Minimum",
+          "help": "Gesendet, wenn ein Kürzel unter dem Mindesteinsatz landet, sodass das Minimum gespielt wird."
+        },
+        "msgBlackjackWinFree": {
+          "label": "Blackjack",
+          "help": "Ersetzt die Zeile Blackjack, solange das Freispiel an ist."
+        },
+        "msgRegularWinFree": {
+          "label": "Gewinn",
+          "help": "Ersetzt die Zeile Gewinn, solange das Freispiel an ist."
+        },
+        "msgLossFree": {
+          "label": "Verlust",
+          "help": "Ersetzt die Zeile Verlust, solange das Freispiel an ist, denn nichts war gesetzt."
+        },
+        "msgQuitRefundFree": {
+          "label": "Aufgehört",
+          "help": "Ersetzt die Zeile Aufgehört, solange das Freispiel an ist - es gibt nichts zurückzugeben."
+        },
+        "msgSurrenderResultFree": {
+          "label": "Aufgegeben",
+          "help": "Ersetzt die Zeile Aufgegeben, solange das Freispiel an ist."
+        },
+        "msgDealerTieWinFree": {
+          "label": "Gleichstand bleibt",
+          "help": "Ersetzt die Zeile Gleichstand bleibt, solange das Freispiel an ist."
+        },
+        "msgDealerBeatsYouFree": {
+          "label": "Gleichstand für den Dealer gebrochen",
+          "help": "Ersetzt die Zeile Gleichstand gebrochen, solange das Freispiel an ist."
+        },
+        "msgTurnTimeoutRefundFree": {
+          "label": "Zeit abgelaufen",
+          "help": "Ersetzt die Erstattungszeile, solange das Freispiel an ist."
+        },
+        "msgInsufficientSplit": {
+          "label": "Teilen nicht leistbar",
+          "help": "Gesendet, wenn ein Teilen mehr bräuchte, als der Spieler noch hat."
+        },
+        "msgInsufficientDouble": {
+          "label": "Verdoppeln nicht leistbar",
+          "help": "Gesendet, wenn ein Verdoppeln mehr bräuchte, als der Spieler noch hat."
+        },
+        "msgAlreadyActiveGame": {
+          "label": "Schon in einer Hand",
+          "help": "Gesendet, wenn ein Spieler eine Hand beginnt, während er noch eine hält."
+        },
+        "msgNoActiveGame": {
+          "label": "Keine Hand läuft",
+          "help": "Gesendet, wenn hit, stand, double, split, insurance, surrender, repeat oder quit ohne Hand auf dem Tisch ankommt."
+        },
+        "msgGameAlreadyOver": {
+          "label": "Hand schon vorbei",
+          "help": "Gesendet, wenn ein Spieler auf eine Hand handelt, die schon abgerechnet ist."
+        },
+        "msgQuitOnlyBefore": {
+          "label": "Zu spät zum Aufhören",
+          "help": "Gesendet, wenn quit nach Ziehen, Halten oder Verdoppeln ankommt. Dann liegt eine echte Hand auf dem Tisch."
+        },
+        "msgCannotSplitValue": {
+          "label": "Karten passen nicht",
+          "help": "Gesendet, wenn die zwei Karten nicht gleich viel wert sind."
+        },
+        "msgCannotSplitCount": {
+          "label": "Nicht zwei Karten",
+          "help": "Gesendet, wenn ein Teilen auf einer Hand versucht wird, die nicht mehr zwei Karten hat, etwa nach einem Zug."
+        },
+        "msgAlreadySplit": {
+          "label": "Schon geteilt",
+          "help": "Gesendet, wenn noch einmal geteilt wird, während Erneut teilen aus ist - standardmäßig ein Teilen pro Runde."
+        },
+        "msgSplitDisabled": {
+          "label": "Teilen aus",
+          "help": "Gesendet, wenn split überhaupt genutzt wird, während die Regel auf der Seite Tisch aus ist."
+        },
+        "msgMaxSplitHandsReached": {
+          "label": "Keine weiteren Hände",
+          "help": "Gesendet, wenn ein erneutes Teilen die Grenze Hände durch Teilen überschreiten würde."
+        },
+        "msgCannotDoubleCount": {
+          "label": "Nicht zwei Karten",
+          "help": "Gesendet, wenn ein Verdoppeln auf einer Hand versucht wird, die nicht mehr zwei Karten hat."
+        },
+        "msgMustDoubleFirst": {
+          "label": "Zu spät zum Verdoppeln",
+          "help": "Gesendet, wenn nach Ziehen oder Halten auf dieser Hand verdoppelt werden soll. Verdoppeln geht nur als erster Zug."
+        },
+        "msgAlreadyDoubledDown": {
+          "label": "Schon verdoppelt",
+          "help": "Gesendet, wenn dieselbe Hand zweimal verdoppelt wird."
+        },
+        "msgDoubleDownDisabled": {
+          "label": "Verdoppeln aus",
+          "help": "Gesendet, wenn double überhaupt genutzt wird, während die Regel auf der Seite Tisch aus ist."
+        },
+        "msgMaxGamesReached": {
+          "label": "Stundengrenze erreicht",
+          "help": "Gesendet, wenn ein Spieler die Grenze Spiele pro Stunde überschreitet."
+        },
+        "msgPointsVarNotFound": {
+          "label": "Punkte-Variable fehlt",
+          "help": "Gesendet, wenn das Freispiel aus ist und die Punkte-Variable für diesen Zuschauer nicht lesbar ist - meist ein falscher Name, oder noch keine Währung eingerichtet."
+        },
+        "msgPointsNotRefunded": {
+          "label": "Erstattung fehlgeschlagen",
+          "help": "Gesendet, wenn eine Erstattung nicht gezahlt werden kann, weil die Punkte-Variable unlesbar ist. Der Einsatz wird dann nicht wiederhergestellt."
+        },
+        "msgCardError": {
+          "label": "Deck-Problem",
+          "help": "Gesendet im seltenen Fall, dass eine Starthand gar nicht gegeben werden kann. Wert, gemeldet zu werden, falls du es je siehst."
+        },
+        "msgTurnTimeoutStand": {
+          "label": "Zeit abgelaufen, Hand hält",
+          "help": "Gesendet, wenn die Zugzeit abläuft, nachdem der Spieler gehandelt hat: die Hand hält und der Dealer spielt sie aus."
+        },
+        "msgTurnTimeoutRefund": {
+          "label": "Zeit abgelaufen, Einsatz zurück",
+          "help": "Gesendet, wenn die Zugzeit abläuft, bevor der Spieler überhaupt gehandelt hat, und 'Ungespielte Hand erstatten' an ist."
+        },
+        "msgBalance": {
+          "label": "Guthaben",
+          "help": "Nach den meisten Ergebnissen angehängt, um zu zeigen, wo der Zuschauer jetzt steht."
+        },
+        "msgTutorial": {
+          "label": "Anleitung",
+          "help": "Einmal je Streamer.bot-Sitzung gesendet, beim ersten Mal, dass jemand spielt."
+        },
+        "msgRepeatNothing": {
+          "label": "Nichts zu wiederholen",
+          "help": "Gesendet, wenn repeat genutzt wird, bevor die Runde etwas gesagt hat."
+        },
+        "msgAddictedFee": {
+          "label": "Suchtgebühr",
+          "help": "An einen Gewinn angehängt, wenn der Gewinner auf der Süchtigen-Liste steht."
+        },
+        "msgDuelChallenge": {
+          "label": "Herausforderung ausgesprochen",
+          "help": "Eröffnet ein Duell und fordert den Herausgeforderten zur Antwort auf."
+        },
+        "msgDuelAccepted": {
+          "label": "Angenommen",
+          "help": "Gesendet, wenn die Herausforderung angenommen wird und die Karten rausgehen."
+        },
+        "msgDuelDeclined": {
+          "label": "Abgelehnt",
+          "help": "Gesendet, wenn der Herausgeforderte Nein sagt. Der Einsatz des Herausforderers geht zurück."
+        },
+        "msgDuelExpired": {
+          "label": "Keine Antwort",
+          "help": "Gesendet, wenn niemand innerhalb der Annahmefrist geantwortet hat."
+        },
+        "msgDuelAcceptedFree": {
+          "label": "Angenommen (Freispiel)",
+          "help": "Ersetzt Angenommen, solange das Freispiel an ist."
+        },
+        "msgDuelDeclinedFree": {
+          "label": "Abgelehnt (Freispiel)",
+          "help": "Ersetzt Abgelehnt, solange das Freispiel an ist."
+        },
+        "msgDuelExpiredFree": {
+          "label": "Keine Antwort (Freispiel)",
+          "help": "Ersetzt Keine Antwort, solange das Freispiel an ist - es gibt keinen Einsatz zurückzugeben."
+        },
+        "msgDuelHandDealt": {
+          "label": "Hand gegeben",
+          "help": "Einmal je Spieler direkt nach dem Geben gesendet."
+        },
+        "msgDuelTurn": {
+          "label": "Du bist dran",
+          "help": "Gesendet, wenn ein Spieler an den Zug kommt."
+        },
+        "msgDuelDrawCard": {
+          "label": "Karte",
+          "help": "Gesendet, wenn ein Duellant zieht."
+        },
+        "msgDuelStand": {
+          "label": "Halten",
+          "help": "Gesendet, wenn ein Duellant aufhört."
+        },
+        "msgDuelBust": {
+          "label": "Bust",
+          "help": "Gesendet, wenn ein Duellant über 21 geht."
+        },
+        "msgDuelTurnTimeout": {
+          "label": "Zug abgelaufen",
+          "help": "Gesendet, wenn ein Spieler die Zugzeit verstreichen lässt und automatisch hält."
+        },
+        "msgDuelForfeit": {
+          "label": "Aufgabe",
+          "help": "Gesendet, wenn ein Duellant mitten im Duell aufhört. Der Gegner nimmt den ganzen Topf."
+        },
+        "msgDuelHandLabel": {
+          "label": "Nächste geteilte Hand",
+          "help": "Als Präfix genutzt, wenn das Spiel zur nächsten geteilten Hand eines Spielers geht; die Karten folgen darauf."
+        },
+        "msgDuelRepeat": {
+          "label": "Wiederholung",
+          "help": "Gesendet, wenn einer der Duellanten repeat nutzt. Nur lesend, und es rührt die Zuguhr nie an."
+        },
+        "msgDuelRepeatFree": {
+          "label": "Wiederholung (Freispiel)",
+          "help": "Ersetzt Wiederholung, solange das Freispiel an ist - es gibt keinen Topf zu melden."
+        },
+        "msgDuelRaiseOffer": {
+          "label": "Erhöhung angeboten",
+          "help": "Gesendet, wenn ein Spieler teilt oder verdoppelt, und bittet den Gegner, dem höheren Einsatz zuzustimmen."
+        },
+        "msgDuelRaiseAccepted": {
+          "label": "Erhöhung angenommen",
+          "help": "Gesendet, wenn der Gegner zustimmt und beide Einsätze steigen."
+        },
+        "msgDuelRaiseDeclined": {
+          "label": "Erhöhung abgelehnt",
+          "help": "Gesendet, wenn der Gegner Nein sagt. Die Erhöhung fällt weg und der Erhöhende spielt die Hand, wie sie liegt."
+        },
+        "msgDuelRaiseTimeout": {
+          "label": "Erhöhung unbeantwortet",
+          "help": "Gesendet, wenn der Gegner die Erhöhung nie beantwortet hat."
+        },
+        "msgDuelRaiseUnaffordable": {
+          "label": "Erhöhung zu teuer",
+          "help": "Gesendet, wenn der Gegner zustimmen wollte, aber das Guthaben dafür nicht mehr hat."
+        },
+        "msgDuelShowdown": {
+          "label": "Showdown",
+          "help": "Kurz vor dem Ergebnis gesendet, mit beiden Werten."
+        },
+        "msgDuelWin": {
+          "label": "Gewinn",
+          "help": "Gesendet, wenn ein Duellant es holt."
+        },
+        "msgDuelPush": {
+          "label": "Unentschieden",
+          "help": "Gesendet, wenn das Duell gleich endet und beide Einsätze zurückgehen."
+        },
+        "msgDuelPotResult": {
+          "label": "Nebentopf gewonnen",
+          "help": "Einmal je Nebentopf gesendet, wenn Teilungen im Spiel waren."
+        },
+        "msgDuelPotPush": {
+          "label": "Nebentopf unentschieden",
+          "help": "Gesendet für einen Nebentopf, der gleich endete."
+        },
+        "msgDuelAddictedFee": {
+          "label": "Suchtgebühr",
+          "help": "Nach einem Duellergebnis gesendet, wenn der Gewinner auf der Süchtigen-Liste steht und der Duell-Abzug an ist. Ohne sie sähe der Gewinner nur eine kleinere Zahl als den Topf."
+        },
+        "msgDuelWinFree": {
+          "label": "Gewinn (Freispiel)",
+          "help": "Ersetzt Gewinn, solange das Freispiel an ist."
+        },
+        "msgDuelPushFree": {
+          "label": "Unentschieden (Freispiel)",
+          "help": "Ersetzt Unentschieden, solange das Freispiel an ist."
+        },
+        "msgDuelSuddenDeathOffer": {
+          "label": "Angeboten",
+          "help": "Gesendet bei Gleichstand mit Sudden Death an. Beide Spieler müssen annehmen."
+        },
+        "msgDuelSuddenDeathWaiting": {
+          "label": "Einer dabei, einer fehlt",
+          "help": "Gesendet, wenn der erste Spieler annimmt und der andere noch antworten muss."
+        },
+        "msgDuelSuddenDeathDeclined": {
+          "label": "Abgelehnt",
+          "help": "Gesendet, wenn ein Spieler Nein sagt. Alles geht zurück."
+        },
+        "msgDuelSuddenDeathTimeout": {
+          "label": "Unbeantwortet",
+          "help": "Gesendet, wenn niemand auf das Angebot geantwortet hat. Alles geht zurück."
+        },
+        "msgDuelSuddenDeathStart": {
+          "label": "Runde beginnt",
+          "help": "Gesendet, sobald beide angenommen haben und der zusätzliche Einsatz genommen ist."
+        },
+        "msgDuelSuddenDeathCard": {
+          "label": "Die Zusatzkarte",
+          "help": "Einmal je Spieler für die Zusatzkarte gesendet."
+        },
+        "msgDuelSuddenDeathMaxRounds": {
+          "label": "Runden aufgebraucht",
+          "help": "Gesendet, wenn die Spieler bis zur Rundengrenze weiter gleichgezogen haben. Alles geht zurück."
+        },
+        "msgDuelSuddenDeathBothBust": {
+          "label": "Beide gebustet",
+          "help": "Gesendet, wenn die Zusatzkarte beide über 21 bringt. Keiner kann von da aus gewinnen, also stoppt das Duell, statt weiterzuziehen, und alles geht zurück."
+        },
+        "msgDuelSuddenDeathStartFree": {
+          "label": "Runde beginnt (Freispiel)",
+          "help": "Ersetzt Runde beginnt, solange das Freispiel an ist."
+        },
+        "msgDuelDisabled": {
+          "label": "Duelle aus",
+          "help": "Gesendet, wenn der Duell-Befehl genutzt wird, während Duelle aus sind."
+        },
+        "msgDuelNoTarget": {
+          "label": "Niemand markiert",
+          "help": "Gesendet, wenn der Duell-Befehl ohne Namen ankommt."
+        },
+        "msgDuelSelfChallenge": {
+          "label": "Dich selbst herausgefordert",
+          "help": "Gesendet, wenn jemand den eigenen Namen markiert."
+        },
+        "msgDuelChallengerBusy": {
+          "label": "Du bist beschäftigt",
+          "help": "Gesendet, wenn der Herausforderer schon eine Hand, ein Duell, einen Platz oder eine offene Herausforderung hat."
+        },
+        "msgDuelTargetBusy": {
+          "label": "Der andere ist beschäftigt",
+          "help": "Gesendet, wenn der markierte Spieler schon in einer Hand, einem Duell oder auf einem Platz ist."
+        },
+        "msgDuelAlreadyPending": {
+          "label": "Schon herausgefordert",
+          "help": "Gesendet, wenn beim markierten Spieler schon eine Herausforderung wartet."
+        },
+        "msgDuelTargetInsufficient": {
+          "label": "Nicht genug Punkte",
+          "help": "Gesendet, wenn eine Seite den Einsatz nicht decken kann."
+        },
+        "msgDuelNoPending": {
+          "label": "Nichts zu beantworten",
+          "help": "Gesendet, wenn accept oder decline ankommt, ohne dass auf diesen Spieler eine Frage wartet."
+        },
+        "msgDuelNotYourTurn": {
+          "label": "Nicht dein Zug",
+          "help": "Gesendet, wenn ein Duellant außer der Reihe handelt."
+        },
+        "msgDuelSplitDisabled": {
+          "label": "Teilen aus in Duellen",
+          "help": "Gesendet, wenn split in einem Duell genutzt wird, während die Duell-Regel aus ist."
+        },
+        "msgDuelDoubleDisabled": {
+          "label": "Verdoppeln aus in Duellen",
+          "help": "Gesendet, wenn double in einem Duell genutzt wird, während die Duell-Regel aus ist."
+        },
+        "msgDuelActionNotAvailable": {
+          "label": "Kein Duell-Befehl",
+          "help": "Gesendet, wenn insurance oder surrender während eines Duells genutzt wird."
+        },
+        "msgHouseRulePrompt": {
+          "label": "Regelsatz-Menü",
+          "help": "Gesendet, wenn ein Tisch ohne Regelsatz geöffnet wird, mit den auf der Seite Haus angehakten."
+        },
+        "msgHouseRuleTimeout": {
+          "label": "Keine Regeln gewählt",
+          "help": "Gesendet, wenn niemand auf das Menü geantwortet hat. Nichts war gesetzt, nichts muss zurück."
+        },
+        "msgHouseTableOpen": {
+          "label": "Tisch offen",
+          "help": "Gesendet, wenn der Tisch öffnet und das Beitrittsfenster beginnt."
+        },
+        "msgHouseSeatTaken": {
+          "label": "Platz genommen",
+          "help": "Jedes Mal gesendet, wenn sich jemand setzt."
+        },
+        "msgHouseSeatLeft": {
+          "label": "Platz verlassen",
+          "help": "Gesendet, wenn ein sitzender Spieler aufhört, solange sein Einsatz noch zurückkann."
+        },
+        "msgHouseNoPlayers": {
+          "label": "Niemand hat sich gesetzt",
+          "help": "Gesendet, wenn das Beitrittsfenster mit lauter leeren Plätzen abgelaufen ist, sodass der Tisch wieder schließt."
+        },
+        "msgHouseDealt": {
+          "label": "Karten raus",
+          "help": "Gesendet, wenn die Karten rausgehen, vor den einzelnen Händen."
+        },
+        "msgHouseHandDealt": {
+          "label": "Hand gegeben",
+          "help": "Einmal je Platz direkt nach dem Geben gesendet."
+        },
+        "msgHouseSeatBlackjack": {
+          "label": "Platz hat Blackjack",
+          "help": "Gesendet, wenn einem Platz ein echter Blackjack gegeben wird."
+        },
+        "msgHouseTurn": {
+          "label": "Du bist dran",
+          "help": "Gesendet, wenn der Tisch zu einem Platz weitergeht."
+        },
+        "msgHouseDrawCard": {
+          "label": "Karte",
+          "help": "Gesendet, wenn ein Platz zieht."
+        },
+        "msgHouseStand": {
+          "label": "Halten",
+          "help": "Gesendet, wenn ein Platz aufhört."
+        },
+        "msgHouseBust": {
+          "label": "Bust",
+          "help": "Gesendet, wenn ein Platz über 21 geht."
+        },
+        "msgHouseNextHand": {
+          "label": "Nächste geteilte Hand",
+          "help": "Gesendet, wenn das Spiel zur nächsten geteilten Hand eines Platzes geht."
+        },
+        "msgHouseTurnTimeout": {
+          "label": "Zug abgelaufen",
+          "help": "Gesendet, wenn ein Platz die Zugzeit verstreichen lässt und automatisch hält."
+        },
+        "msgHouseSurrender": {
+          "label": "Aufgegeben",
+          "help": "Gesendet, wenn ein Platz aufgibt, bei einem Regelsatz, der es erlaubt."
+        },
+        "msgHouseInsuranceOffer": {
+          "label": "Versicherung angeboten",
+          "help": "An den ganzen Tisch gesendet, wenn der Dealer ein Ass zeigt, bevor die verdeckte Karte geprüft wird."
+        },
+        "msgHouseInsuranceTaken": {
+          "label": "Versicherung genommen",
+          "help": "Gesendet, wenn ein Platz sich versichert."
+        },
+        "msgHouseInsuranceWin": {
+          "label": "Versicherung zahlt",
+          "help": "Gesendet, wenn der Dealer tatsächlich Blackjack hält und die Versicherung dieses Platzes zahlt."
+        },
+        "msgHouseInsuranceLose": {
+          "label": "Versicherung verloren",
+          "help": "Gesendet, wenn der Dealer keinen Blackjack hat und der Versicherungseinsatz weg ist."
+        },
+        "msgHouseDealerReveal": {
+          "label": "Verdeckte Karte aufgedeckt",
+          "help": "Gesendet, wenn der Zug des Dealers beginnt."
+        },
+        "msgHousePeekBlackjack": {
+          "label": "Prüfung fand einen Blackjack",
+          "help": "Gesendet, wenn der Dealer auf ein Ass oder eine Zehn prüft und Blackjack hält, was den Tisch dort beendet."
+        },
+        "msgHouseDealerBlackjack": {
+          "label": "Dealer-Blackjack",
+          "help": "Gesendet an einem Tisch, an dem der Dealer nicht prüft und einen aufdeckt, der alles Gesetzte an jedem Platz nimmt."
+        },
+        "msgHouseSeatWin": {
+          "label": "Platz gewinnt",
+          "help": "Für jeden gewinnenden Platz gesendet, wenn der Tisch abgerechnet wird."
+        },
+        "msgHouseSeatPush": {
+          "label": "Platz unentschieden",
+          "help": "Für jeden Platz auf Augenhöhe mit dem Dealer gesendet, der seinen Einsatz zurückbekommt."
+        },
+        "msgHouseSeatLoss": {
+          "label": "Platz verliert",
+          "help": "Für jeden verlierenden Platz gesendet, wenn der Tisch abgerechnet wird."
+        },
+        "msgHouseTableSummary": {
+          "label": "Tischbilanz",
+          "help": "Einmal am Ende gesendet, und noch einmal bei repeat: die Hand des Dealers und das Ergebnis jedes Platzes."
+        },
+        "msgHouseDisabled": {
+          "label": "Haus-Modus aus",
+          "help": "Gesendet, wenn der Haus-Befehl genutzt wird, während der Haus-Modus aus ist."
+        },
+        "msgHouseNeedsCurrency": {
+          "label": "Braucht echte Währung",
+          "help": "Gesendet, wenn ein Tisch geöffnet wird, während das Freispiel an ist."
+        },
+        "msgHouseNoRuleSets": {
+          "label": "Keine Regelsätze",
+          "help": "Gesendet, wenn auf der Seite Haus nichts angehakt ist, sodass es nichts gibt, womit sich ein Tisch öffnen ließe."
+        },
+        "msgHouseAlreadyRunning": {
+          "label": "Tisch läuft schon",
+          "help": "Gesendet, wenn jemand einen zweiten Tisch öffnet, während einer läuft."
+        },
+        "msgHouseTableFull": {
+          "label": "Tisch voll",
+          "help": "Gesendet, wenn jeder Platz belegt ist."
+        },
+        "msgHouseAlreadySeated": {
+          "label": "Schon gesetzt",
+          "help": "Gesendet, wenn ein Spieler einen zweiten Platz nimmt."
+        },
+        "msgHouseNoTable": {
+          "label": "Kein Tisch offen",
+          "help": "Gesendet, wenn ein Tisch-Befehl ankommt, ohne dass ein Tisch offen ist."
+        },
+        "msgHouseJoinClosed": {
+          "label": "Beitrittsfenster zu",
+          "help": "Gesendet, wenn jemand beitritt, nachdem die Karten raus sind."
+        },
+        "msgHouseNotYourTurn": {
+          "label": "Nicht dein Zug",
+          "help": "Gesendet, wenn ein Platz außer der Reihe handelt."
+        },
+        "msgHouseNotPlaying": {
+          "label": "Es wird nicht gespielt",
+          "help": "Gesendet, wenn ein Spielbefehl ankommt, während der Tisch nicht spielt - etwa im Beitrittsfenster."
+        },
+        "msgHouseNotSeated": {
+          "label": "Nicht gesetzt",
+          "help": "Geschrieben für jemanden, der nie Platz genommen hat und die Hand des Tisches spielen will. Das Spiel antwortet darauf derzeit mit 'Keine Hand läuft', diese Zeile wird also nicht gesendet."
+        },
+        "msgHouseActionNotAvailable": {
+          "label": "Hier nicht erlaubt",
+          "help": "Gesendet, wenn ein Befehl nicht zum Regelsatz des Tisches gehört - Aufgeben an einem europäischen Tisch zum Beispiel."
+        }
+      },
+      "texts": {
+        "Playing a hand": "Eine Hand spielen",
+        "Losses": "Verluste",
+        "Insurance and surrender": "Versicherung und Aufgeben",
+        "Bet shortcuts": "Einsatz-Kürzel",
+        "Free Game": "Freispiel",
+        "Table refusals": "Ablehnungen am Tisch",
+        "System": "System",
+        "Duel: the challenge": "Duell: die Herausforderung",
+        "Duel: play": "Duell: Spiel",
+        "Duel: raises": "Duell: Erhöhungen",
+        "Duel: result": "Duell: Ergebnis",
+        "Duel: sudden death": "Duell: Sudden Death",
+        "Duel: refusals": "Duell: Ablehnungen",
+        "House: the table": "Haus: der Tisch",
+        "House: play": "Haus: Spiel",
+        "House: result": "Haus: Ergebnis",
+        "House: refusals": "Haus: Ablehnungen",
+        "3:2 - casino standard": "3:2 - Casino-Standard",
+        "6:5 - house edge": "6:5 - Hausvorteil",
+        "2:1 - generous": "2:1 - großzügig",
+        "1:1 - no bonus": "1:1 - kein Bonus",
+        "Card and number - 🂡(11)": "Karte und Zahl - 🂡(11)",
+        "Card only - 🂡": "Nur Karte - 🂡",
+        "Number only - 11": "Nur Zahl - 11",
+        "Never": "Nie",
+        "Every new ISO week": "Jede neue ISO-Woche",
+        "On the 1st of the month": "Am 1. des Monats",
+        "The leaderboard totals only": "Nur die Summen der Bestenliste",
+        "Every stat there is": "Jede Statistik, die es gibt",
+        "Free Game, from the Table page. While it is on, nobody stakes or wins anything.": "Freispiel, von der Seite Tisch. Solange es an ist, setzt und gewinnt niemand etwas."
+      }
+    }
+  }
 }
