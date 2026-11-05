@@ -198,12 +198,11 @@ namespace UIFramework
         }
 
         /// <summary>An emote cell: its picture beside the box, fetched for the typed code and again when the box is
-        /// left. YouTube emotes are emoji and need no picture.</summary>
+        /// left. A YouTube cell shows the picture of one of YouTube's own emojis (<c>:name:</c>); a Unicode emoji
+        /// shows itself in the box.</summary>
         private FrameworkElement WithPicture(SettingColumn column, TextBox box)
         {
             string platform = (column.Platform ?? "twitch").ToLowerInvariant();
-            if (platform == "youtube")
-                return box;
             var image = EmotePictures.Picture(platform, box.Text, _hooks);
             box.LostFocus += (sender, e) => EmotePictures.Show(image, platform, box.Text, _hooks);
             var dock = new DockPanel();

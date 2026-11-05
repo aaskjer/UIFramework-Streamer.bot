@@ -73,7 +73,8 @@ namespace UIFramework
                 panel.Children.Add(Bar(bar));
         }
 
-        /// <summary>The emotes of a spin as pictures, each with its name beneath; a YouTube emote is its emoji.</summary>
+        /// <summary>The emotes of a spin as pictures, each with its name beneath: a Kick code's name, a YouTube
+        /// shortcode's name; a Unicode emoji on YouTube is drawn as itself.</summary>
         public static FrameworkElement Emotes(JArray codes, string platform, IHostHooks hooks)
         {
             platform = (platform ?? "twitch").Trim().ToLowerInvariant();
@@ -81,10 +82,9 @@ namespace UIFramework
             foreach (var token in codes)
             {
                 string code = token?.ToString() ?? "";
-                var kick = EmotePictures.KickCode.Match(code);
-                string name = kick.Success ? kick.Groups[2].Value : code;
+                string name = EmotePictures.NameOf(code);
                 var cell = new StackPanel { Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Bottom };
-                if (platform == "youtube")
+                if (platform == "youtube" && EmotePictures.YouTubeUrl(code, hooks) == null)
                     cell.Children.Add(new TextBlock { Text = code, FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, Foreground = Theme.LabelFg });
                 else
                 {

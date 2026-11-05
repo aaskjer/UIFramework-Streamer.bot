@@ -32,6 +32,7 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\conventions\keys.json" LogicalName="UIFramework.conventions.keys.json" />
     <EmbeddedResource Include="..\..\conventions\lang\*.json" LogicalName="UIFramework.conventions.lang.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\conventions\emotes\youtube.json" LogicalName="UIFramework.conventions.emotes.youtube.json" />
   </ItemGroup>
 
 </Project>
