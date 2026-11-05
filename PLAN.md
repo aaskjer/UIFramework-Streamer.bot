@@ -410,7 +410,11 @@ Slot Machine ebenso (v16.1.0; der Test-Spin kommt aus der Engine im Spiel, die E
 gesehen, noch offen im Framework: Spaltenköpfe einer `list` und die Platzhalter der Tag-Felder ("Add a Streamer.bot
 group") bleiben englisch. Blackjack ebenso (v17.1.0; 215 Keys im Block übersetzt, Bestenlisten-Reset und OBS-
 Einrichtung laufen im Spiel und antworten mit dem Ergebnis, drei Befehle in `.Cooldowns`; dazu Custom Trigger für
-jede abgerechnete Hand). Offen: Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
+jede abgerechnete Hand). Battleship ebenso (v2.1.0; 162 Keys im Block übersetzt, Zusammenfassungen, Vorlagen,
+Broadcaster-Suche, Bestenlisten-Reset, OBS-Einrichtung und Heat-Marker antworten aus dem Spiel, `saved:` schreibt die
+Heat-Konfiguration für ein laufendes Overlay). Damit ist 7.5 abgeschlossen: `embed-spec.ps1` und `Stub.spec.cs` sind
+gelöscht, `check-stub.ps1` prüft nur noch den einen Stub und das Demo-Spiel. Dabei gesehen, noch offen im Framework:
+die Spaltenköpfe der Protokollseite und ihr Schalter "Write a log file per day" bleiben englisch.
 
 ## 9. Tests und Werkzeuge
 

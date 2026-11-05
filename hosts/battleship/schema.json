@@ -1,6 +1,6 @@
 {
   "host": "battleship",
-  "version": "",
+  "version": "v2.1.0",
   "settingsFile": "Chat Games/Battleship Game/BSG-Settings.json",
   "settings": [
     {
@@ -2826,5 +2826,1023 @@
         "MsgNoLeaderboard"
       ]
     }
-  ]
+  ],
+  "window": {
+    "title": "Battleship Game",
+    "releases": "aaskjer/Battleship-Game",
+    "logo": "https://github.com/aaskjer/Battleship-Game/blob/main/Assets/logo_full.png?raw=true",
+    "logPrefix": "[Battleship Game/Settings]",
+    "pages": [
+      {
+        "id": "game",
+        "title": "Game",
+        "icon": "🎮"
+      },
+      {
+        "id": "fleet",
+        "title": "Fleet",
+        "icon": "🚢"
+      },
+      {
+        "id": "modes",
+        "title": "Modes",
+        "icon": "⚔️"
+      },
+      {
+        "id": "overlay",
+        "title": "Overlay",
+        "icon": "📺"
+      },
+      {
+        "id": "clicks",
+        "title": "Clicks",
+        "icon": "🖱️"
+      },
+      {
+        "id": "access",
+        "title": "Access",
+        "icon": "👥"
+      },
+      {
+        "id": "messages",
+        "title": "Messages",
+        "icon": "💬"
+      },
+      {
+        "id": "stats",
+        "title": "Stats",
+        "icon": "🏆"
+      },
+      {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
+      },
+      {
+        "id": "help",
+        "title": "How to play",
+        "icon": "📖"
+      },
+      {
+        "id": "about",
+        "title": "About",
+        "icon": "ℹ️"
+      }
+    ],
+    "senders": {
+      "useBot": "useBot",
+      "sendAction": "sendAction",
+      "cooldownUseBot": "cooldownUseBot",
+      "cooldownSendAction": "cooldownSendAction",
+      "numberSeparator": "numberSeparator",
+      "cooldownGroup": "Cooldown"
+    },
+    "samples": {
+      "user": "alice",
+      "admiral": "The Admiral",
+      "ships": "3",
+      "size": "8",
+      "deploy": "60",
+      "coord": "B7",
+      "ship": "Cruiser",
+      "amount": "300",
+      "points": "Points",
+      "enemyleft": "2",
+      "yourleft": "3",
+      "shots": "21",
+      "hits": "9",
+      "accuracy": "43",
+      "net": "+600",
+      "team": "Chat",
+      "round": "15",
+      "voters": "14",
+      "seconds": "30",
+      "challenger": "alice",
+      "target": "bob",
+      "fee": "100",
+      "count": "4",
+      "a": "4",
+      "b": "3",
+      "pot": "700",
+      "missed": "1",
+      "max": "3",
+      "enemy": "Team B",
+      "teama": "Team A",
+      "teamb": "Team B",
+      "aleft": "2",
+      "bleft": "1",
+      "turn": "Team A",
+      "players": "4",
+      "share": "175",
+      "winner": "Team A",
+      "turns": "3",
+      "game": "alice",
+      "input": "Z9",
+      "required": "1,000",
+      "balance": "250",
+      "cap": "5,000",
+      "other": "Team B",
+      "gap": "1",
+      "fleet": "Carrier A1-A5, Cruiser C3-E3, Destroyer G7-G8"
+    },
+    "answers": {
+      "clockSummary": "60s to open fire, then 90s per turn, warned at 30s and 15s left.",
+      "fleetSummary": {
+        "lines": [
+          {
+            "text": "8×8 · 3 ships · about 36 shots per battle",
+            "big": true
+          },
+          "10 of 64 squares taken by ships."
+        ]
+      },
+      "broadcasterFound": "Found in Streamer.bot: 123456789. Used whenever the channel ID box is empty.",
+      "presetQuick": {
+        "status": "8×8 with 3 ships filled in; save to keep it."
+      }
+    },
+    "headerPills": [
+      {
+        "key": "freeGame",
+        "on": "Free game on",
+        "off": "Free game off",
+        "tooltip": "Free game, from the Game page. While it is on, ships still sink but no points are won or lost."
+      },
+      {
+        "key": "heatEnabled",
+        "on": "Click to Fire on",
+        "off": "Click to Fire off",
+        "tooltip": "Fire by clicking the stream, from the Clicks page. Twitch only, through the Heat extension."
+      }
+    ],
+    "cooldowns": [
+      {
+        "command": "33042222-a6c0-439d-8a50-e0033bfe692e",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      }
+    ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "BSG-log*.txt",
+      "writeLogKey": "logToFile",
+      "emptyText": "No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Platform",
+          "field": "Platform"
+        },
+        {
+          "header": "Trigger",
+          "field": "Trigger"
+        },
+        {
+          "header": "Board",
+          "field": "Board"
+        },
+        {
+          "header": "Shots",
+          "field": "Shots"
+        },
+        {
+          "header": "Hits",
+          "field": "Hits"
+        },
+        {
+          "header": "Accuracy",
+          "field": "Accuracy"
+        },
+        {
+          "header": "Change",
+          "field": "Change"
+        }
+      ],
+      "results": [
+        "WIN",
+        "LOSS",
+        "TIMEOUT",
+        "ABANDONED",
+        "STOPPED",
+        "CHAT WIN",
+        "CHAT LOSS",
+        "DUEL"
+      ],
+      "platforms": [
+        "twitch",
+        "youtube",
+        "kick"
+      ]
+    },
+    "help": [
+      {
+        "heading": "How a battle plays",
+        "lines": [
+          {
+            "note": "A viewer takes command of a fleet against a CPU opponent, the Admiral. Both fleets are placed at random and hidden from the other side. Each shot is a full exchange: the player fires, then the Admiral fires back. Sink the whole enemy fleet to win; lose yours and the battle is over. Nothing is staked up front: sinking one of the Admiral's ships pays its value at once, and losing one of your own costs its value."
+          }
+        ]
+      },
+      {
+        "heading": "Commands",
+        "lines": [
+          {
+            "command": "!battleship",
+            "what": "puts a fleet to sea and starts a solo battle."
+          },
+          {
+            "command": "!fire B7",
+            "what": "fires at a square, then the Admiral fires back. A square fired at before is refused and costs nothing."
+          },
+          {
+            "command": "!fleet",
+            "what": "redeploys your ships at random, before your first shot only."
+          },
+          {
+            "command": "!board",
+            "what": "shots, accuracy, ships left and the running total."
+          },
+          {
+            "command": "!bstats",
+            "what": "a player's record. Add a name to look someone else up."
+          },
+          {
+            "command": "!ballstats",
+            "what": "the leaderboard."
+          },
+          {
+            "command": "!seeschlacht",
+            "what": "starts Chat vs the Admiral: the whole chat votes each round, just for fun."
+          },
+          {
+            "command": "!duel @name",
+            "what": "challenges a viewer to a team duel, or anybody with no name."
+          },
+          {
+            "command": "!accept",
+            "what": "takes up a challenge and captains Team B."
+          },
+          {
+            "command": "!team A",
+            "what": "joins a side during sign-up: A or B, a player's name, or nothing for the smaller side."
+          },
+          {
+            "command": "!stopbattle",
+            "what": "moderators: ends whatever is running and pays nothing more out. A duel's entries are refunded."
+          },
+          {
+            "command": "!fire link",
+            "what": "with Click to Fire on: links your clicks on stream to you, once. Twitch only."
+          },
+          {
+            "note": "These are the command names the Setup Guide uses. The game knows its commands by their IDs, so you can rename any of them in Streamer.bot."
+          }
+        ]
+      },
+      {
+        "heading": "Where things are kept",
+        "lines": [
+          {
+            "command": "BSG-Settings.json",
+            "what": "everything on these pages."
+          },
+          {
+            "command": "uiframework.layout.json",
+            "what": "your layout of this window: theme, renamed or hidden pages and fields."
+          },
+          {
+            "command": "Overlay\\battleship_overlay.html",
+            "what": "the browser source, written by the game and kept up to date."
+          },
+          {
+            "command": "Overlay\\battleship_state.json",
+            "what": "written as the battle plays; battleship_heat.json carries the Click to Fire settings for the overlay."
+          },
+          {
+            "command": "Logs\\BSG-log-yyyy-MM-dd.txt",
+            "what": "one file per day, while 'Write a log file per day' is on."
+          },
+          {
+            "note": "All of it sits in Streamer.bot's folder under Chat Games. A damaged settings file falls back to the .bak beside it and the broken one is kept as .broken."
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "Battleship Game by aaskjer",
+      "sections": [
+        {
+          "heading": "Needs a points system",
+          "lines": [
+            {
+              "note": "Battles are paid in the points of a currency system. These two are found on their own:"
+            },
+            {
+              "link": "Currency Core by StreamUP",
+              "url": "https://streamup.tips/product/currency-core"
+            },
+            {
+              "link": "LOYALTY POINTS by tawmae",
+              "url": "https://tawmae.xyz/loyalty-points"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "Battleship Game on the Streamer.bot Discord",
+          "url": "https://discord.com/channels/834650675224248362/1447648588694818836/1447648588694818836"
+        }
+      ]
+    }
+  },
+  "lang": {
+    "de": {
+      "pages": {
+        "fleet": "Flotte",
+        "modes": "Modi",
+        "clicks": "Klicks"
+      },
+      "keys": {
+        "winBonus": {
+          "label": "Siegbonus",
+          "help": "Wird obendrauf gezahlt, wenn ein Spieler die ganze gegnerische Flotte versenkt. 0 für keinen: ein Sieg zahlt ohnehin jedes versenkte Schiff. Die Schlacht des Chats wird zum Spaß gespielt und zahlt nichts."
+        },
+        "minBalanceToPlay": {
+          "label": "Mindestguthaben",
+          "help": "Was ein Spieler braucht, um eine Schlacht zu beginnen. 0 verlangt den Wert der eigenen Flotte, damit niemand eine Schlacht spielt, deren Verlust er nicht bezahlen könnte."
+        },
+        "dailyWinCap": {
+          "label": "Tagesgewinn-Obergrenze",
+          "help": "Das Meiste, was ein Spieler pro Tag gewinnen kann. 0 für keine Grenze. Ist sie erreicht, zahlen weitere Siege bis zum nächsten Tag nichts."
+        },
+        "chargeDamagedOnAbandon": {
+          "label": "Beschädigte Schiffe berechnen, wenn die Zeit abläuft",
+          "help": "Ohne das spart, wer einen Treffer vor dem Untergang eines Trägers aufhört, dessen ganzen Wert. Ein Träger mit 4 von 5 Treffern kostet 4/5 davon. Gilt nie im normalen Spiel."
+        },
+        "clampBalanceAtZero": {
+          "label": "Guthaben nie unter null fallen lassen",
+          "help": "Ein Spieler, der einen Verlust nicht decken kann, zahlt nur, was er hat."
+        },
+        "economyNote": {
+          "label": null,
+          "help": "Nichts wird vorab gesetzt: ein versenktes Schiff des Admirals zahlt sofort seinen Wert, ein eigenes verlorenes kostet seinen Wert. Die Schiffswerte stehen auf der Seite Flotte."
+        },
+        "admiralDifficulty": {
+          "label": "Können",
+          "help": "Fähnrich feuert zufällig und wiederholt nie ein Feld, etwa 59 Schüsse für ein Quick-Spielfeld. Kapitän feuert zufällig, bis er trifft, arbeitet dann die Felder ringsum ab und folgt einer Trefferlinie bis an beide Enden, etwa 36 Schüsse. Admiral jagt wie der Kapitän und prüft zwischen Treffern nur Felder im Abstand des kürzesten noch schwimmenden Schiffs, sodass sich nichts dazwischen verstecken kann, etwa 30 Schüsse."
+        },
+        "admiralBlunderChance": {
+          "label": "Patzer-Chance",
+          "help": "Wie oft der Admiral seinen Plan über Bord wirft und blind feuert, von 0 (nie) bis 100 (immer). Ein Handicap, das auf jeder Stufe wirkt, ohne ihn schummeln zu lassen."
+        },
+        "admiralDelayMs": {
+          "label": "Verzögerung der Erwiderung",
+          "help": "Pause zwischen einem Schuss und der Antwort des Admirals, in Millisekunden, damit das Overlay einen Schlagabtausch zeigt statt eines Aufblitzens. 0 bis 5000."
+        },
+        "admiralNote": {
+          "label": null,
+          "help": "Der Admiral sieht dein Spielfeld nie. Er weiß nur, wohin er gefeuert hat, was er dort fand und welche Schiffslängen noch schwimmen - dasselbe, was du über seine Flotte weißt."
+        },
+        "deployTimeoutSec": {
+          "label": "Bis zum ersten Schuss",
+          "help": "Vom Start der Schlacht bis zum ersten Schuss. Noch ist nichts gesunken, also kostet ein Ablauf hier nichts. Mindestens 5."
+        },
+        "turnWarnFirstSec": {
+          "label": "Erste Warnung",
+          "help": "Restsekunden des Zuges, bei denen der Chat gewarnt wird und der Countdown-Ring gelb wird. 0 schaltet sie ab."
+        },
+        "turnWarnSecondSec": {
+          "label": "Letzte Warnung",
+          "help": "Restsekunden des Zuges, bei denen der Chat noch einmal gewarnt wird und der Ring rot pulsiert. 0 schaltet sie ab."
+        },
+        "clockSummary": {
+          "label": "Die Uhr in Kürze",
+          "help": "Was die vier Werte darüber ergeben, so wie sie stehen."
+        },
+        "presetBlitz": {
+          "label": "Blitz · 6×6 · 3 Schiffe",
+          "help": "Ein 6×6-Spielfeld mit einem Träger der Länge 4, einem Kreuzer der Länge 3 und einem Zerstörer der Länge 2. Füllt Spielfeld und Schiffe aus; gespeichert wird erst, wenn du speicherst."
+        },
+        "presetQuick": {
+          "label": "Quick · 8×8 · 3 Schiffe",
+          "help": "Ein 8×8-Spielfeld mit einem Träger der Länge 5, einem Kreuzer der Länge 3 und einem Zerstörer der Länge 2: der Standard, etwa 36 Schüsse pro Schlacht."
+        },
+        "presetClassic": {
+          "label": "Klassisch · 10×10 · 5 Schiffe",
+          "help": "Das klassische 10×10-Spielfeld mit allen fünf Schiffen."
+        },
+        "presetNote": {
+          "label": null,
+          "help": "Eine Vorlage füllt die Spielfeldgröße und die segelnden Schiffe mit ihren Längen aus. Danach kannst du alles nach Belieben ändern."
+        },
+        "gridSize": {
+          "label": "Spielfeldgröße",
+          "help": "Felder je Seite, von 5 (A1 bis E5) bis 12 (A1 bis L12). Größere Spielfelder machen längere Schlachten."
+        },
+        "noTouchingRule": {
+          "label": "Schiffe dürfen sich nicht berühren",
+          "help": "Hält um jedes Schiff ein Feld Abstand, damit zwei Schiffe nie wie ein langes aussehen und die Jagd fairer ist."
+        },
+        "shipCarrierEnabled": {
+          "label": "Träger",
+          "help": "Mit einem Träger segeln. Beide Flotten haben immer dieselben Schiffe."
+        },
+        "shipCarrierLength": {
+          "label": "Länge des Trägers",
+          "help": "Wie viele Felder der Träger belegt."
+        },
+        "shipCarrierValue": {
+          "label": "Wert des Trägers",
+          "help": "Was das Versenken des Trägers zahlt und was sein Verlust kostet."
+        },
+        "shipBattleshipEnabled": {
+          "label": "Schlachtschiff",
+          "help": "Mit einem Schlachtschiff segeln."
+        },
+        "shipBattleshipLength": {
+          "label": "Länge des Schlachtschiffs",
+          "help": "Wie viele Felder das Schlachtschiff belegt."
+        },
+        "shipBattleshipValue": {
+          "label": "Wert des Schlachtschiffs",
+          "help": "Was das Versenken des Schlachtschiffs zahlt und was sein Verlust kostet."
+        },
+        "shipCruiserEnabled": {
+          "label": "Kreuzer",
+          "help": "Mit einem Kreuzer segeln."
+        },
+        "shipCruiserLength": {
+          "label": "Länge des Kreuzers",
+          "help": "Wie viele Felder der Kreuzer belegt."
+        },
+        "shipCruiserValue": {
+          "label": "Wert des Kreuzers",
+          "help": "Was das Versenken des Kreuzers zahlt und was sein Verlust kostet."
+        },
+        "shipSubmarineEnabled": {
+          "label": "U-Boot",
+          "help": "Mit einem U-Boot segeln."
+        },
+        "shipSubmarineLength": {
+          "label": "Länge des U-Boots",
+          "help": "Wie viele Felder das U-Boot belegt."
+        },
+        "shipSubmarineValue": {
+          "label": "Wert des U-Boots",
+          "help": "Was das Versenken des U-Boots zahlt und was sein Verlust kostet."
+        },
+        "shipDestroyerEnabled": {
+          "label": "Zerstörer",
+          "help": "Mit einem Zerstörer segeln."
+        },
+        "shipDestroyerLength": {
+          "label": "Länge des Zerstörers",
+          "help": "Wie viele Felder der Zerstörer belegt."
+        },
+        "shipDestroyerValue": {
+          "label": "Wert des Zerstörers",
+          "help": "Was das Versenken des Zerstörers zahlt und was sein Verlust kostet."
+        },
+        "fleetSummary": {
+          "label": "Die Flotte in Kürze",
+          "help": "Das Spielfeld, die segelnden Schiffe und etwa wie viele Schüsse eine Schlacht braucht, so wie die Werte stehen."
+        },
+        "fleetNote": {
+          "label": null,
+          "help": "Beide Seiten segeln immer mit derselben Flotte. Der Wert eines Schiffs ist, was sein Versenken zahlt und was sein Verlust kostet, abgerechnet in dem Moment, in dem es sinkt."
+        },
+        "soloEnabled": {
+          "label": "Solo: ein Zuschauer gegen den Admiral",
+          "help": "Gestartet mit !battleship. Jeder Spieler hat seine eigene Schlacht und rechnet jedes Versenken sofort ab."
+        },
+        "chatBattleEnabled": {
+          "label": "Chat gegen den Admiral: der ganze Chat stimmt über jeden Schuss ab",
+          "help": "Gestartet mit !seeschlacht. Jeder kann mitmachen, per Klick auf den Stream oder mit !fire. Zum Spaß gespielt: keine Punkte."
+        },
+        "chatNote": {
+          "label": null,
+          "help": "Der ganze Chat ist eine Flotte, zum Spaß gespielt: niemand zahlt, niemand gewinnt Punkte. In jeder Runde hat jeder Zuschauer eine Stimme, ein Klick auf gegnerische Gewässer oder !fire B7, und am Ende der Runde wird auf das Feld mit den meisten Stimmen gefeuert."
+        },
+        "chatTeamName": {
+          "label": "Teamname",
+          "help": "Wie die Flotte des Chats auf dem Overlay und im Chat heißt, als {team}."
+        },
+        "chatRoundSec": {
+          "label": "Sekunden je Runde",
+          "help": "Länger als deine Stream-Verzögerung, sonst stimmen Zuschauer noch über ein Bild von vor dem letzten Schuss ab. Mindestens 5."
+        },
+        "chatNote2": {
+          "label": null,
+          "help": "Jeder Klick eines Zuschauers zählt, bei Twitch angemeldet oder nicht - nichts muss verknüpft werden. Wer abgemeldet ist, kann durch Neuladen der Seite noch einmal abstimmen, was in einer Schlacht zum Spaß nicht schadet. Eine Chat-Schlacht beginnt nur, wenn keine andere läuft, und stimmt so lange niemand ab, wie die Zuguhr erlaubt, bricht der Chat sie ab."
+        },
+        "duelNote": {
+          "label": null,
+          "help": "Ein Zuschauer fordert einen anderen mit Namen heraus, oder ohne Namen jeden, und führt Team A; wer annimmt, führt Team B. Alle anderen wählen dann eine Seite, und jedes Mitglied zahlt den Einsatz. Die Seiten sind abwechselnd dran, je eine Abstimmungsrunde, und die Seite, die die Flotte der anderen versenkt, teilt sich den Topf. Jeder Gewinner bekommt seinen eigenen Einsatz ganz zurück; nur der Gewinn obendrauf unterliegt dem Abzug für Süchtige und der Tagesgrenze."
+        },
+        "duelEntryFee": {
+          "label": "Einsatz",
+          "help": "Was jedes Mitglied zahlt, um einer Seite beizutreten. 0 für ein Duell nur um die Bilanz. Mit Freispiel an zahlt niemand."
+        },
+        "duelAcceptSec": {
+          "label": "Sekunden zum Annehmen",
+          "help": "Eine Herausforderung, die niemand rechtzeitig annimmt, verfällt, und der Einsatz geht zurück. Mindestens 10."
+        },
+        "duelJoinSec": {
+          "label": "Sekunden zum Beitreten",
+          "help": "Ab dem Moment, in dem die Herausforderung angenommen ist. Mindestens 10."
+        },
+        "duelRoundSec": {
+          "label": "Sekunden je Runde",
+          "help": "Eine Runde ist der Schuss einer Seite. Länger als deine Stream-Verzögerung, wie bei der Schlacht des Chats. Mindestens 5."
+        },
+        "duelMaxTeamGap": {
+          "label": "Vorsprungsgrenze (0 = keine)",
+          "help": "Wie viele Spieler mehr eine Seite haben darf als die andere. Mit 1 ist eine Seite nie mehr als einen Spieler voraus. 0 lässt jeden jeder Seite beitreten."
+        },
+        "duelMaxMissedTurns": {
+          "label": "Züge, die eine Seite verstreichen lassen darf",
+          "help": "Eine Seite, die so viele Züge hintereinander ohne Stimme verstreichen lässt, gibt auf, und die andere gewinnt. Hat überhaupt niemand gefeuert, wird das Duell abgesagt und jeder Einsatz erstattet. Mindestens 1."
+        },
+        "duelNote2": {
+          "label": null,
+          "help": "Ein Duell kann nur herausgefordert werden, solange nichts anderes läuft, und bis zu seinem letzten Schuss beginnt nichts anderes. Anonyme Heat-Klicks zählen im Duell nie, Mitglieder stimmen also mit !fire ab oder verknüpfen ihre Klicks einmal mit !fire link."
+        },
+        "stopNote": {
+          "label": null,
+          "help": "Der Stopp-Befehl beendet, was gerade läuft - Solo-Schlachten, die Schlacht des Chats oder ein Duell - und zahlt nichts mehr aus: keinen Siegbonus, keinen Topf, nichts für beschädigte Schiffe. Die Einsätze eines Duells werden erstattet. Wer ihn nutzen darf, wird am Befehl in Streamer.bot eingestellt."
+        },
+        "overlayNote": {
+          "label": null,
+          "help": "Das Overlay ist battleship_overlay.html im Ordner unten. Das Spiel schreibt es dorthin und hält es aktuell, deine vorherige Kopie bleibt als .bak erhalten. Sein Hintergrund ist transparent, es liegt also über jeder Szene."
+        },
+        "obsNote": {
+          "label": null,
+          "help": "Erstellt die Szene und darin eine Browserquelle in der Größe deiner Leinwand, die auf die Overlay-Datei zeigt. OBS muss in Streamer.bot unter Stream Apps > OBS Studio verbunden sein."
+        },
+        "overlayAdmiralName": {
+          "label": "Name des Gegners",
+          "help": "Wie die CPU auf dem Overlay und im Chat heißt, als {admiral}."
+        },
+        "overlayShowPlayerRoster": {
+          "label": "Die Flottenliste des Spielers",
+          "help": "Die Schiffsliste mit Schadenspunkten unter dem eigenen Spielfeld des Spielers."
+        },
+        "overlayShowEnemyRoster": {
+          "label": "Die Flottenliste des Gegners",
+          "help": "Dieselbe Liste unter den gegnerischen Gewässern. Ihre Punkte zeigen, welche seiner Schiffe deine Treffer getroffen haben; ausschalten, um das zu verbergen. Welche Liste auch verborgen ist, die zwei Spielfelder bleiben auf gleicher Höhe."
+        },
+        "overlayShowCoords": {
+          "label": "Koordinaten",
+          "help": "Die Buchstaben und Zahlen entlang der Spielfelder."
+        },
+        "overlayShowTurnTimer": {
+          "label": "Countdown-Ring des Zuges",
+          "help": "Wird bei der ersten Warnung gelb und pulsiert bei der letzten rot."
+        },
+        "overlayShowScore": {
+          "label": "Laufender Stand und Trefferquote",
+          "help": "Schüsse, Treffer und die laufende Bilanz der Schlacht."
+        },
+        "overlayHitColour": {
+          "label": "Treffer",
+          "help": "Ein Feld, auf dem ein Schuss ein Schiff traf."
+        },
+        "overlayMissColour": {
+          "label": "Fehlschuss",
+          "help": "Ein Feld, auf dem ein Schuss nur Wasser fand."
+        },
+        "overlaySunkColour": {
+          "label": "Versenkt",
+          "help": "Ein Schiff, das untergegangen ist."
+        },
+        "overlayShipColour": {
+          "label": "Schiffsrumpf",
+          "help": "Deine eigenen Schiffe auf dem linken Spielfeld."
+        },
+        "overlayGridColour": {
+          "label": "Gitterlinien",
+          "help": "Die Linien zwischen den Feldern."
+        },
+        "overlayWaterColour": {
+          "label": "Wasser",
+          "help": "Die Felder, auf die niemand gefeuert hat."
+        },
+        "coloursNote": {
+          "label": null,
+          "help": "Deine eigene Flotte wird ganz gezeichnet, die Gewässer des Admirals bleiben vernebelt, bis etwas getroffen wird. Der Admiral liest weder Chat noch Overlay, deine Schiffe zu zeigen verrät also nichts."
+        },
+        "clicksNote": {
+          "label": null,
+          "help": "Heat ist eine kostenlose Twitch-Erweiterung, die die Klicks der Zuschauer auf dein Video an das Overlay weitergibt. Ist das an, kann der Spieler, dessen Schlacht auf dem Bildschirm ist, per Klick auf ein Feld in gegnerischen Gewässern feuern, und !fire funktioniert weiter wie bisher."
+        },
+        "heatEnabled": {
+          "label": "Per Klick auf den Stream feuern",
+          "help": "Nur Twitch: Heat ist eine Twitch-Erweiterung. Braucht Heat auf deinem Kanal und einen laufenden WebSocket-Server von Streamer.bot, siehe Einrichtung unten."
+        },
+        "heatAutoLink": {
+          "label": "Der erste Klick übernimmt",
+          "help": "Der erste Klick in der Schlacht eines Spielers übernimmt die Kontrolle: Heat sagt nicht, wer geklickt hat, also gilt der erste Zuschauer, der in der Schlacht eines Spielers auf gegnerische Gewässer klickt, für diese Schlacht als dieser Spieler. Es hält sich zurück, wenn in den letzten 20 Sekunden ein anderer Zuschauer dort geklickt hat oder wenn der Klicker mit einem anderen Spieler verknüpft ist. Ein Spieler, dessen Schlacht übernommen wurde, klickt einmal und tippt !fire link, was auch eine dauerhafte Verknüpfung anlegt. Aus: jeder Spieler verknüpft sich mit !fire link."
+        },
+        "setupNote": {
+          "label": null,
+          "help": "1. Installiere Heat auf deinem Kanal und aktiviere es als Overlay-Erweiterung: https://dashboard.twitch.tv/extensions/cr20njfkgll4okyrhag7xxph270sqk\n2. Starte den WebSocket-Server von Streamer.bot: Servers/Clients > WebSocket Server, Auto Start anhaken, dann Start Server. Das Overlay reicht jeden Klick darüber an die Action Battleship Game weiter.\n3. Spieler klicken einfach. Kam der Klick eines anderen zuerst, oder ist der Schalter oben aus, klickt der Spieler einmal und tippt !fire link; die Verknüpfung bleibt für spätere Schlachten erhalten.\nHeat läuft nur in Desktop-Browsern: Twitch zeigt in seiner Handy-App keine Overlay-Erweiterungen, Zuschauer am Telefon nutzen also weiter !fire."
+        },
+        "heatChannelId": {
+          "label": "Twitch-Kanal-ID",
+          "help": "Die Nummer, unter der Heat die Klicks deiner Zuschauer ablegt: die Benutzer-ID deines Kanals, nicht sein Name. Leer lassen, um das in Streamer.bot verbundene Broadcaster-Konto zu nehmen."
+        },
+        "heatStreamerBotUrl": {
+          "label": "Streamer.bot-WebSocket",
+          "help": "Wo das Overlay Streamer.bot erreicht: Adresse und Port unter Servers/Clients > WebSocket Server. Meist ws://127.0.0.1:8080/"
+        },
+        "broadcasterFound": {
+          "label": "Das Broadcaster-Konto",
+          "help": "Das mit Streamer.bot verbundene Twitch-Konto, genutzt, wann immer das Feld Kanal-ID leer ist."
+        },
+        "heatStreamerBotPassword": {
+          "label": "WebSocket-Passwort",
+          "help": "Nur, wenn du die Authentifizierung für den WebSocket-Server eingeschaltet hast. Es wird im Klartext neben dem Overlay gespeichert, weil das Overlay es lesen muss."
+        },
+        "alignNote": {
+          "label": null,
+          "help": "Heat meldet jeden Klick als Punkt auf dem ganzen Streambild. Das passt von selbst, wenn die Browserquelle des Overlays die ganze Leinwand bedeckt - so legt die OBS-Einrichtung sie an. Hast du die Quelle verschoben oder verkleinert, sag, wo sie liegt, in Prozent der Leinwand: eine auf halbe Größe geschrumpfte Quelle in der rechten unteren Ecke ist 50 / 50 / 50 / 50."
+        },
+        "heatAreaLeft": {
+          "label": "Links",
+          "help": "Wie weit vom linken Rand der Leinwand die Quelle beginnt."
+        },
+        "heatAreaTop": {
+          "label": "Oben",
+          "help": "Wie weit vom oberen Rand der Leinwand die Quelle beginnt."
+        },
+        "heatAreaWidth": {
+          "label": "Breite",
+          "help": "Wie viel der Leinwandbreite die Quelle bedeckt. 100 ist alles."
+        },
+        "heatAreaHeight": {
+          "label": "Höhe",
+          "help": "Wie viel der Leinwandhöhe die Quelle bedeckt. 100 ist alles."
+        },
+        "heatShowClicks": {
+          "label": "Jeden Klick auf dem Overlay zeigen (Ausrichtungstest)",
+          "help": "Zeichnet eine Markierung, wo immer jemand klickt, mit dem Verbindungsstatus oben links. Zuschauer sehen sie auch, also ausschalten, sobald die Markierungen dort landen, wo du klickst."
+        },
+        "alignNote2": {
+          "label": null,
+          "help": "Zum Prüfen den Test einschalten und speichern, dann, während du live bist, deinen Kanal im Browser öffnen und im Video herumklicken. Jede Markierung sollte unter dem Zeiger landen. Die eigenen Klicks des Spielers erscheinen in Gold, benannt nach dem Feld, auf das sie feuern."
+        },
+        "markersNote": {
+          "label": null,
+          "help": "Optional. Heats eigenes Markers-Overlay setzt eine Markierung dorthin, wo jeder Zuschauer zuletzt geklickt hat, damit alle die Klicks landen sehen. Der Button fügt es der auf der Seite Overlay genannten Szene hinzu, in der Größe deiner Leinwand, über dieselbe OBS-Verbindung."
+        },
+        "heatObsSourceName": {
+          "label": "Marker-Quelle",
+          "help": "Die Browserquelle, die für Heats Marker angelegt wird. Hat OBS schon eine Quelle dieses Namens, wird nichts angerührt."
+        },
+        "addHeatMarkers": {
+          "label": "Zu OBS hinzufügen",
+          "help": "Fügt der Szene des Overlays eine Browserquelle hinzu, die https://heat.j38.net/markers/?channel=<deine Kanal-ID> zeigt. Erst speichern: es liest die gespeicherte Kanal-ID und die Namen."
+        },
+        "markersNote2": {
+          "label": null,
+          "help": "Was der Chat über das Verknüpfen erfährt, steht auf der Seite Nachrichten unter Klicken zum Feuern."
+        },
+        "platformsNote": {
+          "label": null,
+          "help": "Twitch, YouTube und Kick spielen alle mit, und jede Antwort geht in den Chat, aus dem der Befehl kam. Um eine Plattform auszulassen, hake sie an den Befehlen des Spiels in Streamer.bot ab, zum Beispiel 'Kick Message'. Klicken zum Feuern und das Flüstern der Flotte gehen nur auf Twitch."
+        },
+        "whisperOwnFleet": {
+          "label": "Jedem Spieler seine Flotte flüstern",
+          "help": "Nur Twitch: Streamer.bot kann auf YouTube oder Kick nicht flüstern. Twitch verwirft Flüsternachrichten von Konten ohne bestätigte Telefonnummer; ein Fehlschlag wird protokolliert, und die Schlacht geht weiter. Das Overlay zeigt dem Spieler seine Flotte ohnehin, das hier ist eine private zweite Kopie."
+        },
+        "cooldownNote": {
+          "label": null,
+          "help": "Was der Chat erfährt, solange eine Abklingzeit läuft, steht auf der Seite Nachrichten unter Abklingzeit."
+        },
+        "leaderboardRankBy": {
+          "label": "Spieler sortieren nach",
+          "help": "Wonach !ballstats sortiert. Netto ist das faire Maß, da verlorene Schiffe Punkte kosten."
+        },
+        "statsNote": {
+          "label": null,
+          "help": "Jeder erfasste Wert liegt in einer dauerhaften bsg_*-Benutzervariable, sodass jede andere Streamer.bot-Action die Bilanz eines Spielers lesen kann."
+        },
+        "sentNote": {
+          "label": null,
+          "help": "Die Antworten auf !bstats und !ballstats stehen auf der Seite Nachrichten unter Statistik und gehen wie die Nachrichten des Spiels hinaus."
+        },
+        "msgGameStart": {
+          "label": "Schlacht begonnen",
+          "help": "Gesendet, wenn ein Spieler mit !battleship eine Schlacht beginnt."
+        },
+        "msgFleetRerolled": {
+          "label": "Flotte neu aufgestellt",
+          "help": "Bestätigt !fleet, das die Schiffe vor dem ersten Schuss neu aufstellt."
+        },
+        "msgPlayerMiss": {
+          "label": "Fehlschuss",
+          "help": "Der Schuss des Spielers fand nur Wasser."
+        },
+        "msgPlayerHit": {
+          "label": "Treffer",
+          "help": "Der Schuss des Spielers traf ein Schiff."
+        },
+        "msgPlayerSunk": {
+          "label": "Gegnerisches Schiff versenkt",
+          "help": "Der Spieler hat eines der Schiffe des Admirals versenkt. Die Punkte sind gezahlt, bevor das gesendet wird."
+        },
+        "msgPlayerSunkFree": {
+          "label": "Gegnerisches Schiff versenkt (Freispiel)",
+          "help": "Stattdessen genutzt, solange das Freispiel an ist, damit nichts Punkte erwähnt."
+        },
+        "msgBoardStatus": {
+          "label": "Stand des Spielfelds",
+          "help": "Gesendet von !board während einer Solo-Schlacht."
+        },
+        "msgAdmiralMiss": {
+          "label": "Fehlschuss",
+          "help": "Der Schuss des Admirals fand nur Wasser."
+        },
+        "msgAdmiralHit": {
+          "label": "Treffer",
+          "help": "Der Admiral hat eines der Schiffe des Spielers getroffen."
+        },
+        "msgAdmiralSunk": {
+          "label": "Dein Schiff versenkt",
+          "help": "Der Admiral hat eines der Schiffe des Spielers versenkt. Die Punkte sind abgezogen, bevor das gesendet wird."
+        },
+        "msgAdmiralSunkFree": {
+          "label": "Dein Schiff versenkt (Freispiel)",
+          "help": "Stattdessen genutzt, solange das Freispiel an ist."
+        },
+        "msgWin": {
+          "label": "Sieg",
+          "help": "{net} ist die Bilanz der Schlacht, alles Versenkte minus alles Verlorene, mit Vorzeichen."
+        },
+        "msgWinFree": {
+          "label": "Sieg (Freispiel)",
+          "help": "Stattdessen genutzt, solange das Freispiel an ist."
+        },
+        "msgLoss": {
+          "label": "Niederlage",
+          "help": "{net} ist die Bilanz der Schlacht, mit Vorzeichen."
+        },
+        "msgLossFree": {
+          "label": "Niederlage (Freispiel)",
+          "help": "Stattdessen genutzt, solange das Freispiel an ist."
+        },
+        "msgTurnTimeout": {
+          "label": "Zeit abgelaufen",
+          "help": "Die Zuguhr lief mitten in der Schlacht ab. Was gesunken war, wird abgerechnet."
+        },
+        "msgTurnTimeoutFree": {
+          "label": "Zeit abgelaufen (Freispiel)",
+          "help": "Stattdessen genutzt, solange das Freispiel an ist."
+        },
+        "msgDeployTimeout": {
+          "label": "Nie das Feuer eröffnet",
+          "help": "Nichts war gesunken, also wird nichts berechnet, und es zählt nicht als Schlacht."
+        },
+        "msgTurnWarnFirst": {
+          "label": "Erste Warnung",
+          "help": "Gesendet, wenn die Zuguhr die erste Warnung erreicht. Der Countdown-Ring wird gelb."
+        },
+        "msgTurnWarnSecond": {
+          "label": "Letzte Warnung",
+          "help": "Gesendet, wenn die Zuguhr die letzte Warnung erreicht. Der Ring pulsiert rot."
+        },
+        "msgChatStarted": {
+          "label": "Schlacht begonnen",
+          "help": "Gesendet, wenn !seeschlacht die Schlacht des Chats beginnt. Fehlschüsse und Treffer nutzen die Solo-Nachrichten, mit dem Teamnamen als {user}."
+        },
+        "msgChatSinks": {
+          "label": "Chat versenkt ein Schiff",
+          "help": "Zum Spaß gespielt: nichts wird gezahlt."
+        },
+        "msgChatLosesShip": {
+          "label": "Chat verliert ein Schiff",
+          "help": "Zum Spaß gespielt: nichts wird berechnet."
+        },
+        "msgChatWins": {
+          "label": "Chat gewinnt",
+          "help": "{voters} ist, wie viele Zuschauer über die Schlacht abgestimmt haben."
+        },
+        "msgChatLoses": {
+          "label": "Chat verliert",
+          "help": "Der Admiral hat die Flotte des Chats versenkt."
+        },
+        "msgChatAbandoned": {
+          "label": "Chat stimmt nicht mehr ab",
+          "help": "So lange, wie die Zuguhr erlaubt, hat niemand abgestimmt."
+        },
+        "msgDuelChallenge": {
+          "label": "Herausforderung",
+          "help": "!duel mit Namen. Schreib deine eigenen Befehlsnamen in die Duell-Nachrichten."
+        },
+        "msgDuelOpenChallenge": {
+          "label": "Offene Herausforderung",
+          "help": "!duel ohne Namen: jeder darf annehmen."
+        },
+        "msgDuelAccepted": {
+          "label": "Herausforderung angenommen",
+          "help": "Der Beitritt öffnet. {target} ist, wer angenommen hat."
+        },
+        "msgDuelJoined": {
+          "label": "Spieler tritt einer Seite bei",
+          "help": "Leer lassen, damit ein voller Beitritt den Chat nicht flutet."
+        },
+        "msgDuelStart": {
+          "label": "Duell beginnt",
+          "help": "{team} ist die Seite, die zuerst feuert, zufällig gewählt."
+        },
+        "msgDuelTurn": {
+          "label": "Nächste Seite ist dran",
+          "help": "Gesendet zu Beginn jeder Runde nach der ersten. Fehlschüsse und Treffer nutzen die Solo-Nachrichten, mit den Seiten als {user} und {admiral}."
+        },
+        "msgDuelTurnPassed": {
+          "label": "Seite lässt ihren Zug verstreichen",
+          "help": "Niemand auf dieser Seite hat abgestimmt."
+        },
+        "msgDuelSunk": {
+          "label": "Seite versenkt ein Schiff",
+          "help": "Gesendet, wenn eine Seite eines der Schiffe der anderen versenkt."
+        },
+        "msgDuelStatus": {
+          "label": "Stand des Duells",
+          "help": "Gesendet von !board während eines Duells."
+        },
+        "msgDuelWin": {
+          "label": "Seite gewinnt",
+          "help": "{share} ist der Anteil jedes Gewinners, den eigenen Einsatz eingeschlossen, vor dem Abzug für Süchtige und der Tagesgrenze."
+        },
+        "msgDuelWinFree": {
+          "label": "Seite gewinnt (nichts gesetzt)",
+          "help": "Freispiel, oder ein Einsatz von 0."
+        },
+        "msgDuelForfeit": {
+          "label": "Seite gibt auf",
+          "help": "Sie hat zu viele Züge hintereinander verstreichen lassen. Die Siegnachricht folgt."
+        },
+        "msgDuelExpired": {
+          "label": "Herausforderung nicht angenommen",
+          "help": "Der Einsatz des Herausforderers wird erstattet."
+        },
+        "msgDuelCancelled": {
+          "label": "Duell abgesagt",
+          "help": "Keine Seite hat je abgestimmt. Jeder Einsatz wird erstattet."
+        },
+        "msgModStop": {
+          "label": "Schlacht gestoppt",
+          "help": "{user} ist der Moderator, {game} der Spieler oder der Teamname des Chats. Nichts mehr wird ausgezahlt."
+        },
+        "msgModStopDuel": {
+          "label": "Duell gestoppt",
+          "help": "Jeder Einsatz wird erstattet."
+        },
+        "msgModStopNothing": {
+          "label": "Nichts zu stoppen",
+          "help": "Der Stopp-Befehl, ohne dass eine Schlacht oder ein Duell läuft."
+        },
+        "msgHeatAutoHint": {
+          "label": "So feuert man per Klick",
+          "help": "Gesendet an einen Twitch-Spieler ohne Verknüpfung, wenn seine Schlacht auf den Bildschirm kommt, solange der erste Klick übernimmt. Leer lassen, um nichts zu senden."
+        },
+        "msgHeatLinkHint": {
+          "label": "So verknüpft man sich",
+          "help": "Im selben Moment gesendet, wenn der erste Klick nicht übernimmt, sodass jeder Spieler sich mit !fire link verknüpft."
+        },
+        "msgHeatLinked": {
+          "label": "Verknüpft",
+          "help": "Bestätigt !fire link. Der Klick, der die Verknüpfung angelegt hat, feuert direkt danach."
+        },
+        "msgHeatLinkNoClick": {
+          "label": "Verknüpfung: kein Klick gesehen",
+          "help": "!fire link fand in den letzten Sekunden keinen Klick auf gegnerische Gewässer."
+        },
+        "msgHeatLinkAmbiguous": {
+          "label": "Verknüpfung: mehr als ein Klicker",
+          "help": "Mehrere Zuschauer haben in dieser Zeit geklickt, die Verknüpfung wird also abgelehnt statt geraten."
+        },
+        "msgBadCoord": {
+          "label": "Kein Feld auf dem Spielfeld",
+          "help": "!fire mit etwas, das kein Feld ist, etwa 'Z9'."
+        },
+        "msgNoCoord": {
+          "label": "Kein Feld angegeben",
+          "help": "!fire allein."
+        },
+        "msgAlreadyFired": {
+          "label": "Dort schon gefeuert",
+          "help": "Ein wiederholter Schuss kostet nie den Zug oder die Uhr."
+        },
+        "msgNoGame": {
+          "label": "Keine Schlacht läuft",
+          "help": "!fire, !fleet oder !board von einem Zuschauer ohne Schlacht."
+        },
+        "msgAlreadyInGame": {
+          "label": "Schon in einer Schlacht",
+          "help": "!battleship von einem Zuschauer, dessen Schlacht noch läuft."
+        },
+        "msgFleetTooLate": {
+          "label": "Zu spät zum Neuaufstellen",
+          "help": "!fleet nach dem ersten Schuss."
+        },
+        "msgNotEnoughPoints": {
+          "label": "Nicht genug Punkte",
+          "help": "Unter dem Mindestguthaben der Seite Spiel, oder zu wenig für den Einsatz eines Duells."
+        },
+        "msgModeDisabled": {
+          "label": "Spielmodus abgeschaltet",
+          "help": "Ein auf der Seite Modi abgeschalteter Modus."
+        },
+        "msgChatBusy": {
+          "label": "Chat-Schlacht muss warten",
+          "help": "Die Schlacht des Chats beginnt nur, wenn keine andere Schlacht läuft."
+        },
+        "msgMaxGamesPerHour": {
+          "label": "Zu viele Schlachten in dieser Stunde",
+          "help": "Die Grenze auf der Seite Zugriff."
+        },
+        "msgDailyCapReached": {
+          "label": "Tagesgewinn-Obergrenze erreicht",
+          "help": "Die Grenze auf der Seite Spiel."
+        },
+        "msgDuelBusy": {
+          "label": "Duell muss warten",
+          "help": "Ein Duell wird nur herausgefordert, solange nichts anderes läuft, und nichts anderes beginnt, solange eines läuft."
+        },
+        "msgDuelNoChallenge": {
+          "label": "Keine Herausforderung anzunehmen",
+          "help": "Nichts wartet, es ist die Herausforderung eines anderen, die eigene, oder ihre Zeit ist abgelaufen."
+        },
+        "msgDuelNotJoining": {
+          "label": "Beitritt nicht offen",
+          "help": "Der Beitritts-Befehl, während kein Duell Spieler aufnimmt."
+        },
+        "msgDuelAlreadyJoined": {
+          "label": "Schon auf einer Seite",
+          "help": "Der Beitritts-Befehl von jemandem, der schon beigetreten ist."
+        },
+        "msgDuelTeamFull": {
+          "label": "Seite zu weit voraus",
+          "help": "Nur mit einer Vorsprungsgrenze auf der Seite Modi."
+        },
+        "msgDuelBadTeam": {
+          "label": "Keine solche Seite",
+          "help": "Der Beitritts-Befehl nannte weder A noch B noch jemanden auf einer Seite."
+        },
+        "msgDuelNotInDuel": {
+          "label": "Nicht im Duell",
+          "help": "Eine !fire-Stimme von jemandem auf keiner Seite."
+        },
+        "msgDuelNotYourTurn": {
+          "label": "Diese Seite ist nicht dran",
+          "help": "{team} ist die Seite, die dran ist."
+        },
+        "msgWhisperFleet": {
+          "label": "Deine Flotte",
+          "help": "Einem Solo-Spieler geflüstert, wenn seine Schlacht beginnt, solange das Flüstern an ist."
+        },
+        "msgNoStatsFound": {
+          "label": "Noch keine Bilanz",
+          "help": "!bstats für einen Spieler ohne Schlachten."
+        },
+        "msgNoLeaderboard": {
+          "label": "Bestenliste leer",
+          "help": "!ballstats, bevor irgendjemand eine Bilanz hat."
+        }
+      },
+      "texts": {
+        "Solo battle": "Solo-Schlacht",
+        "Return fire": "Erwiderung",
+        "Battle result": "Ergebnis der Schlacht",
+        "Timer warnings": "Zeitwarnungen",
+        "Moderator stop": "Stopp durch Moderator",
+        "Errors": "Fehler",
+        "Duel errors": "Duell-Fehler",
+        "Whisper": "Flüstern",
+        "Ensign": "Fähnrich",
+        "Captain": "Kapitän",
+        "Admiral": "Admiral",
+        "Net: everything won minus everything lost": "Netto: alles Gewonnene minus alles Verlorene",
+        "Points won, ignoring losses": "Gewonnene Punkte, ohne Verluste",
+        "Ships sunk": "Versenkte Schiffe",
+        "Accuracy, from 25 shots on": "Trefferquote, ab 25 Schüssen",
+        "Free game, from the Game page. While it is on, ships still sink but no points are won or lost.": "Freispiel, von der Seite Spiel. Solange es an ist, sinken Schiffe weiterhin, aber keine Punkte werden gewonnen oder verloren.",
+        "Fire by clicking the stream, from the Clicks page. Twitch only, through the Heat extension.": "Per Klick auf den Stream feuern, von der Seite Klicks. Nur Twitch, über die Erweiterung Heat.",
+        "Player": "Spieler",
+        "Platform": "Plattform",
+        "Trigger": "Auslöser",
+        "Shots": "Schüsse",
+        "Hits": "Treffer",
+        "Accuracy": "Trefferquote",
+        "Change": "Änderung",
+        "No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.": "Noch keine Schlachten protokolliert. Jede beendete Schlacht landet hier, sobald 'Eine Protokolldatei pro Tag schreiben' an ist."
+      }
+    }
+  }
 }
