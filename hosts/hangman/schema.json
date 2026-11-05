@@ -1,0 +1,3512 @@
+{
+  "host": "hangman",
+  "version": "v13.0.0",
+  "settingsFile": "Chat Games/Hangman Game/configs.json",
+  "settings": [
+    {
+      "key": "maxWrongGuesses",
+      "default": 6,
+      "page": "game",
+      "section": "Round",
+      "label": "Lives (wrong guesses)",
+      "help": "How many wrong guesses a round allows before the last life is gone and the round is lost.",
+      "min": 1.0,
+      "aliases": [
+        "MaxWrongGuesses"
+      ]
+    },
+    {
+      "key": "roundDurationSeconds",
+      "default": 300,
+      "kind": "duration",
+      "page": "game",
+      "section": "Round",
+      "label": "Round duration",
+      "help": "How long a round may run before the word is revealed and it ends. Useful in a quiet chat, so a round never runs forever. 0 = no limit.",
+      "min": 0.0,
+      "unlimitedAtZero": true,
+      "aliases": [
+        "RoundDurationSeconds"
+      ]
+    },
+    {
+      "key": "timeReminderEnabled",
+      "default": true,
+      "page": "game",
+      "section": "Time reminder",
+      "label": "Remind before the round ends",
+      "help": "Posts a warning with the masked word shortly before the round times out.",
+      "aliases": [
+        "EnableTimeReminder"
+      ]
+    },
+    {
+      "key": "timeReminderSecondsLeft",
+      "default": 30,
+      "kind": "duration",
+      "page": "game",
+      "section": "Time reminder",
+      "label": "With this much time left",
+      "help": "How long before the timeout the reminder goes out.",
+      "min": 0.0,
+      "requires": "timeReminderEnabled",
+      "aliases": [
+        "TimeReminderSecondsLeft"
+      ]
+    },
+    {
+      "key": "hintEnabled",
+      "default": true,
+      "page": "game",
+      "section": "Hints",
+      "label": "Use hints",
+      "help": "The hint stored with each word is revealed once chat has enough wrong guesses. Until then it stays hidden in chat and on the overlay.",
+      "aliases": [
+        "HintEnabled"
+      ]
+    },
+    {
+      "key": "hintAfterWrongGuesses",
+      "default": 3,
+      "page": "game",
+      "section": "Hints",
+      "label": "Hint after wrong guesses",
+      "help": "How many wrong guesses before the hint is revealed (repeats don't count). Must stay below the lives, or the round ends before the hint fires.",
+      "min": 0.0,
+      "requires": "hintEnabled",
+      "aliases": [
+        "HintAfterWrongGuesses"
+      ]
+    },
+    {
+      "key": "hintStopRevealPercent",
+      "default": 75.0,
+      "kind": "percent",
+      "page": "game",
+      "section": "Hints",
+      "label": "No hint once this much is revealed",
+      "help": "Once this share of the word is already revealed, the hint is no longer given.",
+      "requires": "hintEnabled",
+      "aliases": [
+        "HintStopRevealPercent"
+      ]
+    },
+    {
+      "key": "blitzEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Blitz round",
+      "label": "Blitz rounds",
+      "help": "A short, sharp round: less time, fewer lives, and every point it pays is multiplied. A round can turn into a blitz by chance, and mods can call one with '!hangman blitz'. The overlay shows a BLITZ badge while it runs.",
+      "aliases": [
+        "BlitzEnabled"
+      ]
+    },
+    {
+      "key": "blitzChancePercent",
+      "default": 10.0,
+      "kind": "percent",
+      "page": "game",
+      "section": "Blitz round",
+      "label": "Blitz chance",
+      "help": "Chance that any round started turns into a blitz, chat command and channel points alike. 0 = blitz rounds only on command.",
+      "requires": "blitzEnabled",
+      "aliases": [
+        "BlitzChancePercent"
+      ]
+    },
+    {
+      "key": "blitzCommandEnabled",
+      "default": true,
+      "page": "game",
+      "section": "Blitz round",
+      "label": "Allow '!hangman blitz'",
+      "help": "Moderators and the broadcaster can force a blitz by adding 'blitz' to the start command (!hangman blitz or !hm blitz).",
+      "requires": "blitzEnabled",
+      "aliases": [
+        "BlitzCommandEnabled"
+      ]
+    },
+    {
+      "key": "blitzDurationSeconds",
+      "default": 60,
+      "kind": "duration",
+      "page": "game",
+      "section": "Blitz round",
+      "label": "Blitz duration",
+      "help": "How long a blitz round lasts. Applies even when the round duration is 0.",
+      "min": 1.0,
+      "requires": "blitzEnabled",
+      "aliases": [
+        "BlitzDurationSeconds"
+      ]
+    },
+    {
+      "key": "blitzMaxWrongGuesses",
+      "default": 3,
+      "page": "game",
+      "section": "Blitz round",
+      "label": "Blitz lives",
+      "help": "Wrong guesses a blitz round allows, in place of the lives above.",
+      "min": 1.0,
+      "requires": "blitzEnabled",
+      "aliases": [
+        "BlitzMaxWrongGuesses"
+      ]
+    },
+    {
+      "key": "blitzPayoutMultiplier",
+      "default": 2.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Blitz round",
+      "label": "Blitz payout multiplier",
+      "help": "Letter rewards and the win payout are multiplied by this during a blitz. The channel point stake is not: it always pays back as set on the Access page.",
+      "min": 0.0,
+      "requires": "blitzEnabled",
+      "aliases": [
+        "BlitzPayoutMultiplier"
+      ]
+    },
+    {
+      "key": "evilEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Evil Hangman",
+      "label": "Evil Hangman",
+      "help": "Once chat has burned through part of its lives, the overlay glitches and the word is swapped for another one. Every guess is wiped, except one randomly picked letter that was already revealed: it carries over into the new word. Happens at most once per round.",
+      "aliases": [
+        "EvilEnabled"
+      ]
+    },
+    {
+      "key": "evilTriggerPercent",
+      "default": 50.0,
+      "kind": "percent",
+      "page": "game",
+      "section": "Evil Hangman",
+      "label": "Glitch at (share of the lives)",
+      "help": "The swap fires on the wrong guess that uses up this share of the round's lives. 50 with 6 lives fires on the 3rd wrong guess. Must stay below 100, or the round is lost first.",
+      "requires": "evilEnabled",
+      "aliases": [
+        "EvilTriggerPercent"
+      ]
+    },
+    {
+      "key": "evilChancePercent",
+      "default": 100.0,
+      "kind": "percent",
+      "page": "game",
+      "section": "Evil Hangman",
+      "label": "Evil chance",
+      "help": "Chance that a round is evil at all, rolled when the round starts. 100 = every round, 25 = about one in four.",
+      "requires": "evilEnabled",
+      "aliases": [
+        "EvilChancePercent"
+      ]
+    },
+    {
+      "key": "evilResetLives",
+      "default": false,
+      "page": "game",
+      "section": "Evil Hangman",
+      "label": "Refill the lives on a swap",
+      "help": "On: the new word starts with full lives. Off: lives already lost stay lost, the truly evil way.",
+      "requires": "evilEnabled",
+      "aliases": [
+        "EvilResetLives"
+      ]
+    },
+    {
+      "key": "evilSameCategory",
+      "default": true,
+      "page": "game",
+      "section": "Evil Hangman",
+      "label": "Prefer the same category",
+      "help": "Swap to a word from the same category when one fits; any category in play when none does.",
+      "requires": "evilEnabled",
+      "aliases": [
+        "EvilSameCategory"
+      ]
+    },
+    {
+      "key": "evilGlitchSeconds",
+      "default": 3,
+      "kind": "duration",
+      "page": "game",
+      "section": "Evil Hangman",
+      "label": "Glitch duration",
+      "help": "How long the overlay glitches: the old word breaks up, scrambles and the new one decodes, then the surviving letter lights up. Chat only hears about the swap once the glitch has played out, and guesses are ignored until then. 0 = swap without the effect and announce it at once.",
+      "min": 0.0,
+      "requires": "evilEnabled",
+      "aliases": [
+        "EvilGlitchSeconds"
+      ]
+    },
+    {
+      "key": "rewardWinPoints",
+      "default": 500,
+      "page": "game",
+      "section": "Payouts",
+      "label": "Win pays",
+      "help": "The base amount a viewer gets for the full correct answer.",
+      "min": 0.0,
+      "aliases": [
+        "RewardWinPoints"
+      ]
+    },
+    {
+      "key": "rewardPerLetterEnabled",
+      "default": true,
+      "page": "game",
+      "section": "Payouts",
+      "label": "Reward per letter",
+      "help": "Rewards a viewer for guessing a single letter correctly.",
+      "aliases": [
+        "EnableRewardPerLetter"
+      ]
+    },
+    {
+      "key": "rewardLetterPoints",
+      "default": 50,
+      "page": "game",
+      "section": "Payouts",
+      "label": "Points per letter",
+      "help": "What a single correct letter pays.",
+      "min": 0.0,
+      "requires": "rewardPerLetterEnabled",
+      "aliases": [
+        "RewardLetterPts"
+      ]
+    },
+    {
+      "key": "scaleRewardByWord",
+      "default": true,
+      "page": "game",
+      "section": "Word scaling",
+      "label": "Harder and longer words pay more",
+      "help": "The bonus is a percentage added on top of 'Win pays' before role boosts. Off: every word pays exactly 'Win pays'.",
+      "aliases": [
+        "ScaleRewardByWord"
+      ]
+    },
+    {
+      "key": "difficultyBonusPercent",
+      "default": 25.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Word scaling",
+      "label": "Difficulty bonus",
+      "help": "Bonus per difficulty level above 1. 25 means a difficulty 3 word pays +50%.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "scaleRewardByWord",
+      "aliases": [
+        "DifficultyBonusPercent"
+      ]
+    },
+    {
+      "key": "lengthBonusPercent",
+      "default": 5.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Word scaling",
+      "label": "Length bonus",
+      "help": "Bonus per letter beyond the threshold below (spaces don't count). 5 with a threshold of 4 means a 9-letter word pays +25%.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "scaleRewardByWord",
+      "aliases": [
+        "LengthBonusPercent"
+      ]
+    },
+    {
+      "key": "lengthBonusFromLetters",
+      "default": 4,
+      "page": "game",
+      "section": "Word scaling",
+      "label": "Length bonus from (letters)",
+      "help": "Word length at which the length bonus starts counting. Words this long or shorter get no length bonus.",
+      "min": 0.0,
+      "requires": "scaleRewardByWord",
+      "aliases": [
+        "LengthBonusFromLetters"
+      ]
+    },
+    {
+      "key": "maxWordBonusPercent",
+      "default": 200.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Word scaling",
+      "label": "Most word bonus",
+      "help": "Upper limit for difficulty and length bonus combined, so a very long hard word can't pay out absurdly. 0 = no cap.",
+      "min": 0.0,
+      "unit": "%",
+      "unlimitedAtZero": true,
+      "requires": "scaleRewardByWord",
+      "aliases": [
+        "MaxWordBonusPercent"
+      ]
+    },
+    {
+      "key": "subscriberBoostEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Role boosts",
+      "label": "Subscriber boost",
+      "help": "Gives Twitch subscribers a bigger win payout, applied after word scaling. Twitch only.",
+      "twitchOnly": true,
+      "aliases": [
+        "SubscriberBoostEnabled"
+      ]
+    },
+    {
+      "key": "subscriberBoostPercent",
+      "default": 10.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Role boosts",
+      "label": "Subscriber boost",
+      "help": "How much extra subscribers earn.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "subscriberBoostEnabled",
+      "aliases": [
+        "SubscriberBoostPercent"
+      ]
+    },
+    {
+      "key": "vipBoostEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Role boosts",
+      "label": "VIP boost",
+      "help": "Gives Twitch VIPs a bigger win payout, applied after word scaling. Twitch only.",
+      "twitchOnly": true,
+      "aliases": [
+        "VipBoostEnabled"
+      ]
+    },
+    {
+      "key": "vipBoostPercent",
+      "default": 20.0,
+      "kind": "double",
+      "page": "game",
+      "section": "Role boosts",
+      "label": "VIP boost",
+      "help": "How much extra VIPs earn.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "vipBoostEnabled",
+      "aliases": [
+        "VipBoostPercent"
+      ]
+    },
+    {
+      "key": "freeGame",
+      "default": false,
+      "page": "game",
+      "section": "Free mode",
+      "label": "Free mode",
+      "help": "Every round is free: letters and the win pay nothing, and chat gets the Free mode messages. !SetFreeHangman and !EndFreeHangman switch it from chat (moderators).",
+      "aliases": [
+        "FreeGame"
+      ]
+    },
+    {
+      "key": "minDifficulty",
+      "default": 1,
+      "page": "words",
+      "section": "Word selection",
+      "label": "Lowest difficulty",
+      "help": "Lowest difficulty the game picks. Words below it are never drawn.",
+      "min": 1.0,
+      "aliases": [
+        "MinDifficulty"
+      ]
+    },
+    {
+      "key": "maxDifficulty",
+      "default": 6,
+      "page": "words",
+      "section": "Word selection",
+      "label": "Highest difficulty",
+      "help": "Highest difficulty the game picks. Words above it are never drawn.",
+      "min": 1.0,
+      "aliases": [
+        "MaxDifficulty"
+      ]
+    },
+    {
+      "key": "excludedCategories",
+      "default": "",
+      "kind": "namelist",
+      "page": "words",
+      "section": "Word selection",
+      "label": "Categories left out",
+      "help": "Categories the game never draws from: type one as it is spelled in the list below and press Enter. Every other category is in play.",
+      "aliases": [
+        "ExcludedCategories"
+      ]
+    },
+    {
+      "key": "words",
+      "default": [
+        {
+          "Word": "streamer",
+          "Hint": "Someone who broadcasts live",
+          "Category": "Streaming",
+          "Difficulty": 1
+        },
+        {
+          "Word": "emote",
+          "Hint": "Tiny chat reaction image",
+          "Category": "Twitch",
+          "Difficulty": 1
+        },
+        {
+          "Word": "raid",
+          "Hint": "Sending your viewers to another channel",
+          "Category": "Twitch",
+          "Difficulty": 1
+        },
+        {
+          "Word": "clip",
+          "Hint": "Short recorded moment from a stream",
+          "Category": "Twitch",
+          "Difficulty": 1
+        },
+        {
+          "Word": "vod",
+          "Hint": "Recorded version of a past stream",
+          "Category": "Twitch",
+          "Difficulty": 1
+        },
+        {
+          "Word": "overlay",
+          "Hint": "Graphics shown on top of a stream",
+          "Category": "Streaming",
+          "Difficulty": 2
+        },
+        {
+          "Word": "moderator",
+          "Hint": "Keeps chat clean",
+          "Category": "Twitch",
+          "Difficulty": 2
+        },
+        {
+          "Word": "broadcast",
+          "Hint": "Sending out a live stream signal",
+          "Category": "Streaming",
+          "Difficulty": 2
+        },
+        {
+          "Word": "subscriber",
+          "Hint": "Paying supporter of a channel",
+          "Category": "Streaming",
+          "Difficulty": 2
+        },
+        {
+          "Word": "hypetrain",
+          "Hint": "Twitch engagement event in chat",
+          "Category": "Twitch",
+          "Difficulty": 2
+        },
+        {
+          "Word": "streamer bot",
+          "Hint": "Best software in the world",
+          "Category": "Streaming",
+          "Difficulty": 2
+        },
+        {
+          "Word": "latency",
+          "Hint": "Delay between action and reaction",
+          "Category": "Tech",
+          "Difficulty": 2
+        },
+        {
+          "Word": "algorithm",
+          "Hint": "Platform decides who sees you with this",
+          "Category": "Tech",
+          "Difficulty": 3
+        },
+        {
+          "Word": "bandwidth",
+          "Hint": "How much data you can push per second",
+          "Category": "Tech",
+          "Difficulty": 3
+        },
+        {
+          "Word": "prediction",
+          "Hint": "Chat bets on an outcome with points",
+          "Category": "Twitch",
+          "Difficulty": 3
+        }
+      ],
+      "kind": "list",
+      "page": "words",
+      "section": "Word list",
+      "label": "Words",
+      "help": "One row per word: the word as chat has to guess it, its hint, its category and a difficulty from 1 up. 'Restore defaults' brings the built-in list back; the list lives in Hangman-Wordlist.json next to the settings.",
+      "columns": [
+        {
+          "key": "Word",
+          "kind": "string",
+          "label": "Word"
+        },
+        {
+          "key": "Hint",
+          "kind": "string",
+          "label": "Hint"
+        },
+        {
+          "key": "Category",
+          "kind": "string",
+          "label": "Category"
+        },
+        {
+          "key": "Difficulty",
+          "kind": "int",
+          "label": "Difficulty"
+        }
+      ],
+      "file": "Hangman-Wordlist.json"
+    },
+    {
+      "key": "openWordlistFolder",
+      "default": null,
+      "kind": "action",
+      "page": "words",
+      "section": "Word list",
+      "label": "Open the word list folder",
+      "help": "Opens the folder that holds Hangman-Wordlist.json in Explorer."
+    },
+    {
+      "key": "importSource",
+      "default": "wikidata",
+      "kind": "options",
+      "page": "words",
+      "section": "Import words",
+      "label": "Source",
+      "help": "Where the words come from: Wikidata (countries, capitals, rivers … or any class by Q-ID), OdeNet (German nouns by topic), PokéAPI (Pokémon by generation) or IGDB (video games; needs a Twitch developer app).",
+      "options": [
+        {
+          "value": "wikidata",
+          "label": "Wikidata"
+        },
+        {
+          "value": "odenet",
+          "label": "OdeNet (German nouns)"
+        },
+        {
+          "value": "pokeapi",
+          "label": "PokéAPI (Pokémon)"
+        },
+        {
+          "value": "igdb",
+          "label": "IGDB (video games)"
+        }
+      ],
+      "transient": true
+    },
+    {
+      "key": "importLanguage",
+      "default": "en",
+      "kind": "options",
+      "page": "words",
+      "section": "Import words",
+      "label": "Language",
+      "help": "Language of the words and hints, where the source has both (Wikidata, PokéAPI). OdeNet is German, IGDB English.",
+      "options": [
+        {
+          "value": "de",
+          "label": "German"
+        },
+        {
+          "value": "en",
+          "label": "English"
+        }
+      ],
+      "transient": true
+    },
+    {
+      "key": "importTopic",
+      "default": "countries",
+      "kind": "options",
+      "page": "words",
+      "section": "Import words",
+      "label": "Topic",
+      "help": "Wikidata: countries, capitals, cities, rivers, mountains, elements, instruments, sports, dogs, or custom with a class below. OdeNet: animals, plants, food, objects, people, body, places, materials, nature, feelings.",
+      "requires": "importSource!=pokeapi",
+      "options": [
+        {
+          "value": "countries",
+          "label": "Countries (Wikidata)"
+        },
+        {
+          "value": "capitals",
+          "label": "Capitals (Wikidata)"
+        },
+        {
+          "value": "cities",
+          "label": "Big cities (Wikidata)"
+        },
+        {
+          "value": "rivers",
+          "label": "Rivers (Wikidata)"
+        },
+        {
+          "value": "mountains",
+          "label": "Mountains (Wikidata)"
+        },
+        {
+          "value": "elements",
+          "label": "Chemical elements (Wikidata)"
+        },
+        {
+          "value": "instruments",
+          "label": "Musical instruments (Wikidata)"
+        },
+        {
+          "value": "sports",
+          "label": "Sports (Wikidata)"
+        },
+        {
+          "value": "dogs",
+          "label": "Dog breeds (Wikidata)"
+        },
+        {
+          "value": "custom",
+          "label": "Custom class (Wikidata Q-ID)"
+        },
+        {
+          "value": "noun.animal",
+          "label": "Animals (OdeNet)"
+        },
+        {
+          "value": "noun.plant",
+          "label": "Plants (OdeNet)"
+        },
+        {
+          "value": "noun.food",
+          "label": "Food & drink (OdeNet)"
+        },
+        {
+          "value": "noun.artifact",
+          "label": "Objects & tools (OdeNet)"
+        },
+        {
+          "value": "noun.person",
+          "label": "People & jobs (OdeNet)"
+        },
+        {
+          "value": "noun.body",
+          "label": "Body (OdeNet)"
+        },
+        {
+          "value": "noun.location",
+          "label": "Places (OdeNet)"
+        },
+        {
+          "value": "noun.substance",
+          "label": "Materials (OdeNet)"
+        },
+        {
+          "value": "noun.object",
+          "label": "Nature (OdeNet)"
+        },
+        {
+          "value": "noun.feeling",
+          "label": "Feelings (OdeNet)"
+        }
+      ],
+      "transient": true
+    },
+    {
+      "key": "importCustomClass",
+      "default": "",
+      "page": "words",
+      "section": "Import words",
+      "label": "Wikidata class (Q-ID)",
+      "help": "For the custom topic: the Q-ID of the class whose instances become words, like Q11424 for films.",
+      "requires": "importSource=wikidata",
+      "transient": true
+    },
+    {
+      "key": "importGenerationFrom",
+      "default": 1,
+      "page": "words",
+      "section": "Import words",
+      "label": "From generation",
+      "help": "First Pokémon generation to include, 1 to 9.",
+      "min": 1.0,
+      "max": 9.0,
+      "requires": "importSource=pokeapi",
+      "transient": true,
+      "row": "gen"
+    },
+    {
+      "key": "importGenerationTo",
+      "default": 9,
+      "page": "words",
+      "section": "Import words",
+      "label": "To generation",
+      "help": "Last Pokémon generation to include, 1 to 9.",
+      "min": 1.0,
+      "max": 9.0,
+      "requires": "importSource=pokeapi",
+      "transient": true,
+      "row": "gen"
+    },
+    {
+      "key": "importIgdbClientId",
+      "default": "",
+      "page": "words",
+      "section": "Import words",
+      "label": "IGDB client ID",
+      "help": "Client ID of your Twitch developer app (dev.twitch.tv/console/apps). Kept in Streamer.bot's global variables after the first import, so it needs typing only once.",
+      "requires": "importSource=igdb",
+      "transient": true
+    },
+    {
+      "key": "importIgdbClientSecret",
+      "default": "",
+      "page": "words",
+      "section": "Import words",
+      "label": "IGDB client secret",
+      "help": "Client secret of that app; kept with the ID after the first import.",
+      "requires": "importSource=igdb",
+      "transient": true
+    },
+    {
+      "key": "importIgdbMinRatings",
+      "default": 100,
+      "page": "words",
+      "section": "Import words",
+      "label": "At least this many ratings on IGDB",
+      "help": "Only games with at least this many ratings on IGDB. Higher means better-known titles.",
+      "min": 0.0,
+      "requires": "importSource=igdb",
+      "transient": true
+    },
+    {
+      "key": "importCategory",
+      "default": "",
+      "page": "words",
+      "section": "Import words",
+      "label": "Category for the imported words",
+      "help": "Every imported word lands in this category; empty takes the topic's name. Name an existing category to add to it.",
+      "transient": true
+    },
+    {
+      "key": "importMaxCount",
+      "default": 100,
+      "page": "words",
+      "section": "Import words",
+      "label": "At most this many words",
+      "help": "How many words to fetch at most.",
+      "min": 1.0,
+      "transient": true,
+      "row": "limits"
+    },
+    {
+      "key": "importMaxLetters",
+      "default": 16,
+      "page": "words",
+      "section": "Import words",
+      "label": "At most this many letters",
+      "help": "Longer words are skipped.",
+      "min": 1.0,
+      "transient": true,
+      "row": "limits"
+    },
+    {
+      "key": "importMaxWords",
+      "default": 2,
+      "page": "words",
+      "section": "Import words",
+      "label": "At most this many words per entry",
+      "help": "Entries of more words than this are skipped.",
+      "min": 1.0,
+      "transient": true,
+      "row": "limits"
+    },
+    {
+      "key": "importReplaceUmlauts",
+      "default": false,
+      "page": "words",
+      "section": "Import words",
+      "label": "Replace umlauts",
+      "help": "Writes ae, oe, ue and ss for ä, ö, ü and ß, so chat can guess them with plain letters.",
+      "transient": true
+    },
+    {
+      "key": "importFixedDifficulty",
+      "default": 0,
+      "page": "words",
+      "section": "Import words",
+      "label": "Difficulty for every imported word",
+      "help": "0 picks a difficulty per word from its length and how well known it is.",
+      "min": 0.0,
+      "max": 9.0,
+      "transient": true
+    },
+    {
+      "key": "importWords",
+      "default": null,
+      "kind": "action",
+      "page": "words",
+      "section": "Import words",
+      "label": "Import now",
+      "help": "Fetches the words from the source with the settings above, skips those already in the list, and writes the rest into Hangman-Wordlist.json. Reopen the window to see them in the list above.",
+      "live": true,
+      "panel": true
+    },
+    {
+      "key": "overlayEnabled",
+      "default": true,
+      "page": "overlay",
+      "section": "Overlay file",
+      "label": "Overlay",
+      "help": "Writes the overlay files and keeps them updated. The overlay is a local HTML file OBS loads as a browser source; the game writes the round state next to it and the page redraws itself. Off: no overlay files at all.",
+      "aliases": [
+        "OverlayEnabled"
+      ]
+    },
+    {
+      "key": "overlayFolder",
+      "default": "Overlay",
+      "page": "overlay",
+      "section": "Overlay file",
+      "label": "Overlay folder",
+      "help": "Where hangman_overlay.html lives: a plain name like 'Overlay' is a subfolder of Chat Games\\Hangman Game, a full path puts it anywhere. The folder is created if missing; a change writes a fresh overlay file there, so repoint your OBS browser source afterwards.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayFolder"
+      ]
+    },
+    {
+      "key": "openOverlayFolder",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Overlay file",
+      "label": "Open the overlay folder",
+      "help": "Opens the overlay folder in Explorer.",
+      "requires": "overlayEnabled"
+    },
+    {
+      "key": "overlayFigureMode",
+      "default": "auto",
+      "kind": "options",
+      "page": "overlay",
+      "section": "Hangman figure",
+      "label": "Figure",
+      "help": "Proportional draws the classic 6-part figure spread across however many lives you allow, so the last life always completes it. Classic + gallows adds the 4 gallows pieces as extra steps, which suits higher life counts. Auto: proportional up to 6 lives, gallows above.",
+      "requires": "overlayEnabled",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto: proportional up to 6 lives, gallows above"
+        },
+        {
+          "value": "proportional",
+          "label": "Proportional: always 6 parts"
+        },
+        {
+          "value": "extended",
+          "label": "Classic + gallows: always 10 parts"
+        }
+      ],
+      "aliases": [
+        "OverlayFigureMode"
+      ]
+    },
+    {
+      "key": "overlayScalePercent",
+      "default": 100.0,
+      "kind": "double",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Overlay scale",
+      "help": "Resizes the whole overlay. 100 = as designed, 150 = half again as big, 50 = half size.",
+      "min": 10.0,
+      "unit": "%",
+      "requires": "overlayEnabled",
+      "row": "scale",
+      "aliases": [
+        "OverlayScalePercent"
+      ]
+    },
+    {
+      "key": "overlayFontScalePercent",
+      "default": 100.0,
+      "kind": "double",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Text scale",
+      "help": "Resizes only the text, leaving the figure alone.",
+      "min": 10.0,
+      "unit": "%",
+      "requires": "overlayEnabled",
+      "row": "scale",
+      "aliases": [
+        "OverlayFontScalePercent"
+      ]
+    },
+    {
+      "key": "overlayGallowsColour",
+      "default": "#f2f2f2",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Gallows colour",
+      "help": "Colour of the gallows: base, post, beam and rope. The same as the figure colour gives the classic single-colour look.",
+      "requires": "overlayEnabled",
+      "row": "colours1",
+      "aliases": [
+        "OverlayGallowsColor"
+      ]
+    },
+    {
+      "key": "overlayFigureColour",
+      "default": "#f2f2f2",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Figure colour",
+      "help": "Colour of the body: head, torso, arms and legs.",
+      "requires": "overlayEnabled",
+      "row": "colours1",
+      "aliases": [
+        "OverlayFigureColor"
+      ]
+    },
+    {
+      "key": "overlayTextColour",
+      "default": "#ffffff",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Text colour",
+      "help": "Colour of the word and the stats.",
+      "requires": "overlayEnabled",
+      "row": "colours2",
+      "aliases": [
+        "OverlayTextColor"
+      ]
+    },
+    {
+      "key": "overlayAccentColour",
+      "default": "#e91e63",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Accent colour",
+      "help": "Colour of the category and the small labels.",
+      "requires": "overlayEnabled",
+      "row": "colours2",
+      "aliases": [
+        "OverlayAccentColor"
+      ]
+    },
+    {
+      "key": "overlayBackgroundColour",
+      "default": "#000000",
+      "kind": "colour",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Background colour",
+      "help": "Colour of the panel behind the overlay. Only visible once the background opacity is above 0.",
+      "requires": "overlayEnabled",
+      "row": "colours3",
+      "aliases": [
+        "OverlayBackgroundColor"
+      ]
+    },
+    {
+      "key": "overlayBackgroundOpacity",
+      "default": 0.0,
+      "kind": "percent",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Background opacity",
+      "help": "0 = fully transparent (best for overlays), 100 = solid.",
+      "requires": "overlayEnabled",
+      "row": "colours3",
+      "aliases": [
+        "OverlayBackgroundOpacity"
+      ],
+      "aliasFactors": {
+        "OverlayBackgroundOpacity": 100.0
+      }
+    },
+    {
+      "key": "overlayEndFadeSeconds",
+      "default": 8,
+      "kind": "duration",
+      "page": "overlay",
+      "section": "Appearance",
+      "label": "Keep the final word for",
+      "help": "How long the final word stays on screen after a round ends before it fades out. 0 = hide it at once.",
+      "min": 0.0,
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayEndFadeSeconds"
+      ]
+    },
+    {
+      "key": "overlayShowCategory",
+      "default": true,
+      "page": "overlay",
+      "section": "Show on overlay",
+      "label": "Category",
+      "help": "Shows the word's category above the puzzle.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayShowCategory"
+      ]
+    },
+    {
+      "key": "overlayShowLives",
+      "default": true,
+      "page": "overlay",
+      "section": "Show on overlay",
+      "label": "Lives",
+      "help": "Shows the remaining lives as hearts.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayShowLives"
+      ]
+    },
+    {
+      "key": "overlayShowHint",
+      "default": true,
+      "page": "overlay",
+      "section": "Show on overlay",
+      "label": "Hint",
+      "help": "Shows the hint on the overlay once the game reveals it in chat.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayShowHint"
+      ]
+    },
+    {
+      "key": "overlayShowGuessed",
+      "default": true,
+      "page": "overlay",
+      "section": "Show on overlay",
+      "label": "Guessed letters",
+      "help": "Shows every letter guessed so far.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayShowGuessed"
+      ]
+    },
+    {
+      "key": "overlayShowWrong",
+      "default": true,
+      "page": "overlay",
+      "section": "Show on overlay",
+      "label": "Wrong letters",
+      "help": "Shows the wrong letters, struck through.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayShowWrong"
+      ]
+    },
+    {
+      "key": "overlayShowWrongWords",
+      "default": true,
+      "page": "overlay",
+      "section": "Show on overlay",
+      "label": "Wrong words",
+      "help": "Shows whole words chat guessed and got wrong, struck through.",
+      "requires": "overlayEnabled",
+      "aliases": [
+        "OverlayShowWrongWords"
+      ]
+    },
+    {
+      "key": "obsConnectionId",
+      "default": 0,
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "OBS connection",
+      "help": "Which OBS connection in Streamer.bot (Stream Apps > OBS Studio) to use; the first one is 0.",
+      "min": 0.0,
+      "aliases": [
+        "ObsConnectionId"
+      ]
+    },
+    {
+      "key": "obsSceneName",
+      "default": "Hangman",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Scene",
+      "help": "The scene the browser source goes into; created if it doesn't exist.",
+      "aliases": [
+        "ObsSceneName"
+      ]
+    },
+    {
+      "key": "obsSourceName",
+      "default": "Hangman Overlay",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Source",
+      "help": "Name of the browser source to create.",
+      "aliases": [
+        "ObsSourceName"
+      ]
+    },
+    {
+      "key": "setupObsOverlay",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Create the browser source in OBS",
+      "help": "Creates the scene above if it is missing and adds a browser source pointing at the overlay file. Needs OBS connected in Streamer.bot. You can also add it by hand: Browser Source > Local file > hangman_overlay.html from the folder above.",
+      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?"
+    },
+    {
+      "key": "refreshObsOverlay",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Refresh the overlay in OBS",
+      "help": "Reloads every OBS browser source that shows hangman_overlay.html, so OBS runs the newest overlay. The game also does this by itself after an update, once OBS is connected."
+    },
+    {
+      "key": "pointsVariable",
+      "default": "points",
+      "page": "access",
+      "section": "Currency",
+      "aliases": [
+        "PointsVar"
+      ]
+    },
+    {
+      "key": "pointsName",
+      "default": "Points",
+      "page": "access",
+      "section": "Currency",
+      "aliases": [
+        "PointsName"
+      ]
+    },
+    {
+      "key": "requireModToStart",
+      "default": true,
+      "page": "access",
+      "section": "Who can start a round",
+      "label": "Only moderators start a round",
+      "help": "Only moderators and the broadcaster can start a round; everyone can still guess in a round that is running.",
+      "aliases": [
+        "RequireModToStart"
+      ]
+    },
+    {
+      "key": "blockedUsers",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "aliases": [
+        "BlockedUsers"
+      ]
+    },
+    {
+      "key": "blockedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Who may not play",
+      "aliases": [
+        "BlockedGroups"
+      ]
+    },
+    {
+      "key": "allowChannelPointStart",
+      "default": false,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "A reward starts the round",
+      "help": "On Twitch a channel point redemption starts the round instead of the chat command, which is then off on Twitch. Everyone still guesses as usual.",
+      "twitchOnly": true,
+      "aliases": [
+        "AllowChannelPointStart"
+      ]
+    },
+    {
+      "key": "channelPointRewardId",
+      "default": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Reward ID",
+      "help": "The reward's id. Find it at ayrtonalexis.com/reward_checker: authorize, 'Get Rewards', copy the id of your reward.",
+      "requires": "allowChannelPointStart",
+      "aliases": [
+        "ChannelPointRewardId"
+      ]
+    },
+    {
+      "key": "channelPointFixedBet",
+      "default": 0,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Fixed stake",
+      "help": "0 reads the stake from the redemption: a number the viewer typed, else the reward's cost, else no stake. Above 0 every redemption stakes exactly this much.",
+      "min": 0.0,
+      "requires": "allowChannelPointStart",
+      "aliases": [
+        "ChannelPointFixedBet"
+      ]
+    },
+    {
+      "key": "channelPointPayoutMultiplier",
+      "default": 1.0,
+      "kind": "double",
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Stake payout multiplier",
+      "help": "Streamer.bot cannot pay channel points back out, so a win always pays in your currency: the stake times this, added to the winner's payout. 1 pays it back once, 2 doubles it, 0 pays no stake bonus.",
+      "min": 0.0,
+      "requires": "allowChannelPointStart",
+      "aliases": [
+        "ChannelPointPayoutMultiplier"
+      ]
+    },
+    {
+      "key": "refundFailedRedemptions",
+      "default": true,
+      "page": "access",
+      "section": "Channel points (Twitch)",
+      "label": "Refund redemptions that don't start a round",
+      "help": "When the round cannot start (already running, no word, invalid stake), the redemption is cancelled and the channel points go back. Only works while the redemption is still in the request queue.",
+      "requires": "allowChannelPointStart",
+      "aliases": [
+        "RefundFailedRedemptions"
+      ]
+    },
+    {
+      "key": "globalCooldown",
+      "default": 0,
+      "page": "access",
+      "section": "Cooldowns",
+      "aliases": [
+        "CooldownGlobalSeconds"
+      ]
+    },
+    {
+      "key": "userCooldown",
+      "default": 0,
+      "page": "access",
+      "section": "Cooldowns",
+      "aliases": [
+        "CooldownUserSeconds"
+      ]
+    },
+    {
+      "key": "antiCheatMaxGuesses",
+      "default": 3,
+      "page": "access",
+      "section": "Rate limit",
+      "label": "Guesses per window",
+      "help": "How many guesses one viewer may make inside the window below; broadcasters are exempt. 0 = no limit.",
+      "min": 0.0,
+      "unlimitedAtZero": true,
+      "aliases": [
+        "AntiCheatMaxGuesses"
+      ]
+    },
+    {
+      "key": "antiCheatWindowSeconds",
+      "default": 10,
+      "kind": "duration",
+      "page": "access",
+      "section": "Rate limit",
+      "label": "Window",
+      "help": "The timeframe the guess count is measured over.",
+      "min": 0.0,
+      "aliases": [
+        "AntiCheatWindowSeconds"
+      ]
+    },
+    {
+      "key": "addictedEnabled",
+      "default": true,
+      "page": "access",
+      "section": "Addicted",
+      "label": "Handle addicted viewers",
+      "help": "The regulars who play every round keep playing, but earn less and have to pace their guesses so newer chatters get a look in.",
+      "aliases": [
+        "AddictedEnabled"
+      ]
+    },
+    {
+      "key": "addictedPointsPenaltyPercent",
+      "default": 50.0,
+      "kind": "percent",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Points penalty",
+      "help": "How much of their winnings is taken away. 50 means they earn half of what they otherwise would.",
+      "requires": "addictedEnabled",
+      "aliases": [
+        "AddictedPointsPenaltyPercent"
+      ]
+    },
+    {
+      "key": "addictedGuessIntervalSeconds",
+      "default": 5,
+      "kind": "duration",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Pause between guesses",
+      "help": "Minimum time an addicted viewer must wait between their own guesses.",
+      "min": 0.0,
+      "requires": "addictedEnabled",
+      "aliases": [
+        "AddictedGuessIntervalSeconds"
+      ]
+    },
+    {
+      "key": "addictedUsers",
+      "default": "",
+      "page": "access",
+      "section": "Addicted",
+      "aliases": [
+        "AddictedUsers"
+      ]
+    },
+    {
+      "key": "addictedGroups",
+      "default": "",
+      "page": "access",
+      "section": "Addicted",
+      "aliases": [
+        "AddictedGroups"
+      ]
+    },
+    {
+      "key": "useBot",
+      "default": true,
+      "aliases": [
+        "UseBot"
+      ]
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "aliases": [
+        "SendAction"
+      ]
+    },
+    {
+      "key": "cooldownUseBot",
+      "default": true,
+      "aliases": [
+        "UseBotCD"
+      ]
+    },
+    {
+      "key": "cooldownSendAction",
+      "default": false,
+      "aliases": [
+        "SendActionCD"
+      ]
+    },
+    {
+      "key": "numberSeparator",
+      "default": ",",
+      "aliases": [
+        "NumberSeparator"
+      ]
+    },
+    {
+      "key": "logToFile",
+      "default": true,
+      "page": "log",
+      "label": "Write a log file per day",
+      "help": "Every round, guess, payout and refusal goes into Chat Games\\Logs\\HM-log-<date>.txt, which the Log page reads.",
+      "aliases": [
+        "LogToFile"
+      ]
+    },
+    {
+      "key": "scoreboardTopN",
+      "default": 5,
+      "page": "board",
+      "section": "Behaviour",
+      "label": "Places on the board",
+      "help": "How many viewers the scoreboard shows, 1 to 25.",
+      "min": 1.0,
+      "max": 25.0,
+      "aliases": [
+        "ScoreboardTopN"
+      ]
+    },
+    {
+      "key": "broadcasterAllowed",
+      "default": false,
+      "page": "board",
+      "section": "Behaviour",
+      "label": "Include the broadcaster",
+      "help": "Shows you, the broadcaster, on the scoreboard.",
+      "aliases": [
+        "BroadcasterAllowed"
+      ]
+    },
+    {
+      "key": "botAllowed",
+      "default": false,
+      "page": "board",
+      "section": "Behaviour",
+      "label": "Include the bot",
+      "help": "Shows your bot account on the scoreboard.",
+      "aliases": [
+        "BotAllowed"
+      ]
+    },
+    {
+      "key": "blockedFromBoard",
+      "default": "",
+      "kind": "namelist",
+      "page": "board",
+      "section": "Behaviour",
+      "label": "Hidden from the board",
+      "help": "Viewers hidden from the scoreboard without being blocked from playing; useful when other bots take part.",
+      "aliases": [
+        "BlockedFromBoard"
+      ]
+    },
+    {
+      "key": "streaksEnabled",
+      "default": false,
+      "page": "board",
+      "section": "Streaks",
+      "label": "Track streaks",
+      "help": "Every word a viewer solves adds one to their streak; it only breaks when a round they guessed in is lost. A stopped round breaks nothing. Streaks are announced in chat, show in the personal stats, and the auto reset clears them too.",
+      "aliases": [
+        "StreaksEnabled"
+      ]
+    },
+    {
+      "key": "streakAnnounceFrom",
+      "default": 2,
+      "page": "board",
+      "section": "Streaks",
+      "label": "Announce from",
+      "help": "Streaks at least this long are cheered after a win and called out when they end. Never below 2.",
+      "min": 2.0,
+      "requires": "streaksEnabled",
+      "aliases": [
+        "StreakAnnounceFrom"
+      ]
+    },
+    {
+      "key": "streakBonusPercent",
+      "default": 10.0,
+      "kind": "double",
+      "page": "board",
+      "section": "Streaks",
+      "label": "Streak bonus",
+      "help": "Added to the win payout for every win in a row after the first. 10 means the 3rd win in a row pays +20%. 0 = no bonus.",
+      "min": 0.0,
+      "unit": "%",
+      "requires": "streaksEnabled",
+      "aliases": [
+        "StreakBonusPercent"
+      ]
+    },
+    {
+      "key": "streakBonusMaxPercent",
+      "default": 50.0,
+      "kind": "double",
+      "page": "board",
+      "section": "Streaks",
+      "label": "Most streak bonus",
+      "help": "Upper limit for the streak bonus. 0 = no cap.",
+      "min": 0.0,
+      "unit": "%",
+      "unlimitedAtZero": true,
+      "requires": "streaksEnabled",
+      "aliases": [
+        "StreakBonusMaxPercent"
+      ]
+    },
+    {
+      "key": "resetAllMonthly",
+      "default": false,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "Reset every platform monthly",
+      "help": "Clears the scoreboards of every platform at the end of the month.",
+      "aliases": [
+        "ResetAllMonthly"
+      ]
+    },
+    {
+      "key": "resetTwitchMonthly",
+      "default": false,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "Twitch: reset monthly",
+      "help": "Clears the Twitch scoreboard at the end of the month.",
+      "requires": "resetAllMonthly=false",
+      "row": "resetTwitch",
+      "aliases": [
+        "ResetTwitchMonthly"
+      ]
+    },
+    {
+      "key": "resetTwitchDay",
+      "default": 0,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "Twitch: reset after days",
+      "help": "Clears the Twitch scoreboard every so many days. 0 = never.",
+      "min": 0.0,
+      "max": 31.0,
+      "unlimitedAtZero": true,
+      "requires": "resetAllMonthly=false",
+      "row": "resetTwitch",
+      "aliases": [
+        "ResetTwitchDay"
+      ]
+    },
+    {
+      "key": "resetYouTubeMonthly",
+      "default": false,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "YouTube: reset monthly",
+      "help": "Clears the YouTube scoreboard at the end of the month.",
+      "requires": "resetAllMonthly=false",
+      "row": "resetYouTube",
+      "aliases": [
+        "ResetYouTubeMonthly"
+      ]
+    },
+    {
+      "key": "resetYouTubeDay",
+      "default": 0,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "YouTube: reset after days",
+      "help": "Clears the YouTube scoreboard every so many days. 0 = never.",
+      "min": 0.0,
+      "max": 31.0,
+      "unlimitedAtZero": true,
+      "requires": "resetAllMonthly=false",
+      "row": "resetYouTube",
+      "aliases": [
+        "ResetYouTubeDay"
+      ]
+    },
+    {
+      "key": "resetKickMonthly",
+      "default": false,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "Kick: reset monthly",
+      "help": "Clears the Kick scoreboard at the end of the month.",
+      "requires": "resetAllMonthly=false",
+      "row": "resetKick",
+      "aliases": [
+        "ResetKickMonthly"
+      ]
+    },
+    {
+      "key": "resetKickDay",
+      "default": 0,
+      "page": "board",
+      "section": "Auto reset",
+      "label": "Kick: reset after days",
+      "help": "Clears the Kick scoreboard every so many days. 0 = never.",
+      "min": 0.0,
+      "max": 31.0,
+      "unlimitedAtZero": true,
+      "requires": "resetAllMonthly=false",
+      "row": "resetKick",
+      "aliases": [
+        "ResetKickDay"
+      ]
+    },
+    {
+      "key": "msgGameStart",
+      "default": "🎮 Hangman started! Category: {category} | Word: {masked} | ❤️ Lives: {lives}/{maxlives} | Guess with !g <letter or word>",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Game start",
+      "help": "Sent when a round starts.",
+      "placeholders": [
+        "category",
+        "masked",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgGameStart"
+      ]
+    },
+    {
+      "key": "msgAlreadyRunning",
+      "default": "⚠️ A Hangman round is already running! Word: {masked} | ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Already running",
+      "help": "Sent when someone tries to start while a round is already running.",
+      "placeholders": [
+        "masked",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgAlreadyRunning"
+      ]
+    },
+    {
+      "key": "msgNoGameActive",
+      "default": "⚠️ No Hangman round is active right now.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "No round active",
+      "help": "Sent when a viewer guesses while no round is active.",
+      "placeholders": [],
+      "aliases": [
+        "MsgNoGameActive"
+      ]
+    },
+    {
+      "key": "msgRepeat",
+      "default": "🔁 Word: {masked} | ❤️ Lives: {lives}/{maxlives} | Guessed: {guessed} | Wrong: {wrong}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Repeat",
+      "help": "Sent when a viewer asks for the current state with the repeat command.",
+      "placeholders": [
+        "masked",
+        "lives",
+        "maxlives",
+        "guessed",
+        "wrong"
+      ],
+      "aliases": [
+        "MsgRepeat"
+      ]
+    },
+    {
+      "key": "msgTimeReminder",
+      "default": "⏳ {seconds}s left! Word: {masked} | ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Round",
+      "label": "Time reminder",
+      "help": "Sent shortly before the round times out.",
+      "placeholders": [
+        "seconds",
+        "masked",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgTimeReminder"
+      ]
+    },
+    {
+      "key": "msgCorrectLetter",
+      "default": "✅ @{user} found '{letter}'! Word: {masked} | ❤️ Lives: {lives}/{maxlives} | Guessed: {guessed}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Guessing",
+      "label": "Correct letter",
+      "help": "Sent when a guessed letter is in the word.",
+      "placeholders": [
+        "user",
+        "letter",
+        "masked",
+        "lives",
+        "maxlives",
+        "guessed"
+      ],
+      "aliases": [
+        "MsgCorrectLetter"
+      ]
+    },
+    {
+      "key": "msgCorrectWord",
+      "default": "🎉 @{user} solved it! The word was '{word}'! +{points} {pointsName}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Guessing",
+      "label": "Correct word",
+      "help": "Sent when a viewer solves the whole word.",
+      "placeholders": [
+        "user",
+        "word",
+        "points",
+        "pointsName",
+        "basepoints",
+        "difficulty",
+        "length",
+        "wordbonus",
+        "bet",
+        "stake",
+        "streak",
+        "streakbonus"
+      ],
+      "aliases": [
+        "MsgCorrectWord"
+      ]
+    },
+    {
+      "key": "msgLetterReward",
+      "default": "💰 @{user} earned {points} {pointsName} for revealing '{letter}'!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Guessing",
+      "label": "Letter reward",
+      "help": "Sent when a viewer earns points for revealing a letter.",
+      "placeholders": [
+        "user",
+        "letter",
+        "points",
+        "pointsName"
+      ],
+      "aliases": [
+        "MsgLetterReward"
+      ]
+    },
+    {
+      "key": "msgAlreadyGuessed",
+      "default": "🔁 @{user}, '{letter}' was already guessed!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Guessing",
+      "label": "Already guessed",
+      "help": "Sent when a letter was already guessed.",
+      "placeholders": [
+        "user",
+        "letter"
+      ],
+      "aliases": [
+        "MsgAlreadyGuessed"
+      ]
+    },
+    {
+      "key": "msgInvalidGuess",
+      "default": "❓ @{user}, use !g <letter> or !g <word> to guess.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Guessing",
+      "label": "Invalid guess",
+      "help": "Sent when the guess could not be understood.",
+      "placeholders": [
+        "user",
+        "word"
+      ],
+      "aliases": [
+        "MsgInvalidGuess"
+      ]
+    },
+    {
+      "key": "msgWrongLetter",
+      "default": "❌ @{user} — '{letter}' is not in the word! ❤️ Lives: {lives}/{maxlives} | Wrong: {wrong}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wrong guesses",
+      "label": "Wrong letter",
+      "help": "Sent when a guessed letter is not in the word.",
+      "placeholders": [
+        "user",
+        "letter",
+        "lives",
+        "maxlives",
+        "wrong"
+      ],
+      "aliases": [
+        "MsgWrongLetter"
+      ]
+    },
+    {
+      "key": "msgWrongWord",
+      "default": "❌ @{user} — '{guess}' is wrong! (-2 lives) ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wrong guesses",
+      "label": "Wrong word",
+      "help": "Sent on a wrong full-length word guess, which costs two lives.",
+      "placeholders": [
+        "user",
+        "guess",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgWrongWord"
+      ]
+    },
+    {
+      "key": "msgWrongPartial",
+      "default": "❌ @{user} — '{guess}' is not the word! (-1 life) ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wrong guesses",
+      "label": "Wrong partial word",
+      "help": "Sent on a wrong partial guess of a multi-word answer, which costs one life.",
+      "placeholders": [
+        "user",
+        "guess",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgWrongPartial"
+      ]
+    },
+    {
+      "key": "msgDuplicateWrong",
+      "default": "🔁 @{user}, you already tried '{guess}' — don't spam!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Wrong guesses",
+      "label": "Repeated wrong guess",
+      "help": "Sent when the same viewer repeats a guess they already got wrong.",
+      "placeholders": [
+        "user",
+        "guess"
+      ],
+      "aliases": [
+        "MsgDuplicateWrong"
+      ]
+    },
+    {
+      "key": "msgGameOver",
+      "default": "💀 Game over! Nobody guessed it. The word was: {word}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ending",
+      "label": "Game over",
+      "help": "Sent when chat runs out of lives.",
+      "placeholders": [
+        "word"
+      ],
+      "aliases": [
+        "MsgGameOver"
+      ]
+    },
+    {
+      "key": "msgGameTimeout",
+      "default": "⏰ Time's up! The word was: {word}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ending",
+      "label": "Time's up",
+      "help": "Sent when the round duration runs out with nobody solving it.",
+      "placeholders": [
+        "word"
+      ],
+      "aliases": [
+        "MsgGameTimeout"
+      ]
+    },
+    {
+      "key": "msgGameStopped",
+      "default": "🛑 Hangman stopped by a mod. The word was: {word}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ending",
+      "label": "Stopped",
+      "help": "Sent when a moderator ends the round.",
+      "placeholders": [
+        "word"
+      ],
+      "aliases": [
+        "MsgGameStopped"
+      ]
+    },
+    {
+      "key": "msgHint",
+      "default": "💡 Hint: {hint}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Hints",
+      "label": "Hint",
+      "help": "Sent when the hint is revealed.",
+      "placeholders": [
+        "hint"
+      ],
+      "aliases": [
+        "MsgHint"
+      ]
+    },
+    {
+      "key": "msgBlitzStart",
+      "default": "⚡ BLITZ ROUND! {seconds}s, {lives} lives, every point pays x{multiplier}! Category: {category} | Word: {masked} | Guess with !g <letter or word>",
+      "kind": "template",
+      "page": "messages",
+      "group": "Blitz",
+      "label": "Blitz start",
+      "help": "Sent in place of the normal start message when a round is a blitz.",
+      "placeholders": [
+        "user",
+        "category",
+        "masked",
+        "lives",
+        "maxlives",
+        "seconds",
+        "multiplier",
+        "bet"
+      ],
+      "aliases": [
+        "MsgBlitzStart"
+      ]
+    },
+    {
+      "key": "msgBlitzWin",
+      "default": "⚡ @{user} won the blitz! The word was '{word}'! +{points} {pointsName} (x{multiplier})",
+      "kind": "template",
+      "page": "messages",
+      "group": "Blitz",
+      "label": "Blitz win",
+      "help": "Sent in place of 'Correct word' when a blitz round is solved.",
+      "placeholders": [
+        "user",
+        "word",
+        "points",
+        "pointsName",
+        "basepoints",
+        "multiplier",
+        "difficulty",
+        "length",
+        "wordbonus",
+        "bet",
+        "stake",
+        "streak",
+        "streakbonus"
+      ],
+      "aliases": [
+        "MsgBlitzWin"
+      ]
+    },
+    {
+      "key": "msgEvilSwap",
+      "default": "👾 GLITCH! The word was swapped, only '{letter}' survived. Category: {category} | Word: {masked} | ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Evil Hangman",
+      "label": "Word swapped",
+      "help": "Sent once the overlay glitch has played out, when one revealed letter survived the swap.",
+      "placeholders": [
+        "letter",
+        "oldword",
+        "category",
+        "masked",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgEvilSwap"
+      ]
+    },
+    {
+      "key": "msgEvilSwapNoLetter",
+      "default": "👾 GLITCH! The word was swapped. Category: {category} | Word: {masked} | ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Evil Hangman",
+      "label": "Word swapped, no letter",
+      "help": "Sent once the overlay glitch has played out, when chat had revealed no letter before the swap.",
+      "placeholders": [
+        "oldword",
+        "category",
+        "masked",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgEvilSwapNoLetter"
+      ]
+    },
+    {
+      "key": "msgStreak",
+      "default": "🔥 @{user} is on a {streak} win streak! +{streakbonus}% bonus",
+      "kind": "template",
+      "page": "messages",
+      "group": "Streaks",
+      "label": "Streak",
+      "help": "Sent after a win once the winner's streak reaches 'Announce from'.",
+      "placeholders": [
+        "user",
+        "streak",
+        "streakbonus"
+      ],
+      "aliases": [
+        "MsgStreak"
+      ]
+    },
+    {
+      "key": "msgStreakLost",
+      "default": "💔 Streak over: {users}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Streaks",
+      "label": "Streak lost",
+      "help": "Sent when a lost round ends streaks of at least 'Announce from'.",
+      "placeholders": [
+        "users"
+      ],
+      "aliases": [
+        "MsgStreakLost"
+      ]
+    },
+    {
+      "key": "msgPersonalStreak",
+      "default": "🔥 @{user} — Streak: {streak} | Best: {beststreak}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Streaks",
+      "label": "Personal streak",
+      "help": "Extra line under the personal stats while streaks are tracked.",
+      "placeholders": [
+        "user",
+        "streak",
+        "beststreak"
+      ],
+      "aliases": [
+        "MsgPersonalStreak"
+      ]
+    },
+    {
+      "key": "msgModOnly",
+      "default": "🚫 @{user}, only moderators and the broadcaster can start Hangman.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Access",
+      "label": "Mods only",
+      "help": "Sent when a viewer tries to start a round while only moderators may.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgModOnly"
+      ]
+    },
+    {
+      "key": "msgNotAllowed",
+      "default": "🚫 @{user}, you are not allowed to participate.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Access",
+      "label": "Not allowed",
+      "help": "Sent when a blocked viewer tries to take part.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgNotAllowed"
+      ]
+    },
+    {
+      "key": "msgAntiCheat",
+      "default": "⏳ @{user}, slow down! Max {maxguesses} guesses per {window}s.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Access",
+      "label": "Rate limit",
+      "help": "Sent when a viewer is held back for guessing too fast.",
+      "placeholders": [
+        "user",
+        "maxguesses",
+        "window"
+      ],
+      "aliases": [
+        "MsgAntiCheat"
+      ]
+    },
+    {
+      "key": "globalCooldownMessage",
+      "default": "Please wait {seconds} seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Global cooldown",
+      "help": "Sent when someone tries to start while the global cooldown is still running.",
+      "placeholders": [
+        "seconds",
+        "user"
+      ],
+      "aliases": [
+        "GlobalMessage"
+      ]
+    },
+    {
+      "key": "userCooldownMessage",
+      "default": "@{user}, please wait {seconds} seconds before trying again ⏳",
+      "kind": "template",
+      "page": "messages",
+      "group": "Cooldown",
+      "label": "Per-viewer cooldown",
+      "help": "Sent when a viewer tries to start while their own cooldown is still running.",
+      "placeholders": [
+        "user",
+        "seconds"
+      ],
+      "aliases": [
+        "UserMessage"
+      ]
+    },
+    {
+      "key": "msgAddictedSlowdown",
+      "default": "⏳ @{user}, slow down! You're addicted — wait {seconds}s between guesses.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Slow down",
+      "help": "Sent when an addicted viewer guesses again before their pause is up.",
+      "placeholders": [
+        "user",
+        "seconds"
+      ],
+      "aliases": [
+        "MsgAddictedSlowdown"
+      ]
+    },
+    {
+      "key": "msgAddictedAdded",
+      "default": "{targetUser} was added to the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Added",
+      "help": "Sent after !addicted add succeeds.",
+      "placeholders": [
+        "targetUser"
+      ],
+      "aliases": [
+        "MsgAddictedAdded"
+      ]
+    },
+    {
+      "key": "msgAddictedRemoved",
+      "default": "{targetUser} was removed from the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Removed",
+      "help": "Sent after !addicted remove succeeds.",
+      "placeholders": [
+        "targetUser"
+      ],
+      "aliases": [
+        "MsgAddictedRemoved"
+      ]
+    },
+    {
+      "key": "msgAddictedAlreadyOnList",
+      "default": "{targetUser} is already on the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Already on the list",
+      "help": "Sent when adding someone who is already on the list.",
+      "placeholders": [
+        "targetUser"
+      ],
+      "aliases": [
+        "MsgAddictedAlreadyOnList"
+      ]
+    },
+    {
+      "key": "msgAddictedNotOnList",
+      "default": "{targetUser} is not on the addicted list.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Not on the list",
+      "help": "Sent when removing someone who is not on the list.",
+      "placeholders": [
+        "targetUser"
+      ],
+      "aliases": [
+        "MsgAddictedNotOnList"
+      ]
+    },
+    {
+      "key": "msgAddictedUsage",
+      "default": "Usage: !addicted add <user> | !addicted remove <user>",
+      "kind": "template",
+      "page": "messages",
+      "group": "Addicted",
+      "label": "Usage",
+      "help": "Sent when the !addicted command was typed wrongly.",
+      "placeholders": [],
+      "aliases": [
+        "MsgAddictedUsage"
+      ]
+    },
+    {
+      "key": "msgChannelPointStart",
+      "default": "🎰 @{user} used Channel Points to start Hangman! Category: {category} | Word: {masked} | ❤️ Lives: {lives}/{maxlives} | Guess with !g <letter or word>",
+      "kind": "template",
+      "page": "messages",
+      "group": "Channel points",
+      "label": "Redemption start",
+      "help": "Sent when a round starts from a channel point redemption.",
+      "placeholders": [
+        "user",
+        "category",
+        "masked",
+        "lives",
+        "maxlives",
+        "bet"
+      ],
+      "aliases": [
+        "MsgChannelPointStart"
+      ]
+    },
+    {
+      "key": "msgChannelPointBusy",
+      "default": "⚠️ @{user}, a round is already running! Word: {masked} | ❤️ Lives: {lives}/{maxlives}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Channel points",
+      "label": "Redemption while running",
+      "help": "Sent when a redemption arrives while a round is already running.",
+      "placeholders": [
+        "user",
+        "masked",
+        "lives",
+        "maxlives"
+      ],
+      "aliases": [
+        "MsgChannelPointBusy"
+      ]
+    },
+    {
+      "key": "msgChannelPointBadInput",
+      "default": "⚠️ @{user}, invalid bet — enter a positive number in the reward text field.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Channel points",
+      "label": "Redemption bad input",
+      "help": "Sent when the viewer typed something into the reward that is not a positive number.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgChannelPointBadInput"
+      ]
+    },
+    {
+      "key": "msgRedemptionRefunded",
+      "default": "↩️ @{user}, your channel point redemption was refunded.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Channel points",
+      "label": "Redemption refunded",
+      "help": "Sent after a redemption was refunded.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgRedemptionRefunded"
+      ]
+    },
+    {
+      "key": "msgScoreboardHeader",
+      "default": "🏆 Hangman Top {topn} — {platform}:",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "Board header",
+      "help": "First line of the scoreboard.",
+      "placeholders": [
+        "topn",
+        "platform"
+      ],
+      "aliases": [
+        "MsgScoreboardHeader"
+      ]
+    },
+    {
+      "key": "msgScoreboardEntry",
+      "default": "{medal}{rank}. {user} — {wins} wins | WR: {winrate}% | {points} pts",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "Board entry",
+      "help": "Repeated once per viewer on the board.",
+      "placeholders": [
+        "medal",
+        "rank",
+        "user",
+        "wins",
+        "winrate",
+        "points",
+        "streak",
+        "beststreak"
+      ],
+      "aliases": [
+        "MsgScoreboardEntry"
+      ]
+    },
+    {
+      "key": "msgScoreboardEmpty",
+      "default": "📊 No scoreboard data yet for {platform}.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "Board empty",
+      "help": "Sent when there is no scoreboard data yet.",
+      "placeholders": [
+        "platform"
+      ],
+      "aliases": [
+        "MsgScoreboardEmpty"
+      ]
+    },
+    {
+      "key": "msgPersonalStats",
+      "default": "📊 @{user} — 🏆 Wins: {wins} | 🎮 Played: {played} | 📈 WR: {winrate}% | 💰 Points: {points} | 🔤 Letters: {letters} | 💡 Word Wins: {wordwins}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "Personal stats",
+      "help": "Sent when a viewer asks for their own stats.",
+      "placeholders": [
+        "user",
+        "wins",
+        "played",
+        "winrate",
+        "points",
+        "letters",
+        "wordwins",
+        "streak",
+        "beststreak"
+      ],
+      "aliases": [
+        "MsgPersonalStats"
+      ]
+    },
+    {
+      "key": "msgNoStats",
+      "default": "📊 @{user} has no Hangman stats yet.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "No stats",
+      "help": "Sent when the viewer has no stats yet.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgNoStats"
+      ]
+    },
+    {
+      "key": "msgUserNotFound",
+      "default": "❓ Could not find user '{target}'.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "User not found",
+      "help": "Sent when a looked-up viewer does not exist.",
+      "placeholders": [
+        "target"
+      ],
+      "aliases": [
+        "MsgUserNotFound"
+      ]
+    },
+    {
+      "key": "msgMonthlyReset",
+      "default": "🔄 Hangman {platform} leaderboard has been reset for the new month!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Scoreboard",
+      "label": "Reset announcement",
+      "help": "Sent when a scoreboard is reset.",
+      "placeholders": [
+        "platform"
+      ],
+      "aliases": [
+        "MsgMonthlyReset"
+      ]
+    },
+    {
+      "key": "freeGameStartMessage",
+      "default": "🆓 Free mode is ON! Guess for the fun of it - no {pointsName} change hands!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Started",
+      "help": "Sent once when Free mode is turned on by !SetFreeHangman, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "pointsName"
+      ],
+      "aliases": [
+        "FreeGameStartMessage"
+      ]
+    },
+    {
+      "key": "freeGameEndMessage",
+      "default": "⏹️ Free mode has ended. Words pay {pointsName} again!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Ended",
+      "help": "Sent once when Free mode is turned off by !EndFreeHangman, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "pointsName"
+      ],
+      "aliases": [
+        "FreeGameEndMessage"
+      ]
+    }
+  ],
+  "window": {
+    "title": "Hangman Game",
+    "releases": "aaskjer/Hangman-Game",
+    "logo": "https://github.com/aaskjer/Hangman-Game/blob/main/Assets/HM/Hangman-Game-Full2.png?raw=true",
+    "logPrefix": "[Hangman Game/Settings]",
+    "pages": [
+      {
+        "id": "game",
+        "title": "Game",
+        "icon": "🎮"
+      },
+      {
+        "id": "words",
+        "title": "Words",
+        "icon": "🔤"
+      },
+      {
+        "id": "overlay",
+        "title": "Overlay",
+        "icon": "📺"
+      },
+      {
+        "id": "access",
+        "title": "Access",
+        "icon": "👥"
+      },
+      {
+        "id": "messages",
+        "title": "Messages",
+        "icon": "💬"
+      },
+      {
+        "id": "board",
+        "title": "Board",
+        "icon": "🏆"
+      },
+      {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
+      },
+      {
+        "id": "help",
+        "title": "How to play",
+        "icon": "📖"
+      },
+      {
+        "id": "about",
+        "title": "About",
+        "icon": "ℹ️"
+      }
+    ],
+    "senders": {
+      "useBot": "useBot",
+      "sendAction": "sendAction",
+      "cooldownUseBot": "cooldownUseBot",
+      "cooldownSendAction": "cooldownSendAction",
+      "numberSeparator": "numberSeparator",
+      "cooldownGroup": "Cooldown"
+    },
+    "samples": {
+      "user": "alice",
+      "targetUser": "bob",
+      "target": "bob",
+      "letter": "e",
+      "word": "streamer",
+      "guess": "streamel",
+      "masked": "s t r e _ _ e r",
+      "category": "Streaming",
+      "hint": "Someone who broadcasts live",
+      "lives": "4",
+      "maxlives": "6",
+      "guessed": "a, e, r, s, t",
+      "wrong": "i, o",
+      "seconds": "30",
+      "points": "750",
+      "basepoints": "500",
+      "pointsName": "Points",
+      "difficulty": "2",
+      "length": "8",
+      "wordbonus": "25",
+      "bet": "100",
+      "stake": "100",
+      "maxguesses": "3",
+      "window": "10",
+      "platform": "twitch",
+      "topn": "5",
+      "medal": "🥇",
+      "rank": "1",
+      "wins": "12",
+      "winrate": "60",
+      "played": "20",
+      "letters": "48",
+      "wordwins": "7",
+      "multiplier": "2",
+      "oldword": "overlay",
+      "streak": "3",
+      "beststreak": "5",
+      "streakbonus": "20",
+      "users": "alice (4), bob (3)"
+    },
+    "answers": {
+      "importWords": {
+        "lines": [
+          "Wikidata, countries: 25 found, 3 already in the list, 22 added to Hangman-Wordlist.json.",
+          "Reopen the window to see them in the list."
+        ],
+        "status": "22 words imported"
+      },
+      "setupObsOverlay": "'Hangman Overlay' is in scene 'Hangman', pointing at the overlay file.",
+      "refreshObsOverlay": "Refreshed: Hangman Overlay",
+      "openWordlistFolder": "Opened Chat Games\\Hangman Game.",
+      "openOverlayFolder": "Opened Chat Games\\Hangman Game\\Overlay."
+    },
+    "headerPills": [
+      {
+        "key": "overlayEnabled",
+        "on": "Overlay on",
+        "off": "Overlay off",
+        "tooltip": "Overlay, from the Overlay page. Off: the game writes no overlay files."
+      },
+      {
+        "key": "freeGame",
+        "on": "Free mode on",
+        "off": "Free mode off",
+        "tooltip": "Free mode, from the Game page or !SetFreeHangman. While it is on, letters and the win pay nothing."
+      },
+      {
+        "key": "requireModToStart",
+        "on": "Mods start",
+        "off": "Anyone starts",
+        "tooltip": "Who starts a round, from the Access page. Everyone can always guess."
+      }
+    ],
+    "cooldowns": [
+      {
+        "command": "c49f751d-28cd-4c9e-87e9-6a29e843e0ae",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      }
+    ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "HM-log*.txt",
+      "writeLogKey": "logToFile",
+      "emptyText": "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Platform",
+          "field": "Platform"
+        },
+        {
+          "header": "Round",
+          "field": "Round"
+        },
+        {
+          "header": "Word",
+          "field": "Word"
+        },
+        {
+          "header": "Guess",
+          "field": "Guess"
+        },
+        {
+          "header": "Lives",
+          "field": "Lives"
+        },
+        {
+          "header": "Wrong",
+          "field": "Wrong"
+        },
+        {
+          "header": "Reward",
+          "field": "Reward"
+        }
+      ],
+      "results": [
+        "START",
+        "HIT-LETTR",
+        "MISS-LTTR",
+        "DUPE-LTTR",
+        "WIN-LETTR",
+        "WIN-WORD",
+        "MISS-WORD",
+        "MISS-PART",
+        "DUPE-WORD",
+        "GAME-OVER",
+        "TIMEOUT",
+        "STOP",
+        "EVIL-SWAP",
+        "GLITCH-HOLD",
+        "STREAK-END",
+        "AWARD-WIN",
+        "AWARD-LTER",
+        "CP-START",
+        "CP-BAD-INPUT",
+        "REFUND",
+        "BLOCKED",
+        "COOLDOWN",
+        "ANTICHEAT",
+        "ADDICTED",
+        "FREE-START",
+        "FREE-END"
+      ],
+      "platforms": [
+        "twitch",
+        "youtube",
+        "kick"
+      ]
+    },
+    "help": [
+      {
+        "heading": "A round",
+        "lines": [
+          {
+            "note": "A moderator (or anyone, from the Access page) starts a round, a word is drawn from the list and shown masked, and chat guesses letters or the whole word. Lives, wrong guesses, hints and the round clock tick along until somebody solves it, the lives run out, time is up or a moderator stops it."
+          },
+          {
+            "command": "!hangman",
+            "what": "starts a round (also !hm); !hangman blitz forces a blitz round, if allowed."
+          },
+          {
+            "command": "!g e",
+            "what": "guesses a letter; !g streamer guesses the whole word (also !guess)."
+          },
+          {
+            "command": "!hmr",
+            "what": "repeats the masked word, the lives and the guesses (also !hangmanrepeat)."
+          },
+          {
+            "command": "!killhm",
+            "what": "moderators: stops the round and reveals the word (also !killhangman)."
+          },
+          {
+            "command": "!hma add bob",
+            "what": "moderators: puts a viewer on the addicted list; !hma remove bob takes them off (also !hangmanaddict)."
+          },
+          {
+            "command": "!SetFreeHangman",
+            "what": "moderators: turns Free mode on, letters and wins pay nothing. !EndFreeHangman turns it off."
+          }
+        ]
+      },
+      {
+        "heading": "What a win pays",
+        "lines": [
+          {
+            "note": "'Win pays' for the whole word, scaled up for harder and longer words when word scaling is on, times the blitz multiplier in a blitz, plus a streak bonus, then the subscriber or VIP boost; an addicted viewer loses a share. Every revealed letter can pay its own reward. A channel point stake comes back times the stake payout multiplier, in your currency."
+          },
+          {
+            "note": "Which words play: the difficulty range and the categories on the Words page. The hint stored with a word is revealed after enough wrong guesses."
+          }
+        ]
+      },
+      {
+        "heading": "Blitz and Evil",
+        "lines": [
+          {
+            "note": "A blitz round is short, has fewer lives and multiplies every point; it comes by chance or on '!hangman blitz'. Evil Hangman swaps the word mid-round once chat has burned through part of its lives: the overlay glitches, every guess is wiped except one revealed letter, and chat only hears about it once the glitch is over."
+          }
+        ]
+      },
+      {
+        "heading": "The scoreboard",
+        "lines": [
+          {
+            "command": "!hms",
+            "what": "shows the top of the board for this platform (also !hangmanscoreboard)."
+          },
+          {
+            "command": "!hmp",
+            "what": "shows a viewer's own stats: wins, played, win rate, points, letters, word wins, streak (also !hangmanpersonal)."
+          },
+          {
+            "command": "!hml bob",
+            "what": "looks up another viewer's stats (also !hmlookup)."
+          }
+        ]
+      },
+      {
+        "heading": "For your own actions",
+        "lines": [
+          {
+            "note": "Custom triggers (Custom > Chat Game > Hangman Game): Hangman: Game Start, Game Win, Game Loss, Game Stopped and Timeout fire with the round as arguments - roundOutcome, roundWord, roundCategory, roundDifficulty, roundPlatform, roundWinner, roundWinnerId, roundPoints, roundWrongGuesses, roundMaxWrong, roundBlitz, roundParticipants; Hangman: Free Game Start and Free Game End when Free mode is switched. GetLastRoundResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action; StartFreeGame and EndFreeGame switch Free mode from there."
+          },
+          {
+            "note": "Per viewer, on the platform they played on (Streamer.bot's user variables): hm_wins, hm_losses, hm_played, hm_pointsEarned, hm_lettersGuessed, hm_wordsGuessed, hm_streak, hm_bestStreak."
+          }
+        ]
+      },
+      {
+        "heading": "Where things are kept",
+        "lines": [
+          {
+            "command": "configs.json",
+            "what": "everything on these pages, in Chat Games\\Hangman Game."
+          },
+          {
+            "command": "Hangman-Wordlist.json",
+            "what": "the word list, next to it; the Words page edits it."
+          },
+          {
+            "command": "uiframework.layout.json",
+            "what": "your layout of this window: theme, language, renamed or hidden pages and fields."
+          },
+          {
+            "command": "hangman_overlay.html",
+            "what": "the overlay, in the overlay folder, with hangman_state.json beside it."
+          },
+          {
+            "command": "HM-log-<date>.txt",
+            "what": "the log, in Chat Games\\Logs."
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "nate1280 / Streamer.bot and YOU ♡",
+      "sections": [
+        {
+          "heading": "Needs a points system",
+          "lines": [
+            {
+              "note": "Rounds pay out with the points of a currency system. These two are picked up without any setup:"
+            },
+            {
+              "link": "Currency Core by StreamUP",
+              "url": "https://streamup.tips/product/currency-core"
+            },
+            {
+              "link": "LOYALTY POINTS by tawmae",
+              "url": "https://tawmae.xyz/loyalty-points"
+            },
+            {
+              "note": "Anything else works too - name its variable on the Access page. Twitch channel points can start a round, but a win always pays in that currency."
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "Hangman Game on the Streamer.bot Discord",
+          "url": "https://discord.com/channels/834650675224248362/1448251872744837203/1448251872744837203"
+        }
+      ]
+    }
+  },
+  "lang": {
+    "de": {
+      "pages": {
+        "words": "Wörter",
+        "board": "Rangliste"
+      },
+      "keys": {
+        "maxWrongGuesses": {
+          "label": "Leben (falsche Versuche)",
+          "help": "Wie viele falsche Versuche eine Runde erlaubt, bevor das letzte Leben weg ist und die Runde verloren ist."
+        },
+        "roundDurationSeconds": {
+          "label": "Rundendauer",
+          "help": "Wie lange eine Runde laufen darf, bevor das Wort aufgedeckt wird und sie endet. Praktisch in einem ruhigen Chat, damit eine Runde nie ewig läuft. 0 = keine Grenze."
+        },
+        "timeReminderEnabled": {
+          "label": "Vor dem Ende erinnern",
+          "help": "Postet kurz vor dem Ablauf der Runde eine Warnung mit dem maskierten Wort."
+        },
+        "timeReminderSecondsLeft": {
+          "label": "So viel Zeit vorher",
+          "help": "Wie lange vor dem Ablauf die Erinnerung rausgeht."
+        },
+        "hintEnabled": {
+          "label": "Hinweise nutzen",
+          "help": "Der zu jedem Wort gespeicherte Hinweis wird aufgedeckt, sobald der Chat genug falsche Versuche hat. Bis dahin bleibt er im Chat und auf dem Overlay verborgen."
+        },
+        "hintAfterWrongGuesses": {
+          "label": "Hinweis nach falschen Versuchen",
+          "help": "Wie viele falsche Versuche, bevor der Hinweis aufgedeckt wird (Wiederholungen zählen nicht). Muss unter den Leben bleiben, sonst endet die Runde, bevor der Hinweis kommt."
+        },
+        "hintStopRevealPercent": {
+          "label": "Kein Hinweis mehr ab",
+          "help": "Sobald dieser Anteil des Wortes schon aufgedeckt ist, gibt es den Hinweis nicht mehr."
+        },
+        "blitzEnabled": {
+          "label": "Blitzrunden",
+          "help": "Eine kurze, scharfe Runde: weniger Zeit, weniger Leben, und jeder Punkt zählt mehrfach. Eine Runde kann per Zufall zum Blitz werden, Mods rufen eine mit '!hangman blitz'. Das Overlay zeigt solange ein BLITZ-Abzeichen."
+        },
+        "blitzChancePercent": {
+          "label": "Blitz-Chance",
+          "help": "Chance, dass eine gestartete Runde zum Blitz wird, per Chat-Befehl wie per Kanalpunkte. 0 = Blitzrunden nur auf Befehl."
+        },
+        "blitzCommandEnabled": {
+          "label": "'!hangman blitz' erlauben",
+          "help": "Moderatoren und der Broadcaster erzwingen einen Blitz, indem sie 'blitz' an den Startbefehl hängen (!hangman blitz oder !hm blitz)."
+        },
+        "blitzDurationSeconds": {
+          "label": "Blitz-Dauer",
+          "help": "Wie lange eine Blitzrunde dauert. Gilt auch, wenn die Rundendauer 0 ist."
+        },
+        "blitzMaxWrongGuesses": {
+          "label": "Blitz-Leben",
+          "help": "Falsche Versuche, die eine Blitzrunde erlaubt, statt der Leben oben."
+        },
+        "blitzPayoutMultiplier": {
+          "label": "Blitz-Multiplikator",
+          "help": "Buchstabenbelohnungen und der Gewinn werden im Blitz damit multipliziert. Der Kanalpunkte-Einsatz nicht: er zahlt immer so zurück, wie auf der Seite Zugriff eingestellt."
+        },
+        "evilEnabled": {
+          "label": "Evil Hangman",
+          "help": "Hat der Chat einen Teil seiner Leben verbraucht, flackert das Overlay und das Wort wird gegen ein anderes getauscht. Alle Versuche werden gelöscht, bis auf einen zufällig gewählten, schon aufgedeckten Buchstaben: der wandert ins neue Wort. Höchstens einmal pro Runde."
+        },
+        "evilTriggerPercent": {
+          "label": "Glitch bei (Anteil der Leben)",
+          "help": "Der Tausch kommt mit dem falschen Versuch, der diesen Anteil der Leben verbraucht. 50 bei 6 Leben heißt beim 3. falschen Versuch. Muss unter 100 bleiben, sonst ist die Runde vorher verloren."
+        },
+        "evilChancePercent": {
+          "label": "Evil-Chance",
+          "help": "Chance, dass eine Runde überhaupt evil ist, beim Start gewürfelt. 100 = jede Runde, 25 = etwa jede vierte."
+        },
+        "evilResetLives": {
+          "label": "Leben beim Tausch auffüllen",
+          "help": "An: das neue Wort beginnt mit vollen Leben. Aus: verlorene Leben bleiben verloren, die wirklich böse Art."
+        },
+        "evilSameCategory": {
+          "label": "Gleiche Kategorie bevorzugen",
+          "help": "Tauscht zu einem Wort derselben Kategorie, wenn eines passt; sonst zu einer beliebigen Kategorie im Spiel."
+        },
+        "evilGlitchSeconds": {
+          "label": "Glitch-Dauer",
+          "help": "Wie lange das Overlay flackert: das alte Wort zerfällt, verwürfelt sich, das neue entschlüsselt sich, dann leuchtet der überlebende Buchstabe auf. Der Chat erfährt vom Tausch erst nach dem Glitch, Versuche werden solange ignoriert. 0 = ohne Effekt tauschen und sofort ansagen."
+        },
+        "rewardWinPoints": {
+          "label": "Gewinn zahlt",
+          "help": "Der Grundbetrag, den ein Zuschauer für die vollständige richtige Antwort bekommt."
+        },
+        "rewardPerLetterEnabled": {
+          "label": "Belohnung je Buchstabe",
+          "help": "Belohnt einen Zuschauer für einen richtig geratenen Buchstaben."
+        },
+        "rewardLetterPoints": {
+          "label": "Punkte je Buchstabe",
+          "help": "Was ein einzelner richtiger Buchstabe zahlt."
+        },
+        "scaleRewardByWord": {
+          "label": "Schwere und lange Wörter zahlen mehr",
+          "help": "Der Bonus ist ein Prozentsatz auf 'Gewinn zahlt', vor den Rollen-Boni. Aus: jedes Wort zahlt genau 'Gewinn zahlt'."
+        },
+        "difficultyBonusPercent": {
+          "label": "Schwierigkeitsbonus",
+          "help": "Bonus je Schwierigkeitsstufe über 1. 25 heißt: ein Wort der Stufe 3 zahlt +50 %."
+        },
+        "lengthBonusPercent": {
+          "label": "Längenbonus",
+          "help": "Bonus je Buchstabe über der Schwelle darunter (Leerzeichen zählen nicht). 5 bei einer Schwelle von 4 heißt: ein Wort mit 9 Buchstaben zahlt +25 %."
+        },
+        "lengthBonusFromLetters": {
+          "label": "Längenbonus ab (Buchstaben)",
+          "help": "Wortlänge, ab der der Längenbonus zählt. Wörter bis zu dieser Länge bekommen keinen."
+        },
+        "maxWordBonusPercent": {
+          "label": "Höchster Wortbonus",
+          "help": "Obergrenze für Schwierigkeits- und Längenbonus zusammen, damit ein sehr langes schweres Wort nicht absurd zahlt. 0 = keine Grenze."
+        },
+        "subscriberBoostEnabled": {
+          "label": "Abonnenten-Bonus",
+          "help": "Gibt Twitch-Abonnenten einen größeren Gewinn, nach der Wortskalierung. Nur Twitch."
+        },
+        "subscriberBoostPercent": {
+          "label": "Abonnenten-Bonus",
+          "help": "Wie viel Abonnenten zusätzlich bekommen."
+        },
+        "vipBoostEnabled": {
+          "label": "VIP-Bonus",
+          "help": "Gibt Twitch-VIPs einen größeren Gewinn, nach der Wortskalierung. Nur Twitch."
+        },
+        "vipBoostPercent": {
+          "label": "VIP-Bonus",
+          "help": "Wie viel VIPs zusätzlich bekommen."
+        },
+        "freeGame": {
+          "label": "Freier Modus",
+          "help": "Jede Runde ist frei: Buchstaben und der Gewinn zahlen nichts, und der Chat bekommt die Nachrichten unter Freier Modus. !SetFreeHangman und !EndFreeHangman schalten ihn aus dem Chat (Moderatoren)."
+        },
+        "minDifficulty": {
+          "label": "Niedrigste Schwierigkeit",
+          "help": "Niedrigste Schwierigkeit, die das Spiel zieht. Wörter darunter kommen nie dran."
+        },
+        "maxDifficulty": {
+          "label": "Höchste Schwierigkeit",
+          "help": "Höchste Schwierigkeit, die das Spiel zieht. Wörter darüber kommen nie dran."
+        },
+        "excludedCategories": {
+          "label": "Ausgelassene Kategorien",
+          "help": "Kategorien, aus denen das Spiel nie zieht: eine so tippen, wie sie in der Liste unten steht, dann Enter. Alle anderen Kategorien sind im Spiel."
+        },
+        "words": {
+          "label": "Wörter",
+          "help": "Eine Zeile je Wort: das Wort, wie der Chat es raten muss, sein Hinweis, seine Kategorie und eine Schwierigkeit ab 1. 'Standardwerte wiederherstellen' holt die eingebaute Liste zurück; die Liste liegt in Hangman-Wordlist.json neben den Einstellungen."
+        },
+        "openWordlistFolder": {
+          "label": "Ordner der Wortliste öffnen",
+          "help": "Öffnet den Ordner mit Hangman-Wordlist.json im Explorer."
+        },
+        "importSource": {
+          "label": "Quelle",
+          "help": "Woher die Wörter kommen: Wikidata (Länder, Hauptstädte, Flüsse … oder jede Klasse per Q-ID), OdeNet (deutsche Substantive nach Thema), PokéAPI (Pokémon nach Generation) oder IGDB (Videospiele; braucht eine Twitch-Entwickler-App)."
+        },
+        "importLanguage": {
+          "label": "Sprache",
+          "help": "Sprache der Wörter und Hinweise, wo die Quelle beide hat (Wikidata, PokéAPI). OdeNet ist deutsch, IGDB englisch."
+        },
+        "importTopic": {
+          "label": "Thema",
+          "help": "Wikidata: Länder, Hauptstädte, Städte, Flüsse, Berge, Elemente, Instrumente, Sportarten, Hunde oder Eigene Klasse mit einer Q-ID darunter. OdeNet: Tiere, Pflanzen, Essen, Gegenstände, Personen, Körper, Orte, Stoffe, Natur, Gefühle."
+        },
+        "importCustomClass": {
+          "label": "Wikidata-Klasse (Q-ID)",
+          "help": "Für das Thema Eigene Klasse: die Q-ID der Klasse, deren Instanzen zu Wörtern werden, etwa Q11424 für Filme."
+        },
+        "importGenerationFrom": {
+          "label": "Ab Generation",
+          "help": "Erste Pokémon-Generation, die dabei ist, 1 bis 9."
+        },
+        "importGenerationTo": {
+          "label": "Bis Generation",
+          "help": "Letzte Pokémon-Generation, die dabei ist, 1 bis 9."
+        },
+        "importIgdbClientId": {
+          "label": "IGDB-Client-ID",
+          "help": "Client-ID deiner Twitch-Entwickler-App (dev.twitch.tv/console/apps). Nach dem ersten Import in Streamer.bots globalen Variablen abgelegt, also nur einmal zu tippen."
+        },
+        "importIgdbClientSecret": {
+          "label": "IGDB-Client-Secret",
+          "help": "Client-Secret dieser App; wird mit der ID nach dem ersten Import abgelegt."
+        },
+        "importIgdbMinRatings": {
+          "label": "Mindestens so viele Bewertungen auf IGDB",
+          "help": "Nur Spiele mit mindestens so vielen Bewertungen auf IGDB. Höher heißt bekanntere Titel."
+        },
+        "importCategory": {
+          "label": "Kategorie der importierten Wörter",
+          "help": "Jedes importierte Wort landet in dieser Kategorie; leer nimmt den Namen des Themas. Eine bestehende Kategorie nennen, um sie zu ergänzen."
+        },
+        "importMaxCount": {
+          "label": "Höchstens so viele Wörter",
+          "help": "Wie viele Wörter höchstens geholt werden."
+        },
+        "importMaxLetters": {
+          "label": "Höchstens so viele Buchstaben",
+          "help": "Längere Wörter werden übersprungen."
+        },
+        "importMaxWords": {
+          "label": "Höchstens so viele Wörter je Eintrag",
+          "help": "Einträge aus mehr Wörtern werden übersprungen."
+        },
+        "importReplaceUmlauts": {
+          "label": "Umlaute ersetzen",
+          "help": "Schreibt ae, oe, ue und ss für ä, ö, ü und ß, damit der Chat sie mit einfachen Buchstaben raten kann."
+        },
+        "importFixedDifficulty": {
+          "label": "Schwierigkeit für jedes importierte Wort",
+          "help": "0 wählt je Wort eine Schwierigkeit aus Länge und Bekanntheit."
+        },
+        "importWords": {
+          "label": "Jetzt importieren",
+          "help": "Holt die Wörter mit den Einstellungen oben aus der Quelle, überspringt die schon in der Liste und schreibt den Rest in Hangman-Wordlist.json. Fenster neu öffnen, um sie in der Liste oben zu sehen."
+        },
+        "overlayEnabled": {
+          "label": "Overlay",
+          "help": "Schreibt die Overlay-Dateien und hält sie aktuell. Das Overlay ist eine lokale HTML-Datei, die OBS als Browserquelle lädt; das Spiel schreibt den Rundenstand daneben und die Seite zeichnet sich selbst neu. Aus: gar keine Overlay-Dateien."
+        },
+        "overlayFolder": {
+          "label": "Overlay-Ordner",
+          "help": "Wo hangman_overlay.html liegt: ein einfacher Name wie 'Overlay' ist ein Unterordner von Chat Games\\Hangman Game, ein voller Pfad legt es irgendwohin. Der Ordner wird angelegt, wenn er fehlt; eine Änderung schreibt dort eine frische Overlay-Datei, also die OBS-Browserquelle danach umbiegen."
+        },
+        "openOverlayFolder": {
+          "label": "Overlay-Ordner öffnen",
+          "help": "Öffnet den Overlay-Ordner im Explorer."
+        },
+        "overlayFigureMode": {
+          "label": "Figur",
+          "help": "Proportional zeichnet die klassische Figur aus 6 Teilen, verteilt auf so viele Leben, wie du erlaubst, sodass das letzte Leben sie immer vollendet. Klassisch + Galgen nimmt die 4 Galgenteile als weitere Schritte dazu, passend zu mehr Leben. Auto: proportional bis 6 Leben, darüber mit Galgen."
+        },
+        "overlayScalePercent": {
+          "label": "Overlay-Größe",
+          "help": "Skaliert das ganze Overlay. 100 = wie entworfen, 150 = anderthalbfach, 50 = halb so groß."
+        },
+        "overlayFontScalePercent": {
+          "label": "Textgröße",
+          "help": "Skaliert nur den Text, die Figur bleibt."
+        },
+        "overlayGallowsColour": {
+          "label": "Galgenfarbe",
+          "help": "Farbe des Galgens: Sockel, Pfosten, Balken und Seil. Dieselbe wie die Figurfarbe ergibt den klassischen einfarbigen Look."
+        },
+        "overlayFigureColour": {
+          "label": "Figurfarbe",
+          "help": "Farbe des Körpers: Kopf, Rumpf, Arme und Beine."
+        },
+        "overlayTextColour": {
+          "label": "Textfarbe",
+          "help": "Farbe des Wortes und der Werte."
+        },
+        "overlayAccentColour": {
+          "label": "Akzentfarbe",
+          "help": "Farbe der Kategorie und der kleinen Beschriftungen."
+        },
+        "overlayBackgroundColour": {
+          "label": "Hintergrundfarbe",
+          "help": "Farbe der Fläche hinter dem Overlay. Erst sichtbar, wenn die Deckkraft über 0 ist."
+        },
+        "overlayBackgroundOpacity": {
+          "label": "Deckkraft des Hintergrunds",
+          "help": "0 = ganz durchsichtig (das Beste für Overlays), 100 = deckend."
+        },
+        "overlayEndFadeSeconds": {
+          "label": "Letztes Wort stehen lassen für",
+          "help": "Wie lange das letzte Wort nach einer Runde stehen bleibt, bevor es ausblendet. 0 = sofort weg."
+        },
+        "overlayShowCategory": {
+          "label": "Kategorie",
+          "help": "Zeigt die Kategorie des Wortes über dem Rätsel."
+        },
+        "overlayShowLives": {
+          "label": "Leben",
+          "help": "Zeigt die verbleibenden Leben als Herzen."
+        },
+        "overlayShowHint": {
+          "label": "Hinweis",
+          "help": "Zeigt den Hinweis auf dem Overlay, sobald das Spiel ihn im Chat verrät."
+        },
+        "overlayShowGuessed": {
+          "label": "Geratene Buchstaben",
+          "help": "Zeigt jeden bisher geratenen Buchstaben."
+        },
+        "overlayShowWrong": {
+          "label": "Falsche Buchstaben",
+          "help": "Zeigt die falschen Buchstaben, durchgestrichen."
+        },
+        "overlayShowWrongWords": {
+          "label": "Falsche Wörter",
+          "help": "Zeigt ganze Wörter, die der Chat falsch geraten hat, durchgestrichen."
+        },
+        "obsConnectionId": {
+          "label": "OBS-Verbindung",
+          "help": "Welche OBS-Verbindung in Streamer.bot (Stream Apps > OBS Studio) genommen wird; die erste ist 0."
+        },
+        "obsSceneName": {
+          "label": "Szene",
+          "help": "Die Szene, in die die Browserquelle kommt; wird angelegt, wenn es sie nicht gibt."
+        },
+        "obsSourceName": {
+          "label": "Quelle",
+          "help": "Name der Browserquelle, die angelegt wird."
+        },
+        "setupObsOverlay": {
+          "label": "Browserquelle in OBS anlegen",
+          "help": "Legt die Szene oben an, wenn sie fehlt, und fügt eine Browserquelle hinzu, die auf die Overlay-Datei zeigt. Braucht OBS verbunden in Streamer.bot. Geht auch von Hand: Browserquelle > Lokale Datei > hangman_overlay.html aus dem Ordner oben."
+        },
+        "refreshObsOverlay": {
+          "label": "Overlay in OBS neu laden",
+          "help": "Lädt jede OBS-Browserquelle neu, die hangman_overlay.html zeigt, damit OBS das neueste Overlay nimmt. Das Spiel macht das nach einem Update auch selbst, sobald OBS verbunden ist."
+        },
+        "requireModToStart": {
+          "label": "Nur Moderatoren starten eine Runde",
+          "help": "Nur Moderatoren und der Broadcaster starten eine Runde; raten darf in einer laufenden Runde weiter jeder."
+        },
+        "allowChannelPointStart": {
+          "label": "Eine Belohnung startet die Runde",
+          "help": "Auf Twitch startet eine Kanalpunkte-Einlösung die Runde statt des Chat-Befehls, der auf Twitch dann aus ist. Raten darf weiter jeder wie gewohnt."
+        },
+        "channelPointRewardId": {
+          "label": "Belohnungs-ID",
+          "help": "Die ID der Belohnung. Zu finden unter ayrtonalexis.com/reward_checker: autorisieren, 'Get Rewards', die ID deiner Belohnung kopieren."
+        },
+        "channelPointFixedBet": {
+          "label": "Fester Einsatz",
+          "help": "0 liest den Einsatz aus der Einlösung: eine getippte Zahl, sonst der Preis der Belohnung, sonst kein Einsatz. Über 0 setzt jede Einlösung genau so viel."
+        },
+        "channelPointPayoutMultiplier": {
+          "label": "Multiplikator des Einsatzes",
+          "help": "Streamer.bot kann keine Kanalpunkte auszahlen, ein Gewinn zahlt also immer in deiner Währung: der Einsatz mal dieser Wert, auf den Gewinn drauf. 1 zahlt ihn einmal zurück, 2 verdoppelt ihn, 0 zahlt keinen Einsatzbonus."
+        },
+        "refundFailedRedemptions": {
+          "label": "Einlösungen erstatten, die keine Runde starten",
+          "help": "Kann die Runde nicht starten (läuft schon, kein Wort, ungültiger Einsatz), wird die Einlösung abgebrochen und die Kanalpunkte gehen zurück. Geht nur, solange die Einlösung noch in der Warteschlange steht."
+        },
+        "antiCheatMaxGuesses": {
+          "label": "Versuche je Zeitfenster",
+          "help": "Wie viele Versuche ein Zuschauer im Zeitfenster darunter machen darf; Broadcaster sind ausgenommen. 0 = keine Grenze."
+        },
+        "antiCheatWindowSeconds": {
+          "label": "Zeitfenster",
+          "help": "Der Zeitraum, über den die Versuche gezählt werden."
+        },
+        "addictedEnabled": {
+          "label": "Süchtige behandeln",
+          "help": "Die Stammgäste, die jede Runde spielen, spielen weiter, bekommen aber weniger und müssen ihre Versuche strecken, damit Neue zum Zug kommen."
+        },
+        "addictedPointsPenaltyPercent": {
+          "label": "Punktabzug",
+          "help": "Wie viel von ihren Gewinnen abgezogen wird. 50 heißt, sie bekommen die Hälfte."
+        },
+        "addictedGuessIntervalSeconds": {
+          "label": "Pause zwischen Versuchen",
+          "help": "Mindestzeit, die ein süchtiger Zuschauer zwischen seinen Versuchen warten muss."
+        },
+        "logToFile": {
+          "label": "Protokoll je Tag schreiben",
+          "help": "Jede Runde, jeder Versuch, jede Auszahlung und Ablehnung landet in Chat Games\\Logs\\HM-log-<Datum>.txt, das die Seite Protokoll liest."
+        },
+        "scoreboardTopN": {
+          "label": "Plätze auf der Rangliste",
+          "help": "Wie viele Zuschauer die Rangliste zeigt, 1 bis 25."
+        },
+        "broadcasterAllowed": {
+          "label": "Broadcaster zeigen",
+          "help": "Zeigt dich, den Broadcaster, auf der Rangliste."
+        },
+        "botAllowed": {
+          "label": "Bot zeigen",
+          "help": "Zeigt dein Bot-Konto auf der Rangliste."
+        },
+        "blockedFromBoard": {
+          "label": "Von der Rangliste ausgeblendet",
+          "help": "Zuschauer, die auf der Rangliste nicht erscheinen, aber spielen dürfen; praktisch, wenn andere Bots mitspielen."
+        },
+        "streaksEnabled": {
+          "label": "Serien zählen",
+          "help": "Jedes gelöste Wort zählt eins auf die Serie eines Zuschauers; sie reißt erst, wenn eine Runde verloren geht, in der er geraten hat. Eine gestoppte Runde reißt nichts. Serien werden im Chat angesagt, stehen in den persönlichen Werten, und der automatische Reset löscht auch sie."
+        },
+        "streakAnnounceFrom": {
+          "label": "Ansagen ab",
+          "help": "Serien mindestens dieser Länge werden nach einem Gewinn gefeiert und beim Reißen genannt. Nie unter 2."
+        },
+        "streakBonusPercent": {
+          "label": "Serienbonus",
+          "help": "Kommt für jeden Gewinn in Folge nach dem ersten auf den Gewinn drauf. 10 heißt: der 3. Gewinn in Folge zahlt +20 %. 0 = kein Bonus."
+        },
+        "streakBonusMaxPercent": {
+          "label": "Höchster Serienbonus",
+          "help": "Obergrenze für den Serienbonus. 0 = keine Grenze."
+        },
+        "resetAllMonthly": {
+          "label": "Alle Plattformen monatlich zurücksetzen",
+          "help": "Leert die Ranglisten aller Plattformen am Monatsende."
+        },
+        "resetTwitchMonthly": {
+          "label": "Twitch: monatlich zurücksetzen",
+          "help": "Leert die Twitch-Rangliste am Monatsende."
+        },
+        "resetTwitchDay": {
+          "label": "Twitch: nach Tagen zurücksetzen",
+          "help": "Leert die Twitch-Rangliste alle so viele Tage. 0 = nie."
+        },
+        "resetYouTubeMonthly": {
+          "label": "YouTube: monatlich zurücksetzen",
+          "help": "Leert die YouTube-Rangliste am Monatsende."
+        },
+        "resetYouTubeDay": {
+          "label": "YouTube: nach Tagen zurücksetzen",
+          "help": "Leert die YouTube-Rangliste alle so viele Tage. 0 = nie."
+        },
+        "resetKickMonthly": {
+          "label": "Kick: monatlich zurücksetzen",
+          "help": "Leert die Kick-Rangliste am Monatsende."
+        },
+        "resetKickDay": {
+          "label": "Kick: nach Tagen zurücksetzen",
+          "help": "Leert die Kick-Rangliste alle so viele Tage. 0 = nie."
+        },
+        "msgGameStart": {
+          "label": "Rundenstart",
+          "help": "Wenn eine Runde beginnt."
+        },
+        "msgAlreadyRunning": {
+          "label": "Läuft schon",
+          "help": "Wenn jemand starten will, während eine Runde läuft."
+        },
+        "msgNoGameActive": {
+          "label": "Keine Runde aktiv",
+          "help": "Wenn jemand rät, obwohl keine Runde läuft."
+        },
+        "msgRepeat": {
+          "label": "Wiederholung",
+          "help": "Wenn ein Zuschauer mit dem Wiederholungsbefehl nach dem Stand fragt."
+        },
+        "msgTimeReminder": {
+          "label": "Zeiterinnerung",
+          "help": "Kurz bevor die Runde abläuft."
+        },
+        "msgCorrectLetter": {
+          "label": "Richtiger Buchstabe",
+          "help": "Wenn ein geratener Buchstabe im Wort ist."
+        },
+        "msgCorrectWord": {
+          "label": "Richtiges Wort",
+          "help": "Wenn ein Zuschauer das ganze Wort löst."
+        },
+        "msgLetterReward": {
+          "label": "Buchstabenbelohnung",
+          "help": "Wenn ein Zuschauer Punkte für einen aufgedeckten Buchstaben bekommt."
+        },
+        "msgAlreadyGuessed": {
+          "label": "Schon geraten",
+          "help": "Wenn ein Buchstabe schon geraten war."
+        },
+        "msgInvalidGuess": {
+          "label": "Ungültiger Versuch",
+          "help": "Wenn der Versuch nicht verstanden wurde."
+        },
+        "msgWrongLetter": {
+          "label": "Falscher Buchstabe",
+          "help": "Wenn ein geratener Buchstabe nicht im Wort ist."
+        },
+        "msgWrongWord": {
+          "label": "Falsches Wort",
+          "help": "Bei einem falschen ganzen Wort, das zwei Leben kostet."
+        },
+        "msgWrongPartial": {
+          "label": "Falsches Teilwort",
+          "help": "Bei einem falschen Teil einer mehrteiligen Antwort, der ein Leben kostet."
+        },
+        "msgDuplicateWrong": {
+          "label": "Wiederholter Fehlversuch",
+          "help": "Wenn derselbe Zuschauer einen schon falschen Versuch wiederholt."
+        },
+        "msgGameOver": {
+          "label": "Game over",
+          "help": "Wenn dem Chat die Leben ausgehen."
+        },
+        "msgGameTimeout": {
+          "label": "Zeit abgelaufen",
+          "help": "Wenn die Rundendauer abläuft, ohne dass jemand löst."
+        },
+        "msgGameStopped": {
+          "label": "Gestoppt",
+          "help": "Wenn ein Moderator die Runde beendet."
+        },
+        "msgHint": {
+          "label": "Hinweis",
+          "help": "Wenn der Hinweis aufgedeckt wird."
+        },
+        "msgBlitzStart": {
+          "label": "Blitzstart",
+          "help": "Statt der normalen Startnachricht, wenn eine Runde ein Blitz ist."
+        },
+        "msgBlitzWin": {
+          "label": "Blitzgewinn",
+          "help": "Statt 'Richtiges Wort', wenn eine Blitzrunde gelöst wird."
+        },
+        "msgEvilSwap": {
+          "label": "Wort getauscht",
+          "help": "Nach dem Overlay-Glitch, wenn ein aufgedeckter Buchstabe den Tausch überlebt hat."
+        },
+        "msgEvilSwapNoLetter": {
+          "label": "Wort getauscht, kein Buchstabe",
+          "help": "Nach dem Overlay-Glitch, wenn der Chat vor dem Tausch keinen Buchstaben aufgedeckt hatte."
+        },
+        "msgStreak": {
+          "label": "Serie",
+          "help": "Nach einem Gewinn, sobald die Serie 'Ansagen ab' erreicht."
+        },
+        "msgStreakLost": {
+          "label": "Serie gerissen",
+          "help": "Wenn eine verlorene Runde Serien ab 'Ansagen ab' beendet."
+        },
+        "msgPersonalStreak": {
+          "label": "Persönliche Serie",
+          "help": "Zusatzzeile unter den persönlichen Werten, solange Serien gezählt werden."
+        },
+        "msgModOnly": {
+          "label": "Nur Mods",
+          "help": "Wenn ein Zuschauer eine Runde starten will, obwohl nur Moderatoren dürfen."
+        },
+        "msgNotAllowed": {
+          "label": "Nicht erlaubt",
+          "help": "Wenn ein gesperrter Zuschauer mitmachen will."
+        },
+        "msgAntiCheat": {
+          "label": "Zu schnell",
+          "help": "Wenn ein Zuschauer gebremst wird, weil er zu schnell rät."
+        },
+        "globalCooldownMessage": {
+          "label": "Globale Abklingzeit",
+          "help": "Wenn jemand starten will, während die globale Abklingzeit noch läuft."
+        },
+        "userCooldownMessage": {
+          "label": "Abklingzeit je Zuschauer",
+          "help": "Wenn ein Zuschauer starten will, während seine eigene Abklingzeit noch läuft."
+        },
+        "msgAddictedSlowdown": {
+          "label": "Langsamer",
+          "help": "Wenn ein süchtiger Zuschauer vor Ablauf seiner Pause wieder rät."
+        },
+        "msgAddictedAdded": {
+          "label": "Hinzugefügt",
+          "help": "Nach einem erfolgreichen !addicted add."
+        },
+        "msgAddictedRemoved": {
+          "label": "Entfernt",
+          "help": "Nach einem erfolgreichen !addicted remove."
+        },
+        "msgAddictedAlreadyOnList": {
+          "label": "Schon auf der Liste",
+          "help": "Wenn jemand hinzugefügt wird, der schon auf der Liste steht."
+        },
+        "msgAddictedNotOnList": {
+          "label": "Nicht auf der Liste",
+          "help": "Wenn jemand entfernt wird, der nicht auf der Liste steht."
+        },
+        "msgAddictedUsage": {
+          "label": "Benutzung",
+          "help": "Wenn der Befehl !addicted falsch getippt wurde."
+        },
+        "msgChannelPointStart": {
+          "label": "Start per Einlösung",
+          "help": "Wenn eine Runde aus einer Kanalpunkte-Einlösung startet."
+        },
+        "msgChannelPointBusy": {
+          "label": "Einlösung bei laufender Runde",
+          "help": "Wenn eine Einlösung kommt, während eine Runde läuft."
+        },
+        "msgChannelPointBadInput": {
+          "label": "Einlösung mit falscher Eingabe",
+          "help": "Wenn der Zuschauer etwas in die Belohnung getippt hat, das keine positive Zahl ist."
+        },
+        "msgRedemptionRefunded": {
+          "label": "Einlösung erstattet",
+          "help": "Nachdem eine Einlösung erstattet wurde."
+        },
+        "msgScoreboardHeader": {
+          "label": "Kopfzeile der Rangliste",
+          "help": "Erste Zeile der Rangliste."
+        },
+        "msgScoreboardEntry": {
+          "label": "Eintrag der Rangliste",
+          "help": "Einmal je Zuschauer auf der Rangliste."
+        },
+        "msgScoreboardEmpty": {
+          "label": "Rangliste leer",
+          "help": "Wenn es noch keine Ranglistendaten gibt."
+        },
+        "msgPersonalStats": {
+          "label": "Persönliche Werte",
+          "help": "Wenn ein Zuschauer seine eigenen Werte abfragt."
+        },
+        "msgNoStats": {
+          "label": "Keine Werte",
+          "help": "Wenn der Zuschauer noch keine Werte hat."
+        },
+        "msgUserNotFound": {
+          "label": "Zuschauer nicht gefunden",
+          "help": "Wenn ein gesuchter Zuschauer nicht existiert."
+        },
+        "msgMonthlyReset": {
+          "label": "Reset-Ansage",
+          "help": "Wenn eine Rangliste zurückgesetzt wird."
+        },
+        "freeGameStartMessage": {
+          "label": "Gestartet",
+          "help": "Einmal gesendet, wenn !SetFreeHangman den freien Modus einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
+        "freeGameEndMessage": {
+          "label": "Beendet",
+          "help": "Einmal gesendet, wenn !EndFreeHangman den freien Modus ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        }
+      },
+      "texts": {
+        "Round": "Runde",
+        "Time reminder": "Zeiterinnerung",
+        "Hints": "Hinweise",
+        "Blitz round": "Blitzrunde",
+        "Evil Hangman": "Evil Hangman",
+        "Word scaling": "Wortskalierung",
+        "Role boosts": "Rollen-Boni",
+        "Free mode": "Freier Modus",
+        "Word selection": "Wortauswahl",
+        "Word list": "Wortliste",
+        "Import words": "Wörter importieren",
+        "Overlay file": "Overlay-Datei",
+        "Hangman figure": "Hangman-Figur",
+        "Appearance": "Aussehen",
+        "Show on overlay": "Auf dem Overlay zeigen",
+        "Who can start a round": "Wer eine Runde startet",
+        "Rate limit": "Tempolimit",
+        "Behaviour": "Verhalten",
+        "Streaks": "Serien",
+        "Auto reset": "Automatischer Reset",
+        "Guessing": "Raten",
+        "Wrong guesses": "Fehlversuche",
+        "Ending": "Ende",
+        "Blitz": "Blitz",
+        "Overlay on": "Overlay an",
+        "Overlay off": "Overlay aus",
+        "Mods start": "Mods starten",
+        "Anyone starts": "Jeder startet",
+        "Wikidata": "Wikidata",
+        "OdeNet (German nouns)": "OdeNet (deutsche Substantive)",
+        "PokéAPI (Pokémon)": "PokéAPI (Pokémon)",
+        "IGDB (video games)": "IGDB (Videospiele)",
+        "German": "Deutsch",
+        "English": "Englisch",
+        "Countries (Wikidata)": "Länder (Wikidata)",
+        "Capitals (Wikidata)": "Hauptstädte (Wikidata)",
+        "Big cities (Wikidata)": "Großstädte (Wikidata)",
+        "Rivers (Wikidata)": "Flüsse (Wikidata)",
+        "Mountains (Wikidata)": "Berge (Wikidata)",
+        "Chemical elements (Wikidata)": "Chemische Elemente (Wikidata)",
+        "Musical instruments (Wikidata)": "Musikinstrumente (Wikidata)",
+        "Sports (Wikidata)": "Sportarten (Wikidata)",
+        "Dog breeds (Wikidata)": "Hunderassen (Wikidata)",
+        "Custom class (Wikidata Q-ID)": "Eigene Klasse (Wikidata-Q-ID)",
+        "Animals (OdeNet)": "Tiere (OdeNet)",
+        "Plants (OdeNet)": "Pflanzen (OdeNet)",
+        "Food & drink (OdeNet)": "Essen & Trinken (OdeNet)",
+        "Objects & tools (OdeNet)": "Gegenstände (OdeNet)",
+        "People & jobs (OdeNet)": "Personen & Berufe (OdeNet)",
+        "Body (OdeNet)": "Körper (OdeNet)",
+        "Places (OdeNet)": "Orte (OdeNet)",
+        "Materials (OdeNet)": "Stoffe & Materialien (OdeNet)",
+        "Nature (OdeNet)": "Natur (OdeNet)",
+        "Feelings (OdeNet)": "Gefühle (OdeNet)",
+        "Auto: proportional up to 6 lives, gallows above": "Auto: proportional bis 6 Leben, darüber Galgen",
+        "Proportional: always 6 parts": "Proportional: immer 6 Teile",
+        "Classic + gallows: always 10 parts": "Klassisch + Galgen: immer 10 Teile",
+        "Overlay, from the Overlay page. Off: the game writes no overlay files.": "Overlay, von der Seite Overlay. Aus: das Spiel schreibt keine Overlay-Dateien.",
+        "Free mode, from the Game page or !SetFreeHangman. While it is on, letters and the win pay nothing.": "Freier Modus, von der Seite Spiel oder !SetFreeHangman. Solange er an ist, zahlen Buchstaben und der Gewinn nichts.",
+        "Who starts a round, from the Access page. Everyone can always guess.": "Wer eine Runde startet, von der Seite Zugriff. Raten darf immer jeder.",
+        "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.": "Noch keine Runden protokolliert. Jede Runde, jeder Versuch und jede Auszahlung landet hier, sobald 'Protokoll je Tag schreiben' an ist."
+      }
+    }
+  }
+}
