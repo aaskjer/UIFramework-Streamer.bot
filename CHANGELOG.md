@@ -5,6 +5,9 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- A number column of a list (`int`, `double`) is half as wide as a text one: a weight is short, the emote beside
+  it is what needs the room (Slot Machine's emote lists).
+
 ## [0.9.4] - 2026-11-05
 
 Pictures for YouTube's own emojis and for Kick emotes typed short.

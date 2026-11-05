@@ -151,13 +151,14 @@ namespace UIFramework
 
         private Grid Layout(FrameworkElement[] cells)
         {
-            // Number | one star-sized cell per column (text columns twice as wide) | remove button.
+            // Number | one star-sized cell per column (text columns twice as wide, number columns half: a weight
+            // or a count is short, the emote or text beside it is what needs the room) | remove button.
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
             for (int i = 0; i < _columns.Count; i++)
             {
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(_columns[i].Kind == "text" ? 2.0 : 1.0, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(StarsOf(_columns[i].Kind), GridUnitType.Star) });
             }
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
@@ -167,6 +168,16 @@ namespace UIFramework
                 grid.Children.Add(cells[i]);
             }
             return grid;
+        }
+
+        private static double StarsOf(string kind)
+        {
+            switch (kind)
+            {
+                case "text": return 2.0;
+                case "int": case "long": case "double": return 0.5;
+                default: return 1.0;
+            }
         }
 
         private Row AddRow(JObject item)
