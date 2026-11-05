@@ -5,6 +5,8 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- RhymeTime is the third host on the generic stub (v2.1.0, in German). An action's answer may carry
+  `clipboard`: text the window puts on the clipboard, since the game's thread has none (the overlay URL).
 - Classic Chat Gamble is the second host on the generic stub (v25.1.0, in German too); `hosts/chatgamble` lost its
   `spec.json` and `host-section.cs`, the schema carries the window. `tools/spec-to-window.ps1` writes an answer
   that is an object as its JSON and takes the log's file pattern from the old host section.

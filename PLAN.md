@@ -403,8 +403,9 @@ schreibt den Window-Block aus der Spec; High-Low ist umgestellt (Host-Block mit 
 Spiel-Action mit `UiHost.Handle` und `UiCurrency`, GUI-Action = `stub/Stub.cs`, `spec.json` und `host-section.cs`
 gelöscht, `schema.json` schreibt der Testlauf des Spiels). Stand 05.11.2026: Classic Chat Gamble ebenso (v25.1.0,
 mit `.Lang("de", …)`; die Antworten des alten Stubs sitzen als `WindowAnswers` neben dem Block im Spiel, der Test-
-Harness spielt das Spiel über `RunAction`). Offen: RhymeTime, Slot Machine, Blackjack, Battleship; zuletzt
-`embed-spec.ps1` und `Stub.spec.cs`.
+Harness spielt das Spiel über `RunAction`). RhymeTime ebenso (v2.1.0; die Overlay-Buttons laufen jetzt im Spiel
+auf Streamer.bots Thread, die URL geht per `clipboard` in der Antwort über das Fenster in die Zwischenablage).
+Offen: Slot Machine, Blackjack, Battleship; zuletzt `embed-spec.ps1` und `Stub.spec.cs`.
 
 ## 9. Tests und Werkzeuge
 
