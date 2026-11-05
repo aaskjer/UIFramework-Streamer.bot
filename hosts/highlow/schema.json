@@ -1,6 +1,6 @@
 {
   "host": "highlow",
-  "version": "v2.0.0",
+  "version": "v2.1.0",
   "settingsFile": "Chat Games/High-Low Game/HLG-Settings.json",
   "settings": [
     {
@@ -48,6 +48,14 @@
       "aliases": [
         "AwardPoints"
       ]
+    },
+    {
+      "key": "freeGame",
+      "default": false,
+      "page": "game",
+      "section": "Points",
+      "label": "Free mode",
+      "help": "Nobody wins or loses points, channel point redemptions included, and the guesses still count for the scoreboards. !SetFreeHighLow and !EndFreeHighLow switch it from chat (moderators), with the Started and Ended messages."
     },
     {
       "key": "wonPoints",
@@ -456,6 +464,30 @@
       ]
     },
     {
+      "key": "freeGameStartMessage",
+      "default": "🎲 Free mode is ON! Guess for free - no {currency} at stake!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Started",
+      "help": "Sent once when Free mode is turned on by !SetFreeHighLow, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "currency"
+      ]
+    },
+    {
+      "key": "freeGameEndMessage",
+      "default": "⏹️ Free mode has ended. Guesses count for {currency} again!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Ended",
+      "help": "Sent once when Free mode is turned off by !EndFreeHighLow, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "currency"
+      ]
+    },
+    {
       "key": "redemptionRefunded",
       "default": "↩️ @{user}, your channel point redemption was refunded.",
       "kind": "template",
@@ -644,6 +676,12 @@
     },
     "headerPills": [
       {
+        "key": "freeGame",
+        "on": "Free mode on",
+        "off": "Free mode off",
+        "tooltip": "Free mode, from the Game page or !SetFreeHighLow. While it is on, nobody wins or loses points."
+      },
+      {
         "key": "isChannelPointsTrigger",
         "on": "Channel points",
         "off": "Chat commands",
@@ -704,6 +742,10 @@
           {
             "command": "!highlowsetup",
             "what": "draws a fresh number and announces it. Optional; moderators only, set on the command itself."
+          },
+          {
+            "command": "!SetFreeHighLow",
+            "what": "moderators: turns Free mode on, nobody wins or loses points. !EndFreeHighLow turns it off."
           }
         ]
       },
@@ -732,6 +774,17 @@
           },
           {
             "note": "Cost and Fixed spend the channel points as the stake: a correct guess pays the stake in points, double on equal. Input lets the viewer type a bet in their own points; only a wrong equal costs it. Free plays like the chat commands."
+          }
+        ]
+      },
+      {
+        "heading": "For your own actions",
+        "lines": [
+          {
+            "note": "Every settled guess fires a custom trigger - HLG: Guess Won or HLG: Guess Lost, and HLG: Guess Settled always (Custom > Chat Game > High-Low Game) - with the guess as arguments: guessOutcome, guessUser, guessUserId, guessPlatform, guessGuess, guessPreviousNumber, guessNewNumber, guessMode, guessStake, guessAmount, guessPreviousPoints, guessNewPoints, guessCurrency and guessFree. GetLastGuessResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
+          },
+          {
+            "note": "HLG: New Number fires when !highlowsetup draws one (numberNew, numberUser, numberPlatform). HLG: Free Game Start and HLG: Free Game End fire when Free mode is switched from chat or by an Execute C# Method on StartFreeGame or EndFreeGame."
           }
         ]
       },
@@ -780,6 +833,18 @@
         "awardPoints": {
           "label": "Punkte vergeben",
           "help": "Aus, und es wird zum Spaß gespielt: niemand gewinnt oder verliert Punkte, die Tipps zählen trotzdem für die Bestenlisten."
+        },
+        "freeGame": {
+          "label": "Freier Modus",
+          "help": "Niemand gewinnt oder verliert Punkte, Kanalpunkt-Einlösungen eingeschlossen, und die Tipps zählen weiter für die Bestenlisten. !SetFreeHighLow und !EndFreeHighLow schalten ihn aus dem Chat (Moderatoren), mit den Nachrichten Gestartet und Beendet."
+        },
+        "freeGameStartMessage": {
+          "label": "Gestartet",
+          "help": "Einmal gesendet, wenn !SetFreeHighLow den freien Modus einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
+        "freeGameEndMessage": {
+          "label": "Beendet",
+          "help": "Einmal gesendet, wenn !EndFreeHighLow den freien Modus ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
         },
         "wonPoints": {
           "label": "Gewinnbetrag",
@@ -865,6 +930,10 @@
         }
       },
       "texts": {
+        "Free mode": "Freier Modus",
+        "Free mode on": "Freier Modus an",
+        "Free mode off": "Freier Modus aus",
+        "Free mode, from the Game page or !SetFreeHighLow. While it is on, nobody wins or loses points.": "Freier Modus, von der Seite Spiel oder !SetFreeHighLow. Solange er an ist, gewinnt und verliert niemand Punkte.",
         "Cost of the reward": "Kosten der Belohnung",
         "Fixed bet": "Fester Einsatz",
         "Viewer types a bet": "Zuschauer tippt einen Einsatz",

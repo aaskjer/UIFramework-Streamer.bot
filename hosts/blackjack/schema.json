@@ -1,6 +1,6 @@
 {
   "host": "blackjack",
-  "version": "v17.1.0",
+  "version": "v17.2.0",
   "settingsFile": "Chat Games/Blackjack Game/BJG-Settings.json",
   "settings": [
     {
@@ -9,7 +9,7 @@
       "page": "table",
       "section": "Betting",
       "label": "Free Game",
-      "help": "Hands are played for nothing: no stake is taken, no winnings are paid, and every message about points\nswitches to its Free Game wording. House Mode refuses to open a table while this is on.",
+      "help": "Hands are played for nothing: no stake is taken, no winnings are paid, and every message about points\nswitches to its Free Game wording. House Mode refuses to open a table while this is on. !SetFreeBlackjack and !EndFreeBlackjack switch it from chat (moderators).",
       "aliases": [
         "FreeGame"
       ]
@@ -1789,6 +1789,32 @@
       ],
       "aliases": [
         "MsgTurnTimeoutRefundFree"
+      ]
+    },
+    {
+      "key": "msgFreeGameStart",
+      "default": "🃏 Free Game is ON! Hands are played for nothing - no points needed!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Started",
+      "help": "Sent once when Free Game is turned on by !SetFreeBlackjack, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [],
+      "aliases": [
+        "MsgFreeGameStart"
+      ]
+    },
+    {
+      "key": "msgFreeGameEnd",
+      "default": "⏹️ Free Game has ended. Hands are played for points again!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free Game",
+      "label": "Ended",
+      "help": "Sent once when Free Game is turned off by !EndFreeBlackjack, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [],
+      "aliases": [
+        "MsgFreeGameEnd"
       ]
     },
     {
@@ -4008,7 +4034,7 @@
         "key": "freeGame",
         "on": "Free game on",
         "off": "Free game off",
-        "tooltip": "Free Game, from the Table page. While it is on, nobody stakes or wins anything."
+        "tooltip": "Free Game, from the Table page or !SetFreeBlackjack. While it is on, nobody stakes or wins anything."
       }
     ],
     "cooldowns": [
@@ -4118,6 +4144,10 @@
             "what": "Your own record, or the leaderboard."
           },
           {
+            "command": "!SetFreeBlackjack",
+            "what": "moderators: turns Free Game on, every hand is played for nothing. !EndFreeBlackjack turns it off."
+          },
+          {
             "note": "Those are the default trigger words; your streamer may have bound them to something else."
           }
         ]
@@ -4126,7 +4156,7 @@
         "heading": "For your own actions",
         "lines": [
           {
-            "note": "Every settled hand fires a custom trigger (Custom > Chat Game > Blackjack Game): BJG: Hand Won, BJG: Hand Lost or BJG: Hand Push for a hand at the table, BJG: Blackjack on top of Hand Won for a natural, BJG: Duel Settled once per duellist, BJG: House Hand Settled once per seat, and BJG: Hand Settled for every one of them, insurance, surrender, quit and timeout included. The trigger carries the hand as arguments: handOutcome (the log's result, WIN, BUST, DUEL PUSH, HOUSE BLACKJACK, ...), handUser, handPlatform, handMode (table, duel or house), handTrigger, handBet, handChange, handPreviousPoints, handNewPoints and handCurrency. GetLastHandResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
+            "note": "Every settled hand fires a custom trigger (Custom > Chat Game > Blackjack Game): BJG: Hand Won, BJG: Hand Lost or BJG: Hand Push for a hand at the table, BJG: Blackjack on top of Hand Won for a natural, BJG: Duel Settled once per duellist, BJG: House Hand Settled once per seat, and BJG: Hand Settled for every one of them, insurance, surrender, quit and timeout included. The trigger carries the hand as arguments: handOutcome (the log's result, WIN, BUST, DUEL PUSH, HOUSE BLACKJACK, ...), handUser, handPlatform, handMode (table, duel or house), handTrigger, handBet, handChange, handPreviousPoints, handNewPoints and handCurrency. GetLastHandResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action. BJG: Free Game Start and BJG: Free Game End fire when Free Game is switched from chat (!SetFreeBlackjack, !EndFreeBlackjack) or by an Execute C# Method on StartFreeGame or EndFreeGame."
           }
         ]
       },
@@ -4653,6 +4683,18 @@
           "label": "Zeit abgelaufen",
           "help": "Ersetzt die Erstattungszeile, solange das Freispiel an ist."
         },
+        "freeGame": {
+          "label": "Freispiel",
+          "help": "Hände werden um nichts gespielt: kein Einsatz wird genommen, kein Gewinn gezahlt, und jede Nachricht über Punkte wechselt auf ihre Freispiel-Fassung. Der Hausmodus öffnet keinen Tisch, solange es an ist. !SetFreeBlackjack und !EndFreeBlackjack schalten es aus dem Chat (Moderatoren)."
+        },
+        "msgFreeGameStart": {
+          "label": "Gestartet",
+          "help": "Einmal gesendet, wenn !SetFreeBlackjack das Freispiel einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
+        "msgFreeGameEnd": {
+          "label": "Beendet",
+          "help": "Einmal gesendet, wenn !EndFreeBlackjack das Freispiel ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
         "msgInsufficientSplit": {
           "label": "Teilen nicht leistbar",
           "help": "Gesendet, wenn ein Teilen mehr bräuchte, als der Spieler noch hat."
@@ -5144,7 +5186,7 @@
         "On the 1st of the month": "Am 1. des Monats",
         "The leaderboard totals only": "Nur die Summen der Bestenliste",
         "Every stat there is": "Jede Statistik, die es gibt",
-        "Free Game, from the Table page. While it is on, nobody stakes or wins anything.": "Freispiel, von der Seite Tisch. Solange es an ist, setzt und gewinnt niemand etwas."
+        "Free Game, from the Table page or !SetFreeBlackjack. While it is on, nobody stakes or wins anything.": "Freispiel, von der Seite Tisch oder !SetFreeBlackjack. Solange es an ist, setzt und gewinnt niemand etwas."
       }
     }
   }

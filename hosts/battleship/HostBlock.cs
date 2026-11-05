@@ -278,6 +278,8 @@ public static class UiSchema
             K("msgLossFree", "Niederlage (Freispiel)", "Stattdessen genutzt, solange das Freispiel an ist."),
             K("msgTurnTimeout", "Zeit abgelaufen", "Die Zuguhr lief mitten in der Schlacht ab. Was gesunken war, wird abgerechnet."),
             K("msgTurnTimeoutFree", "Zeit abgelaufen (Freispiel)", "Stattdessen genutzt, solange das Freispiel an ist."),
+            K("freeGameStartMessage", "Gestartet", "Einmal gesendet, wenn !SetFreeBattleship das Freispiel einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."),
+            K("freeGameEndMessage", "Beendet", "Einmal gesendet, wenn !EndFreeBattleship das Freispiel ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."),
             K("msgDeployTimeout", "Nie das Feuer eröffnet", "Nichts war gesunken, also wird nichts berechnet, und es zählt nicht als Schlacht."),
             K("msgTurnWarnFirst", "Erste Warnung", "Gesendet, wenn die Zuguhr die erste Warnung erreicht. Der Countdown-Ring wird gelb."),
             K("msgTurnWarnSecond", "Letzte Warnung", "Gesendet, wenn die Zuguhr die letzte Warnung erreicht. Der Ring pulsiert rot."),
@@ -346,7 +348,8 @@ public static class UiSchema
             Tx("Points won, ignoring losses", "Gewonnene Punkte, ohne Verluste"),
             Tx("Ships sunk", "Versenkte Schiffe"),
             Tx("Accuracy, from 25 shots on", "Trefferquote, ab 25 Schüssen"),
-            Tx("Free game, from the Game page. While it is on, ships still sink but no points are won or lost.", "Freispiel, von der Seite Spiel. Solange es an ist, sinken Schiffe weiterhin, aber keine Punkte werden gewonnen oder verloren."),
+            Tx("Free game, from the Game page or !SetFreeBattleship. While it is on, ships still sink but no points are won or lost.", "Freispiel, von der Seite Spiel oder !SetFreeBattleship. Solange es an ist, sinken Schiffe weiterhin, aber keine Punkte werden gewonnen oder verloren."),
+            Tx("Free game", "Freispiel"),
             Tx("Fire by clicking the stream, from the Clicks page. Twitch only, through the Heat extension.", "Per Klick auf den Stream feuern, von der Seite Klicks. Nur Twitch, über die Erweiterung Heat."),
             Tx("Player", "Spieler"),
             Tx("Platform", "Plattform"),
@@ -356,7 +359,7 @@ public static class UiSchema
             Tx("Accuracy", "Trefferquote"),
             Tx("Change", "Änderung"),
             Tx("No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.", "Noch keine Schlachten protokolliert. Jede beendete Schlacht landet hier, sobald 'Eine Protokolldatei pro Tag schreiben' an ist."))
-        .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free game, from the Game page. While it is on, ships still sink but no points are won or lost.")
+        .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free game, from the Game page or !SetFreeBattleship. While it is on, ships still sink but no points are won or lost.")
         .Pill("heatEnabled", "Click to Fire on", "Click to Fire off", tooltip: "Fire by clicking the stream, from the Clicks page. Twitch only, through the Heat extension.")
         .Samples("user", "alice", "admiral", "The Admiral", "ships", "3", "size", "8", "deploy", "60", "coord", "B7", "ship", "Cruiser", "amount", "300", "points", "Points", "enemyleft", "2", "yourleft", "3", "shots", "21", "hits", "9", "accuracy", "43", "net", "+600", "team", "Chat", "round", "15", "voters", "14", "seconds", "30", "challenger", "alice", "target", "bob", "fee", "100", "count", "4", "a", "4", "b", "3", "pot", "700", "missed", "1", "max", "3", "enemy", "Team B", "teama", "Team A", "teamb", "Team B", "aleft", "2", "bleft", "1", "turn", "Team A", "players", "4", "share", "175", "winner", "Team A", "turns", "3", "game", "alice", "input", "Z9", "required", "1,000", "balance", "250", "cap", "5,000", "other", "Team B", "gap", "1", "fleet", "Carrier A1-A5, Cruiser C3-E3, Destroyer G7-G8")
         .Answer("clockSummary", "60s to open fire, then 90s per turn, warned at 30s and 15s left.")
@@ -379,9 +382,11 @@ public static class UiSchema
                 Cmd("!accept", "takes up a challenge and captains Team B."),
                 Cmd("!team A", "joins a side during sign-up: A or B, a player's name, or nothing for the smaller side."),
                 Cmd("!stopbattle", "moderators: ends whatever is running and pays nothing more out. A duel's entries are refunded."),
+                Cmd("!SetFreeBattleship", "moderators: turns Free game on, battles cost and pay nothing. !EndFreeBattleship turns it off."),
                 Cmd("!fire link", "with Click to Fire on: links your clicks on stream to you, once. Twitch only."),
                 Note("These are the command names the Setup Guide uses. The game knows its commands by their IDs, so you can rename any of them in Streamer.bot.")),
             H("For your own actions",
+                Note("BSG: Free Game Start and BSG: Free Game End fire when Free game is switched by !SetFreeBattleship or !EndFreeBattleship, or by an Execute C# Method on StartFreeGame or EndFreeGame of the game action."),
                 Note("Every finished battle fires a custom trigger (Custom > Chat Game > Battleship Game): BSG: Battle Won, BSG: Battle Lost, BSG: Battle Timed Out or BSG: Battle Stopped for a solo battle, BSG: Chat Battle Settled for the chat's battle, BSG: Duel Settled for a team duel, and BSG: Battle Settled for every one of them. The trigger carries the battle as arguments: battleOutcome (the log's result: WIN, LOSS, TIMEOUT, NO-SHOW, STOPPED), battleMode (solo, chat or duel), battleUser, battleUserId, battlePlatform, battleTrigger (fire, timeout or stop), battleBoard, battleShots, battleHits, battleAccuracy, battleShipsSunk, battleShipsLost, battleNet (the battle's total, or a duel's pot), battleWinner (a duel's winning side) and battleCurrency. GetLastBattleResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action.")),
             H("Where things are kept",
                 Cmd("BSG-Settings.json", "everything on these pages."),
@@ -409,7 +414,7 @@ public static class UiSchema
         S("cooldownSendAction", false, aliases: new[] { "SendActionCD" }),
         S("numberSeparator", ".", aliases: new[] { "NumberSeparator" }),
         // ---- game ----
-        S("freeGame", false, page: "game", label: "Free game", help: "Battles for bragging rights: ships still sink and the overlay still runs, but no points are won or lost. Chat gets the Free game messages instead, so nothing mentions points.", section: "Points", aliases: new[] { "FreeGame" }),
+        S("freeGame", false, page: "game", label: "Free game", help: "Battles for bragging rights: ships still sink and the overlay still runs, but no points are won or lost. Chat gets the Free game messages instead, so nothing mentions points. !SetFreeBattleship and !EndFreeBattleship switch it from chat (moderators).", section: "Points", aliases: new[] { "FreeGame" }),
         S("pointsVariable", "points", page: "game", label: "Points variable", help: "The Streamer.bot user variable that holds each viewer's points. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own and win over this box; only change it for a points system of your own.", section: "Points", aliases: new[] { "PointsVariable" }),
         S("pointsName", "Points", page: "game", label: "Shown in chat as", help: "What {points} says in chat, like 'Coins' or 'Doubloons'. Only the wording changes; the points variable stays the same.", section: "Points", aliases: new[] { "PointsVarName" }),
         S("winBonus", 0L, page: "game", label: "Win bonus", help: "Paid on top when a player sinks the whole enemy fleet. 0 for none: a win already pays every ship it sank. The chat's battle is played for fun and pays nothing.", kind: "long", section: "Economy", min: 0.0, aliases: new[] { "WinBonus" }),
@@ -561,6 +566,8 @@ public static class UiSchema
         Msg("Battle result", "msgLossFree", "💀 {admiral} has sunk {user}'s fleet. Better luck next time.", "Loss (Free game)", "Used instead while Free game is on.", new[] { "user", "admiral", "shots" }, alias: "MsgLossFree"),
         Msg("Battle result", "msgTurnTimeout", "⏰ {user} abandoned the battle. Net for the battle: {net} {points}.", "Ran out of time", "The turn clock ran out mid-battle. Whatever had sunk is settled.", new[] { "user", "admiral", "shots", "net", "points" }, alias: "MsgTurnTimeout"),
         Msg("Battle result", "msgTurnTimeoutFree", "⏰ {user} abandoned the battle.", "Ran out of time (Free game)", "Used instead while Free game is on.", new[] { "user", "admiral", "shots" }, alias: "MsgTurnTimeoutFree"),
+        Msg("Free game", "freeGameStartMessage", "🆓 Free game is ON! Battles cost nothing and pay nothing - sink ships for the glory!", "Started", "Sent once when Free game is turned on by !SetFreeBattleship, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new string[0], alias: "FreeGameStartMessage"),
+        Msg("Free game", "freeGameEndMessage", "⏹️ Free game has ended. Ships are worth {currency} again!", "Ended", "Sent once when Free game is turned off by !EndFreeBattleship, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }, alias: "FreeGameEndMessage"),
         Msg("Battle result", "msgDeployTimeout", "⚓ {user} never gave the order to fire — the fleet returns to port. Nothing lost.", "Never opened fire", "Nothing had sunk, so nothing is charged and it doesn't count as a battle.", new[] { "user" }, alias: "MsgDeployTimeout"),
         Msg("Timer warnings", "msgTurnWarnFirst", "⏳ @{user}, {seconds} seconds to fire before you forfeit the battle!", "First warning", "Posted when the turn clock reaches the first warning. The countdown ring turns amber.", new[] { "user", "seconds" }, alias: "MsgTurnWarnFirst"),
         Msg("Timer warnings", "msgTurnWarnSecond", "⚠️ @{user}, {seconds} SECONDS — fire now!", "Final warning", "Posted when the turn clock reaches the final warning. The ring pulses red.", new[] { "user", "seconds" }, alias: "MsgTurnWarnSecond"),

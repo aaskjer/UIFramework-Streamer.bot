@@ -163,10 +163,16 @@ public static class UiSchema
     public static readonly UiWindow Window = new UiWindow("High-Low Game", releases: "aaskjer/High-Low-Game", logPrefix: "[High-Low Game/Settings]")
         .Pages(P("game", "Game", "🎲"), P("channelPoints", "Channel points", "💜"), P("cooldowns", "Cooldowns", "⏳"), P("access", "Access", "👥"), P("leaderboard", "Scoreboard", "🏆"), P("messages", "Messages", "💬"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
+        .Pill("freeGame", "Free mode on", "Free mode off", tooltip: "Free mode, from the Game page or !SetFreeHighLow. While it is on, nobody wins or loses points.")
         .Pill("isChannelPointsTrigger", "Channel points", "Chat commands", tooltip: "How guesses come in on Twitch. YouTube and Kick always use the chat commands.")
         // German: the game's own keys and texts; the conventions already carry the shared keys, sections and pages.
         .Lang("de",
             K("awardPoints", "Punkte vergeben", "Aus, und es wird zum Spaß gespielt: niemand gewinnt oder verliert Punkte, die Tipps zählen trotzdem für die Bestenlisten."),
+            K("freeGame", "Freier Modus", "Niemand gewinnt oder verliert Punkte, Kanalpunkt-Einlösungen eingeschlossen, und die Tipps zählen weiter für die Bestenlisten. !SetFreeHighLow und !EndFreeHighLow schalten ihn aus dem Chat (Moderatoren), mit den Nachrichten Gestartet und Beendet."),
+            K("freeGameStartMessage", "Gestartet", "Einmal gesendet, wenn !SetFreeHighLow den freien Modus einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."),
+            K("freeGameEndMessage", "Beendet", "Einmal gesendet, wenn !EndFreeHighLow den freien Modus ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."),
+            Tx("Free mode", "Freier Modus"), Tx("Free mode on", "Freier Modus an"), Tx("Free mode off", "Freier Modus aus"),
+            Tx("Free mode, from the Game page or !SetFreeHighLow. While it is on, nobody wins or loses points.", "Freier Modus, von der Seite Spiel oder !SetFreeHighLow. Solange er an ist, gewinnt und verliert niemand Punkte."),
             K("wonPoints", "Gewinnbetrag", "Wird für ein richtiges !high oder !low im Chat gezahlt. Ein richtiges !equal zahlt das Doppelte, ein falsches !equal kostet diesen Betrag. Ein falsches !high oder !low kostet nichts."),
             K("equalChance", "Chance auf Gleichstand", "Wie oft ein !equal-Tipp dieselbe Zahl noch einmal zieht. Jede andere Ziehung ist eine freie Wahl von 1 bis 100."),
             K("rewardIdHigh", "Belohnungs-ID für höher", "Die ID der Belohnung, die auf höher tippt. Einlösungen anderer Belohnungen bleiben unberührt."),
@@ -208,7 +214,8 @@ public static class UiSchema
                 Cmd("!high", "the next number is higher. Right pays the win amount, wrong costs nothing."),
                 Cmd("!low", "the next number is lower. Same payout as !high."),
                 Cmd("!equal", "the next number is the same. Right pays double, wrong costs the win amount."),
-                Cmd("!highlowsetup", "draws a fresh number and announces it. Optional; moderators only, set on the command itself.")),
+                Cmd("!highlowsetup", "draws a fresh number and announces it. Optional; moderators only, set on the command itself."),
+                Cmd("!SetFreeHighLow", "moderators: turns Free mode on, nobody wins or loses points. !EndFreeHighLow turns it off.")),
             H("Scoreboards",
                 Cmd("!hlgsession", "the best players of this Streamer.bot session."),
                 Cmd("!hlgalltime", "the best players of all time."),
@@ -216,6 +223,9 @@ public static class UiSchema
             H("Channel points (Twitch)",
                 Note("Create one reward each for high, low and equal and paste their IDs on the Channel points page. The game listens to every redemption and plays only those three. Leave 'Skip Reward Requests Queue' off on the rewards, or Twitch cannot refund a redemption that does not play."),
                 Note("Cost and Fixed spend the channel points as the stake: a correct guess pays the stake in points, double on equal. Input lets the viewer type a bet in their own points; only a wrong equal costs it. Free plays like the chat commands.")),
+            H("For your own actions",
+                Note("Every settled guess fires a custom trigger - HLG: Guess Won or HLG: Guess Lost, and HLG: Guess Settled always (Custom > Chat Game > High-Low Game) - with the guess as arguments: guessOutcome, guessUser, guessUserId, guessPlatform, guessGuess, guessPreviousNumber, guessNewNumber, guessMode, guessStake, guessAmount, guessPreviousPoints, guessNewPoints, guessCurrency and guessFree. GetLastGuessResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."),
+                Note("HLG: New Number fires when !highlowsetup draws one (numberNew, numberUser, numberPlatform). HLG: Free Game Start and HLG: Free Game End fire when Free mode is switched from chat or by an Execute C# Method on StartFreeGame or EndFreeGame.")),
             H("Where things are kept",
                 Cmd("HLG-Settings.json", "everything on these pages."),
                 Cmd("uiframework.layout.json", "your layout of this window: theme, renamed or hidden pages and fields."),
@@ -233,6 +243,7 @@ public static class UiSchema
         S("numberSeparator", ".", aliases: new[] { "NumberSeparator" }),
         // ---- game ----
         S("awardPoints", true, page: "game", label: "Award points", help: "Off, and the game is played for fun: nobody wins or loses points, the guesses still count for the scoreboards.", section: "Points", aliases: new[] { "AwardPoints" }),
+        S("freeGame", false, page: "game", label: "Free mode", help: "Nobody wins or loses points, channel point redemptions included, and the guesses still count for the scoreboards. !SetFreeHighLow and !EndFreeHighLow switch it from chat (moderators), with the Started and Ended messages.", section: "Points"),
         S("wonPoints", 1234, page: "game", label: "Win amount", help: "Paid for a correct !high or !low in chat. A correct !equal pays double and a wrong !equal costs this amount. A wrong !high or !low costs nothing.", section: "Points", min: 0.0, requires: "awardPoints", aliases: new[] { "WonPoints" }),
         S("equalChance", 10, page: "game", label: "Equal chance", help: "How often an !equal guess draws the same number again. Every other draw is a free pick from 1 to 100.", kind: "percent", section: "Numbers", min: 0.0, max: 100.0),
         S("pointsVariable", "points", page: "game", help: "The Streamer.bot user variable that winnings are added to and losses taken from. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own and override this; the window shows which one is installed.", section: "Currency", aliases: new[] { "PointsVar" }),
@@ -270,6 +281,8 @@ public static class UiSchema
         // ---- messages ----
         Msg("Game", "outcomeTemplate", "Hey {user}! Previous: {previousNumber}, New: {newNumber}. Your guess '{guess}' was {result} {emoji} {pointsSection}. Session: {sessionGuesses} guesses, All-time: {alltimeGuesses}.", "Outcome", "Sent after every guess. {pointsSection} reads like ' won 1.234 Points' or ' lost 1.234 Points' and stays empty when no points changed.", new[] { "user", "guess", "result", "emoji", "previousNumber", "newNumber", "sessionGuesses", "alltimeGuesses", "pointsSection", "sign", "pointsDelta", "currency" }, alias: "OutcomeTemplate"),
         Msg("Game", "startMessage", "🎲 High-Low game started! The current number is {number}. Please type '!high', '!low' or '!equal' to guess whether the next number will be higher, lower, or equal.", "New round", "Sent when a moderator runs !highlowsetup. A number is ready from the start, so the game also runs without it.", new[] { "number", "user" }),
+        Msg("Free mode", "freeGameStartMessage", "🎲 Free mode is ON! Guess for free - no {currency} at stake!", "Started", "Sent once when Free mode is turned on by !SetFreeHighLow, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }),
+        Msg("Free mode", "freeGameEndMessage", "⏹️ Free mode has ended. Guesses count for {currency} again!", "Ended", "Sent once when Free mode is turned off by !EndFreeHighLow, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }),
         Msg("Channel points", "redemptionRefunded", "↩️ @{user}, your channel point redemption was refunded.", "Redemption refunded", "Sent when a redemption gets its channel points back. Empty it to refund quietly.", new[] { "user" }),
         Msg("Channel points", "reasonNoInput", "@{user}, type how many {pointsName} you want to bet into the redemption.", "Bet: nothing typed", "Input mode: the redemption came without a bet.", new[] { "user", "pointsName" }),
         Msg("Channel points", "reasonNegativeAmount", "@{user}, '{amount}' is not a bet. Use a number above 0, all, half, third, quarter or random.", "Bet: not a number", "Input mode: the typed bet could not be read or is not above zero.", new[] { "user", "amount", "pointsName" }),
