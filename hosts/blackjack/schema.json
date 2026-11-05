@@ -3957,7 +3957,6 @@
         "icon": "🏆",
         "fields": [
           "leaderboard*",
-          "statsTable",
           "resetLeaderboard"
         ]
       },

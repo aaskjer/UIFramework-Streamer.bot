@@ -5,6 +5,8 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- Schema problems are listed on the Log page, highlighted on top of the entries, where the host's author looks
+  for what went wrong; the banner points there. A window without a log page keeps them on the About page.
 - Host blocks: every host but Classic Chat Gamble gained a Free mode chat switch with a Started and an Ended
   message (Slot Machine v16.2.0, Blackjack v17.2.0, Battleship v2.2.0, RhymeTime v2.2.0, High-Low v2.1.0), High-Low
   and RhymeTime their first custom triggers. Nothing of the framework changed for it.

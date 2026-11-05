@@ -32,6 +32,29 @@ namespace UIFramework
             return PillStyle.Accent;
         }
 
+        /// <summary>True when the window has a log page: schema problems are listed there, else on the About page.</summary>
+        public static bool Shows(WindowSpec spec) => spec.Pages.Any(p => p.Id == "log" && p.Build != null);
+
+        /// <summary>The schema problems as a highlighted block: title, the note for the host's author, one line each.</summary>
+        public static Border Problems(WindowSpec spec)
+        {
+            var list = new StackPanel();
+            list.Children.Add(new TextBlock { Text = Text.T("about.problems"), FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Theme.WarningText) });
+            list.Children.Add(new TextBlock { Text = Text.T("about.problems.note"), FontSize = 12, Foreground = new SolidColorBrush(Theme.WarningText), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+            foreach (var problem in spec.Problems)
+                list.Children.Add(new TextBlock { Text = "•  " + problem, FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Theme.WarningText), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) });
+            return new Border
+            {
+                Background = new SolidColorBrush(Theme.WarningSoft),
+                BorderBrush = new SolidColorBrush(Theme.WarningText),
+                BorderThickness = new Thickness(0, 0, 0, 0),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(14, 10, 14, 12),
+                Margin = new Thickness(0, 0, 0, 12),
+                Child = list
+            };
+        }
+
         public static UIElement Build(PageContext ctx)
         {
             var spec = ctx.Spec.Log;
@@ -149,6 +172,13 @@ namespace UIFramework
             Ui.StyleColors(details);
             AutomationProperties.SetName(details, Text.T("log.line"));
 
+            if (ctx.Spec.Problems.Count > 0)
+            {
+                // What the schema got wrong, where the host's author looks for what went wrong: on top of the log.
+                var problems = Problems(ctx.Spec);
+                DockPanel.SetDock(problems, Dock.Top);
+                root.Children.Add(problems);
+            }
             DockPanel.SetDock(toolbar, Dock.Top);
             root.Children.Add(toolbar);
             if (!string.IsNullOrEmpty(spec.WriteLogKey))

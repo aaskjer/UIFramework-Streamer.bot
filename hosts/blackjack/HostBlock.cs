@@ -161,7 +161,7 @@ public static class UiSchema
 
     // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
     public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases: "aaskjer/Blackjack-Game", logo: "https://github.com/aaskjer/Blackjack-Game/blob/main/Assets/logo.png?raw=true", logPrefix: "[Blackjack Game/Settings]")
-        .Pages(P("table", "Table", "🃏"), P("duel", "Duel", "⚔️"), P("house", "House", "🏠"), P("access", "Access", "👥"), P("overlay", "Overlay", "📺"), P("messages", "Messages", "💬"), P("stats", "Stats", "🏆", "leaderboard*", "statsTable", "resetLeaderboard"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Pages(P("table", "Table", "🃏"), P("duel", "Duel", "⚔️"), P("house", "House", "🏠"), P("access", "Access", "👥"), P("overlay", "Overlay", "📺"), P("messages", "Messages", "💬"), P("stats", "Stats", "🏆", "leaderboard*", "resetLeaderboard"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Cooldowns(
             C("c6497fbd-c4b0-4c96-a398-e52d573cfe85", "globalCooldown", "userCooldown"),             // !blackjack

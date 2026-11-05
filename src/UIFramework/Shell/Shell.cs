@@ -762,7 +762,8 @@ namespace UIFramework
             if (_spec.Problems.Count > 0)
             {
                 // The host's author sees what the schema got wrong without opening Streamer.bot's log.
-                var banner = Ui.Banner(_spec.Problems.Count == 1 ? Text.T("banner.problems.one") : Text.T("banner.problems.many", _spec.Problems.Count), PillStyle.Warning);
+                string where = LogPage.Shows(_spec) ? ".log" : "";
+                var banner = Ui.Banner(_spec.Problems.Count == 1 ? Text.T("banner.problems.one" + where) : Text.T("banner.problems.many" + where, _spec.Problems.Count), PillStyle.Warning);
                 DockPanel.SetDock(banner, Dock.Top);
                 root.Children.Add(banner);
                 foreach (var problem in _spec.Problems)
