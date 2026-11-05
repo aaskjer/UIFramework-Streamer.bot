@@ -4,7 +4,7 @@ A settings-window framework for Streamer.bot extensions. One DLL that fetches an
 every project that uses it, pages built from data the project declares, and a customise mode that lets users
 rename, move and hide things without touching code.
 
-Status: phases 0 to 5 done, phase 7 (the kit) under way; Battleship (v2.0.0) runs on the spec-carrying stub, High-Low (v2.0.0), Classic Chat Gamble (v25.1.0), RhymeTime (v2.1.0), Slot Machine (v16.1.0) and Blackjack (v17.1.0) on the generic stub. The loader in the stub fetches the DLL on first use and keeps it current (docs/Loader.md); the customise mode lets users rename, move and hide pages and fields without touching code (docs/Customize.md). `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 55 tests; `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window (`-theme dark` or `light`, `-shots <folder>` renders every page to PNG; `-schema examples/DemoGame/schema.json` opens the window a game declares, `-spec hosts/battleship/spec.json -schema hosts/battleship/schema.json` the one a spec-carrying stub shows).
+Status: phases 0 to 5 done, phase 7 (the kit) nearly done; every host runs on the generic stub: High-Low (v2.0.0), Classic Chat Gamble (v25.1.0), RhymeTime (v2.1.0), Slot Machine (v16.1.0), Blackjack (v17.1.0) and Battleship (v2.1.0). The loader in the stub fetches the DLL on first use and keeps it current (docs/Loader.md); the customise mode lets users rename, move and hide pages and fields without touching code (docs/Customize.md). `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 55 tests; `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window (`-theme dark` or `light`, `-shots <folder>` renders every page to PNG; `-schema examples/DemoGame/schema.json` or `-schema hosts/battleship/schema.json` opens the window a game declares).
 
 ## Use it in your own project
 
@@ -35,15 +35,15 @@ src/UIFramework          the DLL (.NET Framework 4.8, WPF)
 src/UIFramework.Tests    xUnit
 src/UIFramework.Preview  opens the window without Streamer.bot
 stub/                    Stub.cs, the generic settings action (loader + bridge); HostSchema.cs, the host block a
-                         game pastes in; Stub.spec.cs, the template of hosts that still carry a spec
+                         game pastes in
 examples/DemoGame/       the smallest game with a window: DemoGame.cs, DemoGame.sb (the import), schema.json, a README
-hosts/<name>/            schema.json of each host (what its game answers, with the window); hosts not yet on the
-                         generic stub also keep spec.json, host-section.cs and their generated Stub.cs
+hosts/<name>/            schema.json of each host (what its game answers, with the window) and HostBlock.cs, its
+                         host block as the game carries it
 conventions/             keys.json and lang/<code>.json, embedded into the DLL
 tools/                   update-host-block.ps1 (refresh the block in a game, keeping its table), check-stub.ps1
                          (compile the stubs and the demo the Streamer.bot way), build-import.ps1 (keep an export's
                          code on the files), spec-to-window.ps1 (a host's spec.json as a Window declaration, once per
-                         host on the way to the generic stub), embed-spec.ps1 (spec into Stub.spec.cs)
+                         host on the way to the generic stub; every host of this repository has made it)
 lib/v1/latest.json       what the loader reads: version, download url, sha256
 docs/                    Getting-Started, Schema, Loader, Customize, Phase0-Konventionen (German)
 ```

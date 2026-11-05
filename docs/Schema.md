@@ -185,8 +185,8 @@ What the game declares is checked when the window opens: an unknown kind, a requ
 setting, a page naming a pattern no setting matches, a minimum above a maximum. The window shows a banner and
 lists the findings on the About page, so the game's author sees them without reading Streamer.bot's log.
 
-A settings action that still carries a spec of its own (`stub/Stub.spec.cs`, the JSON with the same parts as the
-builder, see the git history of `docs/Spec.md`) wins over the window in the schema.
+A settings action that carries a spec of its own (the JSON with the same parts as the builder, see the git
+history of `docs/Spec.md` and `stub/Stub.spec.cs`) wins over the window in the schema.
 
 ## The game's side
 

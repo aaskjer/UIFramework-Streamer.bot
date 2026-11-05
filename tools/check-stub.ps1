@@ -1,16 +1,14 @@
 # Compiles the pieces a project pastes into Streamer.bot the way Streamer.bot compiles an action: CPHInlineBase as the
 # base class, Streamer.bot's injected usings, only the references every action gets.
 #   - stub/Stub.cs, the generic settings action, as it is;
-#   - stub/Stub.spec.cs with a host's spec and section embedded (tools/embed-spec.ps1), for hosts not yet moved;
 #   - examples/DemoGame/DemoGame.cs, the example game with the host block (stub/HostSchema.cs) inside; its block
 #     must be the template's (tools/update-host-block.ps1 -Check), and its schema is written to
 #     examples/DemoGame/schema.json for the preview and the docs.
 # Needs a Streamer.bot install for its assemblies and Roslyn, and a RoslynHost front-end, which the game projects
 # build with their tools\build-roslyn-host.ps1 (pass the project folder in -RoslynHostTools).
 #
-#   tools\check-stub.ps1 -HostName battleship
+#   tools\check-stub.ps1
 param(
-    [string] $HostName = 'battleship',
     [string] $StreamerBotPath = 'C:\Users\Administrator\Downloads\Streamer.bot-x64-1.0.7',
     [string] $RoslynHostTools = 'C:\Users\Administrator\Downloads\RhymeTime\tools'
 )
@@ -46,7 +44,7 @@ $refs = @('Streamer.bot.Plugin.Interface.dll', 'Streamer.bot.Common.dll', 'Newto
     ForEach-Object { '-r:' + (Join-Path $StreamerBotPath $_) }
 $refs += '-r:' + [object].Assembly.Location
 $refs += '-r:' + [System.Linq.Enumerable].Assembly.Location
-# The stubs compile with the references every Streamer.bot action has; their dialogs are Win32 message boxes.
+# The stub compiles with the references every Streamer.bot action has; its dialogs are Win32 message boxes.
 $stubRefs = @($refs)
 $utf8 = New-Object Text.UTF8Encoding $false
 $failed = 0
@@ -64,11 +62,7 @@ function Compile([string] $label, [string] $source, [string] $dll, [string[]] $r
 # 1. The generic stub, the same file for every project.
 if (-not (Compile 'stub/Stub.cs compiles as a Streamer.bot action (generic, nothing embedded)' (Join-Path $root 'stub\Stub.cs') 'Stub.dll' $stubRefs)) { $failed++ }
 
-# 2. The spec-carrying stub with a host's spec and section, for hosts not yet moved.
-& (Join-Path $PSScriptRoot 'embed-spec.ps1') -HostName $HostName -Out (Join-Path $out 'Stub.spec.cs')
-if (-not (Compile "stub/Stub.spec.cs compiles with the $HostName spec and section embedded" (Join-Path $out 'Stub.spec.cs') 'Stub.spec.dll' $stubRefs)) { $failed++ }
-
-# 3. The example game: the host block inside it must be the template's, and it must compile as an action.
+# 2. The example game: the host block inside it must be the template's, and it must compile as an action.
 $demo = Join-Path $root 'examples\DemoGame\DemoGame.cs'
 & (Join-Path $PSScriptRoot 'update-host-block.ps1') -File $demo -Check
 if ($LASTEXITCODE -ne 0) { $failed++ }
