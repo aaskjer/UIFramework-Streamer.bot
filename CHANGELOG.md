@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- Slot Machine Game is the fourth host on the generic stub (v16.1.0, in German): its test spin is answered by the
+  game with the engine that spins in chat, the emote pictures' sources come through `emotes:` of `UiHost.Handle`,
+  and `hosts/slotmachine` lost its `spec.json` and `host-section.cs`. Gaps seen there, for a later release: the
+  column headers of a list and the placeholders of a tag box ("Add a Streamer.bot group") stay English.
 - RhymeTime is the third host on the generic stub (v2.1.0, in German). An action's answer may carry
   `clipboard`: text the window puts on the clipboard, since the game's thread has none (the overlay URL).
 - Classic Chat Gamble is the second host on the generic stub (v25.1.0, in German too); `hosts/chatgamble` lost its
