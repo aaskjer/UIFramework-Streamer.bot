@@ -376,6 +376,13 @@ namespace UIFramework
                 if (structured?["set"] is JObject values)
                     LiveValues.Apply(ctx.Parts, values);
                 string status = (string)structured?["status"];
+                string clipboard = (string)structured?["clipboard"];
+                if (clipboard != null)
+                {
+                    // The window's thread is an STA one, which the clipboard wants; the game's is not.
+                    try { Clipboard.SetText(clipboard); }
+                    catch (Exception ex) { status = (status ?? "") + " (the clipboard was busy: " + ex.Message + ")"; }
+                }
                 if (panel != null)
                     ResultPanel.Render(panel, result ?? "", ctx.Hooks);
                 else if (structured != null)

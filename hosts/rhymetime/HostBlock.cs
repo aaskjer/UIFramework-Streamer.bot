@@ -160,7 +160,98 @@ public static class UiSchema
     }
 
     // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
-    public static readonly UiWindow Window = null; // __WINDOW__
+    public static readonly UiWindow Window = new UiWindow("RhymeTime", releases: "aaskjer/RhymeTime", logPrefix: "[RhymeTime/Settings]")
+        .Pages(P("game", "Game", "🎮"), P("battle", "Battle", "⚔️"), P("words", "Word banks", "📚"), P("access", "Access", "👥"), P("overlay", "Overlay", "📺"), P("messages", "Messages", "💬"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
+        .Cooldowns(C("15e49f3a-389a-4190-ac15-c50b1fd4eee6", "globalCooldown", "userCooldown"))   // !Rhyme, where the cooldowns live
+        // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
+        .Lang("de",
+        K("timeLimit", "Sekunden zum Antworten", "Wie lange ein Chatter Zeit hat, einen Reim zu finden, bevor die Runde verloren ist."),
+        K("maxAttempts", "Versuche", "Wie viele falsche Reime ein Chatter anbieten darf, bevor die Runde verloren ist. Nur Tipps, die nach einem Versuch aussehen, zählen; alles andere im Chat wird ignoriert."),
+        K("difficulty", "Schwierigkeit", "Aus welcher Wortliste eine Runde zieht. Zufall nimmt eine der drei, die Wörter enthält."),
+        K("checkRealWords", "Tipps gegen ein Wörterbuch prüfen", "Ein Tipp, der nur richtig endet, wird bei wordotron.com nachgeschlagen, bevor er zählt. Tipps, die du selbst als Reime gelistet hast, zählen immer; ist das aus, gewinnt alles mit der richtigen Endung. Ist die Abfrage langsam oder nicht erreichbar, wird der Tipp angenommen, ein Ausfall des Wörterbuchs lehnt also nie einen richtigen Reim ab."),
+        K("minBet", "Mindesteinsatz", "Einsätze darunter werden abgelehnt. 0 schaltet die Untergrenze ab."),
+        K("easyMultiplier", "Leicht ×", "Der Einsatz wird bei einem Gewinn aus der leichten Liste damit multipliziert."),
+        K("mediumMultiplier", "Mittel ×", "Der Einsatz wird bei einem Gewinn aus der mittleren Liste damit multipliziert."),
+        K("hardMultiplier", "Schwer ×", "Der Einsatz wird bei einem Gewinn aus der schweren Liste damit multipliziert."),
+        K("userCooldown", "Pro Chatter", "Gilt für den Befehl !Rhyme je Chatter, in Sekunden. 0 schaltet sie ab. Speichern schreibt sie direkt auf den Befehl."),
+        K("battleReward", "Battle-Belohnung", "Wird dem Gewinner gezahlt, wenn der Moderator ein Battle ohne Einsatz startet. 0 heißt, ein Battle ohne Einsatz zahlt nichts. Mit einem Standardeinsatz über 0 setzt der Moderator stattdessen diesen, und der Gewinner bekommt ihn. Mindest- und Höchsteinsatz von der Seite Spiel gelten auch für ein Battle mit Einsatz."),
+        K("wordsEasy", "Leicht", "Ein Zielwort je Zeile mit seinen Reimen daneben, durch Kommas getrennt. Ein Ziel mit Leerzeichen gilt als Zeile zum Vervollständigen statt als Wort zum Reimen: dann muss die ganze Antwort zu einer der Lösungen passen."),
+        K("wordsMedium", "Mittel", "Die Liste, aus der eine Runde bei mittlerer Schwierigkeit zieht. Eine Zeile erreicht das Spiel erst, wenn sie ein Ziel und mindestens einen Reim hat."),
+        K("wordsHard", "Schwer", "Die Liste, aus der eine Runde bei schwerer Schwierigkeit zieht."),
+        K("overlayEnabled", "Runden ans Overlay senden", "Eine Browserquelle, die das zu reimende Wort mit seinem Countdown zeigt, dann den Reim, der gewonnen hat, und was er gezahlt hat. Sie hört auf den eigenen WebSocket-Server von Streamer.bot. Aus, und das Spiel sendet ihr nichts."),
+        K("obsSceneName", "Szene", "Die Szene, in die die Quelle kommt. Sie wird angelegt, wenn es sie noch nicht gibt."),
+        K("obsSourceName", "Quelle", "Die Browserquelle, die in dieser Szene angelegt wird. Nichts wird angefasst, wenn OBS schon eine Quelle dieses Namens hat."),
+        K("setupObsOverlay", "Overlay in OBS einrichten", "Legt die Szene an, wenn sie fehlt, und fügt eine Browserquelle in der Größe deiner Leinwand hinzu, die auf die Overlay-URL zeigt. OBS muss in Streamer.bot unter Stream Apps > OBS Studio verbunden sein. Erst speichern: die Einrichtung liest den gespeicherten Port und die Namen."),
+        K("copyOverlayUrl", "Overlay-URL kopieren", "Schreibt die Overlay-Seite und kopiert ihre Adresse für eine Browserquelle in OBS: 'Lokale Datei' abwählen, URL einfügen, Größe 1920 × 1080. Die URL nimmt &platform=twitch nur für die Runden einer Plattform, &lang=de für deutsche Texte, &demo=1 zum Platzieren der Quelle und &debug=1, um zu sehen, ob sie Streamer.bot erreicht."),
+        K("openOverlayDemo", "Demo ausprobieren", "Öffnet das Overlay im Browser und spielt Beispielrunden ohne Streamer.bot."),
+        K("openOverlayFolder", "Overlay-Ordner öffnen", "Öffnet Chat Games\\\\RhymeTime\\\\Overlay, wo die Seite geschrieben wird."),
+        K("overlayPosition", "Platz", "Auf welcher Seite der Leinwand die Karte sitzt. Ein position= in der URL des Overlays überstimmt das. Alles in diesem Abschnitt reist mit der Runde, in OBS muss also nichts neu eingerichtet werden."),
+        K("overlayScale", "Größe", "Skaliert die ganze Karte. 100 ist volle Größe, 10 bis 300 sind die Grenzen."),
+        K("overlayResultSeconds", "Ergebnis anzeigen", "Wie lange der gewinnende Reim, oder die Beispiele nach einer verlorenen Runde, auf dem Bildschirm bleibt."),
+        K("overlayShowEnding", "Die Endung zum Reimen", "Die Plakette 'alles, was auf …EAM endet' unter dem Wort. Die Endung bleibt im Wort selbst so oder so hervorgehoben. Gezeigt wird eine Runde zur Zeit, die neueste: ein Battle nimmt einer noch laufenden Einzelrunde die Karte."),
+        K("overlayShowAttempts", "Verbleibende Versuche", "Die Punktereihe zu 'Versuche' auf der Seite Spiel. Ein Battle zeigt sie nie; der ganze Chat rennt um die Wette."),
+        K("overlayShowStake", "Der Einsatz", "Der Chip in der Ecke mit dem Einsatz oder dem Preis des Battles. In einem Freispiel so oder so aus."),
+        K("overlayShowExamples", "Reime nach einer verlorenen Runde", "Bis zu fünf der Reime, die du gelistet hast, so wie die Nachricht Beispiele sie im Chat postet."),
+        K("overlayGlow", "Der warme Schein hinter der Karte", "Ein weicher Schimmer in der Akzentfarbe, der mit der Karte zur Battle- oder Gewinnfarbe wechselt."),
+        K("overlayAccentColour", "Akzent", "Die Endung des Worts, die Wortmarke und der Uhrbalken. Alles Hellere wird daraus abgeleitet."),
+        K("overlayBattleColour", "Battle", "Rahmen und Chip der Battle-Karte, die verbrauchten Versuchspunkte und eine verlorene Runde."),
+        K("overlayWinColour", "Gewonnen", "Der gewinnende Reim und was er gezahlt hat."),
+        K("overlayCardColour", "Karte", "Die Karte hinter allem. Was diese Seite nicht erreicht, gehört in das eigene Custom CSS der Browserquelle, das gewinnt: :root { --rt-width: 480px; --rt-edge: 40px; --rt-radius: 8px; }"),
+        K("overlayCardOpacity", "Deckkraft der Karte", "Wie massiv die Karte ist. 0 lässt nur den Text, 100 verdeckt den Stream dahinter."),
+        K("startMessage", "Runde gestartet", "Eröffnet eine Runde und nennt das Wort, auf das gereimt wird."),
+        K("winMessage", "Gewinn", "Beim ersten Tipp gesendet, der als Reim zählt."),
+        K("loseMessage", "Zeit abgelaufen", "Gesendet, wenn die Uhr ohne gültigen Reim abläuft."),
+        K("failedAttemptMessage", "Falscher Tipp", "Für jeden Tipp gesendet, der nach einem Versuch aussieht, aber nicht reimt, bis zur Versuchsgrenze."),
+        K("maxAttemptsLoseMessage", "Versuche aufgebraucht", "Statt 'Zeit abgelaufen' gesendet, wenn die Versuchsgrenze die Runde beendet hat."),
+        K("educationalMessage", "Beispiele nach einer Niederlage", "Folgt auf eine verlorene Runde mit bis zu fünf der Reime, die du gelistet hast. Leer lassen, um nichts zu posten."),
+        K("alreadyPlayingMessage", "Schon in einer Runde", "Gesendet, wenn ein Chatter den Befehl ausführt, während die eigene Runde noch offen ist."),
+        K("noWordsMessage", "Leere Wortliste", "Gesendet, wenn die gewählte Liste kein brauchbares Wort enthält, sodass keine Runde starten kann."),
+        K("battleStartMessage", "Battle eröffnet", "Eröffnet ein Battle für den ganzen Chat."),
+        K("battleWinMessage", "Battle gewonnen", "An den gesendet, der den ersten gültigen Reim geschafft hat."),
+        K("battleTimeoutMessage", "Battle abgelaufen", "Gesendet, wenn niemand rechtzeitig gereimt hat. Ein Einsatz des Moderators geht zurück."),
+        K("battleAlreadyActiveMessage", "Battle läuft schon", "Gesendet, wenn ein Moderator ein Battle eröffnet, während auf dieser Plattform noch eines läuft."),
+        K("invalidBetMessage", "Einsatz abgelehnt", "Der Rahmen um die vier Gründe darunter; {reason} wird durch den zutreffenden ersetzt."),
+        K("reasonNegativeAmount", "Grund: keine Zahl", "Füllt {reason}, wenn der Betrag nicht lesbar oder nicht über null ist."),
+        K("reasonInsufficientFunds", "Grund: nicht genug Punkte", "Füllt {reason}, wenn der Einsatz mehr ist, als der Chatter hat."),
+        K("reasonBelowMinimum", "Grund: unter dem Minimum", "Füllt {reason}, wenn der Einsatz unter dem Minimum auf der Seite Spiel liegt."),
+        K("reasonAboveMaximum", "Grund: über dem Maximum", "Füllt {reason}, wenn der Einsatz über dem Maximum auf der Seite Spiel liegt."),
+        K("globalCooldownMessage", "Abklingzeit für alle", "Gesendet, wenn der Befehl für den ganzen Chat noch in der Abklingzeit ist."),
+        K("userCooldownMessage", "Abklingzeit eines Chatters", "Gesendet, wenn der Befehl für diesen einen Chatter noch in der Abklingzeit ist."),
+        Tx("Easy", "Leicht"),
+        Tx("Medium", "Mittel"),
+        Tx("Hard", "Schwer"),
+        Tx("Random", "Zufall"),
+        Tx("Left", "Links"),
+        Tx("Centre", "Mitte"),
+        Tx("Right", "Rechts"),
+        Tx("Round", "Runde"))
+        .Samples("word", "STREAM", "guess", "DREAM", "timeLimit", "30", "winAmount", "3,000", "attempts", "1", "maxAttempts", "3", "examples", "DREAM, TEAM, THEME, CREAM, BEAM", "difficulty", "medium", "reward", "500", "winner", "bob", "seconds", "12", "reason", "minimum bet is 10 Points.")
+        .Help(
+            H("A single-player round",
+                Note("A chatter runs !Rhyme and gets one word. They answer in ordinary chat; only the last word of their message is read, so \"hmm maybe DREAM\" works. A rhyme you listed for that word always counts; anything else counts when it ends the same way as the listed rhymes and, with the dictionary check on, is a real word. Getting it right pays the stake times the bank's multiplier; running out of time or attempts costs the stake."),
+                Cmd("!Rhyme", "starts a round at the default bet."),
+                Cmd("!Rhyme 250", "starts one at 250, within the minimum and maximum."),
+                Cmd("!Rhyme all", "also half, third, quarter and random.")),
+            H("Lines to finish",
+                Note("A target with spaces in it is a line to finish rather than a word to rhyme: \"ROSES ARE RED VIOLETS ARE BLUE ...\" expects the whole answer. There the chatter's entire message is read, punctuation ignored, and it has to match one of the answers you listed.")),
+            H("A battle",
+                Note("A moderator runs !RhymeBattle and the whole chat races for one word. The first valid rhyme takes the prize and the battle closes; nobody else pays anything. Each platform can have one battle going at a time."),
+                Cmd("!RhymeBattle", "opens a battle. Moderators only, set on the command itself."),
+                Cmd("!RhymeBattle 500", "opens one and stakes 500 of your own; the winner takes the stake."),
+                Note("Permissions and cooldowns belong to the commands themselves, in Streamer.bot's Commands tab. The two cooldowns on the Game page are written onto !Rhyme when you save.")),
+            H("Where things are kept",
+                Cmd("RT-settings.json", "everything on these pages."),
+                Cmd("RT-wordbank.json", "the three word banks."),
+                Cmd("uiframework.layout.json", "your layout of this window: theme, renamed or hidden pages and fields."),
+                Cmd("Overlay\\", "the OBS overlay page, written when you copy its URL or open the demo."),
+                Note("All of it sits in Streamer.bot's folder under Chat Games\\RhymeTime. A damaged file falls back to the .bak beside it and the broken one is kept as .broken.")))
+        .About(credits: "RhymeTime by aaskjer",
+            sections: new[]
+            {
+                H("Good to know",
+                    Note("Rhyme lookups use wordotron.com. Turn the dictionary check off on the Game page if you would rather the game never called out."))
+            }, links: new[] { Link("Repository", "https://github.com/aaskjer/RhymeTime"), Link("Releases", "https://github.com/aaskjer/RhymeTime/releases"), Link("StreamUP - Currency Core", "https://streamup.tips/product/currency-core"), Link("tawmae - LOYALTY POINTS", "https://tawmae.xyz/loyalty-points") });
 
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =

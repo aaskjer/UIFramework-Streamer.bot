@@ -120,6 +120,8 @@ The game answers `test` with a line of text, or with a JSON object:
 - `set` puts values into other fields of the window as if typed (nothing is saved until Save: a preset button); a
   field whose value changes glows in the accent colour for a moment.
 - `status` is the line for the footer.
+- `clipboard` is text the window puts on the clipboard (an overlay URL): the game runs on Streamer.bot's thread,
+  which has no clipboard, the window's has.
 
 ## The window
 

@@ -1,6 +1,6 @@
 {
   "host": "rhymetime",
-  "version": "v2.0.0",
+  "version": "v2.1.0",
   "settingsFile": "Chat Games/RhymeTime/RT-settings.json",
   "settings": [
     {
@@ -1075,5 +1075,409 @@
         "UserMessage"
       ]
     }
-  ]
+  ],
+  "window": {
+    "title": "RhymeTime",
+    "releases": "aaskjer/RhymeTime",
+    "logPrefix": "[RhymeTime/Settings]",
+    "pages": [
+      {
+        "id": "game",
+        "title": "Game",
+        "icon": "🎮"
+      },
+      {
+        "id": "battle",
+        "title": "Battle",
+        "icon": "⚔️"
+      },
+      {
+        "id": "words",
+        "title": "Word banks",
+        "icon": "📚"
+      },
+      {
+        "id": "access",
+        "title": "Access",
+        "icon": "👥"
+      },
+      {
+        "id": "overlay",
+        "title": "Overlay",
+        "icon": "📺"
+      },
+      {
+        "id": "messages",
+        "title": "Messages",
+        "icon": "💬"
+      },
+      {
+        "id": "help",
+        "title": "How to play",
+        "icon": "📖"
+      },
+      {
+        "id": "about",
+        "title": "About",
+        "icon": "ℹ️"
+      }
+    ],
+    "senders": {
+      "useBot": "useBot",
+      "sendAction": "sendAction",
+      "cooldownUseBot": "cooldownUseBot",
+      "cooldownSendAction": "cooldownSendAction",
+      "numberSeparator": "numberSeparator",
+      "cooldownGroup": "Cooldown"
+    },
+    "samples": {
+      "word": "STREAM",
+      "guess": "DREAM",
+      "timeLimit": "30",
+      "winAmount": "3,000",
+      "attempts": "1",
+      "maxAttempts": "3",
+      "examples": "DREAM, TEAM, THEME, CREAM, BEAM",
+      "difficulty": "medium",
+      "reward": "500",
+      "winner": "bob",
+      "seconds": "12",
+      "reason": "minimum bet is 10 Points."
+    },
+    "cooldowns": [
+      {
+        "command": "15e49f3a-389a-4190-ac15-c50b1fd4eee6",
+        "global": "globalCooldown",
+        "user": "userCooldown"
+      }
+    ],
+    "help": [
+      {
+        "heading": "A single-player round",
+        "lines": [
+          {
+            "note": "A chatter runs !Rhyme and gets one word. They answer in ordinary chat; only the last word of their message is read, so \"hmm maybe DREAM\" works. A rhyme you listed for that word always counts; anything else counts when it ends the same way as the listed rhymes and, with the dictionary check on, is a real word. Getting it right pays the stake times the bank's multiplier; running out of time or attempts costs the stake."
+          },
+          {
+            "command": "!Rhyme",
+            "what": "starts a round at the default bet."
+          },
+          {
+            "command": "!Rhyme 250",
+            "what": "starts one at 250, within the minimum and maximum."
+          },
+          {
+            "command": "!Rhyme all",
+            "what": "also half, third, quarter and random."
+          }
+        ]
+      },
+      {
+        "heading": "Lines to finish",
+        "lines": [
+          {
+            "note": "A target with spaces in it is a line to finish rather than a word to rhyme: \"ROSES ARE RED VIOLETS ARE BLUE ...\" expects the whole answer. There the chatter's entire message is read, punctuation ignored, and it has to match one of the answers you listed."
+          }
+        ]
+      },
+      {
+        "heading": "A battle",
+        "lines": [
+          {
+            "note": "A moderator runs !RhymeBattle and the whole chat races for one word. The first valid rhyme takes the prize and the battle closes; nobody else pays anything. Each platform can have one battle going at a time."
+          },
+          {
+            "command": "!RhymeBattle",
+            "what": "opens a battle. Moderators only, set on the command itself."
+          },
+          {
+            "command": "!RhymeBattle 500",
+            "what": "opens one and stakes 500 of your own; the winner takes the stake."
+          },
+          {
+            "note": "Permissions and cooldowns belong to the commands themselves, in Streamer.bot's Commands tab. The two cooldowns on the Game page are written onto !Rhyme when you save."
+          }
+        ]
+      },
+      {
+        "heading": "Where things are kept",
+        "lines": [
+          {
+            "command": "RT-settings.json",
+            "what": "everything on these pages."
+          },
+          {
+            "command": "RT-wordbank.json",
+            "what": "the three word banks."
+          },
+          {
+            "command": "uiframework.layout.json",
+            "what": "your layout of this window: theme, renamed or hidden pages and fields."
+          },
+          {
+            "command": "Overlay\\",
+            "what": "the OBS overlay page, written when you copy its URL or open the demo."
+          },
+          {
+            "note": "All of it sits in Streamer.bot's folder under Chat Games\\RhymeTime. A damaged file falls back to the .bak beside it and the broken one is kept as .broken."
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "RhymeTime by aaskjer",
+      "sections": [
+        {
+          "heading": "Good to know",
+          "lines": [
+            {
+              "note": "Rhyme lookups use wordotron.com. Turn the dictionary check off on the Game page if you would rather the game never called out."
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "Repository",
+          "url": "https://github.com/aaskjer/RhymeTime"
+        },
+        {
+          "text": "Releases",
+          "url": "https://github.com/aaskjer/RhymeTime/releases"
+        },
+        {
+          "text": "StreamUP - Currency Core",
+          "url": "https://streamup.tips/product/currency-core"
+        },
+        {
+          "text": "tawmae - LOYALTY POINTS",
+          "url": "https://tawmae.xyz/loyalty-points"
+        }
+      ]
+    }
+  },
+  "lang": {
+    "de": {
+      "keys": {
+        "timeLimit": {
+          "label": "Sekunden zum Antworten",
+          "help": "Wie lange ein Chatter Zeit hat, einen Reim zu finden, bevor die Runde verloren ist."
+        },
+        "maxAttempts": {
+          "label": "Versuche",
+          "help": "Wie viele falsche Reime ein Chatter anbieten darf, bevor die Runde verloren ist. Nur Tipps, die nach einem Versuch aussehen, zählen; alles andere im Chat wird ignoriert."
+        },
+        "difficulty": {
+          "label": "Schwierigkeit",
+          "help": "Aus welcher Wortliste eine Runde zieht. Zufall nimmt eine der drei, die Wörter enthält."
+        },
+        "checkRealWords": {
+          "label": "Tipps gegen ein Wörterbuch prüfen",
+          "help": "Ein Tipp, der nur richtig endet, wird bei wordotron.com nachgeschlagen, bevor er zählt. Tipps, die du selbst als Reime gelistet hast, zählen immer; ist das aus, gewinnt alles mit der richtigen Endung. Ist die Abfrage langsam oder nicht erreichbar, wird der Tipp angenommen, ein Ausfall des Wörterbuchs lehnt also nie einen richtigen Reim ab."
+        },
+        "minBet": {
+          "label": "Mindesteinsatz",
+          "help": "Einsätze darunter werden abgelehnt. 0 schaltet die Untergrenze ab."
+        },
+        "easyMultiplier": {
+          "label": "Leicht ×",
+          "help": "Der Einsatz wird bei einem Gewinn aus der leichten Liste damit multipliziert."
+        },
+        "mediumMultiplier": {
+          "label": "Mittel ×",
+          "help": "Der Einsatz wird bei einem Gewinn aus der mittleren Liste damit multipliziert."
+        },
+        "hardMultiplier": {
+          "label": "Schwer ×",
+          "help": "Der Einsatz wird bei einem Gewinn aus der schweren Liste damit multipliziert."
+        },
+        "userCooldown": {
+          "label": "Pro Chatter",
+          "help": "Gilt für den Befehl !Rhyme je Chatter, in Sekunden. 0 schaltet sie ab. Speichern schreibt sie direkt auf den Befehl."
+        },
+        "battleReward": {
+          "label": "Battle-Belohnung",
+          "help": "Wird dem Gewinner gezahlt, wenn der Moderator ein Battle ohne Einsatz startet. 0 heißt, ein Battle ohne Einsatz zahlt nichts. Mit einem Standardeinsatz über 0 setzt der Moderator stattdessen diesen, und der Gewinner bekommt ihn. Mindest- und Höchsteinsatz von der Seite Spiel gelten auch für ein Battle mit Einsatz."
+        },
+        "wordsEasy": {
+          "label": "Leicht",
+          "help": "Ein Zielwort je Zeile mit seinen Reimen daneben, durch Kommas getrennt. Ein Ziel mit Leerzeichen gilt als Zeile zum Vervollständigen statt als Wort zum Reimen: dann muss die ganze Antwort zu einer der Lösungen passen."
+        },
+        "wordsMedium": {
+          "label": "Mittel",
+          "help": "Die Liste, aus der eine Runde bei mittlerer Schwierigkeit zieht. Eine Zeile erreicht das Spiel erst, wenn sie ein Ziel und mindestens einen Reim hat."
+        },
+        "wordsHard": {
+          "label": "Schwer",
+          "help": "Die Liste, aus der eine Runde bei schwerer Schwierigkeit zieht."
+        },
+        "overlayEnabled": {
+          "label": "Runden ans Overlay senden",
+          "help": "Eine Browserquelle, die das zu reimende Wort mit seinem Countdown zeigt, dann den Reim, der gewonnen hat, und was er gezahlt hat. Sie hört auf den eigenen WebSocket-Server von Streamer.bot. Aus, und das Spiel sendet ihr nichts."
+        },
+        "obsSceneName": {
+          "label": "Szene",
+          "help": "Die Szene, in die die Quelle kommt. Sie wird angelegt, wenn es sie noch nicht gibt."
+        },
+        "obsSourceName": {
+          "label": "Quelle",
+          "help": "Die Browserquelle, die in dieser Szene angelegt wird. Nichts wird angefasst, wenn OBS schon eine Quelle dieses Namens hat."
+        },
+        "setupObsOverlay": {
+          "label": "Overlay in OBS einrichten",
+          "help": "Legt die Szene an, wenn sie fehlt, und fügt eine Browserquelle in der Größe deiner Leinwand hinzu, die auf die Overlay-URL zeigt. OBS muss in Streamer.bot unter Stream Apps > OBS Studio verbunden sein. Erst speichern: die Einrichtung liest den gespeicherten Port und die Namen."
+        },
+        "copyOverlayUrl": {
+          "label": "Overlay-URL kopieren",
+          "help": "Schreibt die Overlay-Seite und kopiert ihre Adresse für eine Browserquelle in OBS: 'Lokale Datei' abwählen, URL einfügen, Größe 1920 × 1080. Die URL nimmt &platform=twitch nur für die Runden einer Plattform, &lang=de für deutsche Texte, &demo=1 zum Platzieren der Quelle und &debug=1, um zu sehen, ob sie Streamer.bot erreicht."
+        },
+        "openOverlayDemo": {
+          "label": "Demo ausprobieren",
+          "help": "Öffnet das Overlay im Browser und spielt Beispielrunden ohne Streamer.bot."
+        },
+        "openOverlayFolder": {
+          "label": "Overlay-Ordner öffnen",
+          "help": "Öffnet Chat Games\\\\RhymeTime\\\\Overlay, wo die Seite geschrieben wird."
+        },
+        "overlayPosition": {
+          "label": "Platz",
+          "help": "Auf welcher Seite der Leinwand die Karte sitzt. Ein position= in der URL des Overlays überstimmt das. Alles in diesem Abschnitt reist mit der Runde, in OBS muss also nichts neu eingerichtet werden."
+        },
+        "overlayScale": {
+          "label": "Größe",
+          "help": "Skaliert die ganze Karte. 100 ist volle Größe, 10 bis 300 sind die Grenzen."
+        },
+        "overlayResultSeconds": {
+          "label": "Ergebnis anzeigen",
+          "help": "Wie lange der gewinnende Reim, oder die Beispiele nach einer verlorenen Runde, auf dem Bildschirm bleibt."
+        },
+        "overlayShowEnding": {
+          "label": "Die Endung zum Reimen",
+          "help": "Die Plakette 'alles, was auf …EAM endet' unter dem Wort. Die Endung bleibt im Wort selbst so oder so hervorgehoben. Gezeigt wird eine Runde zur Zeit, die neueste: ein Battle nimmt einer noch laufenden Einzelrunde die Karte."
+        },
+        "overlayShowAttempts": {
+          "label": "Verbleibende Versuche",
+          "help": "Die Punktereihe zu 'Versuche' auf der Seite Spiel. Ein Battle zeigt sie nie; der ganze Chat rennt um die Wette."
+        },
+        "overlayShowStake": {
+          "label": "Der Einsatz",
+          "help": "Der Chip in der Ecke mit dem Einsatz oder dem Preis des Battles. In einem Freispiel so oder so aus."
+        },
+        "overlayShowExamples": {
+          "label": "Reime nach einer verlorenen Runde",
+          "help": "Bis zu fünf der Reime, die du gelistet hast, so wie die Nachricht Beispiele sie im Chat postet."
+        },
+        "overlayGlow": {
+          "label": "Der warme Schein hinter der Karte",
+          "help": "Ein weicher Schimmer in der Akzentfarbe, der mit der Karte zur Battle- oder Gewinnfarbe wechselt."
+        },
+        "overlayAccentColour": {
+          "label": "Akzent",
+          "help": "Die Endung des Worts, die Wortmarke und der Uhrbalken. Alles Hellere wird daraus abgeleitet."
+        },
+        "overlayBattleColour": {
+          "label": "Battle",
+          "help": "Rahmen und Chip der Battle-Karte, die verbrauchten Versuchspunkte und eine verlorene Runde."
+        },
+        "overlayWinColour": {
+          "label": "Gewonnen",
+          "help": "Der gewinnende Reim und was er gezahlt hat."
+        },
+        "overlayCardColour": {
+          "label": "Karte",
+          "help": "Die Karte hinter allem. Was diese Seite nicht erreicht, gehört in das eigene Custom CSS der Browserquelle, das gewinnt: :root { --rt-width: 480px; --rt-edge: 40px; --rt-radius: 8px; }"
+        },
+        "overlayCardOpacity": {
+          "label": "Deckkraft der Karte",
+          "help": "Wie massiv die Karte ist. 0 lässt nur den Text, 100 verdeckt den Stream dahinter."
+        },
+        "startMessage": {
+          "label": "Runde gestartet",
+          "help": "Eröffnet eine Runde und nennt das Wort, auf das gereimt wird."
+        },
+        "winMessage": {
+          "label": "Gewinn",
+          "help": "Beim ersten Tipp gesendet, der als Reim zählt."
+        },
+        "loseMessage": {
+          "label": "Zeit abgelaufen",
+          "help": "Gesendet, wenn die Uhr ohne gültigen Reim abläuft."
+        },
+        "failedAttemptMessage": {
+          "label": "Falscher Tipp",
+          "help": "Für jeden Tipp gesendet, der nach einem Versuch aussieht, aber nicht reimt, bis zur Versuchsgrenze."
+        },
+        "maxAttemptsLoseMessage": {
+          "label": "Versuche aufgebraucht",
+          "help": "Statt 'Zeit abgelaufen' gesendet, wenn die Versuchsgrenze die Runde beendet hat."
+        },
+        "educationalMessage": {
+          "label": "Beispiele nach einer Niederlage",
+          "help": "Folgt auf eine verlorene Runde mit bis zu fünf der Reime, die du gelistet hast. Leer lassen, um nichts zu posten."
+        },
+        "alreadyPlayingMessage": {
+          "label": "Schon in einer Runde",
+          "help": "Gesendet, wenn ein Chatter den Befehl ausführt, während die eigene Runde noch offen ist."
+        },
+        "noWordsMessage": {
+          "label": "Leere Wortliste",
+          "help": "Gesendet, wenn die gewählte Liste kein brauchbares Wort enthält, sodass keine Runde starten kann."
+        },
+        "battleStartMessage": {
+          "label": "Battle eröffnet",
+          "help": "Eröffnet ein Battle für den ganzen Chat."
+        },
+        "battleWinMessage": {
+          "label": "Battle gewonnen",
+          "help": "An den gesendet, der den ersten gültigen Reim geschafft hat."
+        },
+        "battleTimeoutMessage": {
+          "label": "Battle abgelaufen",
+          "help": "Gesendet, wenn niemand rechtzeitig gereimt hat. Ein Einsatz des Moderators geht zurück."
+        },
+        "battleAlreadyActiveMessage": {
+          "label": "Battle läuft schon",
+          "help": "Gesendet, wenn ein Moderator ein Battle eröffnet, während auf dieser Plattform noch eines läuft."
+        },
+        "invalidBetMessage": {
+          "label": "Einsatz abgelehnt",
+          "help": "Der Rahmen um die vier Gründe darunter; {reason} wird durch den zutreffenden ersetzt."
+        },
+        "reasonNegativeAmount": {
+          "label": "Grund: keine Zahl",
+          "help": "Füllt {reason}, wenn der Betrag nicht lesbar oder nicht über null ist."
+        },
+        "reasonInsufficientFunds": {
+          "label": "Grund: nicht genug Punkte",
+          "help": "Füllt {reason}, wenn der Einsatz mehr ist, als der Chatter hat."
+        },
+        "reasonBelowMinimum": {
+          "label": "Grund: unter dem Minimum",
+          "help": "Füllt {reason}, wenn der Einsatz unter dem Minimum auf der Seite Spiel liegt."
+        },
+        "reasonAboveMaximum": {
+          "label": "Grund: über dem Maximum",
+          "help": "Füllt {reason}, wenn der Einsatz über dem Maximum auf der Seite Spiel liegt."
+        },
+        "globalCooldownMessage": {
+          "label": "Abklingzeit für alle",
+          "help": "Gesendet, wenn der Befehl für den ganzen Chat noch in der Abklingzeit ist."
+        },
+        "userCooldownMessage": {
+          "label": "Abklingzeit eines Chatters",
+          "help": "Gesendet, wenn der Befehl für diesen einen Chatter noch in der Abklingzeit ist."
+        }
+      },
+      "texts": {
+        "Easy": "Leicht",
+        "Medium": "Mittel",
+        "Hard": "Schwer",
+        "Random": "Zufall",
+        "Left": "Links",
+        "Centre": "Mitte",
+        "Right": "Rechts",
+        "Round": "Runde"
+      }
+    }
+  }
 }
