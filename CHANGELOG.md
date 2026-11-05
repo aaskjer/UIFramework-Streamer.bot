@@ -5,11 +5,15 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-11-05
+
+Every host on the generic stub; the spec-carrying stub retires.
+
 - Battleship Game is the sixth and last host on the generic stub (v2.1.0, in German, 162 of its keys translated in
   the block): the summaries, the presets, the broadcaster lookup, the leaderboard reset, the OBS setup and the
   Heat markers are answered by the game, a save hands the Click to Fire settings to a live overlay through
-  `saved:`; custom triggers for every finished battle on top. `hosts/battleship` lost its `spec.json` and `host-section.cs`, and with the last spec-carrying host
-  gone `stub/Stub.spec.cs` and `tools/embed-spec.ps1` are removed; `tools/check-stub.ps1` compiles the one stub
+  `saved:`; custom triggers for every finished battle on top. `hosts/battleship` lost its `spec.json` and
+  `host-section.cs`, and with the last spec-carrying host gone `stub/Stub.spec.cs` and `tools/embed-spec.ps1` are removed; `tools/check-stub.ps1` compiles the one stub
   and the demo. Gaps seen there, for a later release: the column headers of the log page and its "Write a log
   file per day" switch stay English.
 - Blackjack Game is the fifth host on the generic stub (v17.1.0, in German, 215 of its keys translated in the
