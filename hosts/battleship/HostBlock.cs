@@ -381,6 +381,8 @@ public static class UiSchema
                 Cmd("!stopbattle", "moderators: ends whatever is running and pays nothing more out. A duel's entries are refunded."),
                 Cmd("!fire link", "with Click to Fire on: links your clicks on stream to you, once. Twitch only."),
                 Note("These are the command names the Setup Guide uses. The game knows its commands by their IDs, so you can rename any of them in Streamer.bot.")),
+            H("For your own actions",
+                Note("Every finished battle fires a custom trigger (Custom > Chat Game > Battleship Game): BSG: Battle Won, BSG: Battle Lost, BSG: Battle Timed Out or BSG: Battle Stopped for a solo battle, BSG: Chat Battle Settled for the chat's battle, BSG: Duel Settled for a team duel, and BSG: Battle Settled for every one of them. The trigger carries the battle as arguments: battleOutcome (the log's result: WIN, LOSS, TIMEOUT, NO-SHOW, STOPPED), battleMode (solo, chat or duel), battleUser, battleUserId, battlePlatform, battleTrigger (fire, timeout or stop), battleBoard, battleShots, battleHits, battleAccuracy, battleShipsSunk, battleShipsLost, battleNet (the battle's total, or a duel's pot), battleWinner (a duel's winning side) and battleCurrency. GetLastBattleResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action.")),
             H("Where things are kept",
                 Cmd("BSG-Settings.json", "everything on these pages."),
                 Cmd("uiframework.layout.json", "your layout of this window: theme, renamed or hidden pages and fields."),
