@@ -179,7 +179,7 @@
       "page": "game",
       "section": "Bets and points",
       "label": "Free mode",
-      "help": "Every spin is free: nobody pays or wins points, the jackpot pool doesn't grow, and chat gets the Free messages. For a single free spin, a trigger of your own can pass the argument free=1 instead.",
+      "help": "Every spin is free: nobody pays or wins points, the jackpot pool doesn't grow, and chat gets the Free mode messages. !SetFreeSlots and !EndFreeSlots switch it from chat (moderators). For a single free spin, a trigger of your own can pass the argument free=1 instead.",
       "aliases": [
         "IsFree"
       ]
@@ -904,6 +904,36 @@
       ]
     },
     {
+      "key": "freeGameStartMessage",
+      "default": "🎰 Free mode is ON! Spin for free - no {currency} needed!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Started",
+      "help": "Sent once when Free mode is turned on by !SetFreeSlots, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "FreeGameStartMessage"
+      ]
+    },
+    {
+      "key": "freeGameEndMessage",
+      "default": "⏹️ Free mode has ended. Spins cost {currency} again!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Free mode",
+      "label": "Ended",
+      "help": "Sent once when Free mode is turned off by !EndFreeSlots, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
+      "placeholders": [
+        "currency"
+      ],
+      "aliases": [
+        "FreeGameEndMessage"
+      ]
+    },
+    {
       "key": "addictedWinMessage",
       "default": "@{user}, you WON! {amount} {currency}! 🎉🎉 -- Addiction Fee: your win was cut by {addictedCutPercent}% -- Your new balance: {newBalance} {currency}",
       "kind": "template",
@@ -1178,7 +1208,7 @@
         "key": "freeGame",
         "on": "Free mode on",
         "off": "Free mode off",
-        "tooltip": "Free mode, from the Game page. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow."
+        "tooltip": "Free mode, from the Game page or !SetFreeSlots. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow."
       },
       {
         "key": "isChannelPointsTrigger",
@@ -1256,6 +1286,10 @@
             "what": "also half, third, quarter and random."
           },
           {
+            "command": "!SetFreeSlots",
+            "what": "moderators: turns Free mode on, every spin is free. !EndFreeSlots turns it off."
+          },
+          {
             "note": "A trigger of your own can pass the argument free=1 for a single free spin; Free mode on the Game page makes every spin free."
           }
         ]
@@ -1286,7 +1320,7 @@
         "heading": "For your own actions",
         "lines": [
           {
-            "note": "Every settled spin fires a custom trigger - SMG: Spin Win, SMG: Spin Loss or SMG: Spin Jackpot (Custom > Chat Game > Slot Machine Game) - with the spin as arguments: spinOutcome, spinUser, spinPlatform, spinSlots, spinBet, spinAmount, spinPreviousPoints, spinNewPoints, spinCurrency, spinJackpotPoolWon and spinFree. GetLastSpinResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
+            "note": "Every settled spin fires a custom trigger - SMG: Spin Win, SMG: Spin Loss or SMG: Spin Jackpot, and SMG: Spin Free on top when the spin was free (Custom > Chat Game > Slot Machine Game) - with the spin as arguments: spinOutcome, spinUser, spinPlatform, spinSlots, spinBet, spinAmount, spinPreviousPoints, spinNewPoints, spinCurrency, spinJackpotPoolWon and spinFree. GetLastSpinResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action. SMG: Free Game Start and SMG: Free Game End fire when Free mode is switched from chat or by an Execute C# Method on StartFreeGame or EndFreeGame."
           },
           {
             "note": "Every spin also updates the viewer's own variables for a leaderboard of your own, on the platform the spin was made (Streamer.bot's user variables, Twitch, YouTube and Kick): smg_spins, smg_wins, smg_losses, smg_jackpots, smg_totalBet, smg_totalWon, smg_totalLost, smg_netProfit, smg_biggestWin, smg_biggestBet, smg_poolWon, smg_currentStreak, smg_bestStreak, smg_userName, smg_firstPlayed and smg_lastPlayed. Free spins count as spins, wins and jackpots but move no points."
@@ -1390,7 +1424,7 @@
         },
         "freeGame": {
           "label": "Freier Modus",
-          "help": "Jede Drehung ist frei: niemand zahlt oder gewinnt Punkte, der Jackpot-Topf wächst nicht, und der Chat bekommt die Nachrichten unter Freier Modus. Für eine einzelne freie Drehung kann ein eigener Trigger stattdessen das Argument free=1 mitgeben."
+          "help": "Jede Drehung ist frei: niemand zahlt oder gewinnt Punkte, der Jackpot-Topf wächst nicht, und der Chat bekommt die Nachrichten unter Freier Modus. !SetFreeSlots und !EndFreeSlots schalten ihn aus dem Chat (Moderatoren). Für eine einzelne freie Drehung kann ein eigener Trigger stattdessen das Argument free=1 mitgeben."
         },
         "pointsVariable": {
           "label": "Punkte-Variable",
@@ -1544,6 +1578,14 @@
           "label": "Jackpot",
           "help": "Nach den Walzen gesendet bei einem Jackpot, solange der freie Modus an ist."
         },
+        "freeGameStartMessage": {
+          "label": "Gestartet",
+          "help": "Einmal gesendet, wenn !SetFreeSlots den freien Modus einschaltet, in den Chat, aus dem der Befehl kam. Anders eingeschaltet, etwa per Execute C# Method auf StartFreeGame in einer eigenen Action, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
+        "freeGameEndMessage": {
+          "label": "Beendet",
+          "help": "Einmal gesendet, wenn !EndFreeSlots den freien Modus ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
+        },
         "addictedWinMessage": {
           "label": "Gewinn",
           "help": "Statt der Gewinn-Nachricht an Zuschauer auf der Süchtigen-Liste gesendet."
@@ -1602,7 +1644,7 @@
         "Typed amount": "Eingegebener Betrag",
         "Fixed": "Fest",
         "Free": "Frei",
-        "Free mode, from the Game page. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow.": "Freier Modus, von der Seite Spiel. Solange er an ist, setzt und gewinnt niemand etwas, und der Jackpot-Topf wächst nicht.",
+        "Free mode, from the Game page or !SetFreeSlots. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow.": "Freier Modus, von der Seite Spiel oder !SetFreeSlots. Solange er an ist, setzt und gewinnt niemand etwas, und der Jackpot-Topf wächst nicht.",
         "How viewers spin on Twitch, from the Access page. YouTube and Kick always use the chat command.": "Wie Zuschauer auf Twitch drehen, von der Seite Zugriff. YouTube und Kick nutzen immer den Chat-Befehl."
       }
     }
