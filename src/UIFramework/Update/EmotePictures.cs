@@ -15,11 +15,13 @@ using Newtonsoft.Json.Linq;
 namespace UIFramework
 {
     /// <summary>
-    /// Pictures for emote cells. Kick emotes carry their id in the code (<c>[emote:ID:name]</c>), so their picture
-    /// is a URL away. Twitch emotes are typed by name: the picture is looked up once per window in the channel's and
-    /// the global Twitch, 7TV, BTTV and FFZ emotes, with what the host hands over in <see cref="IHostHooks.EmoteSources"/>
-    /// (the broadcaster's Twitch user id for the channel sets, client id and token for the Twitch API). Without a
-    /// host, only the global 7TV, BTTV and FFZ sets are asked. YouTube emotes are emoji and show themselves.
+    /// Pictures for emote cells. Kick emotes carry their id in the code (<c>[emote:ID:name]</c>, or just
+    /// <c>ID:name</c>), so their picture is a URL away. Twitch emotes are typed by name: the picture is looked up
+    /// once per window in the channel's and the global Twitch, 7TV, BTTV and FFZ emotes, with what the host hands
+    /// over in <see cref="IHostHooks.EmoteSources"/> (the broadcaster's Twitch user id for the channel sets, client
+    /// id and token for the Twitch API). Without a host, only the global 7TV, BTTV and FFZ sets are asked. YouTube's
+    /// own emojis are typed as <c>:name:</c> and found in the table embedded from conventions/emotes/youtube.json,
+    /// which the host's <c>youtube</c> object in the emote sources may extend; a Unicode emoji shows itself.
     /// </summary>
     public static class EmotePictures
     {
@@ -29,7 +31,70 @@ namespace UIFramework
         private static DateTime _twitchAsked;
         private static string _twitchSources;
 
-        public static readonly Regex KickCode = new Regex(@"^\[emote:([0-9]+):([^\]]+)\]$", RegexOptions.Compiled);
+        /// <summary>A Kick emote as chat renders it, <c>[emote:ID:name]</c>, or typed short as <c>ID:name</c>: group 1
+        /// is the id, group 2 the name.</summary>
+        public static readonly Regex KickCode = new Regex(@"^(?:\[emote:)?([0-9]+):([^\[\]\s:]+)\]?$", RegexOptions.Compiled);
+        /// <summary>One of YouTube's own emojis as chat types it, <c>:name:</c>: group 1 is the name.</summary>
+        public static readonly Regex YouTubeCode = new Regex(@"^:([A-Za-z0-9_-]+):$", RegexOptions.Compiled);
+        private static Dictionary<string, string> _youtubeTable;
+
+        /// <summary>The name shown beneath an emote's picture: a Kick code's name, a YouTube shortcode without its
+        /// colons, anything else as it is.</summary>
+        public static string NameOf(string code)
+        {
+            code = (code ?? "").Trim();
+            var kick = KickCode.Match(code);
+            if (kick.Success) return kick.Groups[2].Value;
+            var youtube = YouTubeCode.Match(code);
+            return youtube.Success ? youtube.Groups[1].Value : code;
+        }
+
+        /// <summary>The picture of one of YouTube's own emojis, or null for anything the table doesn't know (a
+        /// Unicode emoji, a BTTV emote, a typo). The host's <c>youtube</c> object (<c>{ ":name:": url }</c>) wins
+        /// over the embedded table.</summary>
+        public static string YouTubeUrl(string code, IHostHooks hooks, int size = 48)
+        {
+            code = (code ?? "").Trim();
+            if (!YouTubeCode.IsMatch(code))
+                return null;
+            string url = null;
+            try
+            {
+                string sources = hooks?.EmoteSources();
+                if (!string.IsNullOrWhiteSpace(sources) && JObject.Parse(sources)["youtube"] is JObject own)
+                    url = (string)own[code];
+            }
+            catch (Exception) { }
+            if (string.IsNullOrEmpty(url) && !YouTubeTable().TryGetValue(code, out url))
+                return null;
+            return url.Contains("=") ? url : url + "=w" + size + "-h" + size + "-c-k-nd";
+        }
+
+        private static Dictionary<string, string> YouTubeTable()
+        {
+            lock (Gate)
+            {
+                if (_youtubeTable != null)
+                    return _youtubeTable;
+                var table = new Dictionary<string, string>(StringComparer.Ordinal);
+                try
+                {
+                    var assembly = typeof(EmotePictures).Assembly;
+                    string name = assembly.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("conventions.emotes.youtube.json", StringComparison.OrdinalIgnoreCase));
+                    if (name != null)
+                    {
+                        string json;
+                        using (var stream = assembly.GetManifestResourceStream(name))
+                        using (var reader = new StreamReader(stream))
+                            json = reader.ReadToEnd();
+                        foreach (var p in (JObject.Parse(json)["emojis"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())
+                            if (!string.IsNullOrEmpty((string)p.Value)) table[p.Name] = (string)p.Value;
+                    }
+                }
+                catch (Exception) { }
+                return _youtubeTable = table;
+            }
+        }
 
         /// <summary>A 22-px image beside an emote cell, filled in once the picture is known. The name of the extension
         /// a Twitch emote comes from (7TV, BTTV, FFZ) goes to <paramref name="onSource"/>, for a hint.</summary>
@@ -55,6 +120,13 @@ namespace UIFramework
                 var m = KickCode.Match(code);
                 if (m.Success)
                     Load(image, "https://files.kick.com/emotes/" + m.Groups[1].Value + "/fullsize");
+                return;
+            }
+            if (string.Equals(platform, "youtube", StringComparison.OrdinalIgnoreCase))
+            {
+                string url = YouTubeUrl(code, hooks);
+                if (url != null)
+                    Load(image, url);
                 return;
             }
             if (!string.Equals(platform, "twitch", StringComparison.OrdinalIgnoreCase))

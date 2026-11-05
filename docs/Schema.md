@@ -67,7 +67,7 @@ conventions cannot know.
 | `live`         | no       | for `action`: the game gets the values as they stand in the window, unsaved and transient ones included. On any other field: the game is asked whenever the field changes (`test` with the field's key and the live values), and `set` in its answer fills other fields (a preset slider that sets five numbers) |
 | `panel`        | no       | for `action`: the answer is shown in a box under the button instead of the footer           |
 | `auto`         | no       | for `action`: no button; the game is asked when the page is shown and shortly after every change in the window (odds that follow the settings) |
-| `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `double`, `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the game's `emotes` answer lists, YouTube shows the emoji itself) |
+| `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `double`, `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the game's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself) |
 | `file`         | no       | a file next to the settings file that holds this value instead (a word bank, a question list); relative or absolute |
 | `field`        | no       | with `file`: the property in that file that holds the value; without it the file itself is the value |
 | `platform`     | no       | for `emote`: `twitch`, `youtube` or `kick`, where the picture comes from                     |
@@ -204,7 +204,7 @@ describe answer leaves a line in Streamer.bot's log.
 | `validate` | before a save                            | `validate: s => …` answers the problems one per line ("Minimum bet is above the maximum"), or null; the window shows them and asks whether to save anyway |
 | `saved`    | after a save, with the saved values      | `saved: s => …` writes an overlay, restarts a timer; the cooldowns the window declares are set by the settings action before this |
 | `table`    | a `table` field is shown                 | `table: key => …` answers a JSON array of objects whose fields the columns name |
-| `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitch": { "channelId": "…", "sources": ["twitch", "7tv", "bttv", "ffz"] } }` |
+| `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitch": { "channelId": "…", "sources": ["twitch", "7tv", "bttv", "ffz"] }, "youtube": { ":name:": "picture url" } }`; the `youtube` object adds to or replaces entries of the built-in table of YouTube's own emojis |
 
 **The points system.** `UiCurrency.Detect(CPH, settings)` gives the user variable the points live in
 (`Variable`), what they are called (`Name`) and where that came from (`Source`): StreamUP's Currency Core

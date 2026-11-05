@@ -6,13 +6,15 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace UIFramework.Preview
 {
     /// <summary>
     /// A host without Streamer.bot: a Blackjack-shaped spec, a settings file in the temp folder, console logging.
-    /// With -shots the window is rendered off screen once per page and written as PNG, then closed.
+    /// With -shots the window is rendered off screen once per page and written as PNG, then closed; -settle <ms>
+    /// gives each page that long for its emote pictures to arrive before the shot.
     /// </summary>
     internal static class Program
     {
@@ -23,6 +25,7 @@ namespace UIFramework.Preview
             string shots = Arg(args, "-shots");
             string theme = Arg(args, "-theme");
             string page = Arg(args, "-page");
+            int settle = int.TryParse(Arg(args, "-settle"), out int ms) ? ms : 0;
 
             Directory.CreateDirectory(Path.GetDirectoryName(settings));
             if (theme != null)
@@ -52,7 +55,7 @@ namespace UIFramework.Preview
                 spec.Customizing = true;
 
             if (shots != null)
-                return Screenshots.Take(spec, log, hooks, shots, page) ? 0 : 1;
+                return Screenshots.Take(spec, log, hooks, shots, page, settle) ? 0 : 1;
 
             Entry.Show(spec, log, hooks, () => hooks.Pump(log));
             return 0;
@@ -124,7 +127,7 @@ namespace UIFramework.Preview
 
     internal static class Screenshots
     {
-        public static bool Take(WindowSpec spec, IHostLog log, IHostHooks hooks, string folder, string onlyPage)
+        public static bool Take(WindowSpec spec, IHostLog log, IHostHooks hooks, string folder, string onlyPage, int settleMs = 0)
         {
             Directory.CreateDirectory(folder);
             var layout = LayoutFile.Load(spec.SettingsPath);
@@ -148,6 +151,8 @@ namespace UIFramework.Preview
                 window.Show();
                 parts.Refresh(pageSpec.Id);
                 window.UpdateLayout();
+                Settle(settleMs);
+                window.UpdateLayout();
                 var bitmap = new RenderTargetBitmap((int)window.Width, (int)window.Height, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render((Visual)window.Content);
                 var encoder = new PngBitmapEncoder();
@@ -160,6 +165,18 @@ namespace UIFramework.Preview
             }
             window.Close();
             return ok;
+        }
+
+        /// <summary>Runs the dispatcher for a while, so what arrives on other threads (emote pictures) is drawn.</summary>
+        private static void Settle(int ms)
+        {
+            if (ms <= 0)
+                return;
+            var frame = new DispatcherFrame();
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
+            timer.Tick += (sender, e) => { timer.Stop(); frame.Continue = false; };
+            timer.Start();
+            Dispatcher.PushFrame(frame);
         }
     }
 
