@@ -5,12 +5,17 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-11-05
+
+Pictures for YouTube's own emojis and for Kick emotes typed short.
+
 - Emote cells and the emotes of a result know YouTube's own emojis: typed as `:name:` (`:face-purple-rain-drops:`),
   their picture comes from a table embedded from `conventions/emotes/youtube.json` (100 of them, gathered from
   live chats; YouTube publishes no list), which the `youtube` object of a game's `emotes` answer may extend. A
   Unicode emoji still shows itself. A Kick emote may be typed short as `ID:name`, without the `[emote:` and `]`
   chat renders it with; the picture and the name beneath a result's emote come from either spelling
-  (`EmotePictures.KickCode`, `EmotePictures.NameOf`).
+  (`EmotePictures.KickCode`, `EmotePictures.NameOf`). The preview's `-settle <ms>` gives emote pictures that long
+  to arrive before a `-shots` shot.
 
 ## [0.9.3] - 2026-11-05
 
