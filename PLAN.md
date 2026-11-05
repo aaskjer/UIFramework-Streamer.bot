@@ -412,7 +412,7 @@ group") bleiben englisch. Blackjack ebenso (v17.1.0; 215 Keys im Block übersetz
 Einrichtung laufen im Spiel und antworten mit dem Ergebnis, drei Befehle in `.Cooldowns`; dazu Custom Trigger für
 jede abgerechnete Hand). Battleship ebenso (v2.1.0; 162 Keys im Block übersetzt, Zusammenfassungen, Vorlagen,
 Broadcaster-Suche, Bestenlisten-Reset, OBS-Einrichtung und Heat-Marker antworten aus dem Spiel, `saved:` schreibt die
-Heat-Konfiguration für ein laufendes Overlay). Damit ist 7.5 abgeschlossen: `embed-spec.ps1` und `Stub.spec.cs` sind
+Heat-Konfiguration für ein laufendes Overlay; dazu Custom Trigger für jede beendete Schlacht). Damit ist 7.5 abgeschlossen: `embed-spec.ps1` und `Stub.spec.cs` sind
 gelöscht, `check-stub.ps1` prüft nur noch den einen Stub und das Demo-Spiel. Dabei gesehen, noch offen im Framework:
 die Spaltenköpfe der Protokollseite und ihr Schalter "Write a log file per day" bleiben englisch.
 
