@@ -242,7 +242,7 @@ v0.4.0): `action` mit `live`/`panel`/`auto` und `transient`-Felder für Quoten u
 Battleship v2.0.0 umgestellt (03.11., v0.6.0): Presets über `set`, Flotten- und Uhr-Zusammenfassung als
 `auto`-Panels, Heat-Marker und OBS-Setup als Jobs, Scoreboard mit demselben Host-Block. Classic Chat Gamble v25.0.0 umgestellt (03.11.): Nachrichten bleiben als
 Sidecar-Felder in `messages.json`, Fairness-Presets als Buttons, das Spiel schreibt Free-Game-Zustand und
-Addicted-Liste unter den neuen Keys zurück. Offen in Phase 5: Hangman, Trivia. Screenshots für alle Docs bleiben für
+Addicted-Liste unter den neuen Keys zurück. Phase 5 ist abgeschlossen: Hangman (v13.0.0, Wortliste und Import als `list` und Aktionen) und Trivia (v9.0.0, Fragen-Editor als `list` über die Fragendatei, Quellen als Optionen mit Prüf-Aktion) laufen seit dem 6. November 2026 auf dem generischen Stub. Screenshots für alle Docs bleiben für
 den Abschluss (Phase 6).
 
 ### Phase 0: Entscheidungen festhalten (½ Tag)

@@ -5,6 +5,11 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- Hangman (v13.0.0) and Trivia (v9.0.0) are the seventh and eighth hosts on the generic stub; `hosts/hangman` and
+  `hosts/trivia` carry their blocks and schemas. Gaps seen there, for later releases: an action's `set` cannot
+  fill a `list`; lists have no search, filter or read-only column; no masked field kind for secrets; `requires`
+  greys out but cannot hide; list column headers and the namelist placeholder stay English in German.
+
 ## [0.9.6] - 2026-11-05
 
 Schema problems on the Log page; Free mode from chat in every host.
