@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-11-05
+
+Schema problems on the Log page; Free mode from chat in every host.
+
 - Schema problems are listed on the Log page, highlighted on top of the entries, where the host's author looks
   for what went wrong; the banner points there. A window without a log page keeps them on the About page.
 - Host blocks: every host but Classic Chat Gamble gained a Free mode chat switch with a Started and an Ended
