@@ -58,6 +58,26 @@ namespace UIFramework.Preview
             if (shots != null)
                 return Screenshots.Take(spec, log, hooks, shots, page, settle) ? 0 : 1;
 
+            // -windowshots <folder>: the whole window per page (rail, header, footer, the page at its full height),
+            // -pages a,b,c to choose them, -names id=file,... for the file names, -width for the window's width.
+            string windowShots = Arg(args, "-windowshots");
+            if (windowShots != null)
+            {
+                if (double.TryParse(Arg(args, "-width"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double width))
+                    spec.Width = width;
+                var request = new WindowCapture { Folder = windowShots, SettleMs = settle > 0 ? settle : 1500, Pick = Screenshots.Pick };
+                string only = Arg(args, "-pages");
+                if (only != null) request.Only = new HashSet<string>(only.Split(',').Select(p => p.Trim()), StringComparer.Ordinal);
+                string names = Arg(args, "-names");
+                if (names != null)
+                    request.Names = names.Split(',').Select(n => n.Split('=')).Where(p => p.Length == 2).ToDictionary(p => p[0].Trim(), p => p[1].Trim(), StringComparer.Ordinal);
+                Shell.Capture = request;
+                Entry.Show(spec, log, hooks, () => { });
+                foreach (var file in request.Written)
+                    Console.WriteLine("wrote " + file);
+                return request.Written.Count > 0 ? 0 : 1;
+            }
+
             Entry.Show(spec, log, hooks, () => hooks.Pump(log));
             return 0;
         }

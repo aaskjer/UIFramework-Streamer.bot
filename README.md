@@ -94,7 +94,8 @@ what users can change.
 `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 74 tests.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
 `-schema hosts/<game>/schema.json` the window a game declares. `-theme dark` or `light`, `-shots <folder>` renders
-every page to PNG, `-settle 3000` waits that long for emote pictures, `-pick 1` picks the first row of every grid.
+every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),
+`-settle 3000` waits that long for emote pictures, `-pick 1` picks the first row of every grid.
 A tag `vX.Y.Z` with its section in [CHANGELOG.md](CHANGELOG.md) publishes the DLL and updates `lib/v1/latest.json`,
 which every stub reads. [PLAN.md](PLAN.md) (German) holds the architecture and phases,
 [docs/Phase0-Konventionen.md](docs/Phase0-Konventionen.md) (German) the conventions drawn from the game windows

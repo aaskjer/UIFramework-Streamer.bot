@@ -34,6 +34,10 @@ namespace UIFramework
         private Window _window;
         private volatile bool _shuttingDown;
 
+        /// <summary>Set by a tool (the preview's -windowshots): instead of waiting for the user, the window photographs
+        /// every page whole (rail, header, footer, the page at its full height) and closes. Never set in Streamer.bot.</summary>
+        public static WindowCapture Capture;
+
         private Shell(WindowSpec spec, IHostLog log, IHostHooks hooks)
         {
             _spec = spec ?? throw new ArgumentNullException(nameof(spec));
@@ -215,6 +219,7 @@ namespace UIFramework
             double? keepOffset = null;
             DispatcherTimer rainbowTimer = null;
             KeyEventHandler keyHandler = null;
+            bool captureStarted = false;
 
             void Rebuild(string pageId)
             {
@@ -785,6 +790,55 @@ namespace UIFramework
 
             if (layout.Rainbow)
                 rainbowTimer = Rainbow.Start(root, headerBorder, rail.Items);
+
+            if (Capture != null && !captureStarted)
+            {
+                captureStarted = true;
+                var request = Capture;
+                window.WindowStartupLocation = WindowStartupLocation.Manual;
+                window.Left = -20000;
+                window.Top = -20000;
+                window.ShowInTaskbar = false;
+                window.ContentRendered += (s, e) => window.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    Directory.CreateDirectory(request.Folder);
+                    // Text drawn on a transparent bitmap loses its ClearType and comes out faint: the shot gets the
+                    // window's background under everything.
+                    if (root.Background == null) root.Background = window.Background;
+                    for (int i = 0; i < pages.Count; i++)
+                    {
+                        string id = pages[i].Spec.Id;
+                        if (request.Only != null && !request.Only.Contains(id)) continue;
+                        ShowPage(i);
+                        window.UpdateLayout();
+                        WindowCapture.Settle(request.SettleMs);
+                        if (request.Pick > 0)
+                            foreach (var grid in WindowCapture.Descendants(window).OfType<DataGrid>())
+                                if (grid.Items.Count >= request.Pick) grid.SelectedIndex = request.Pick - 1;
+                        // The page at its full height: the content is laid out taller than the window by what the page
+                        // would scroll (a window cannot grow past the screen), photographed, and put back.
+                        var scroll = (pages[i].Page as ScrollViewer) ?? WindowCapture.Descendants(pages[i].Page).OfType<ScrollViewer>().FirstOrDefault(v => v.ScrollableHeight > 0);
+                        double width = root.ActualWidth, height = root.ActualHeight;
+                        if (scroll != null && scroll.ScrollableHeight > 0)
+                        {
+                            height = Math.Min(request.MaxHeight, height + scroll.ScrollableHeight + 2);
+                            root.Measure(new Size(width, height));
+                            root.Arrange(new Rect(0, 0, width, height));
+                            root.UpdateLayout();
+                            WindowCapture.Settle(300);
+                            root.Measure(new Size(width, height));
+                            root.Arrange(new Rect(0, 0, width, height));
+                        }
+                        string file = Path.Combine(request.Folder, (request.Names != null && request.Names.TryGetValue(id, out var name) ? name : id) + ".png");
+                        WindowCapture.Save(root, file, width, height);
+                        root.InvalidateMeasure();
+                        window.UpdateLayout();
+                        request.Written.Add(file);
+                    }
+                    closeConfirmed = true;
+                    window.Close();
+                }), DispatcherPriority.ApplicationIdle);
+            }
             }
 
             Build();
@@ -876,6 +930,61 @@ namespace UIFramework
     }
 
     /// <summary>The rainbow mode: headings, rail borders and the header line cycle through the hues.</summary>
+    /// <summary>What <see cref="Shell.Capture"/> asks for: the folder, which pages (null: all) and under which file
+    /// names, how long each page gets for pictures to arrive, which grid row to pick, the tallest a shot may be.</summary>
+    public sealed class WindowCapture
+    {
+        public string Folder;
+        public HashSet<string> Only;
+        public Dictionary<string, string> Names;
+        public int SettleMs = 1500;
+        public int Pick;
+        public double MaxHeight = 2400;
+        public readonly List<string> Written = new List<string>();
+
+        public static void Save(FrameworkElement element, string file) => Save(element, file, element.ActualWidth, element.ActualHeight);
+
+        public static void Save(FrameworkElement element, string file, double width, double height)
+        {
+            var source = PresentationSource.FromVisual(element);
+            double dpiX = 96, dpiY = 96;
+            if (source?.CompositionTarget != null)
+            {
+                dpiX = 96 * source.CompositionTarget.TransformToDevice.M11;
+                dpiY = 96 * source.CompositionTarget.TransformToDevice.M22;
+            }
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                (int)Math.Ceiling(width * dpiX / 96), (int)Math.Ceiling(height * dpiY / 96), dpiX, dpiY, PixelFormats.Pbgra32);
+            bitmap.Render(element);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+            using (var stream = File.Create(file))
+                encoder.Save(stream);
+        }
+
+        /// <summary>Runs the dispatcher for a while, so what arrives on other threads (emote pictures) is drawn.</summary>
+        public static void Settle(int ms)
+        {
+            if (ms <= 0) return;
+            var frame = new DispatcherFrame();
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
+            timer.Tick += (s, e) => { timer.Stop(); frame.Continue = false; };
+            timer.Start();
+            Dispatcher.PushFrame(frame);
+        }
+
+        public static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+        {
+            int count = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                yield return child;
+                foreach (var d in Descendants(child)) yield return d;
+            }
+        }
+    }
+
     public static class Rainbow
     {
         public static DispatcherTimer Start(object root, Border headerBorder, List<Border> railItems)
