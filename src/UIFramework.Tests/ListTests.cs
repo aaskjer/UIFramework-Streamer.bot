@@ -73,15 +73,13 @@ namespace UIFramework.Tests
             int changes = 0;
             FieldBinding.HookChangeTracking(page, () => changes++);
 
-            // A list with a text column is a table: picking a row opens its fields; typing into one changes the
-            // value and counts as one changed field.
+            // A list with a text column is a table edited in place: a cell takes a new value, which changes the
+            // list's value and counts as one changed field.
             DataGrid grid = null;
             FieldBinding.VisitTree(page, n => { if (n is DataGrid g) grid = g; });
             Assert.NotNull(grid);
-            grid.SelectedIndex = 0;
-            var boxes = new List<TextBox>();
-            FieldBinding.VisitTree(page, n => { if (n is TextBox b) boxes.Add(b); });
-            boxes.First(b => b.Text == "CAR").Text = "CAR, FAR";
+            var row = grid.Items[0];
+            row.GetType().GetProperty("Item").SetValue(row, "CAR, FAR", new object[] { "Rhymes" });
             Assert.True(changes > 0);
             Assert.Equal(1, FieldBinding.CountChanged(page, baseline));
 

@@ -7,31 +7,32 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using Newtonsoft.Json.Linq;
 
 namespace UIFramework
 {
     /// <summary>
-    /// The table layout of a list with many or long columns (a question editor): the rows as a compact, read-only
-    /// grid in the style of the Log page, one line each, with a search box above; picking a row opens it in an edit
-    /// panel underneath, where every column has a full-size field. Add row, Remove row and Restore defaults sit
-    /// under the panel. A row keeps every property it came with, so keys the game writes and no column shows
-    /// (a timestamp) survive a save.
+    /// The table layout of a list with many or long columns (a question editor): every row one line of a grid,
+    /// edited where it stands. A click into a cell edits it, a switch column is a checkbox in every row that toggles
+    /// with one click, a read-only column only shows. A search box sits above; Add row, Remove row (the picked rows,
+    /// or Delete) and Restore defaults below. A row keeps every property it came with, so keys the game writes and no
+    /// column shows (a timestamp) survive a save.
     /// </summary>
     public sealed class ListTable
     {
         private readonly List<SettingColumn> _columns;
         private readonly JArray _defaults;
-        private readonly string _label;
         private readonly Action _notify;
         private readonly ObservableCollection<Record> _records = new ObservableCollection<Record>();
         private readonly ICollectionView _view;
         private readonly DataGrid _grid;
         private readonly TextBox _search;
-        private readonly StackPanel _editor = new StackPanel();
         private readonly TextBlock _count;
+        private readonly TextBlock _empty;
         private readonly Button _remove;
         private bool _loading;
 
@@ -41,17 +42,18 @@ namespace UIFramework
         public static bool Suits(List<SettingColumn> columns) =>
             columns != null && (columns.Count > 3 || columns.Any(c => c.Kind == "text"));
 
-        /// <summary>One row: the object as stored, and what the grid shows of it.</summary>
+        /// <summary>One row: the object as stored, read and written by column key.</summary>
         private sealed class Record : INotifyPropertyChanged
         {
-            public JObject Data;
+            public readonly JObject Data;
             public int Number;
             private readonly List<SettingColumn> _columns;
-            public Record(JObject data, List<SettingColumn> columns) { Data = data; _columns = columns; }
+            private readonly Action _changed;
+            public Record(JObject data, List<SettingColumn> columns, Action changed) { Data = data; _columns = columns; _changed = changed; }
             public event PropertyChangedEventHandler PropertyChanged;
 
-            /// <summary>The grid's text for a column: the first line of a text, a tick for a switch on.</summary>
-            public string this[string key]
+            /// <summary>A switch column as a bool, any other as its text; set from the cell, typed by the column's kind.</summary>
+            public object this[string key]
             {
                 get
                 {
@@ -59,14 +61,22 @@ namespace UIFramework
                     var column = _columns.FirstOrDefault(c => c.Key == key);
                     var token = Data[key];
                     if (column?.Kind == "bool")
-                        return token != null && token.Type == JTokenType.Boolean && (bool)token ? "✓" : "";
-                    string text = token == null || token.Type == JTokenType.Null ? "" : token.Type == JTokenType.String ? (string)token : token.ToString(Newtonsoft.Json.Formatting.None);
-                    int line = text.IndexOfAny(new[] { '\r', '\n' });
-                    return (line >= 0 ? text.Substring(0, line) + " …" : text).Trim();
+                        return token != null && token.Type == JTokenType.Boolean && (bool)token;
+                    return token == null || token.Type == JTokenType.Null ? "" : token.Type == JTokenType.String ? (string)token : token.ToString(Newtonsoft.Json.Formatting.None);
+                }
+                set
+                {
+                    var column = _columns.FirstOrDefault(c => c.Key == key);
+                    if (column == null || column.ReadOnly) return;
+                    JToken typed = Typed(column, value);
+                    if (JToken.DeepEquals(Data[key], typed)) return;
+                    Data[key] = typed;
+                    Refresh();
+                    _changed();
                 }
             }
 
-            public string Haystack => string.Join(" ", _columns.Select(c => this[c.Key]));
+            public string Haystack => string.Join(" ", _columns.Where(c => c.Kind != "bool").Select(c => (string)this[c.Key]));
 
             public bool Filled => _columns.Any(c =>
             {
@@ -81,7 +91,6 @@ namespace UIFramework
 
         public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify)
         {
-            _label = label;
             _columns = columns;
             _defaults = defaults;
             _notify = notify;
@@ -94,7 +103,7 @@ namespace UIFramework
             AutomationProperties.SetName(_search, Text.T("list.search", label));
             var searchHost = Ui.WithHint(_search, Text.T("list.search", label));
             searchHost.Margin = new Thickness(0, 0, 0, 8);
-            _search.TextChanged += (s, e) => { _view.Refresh(); Count(); };
+            _search.TextChanged += (s, e) => { CommitEdit(); _view.Refresh(); Count(); };
             _view.Filter = o =>
             {
                 string needle = (_search.Text ?? "").Trim();
@@ -102,55 +111,81 @@ namespace UIFramework
             };
             panel.Children.Add(searchHost);
 
+            var lines = new SolidColorBrush(Theme.Line);
             _grid = new DataGrid
             {
                 AutoGenerateColumns = false,
-                IsReadOnly = true,
+                IsReadOnly = false,
                 CanUserAddRows = false,
                 CanUserDeleteRows = false,
                 CanUserSortColumns = false,
-                SelectionMode = DataGridSelectionMode.Single,
+                CanUserReorderColumns = false,
+                SelectionMode = DataGridSelectionMode.Extended,
                 SelectionUnit = DataGridSelectionUnit.FullRow,
-                GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
+                GridLinesVisibility = DataGridGridLinesVisibility.All,
                 HeadersVisibility = DataGridHeadersVisibility.Column,
                 RowHeaderWidth = 0,
                 ItemsSource = _view,
                 FontSize = 12,
-                Height = 300,
+                Height = 340,
                 Background = new SolidColorBrush(Theme.ContentBg),
                 RowBackground = new SolidColorBrush(Theme.ContentBg),
+                AlternatingRowBackground = new SolidColorBrush(Theme.Surface),
+                AlternationCount = 2,
                 Foreground = Theme.LabelFg,
-                BorderBrush = new SolidColorBrush(Theme.Line),
+                BorderBrush = lines,
                 BorderThickness = new Thickness(1),
-                HorizontalGridLinesBrush = new SolidColorBrush(Theme.Line),
+                HorizontalGridLinesBrush = lines,
+                VerticalGridLinesBrush = lines,
                 ColumnHeaderStyle = Ui.HeaderStyle(),
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
             };
             AutomationProperties.SetName(_grid, label);
             Ui.StyleSelection(_grid);
-            var cell = new Style(typeof(TextBlock));
-            cell.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
-            cell.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
-            cell.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
-            var muted = new Style(typeof(TextBlock), cell);
+            // A click into a cell starts editing it at once, as in a spreadsheet; no double-click needed.
+            var cellStyle = new Style(typeof(DataGridCell), _grid.CellStyle);
+            cellStyle.Setters.Add(new EventSetter(UIElement.GotFocusEvent, new RoutedEventHandler((s, e) =>
+            {
+                if (s is DataGridCell cell && !cell.IsEditing && !cell.IsReadOnly && !(cell.Column is DataGridTemplateColumn))
+                    _grid.BeginEdit();
+            })));
+            _grid.CellStyle = cellStyle;
+
+            var shown = new Style(typeof(TextBlock));
+            shown.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(5, 4, 5, 4)));
+            shown.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
+            shown.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
+            var muted = new Style(typeof(TextBlock), shown);
             muted.Setters.Add(new Setter(TextBlock.ForegroundProperty, Theme.MutedFg));
-            _grid.Columns.Add(new DataGridTextColumn { Header = "", Binding = new Binding("[#]"), Width = new DataGridLength(30), ElementStyle = muted });
-            // Shares of the width: a question takes most of it, a switch or a number little. Set in pixels once the
-            // grid knows its width, since star columns collapse when a page measures them without one.
+            var editing = new Style(typeof(TextBox));
+            editing.Setters.Add(new Setter(Control.BackgroundProperty, new SolidColorBrush(Theme.InputBg)));
+            editing.Setters.Add(new Setter(Control.ForegroundProperty, new SolidColorBrush(Theme.InputFg)));
+            editing.Setters.Add(new Setter(TextBoxBase.CaretBrushProperty, new SolidColorBrush(Theme.InputFg)));
+            editing.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
+            editing.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(3, 3, 3, 3)));
+
+            _grid.Columns.Add(new DataGridTextColumn { Header = "", Binding = new Binding("[#]") { Mode = BindingMode.OneWay }, Width = new DataGridLength(30), IsReadOnly = true, ElementStyle = muted });
             var shares = new List<(DataGridColumn Column, double Share)>();
             foreach (var column in _columns)
             {
-                double share = column.Kind == "text" ? 3.0 : column.Kind == "bool" ? 0.45 : column.Kind == "int" || column.Kind == "long" || column.Kind == "double" ? 0.7 : 1.0;
-                var gridColumn = new DataGridTextColumn
-                {
-                    Header = column.Label ?? column.Key,
-                    Binding = new Binding("[" + column.Key + "]"),
-                    MinWidth = 30,
-                    ElementStyle = column.ReadOnly ? muted : cell
-                };
+                DataGridColumn gridColumn;
+                if (column.Kind == "bool")
+                    gridColumn = SwitchColumn(column);
+                else
+                    gridColumn = new DataGridTextColumn
+                    {
+                        Header = column.Label ?? column.Key,
+                        Binding = new Binding("[" + column.Key + "]") { Mode = column.ReadOnly ? BindingMode.OneWay : BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.LostFocus },
+                        IsReadOnly = column.ReadOnly,
+                        ElementStyle = column.ReadOnly ? muted : shown,
+                        EditingElementStyle = editing
+                    };
+                gridColumn.MinWidth = 30;
                 _grid.Columns.Add(gridColumn);
-                shares.Add((gridColumn, share));
+                shares.Add((gridColumn, column.Kind == "text" ? 3.0 : column.Kind == "bool" ? 0.45 : column.Kind == "int" || column.Kind == "long" || column.Kind == "double" ? 0.7 : 1.0));
             }
+            // Shares of the width in pixels once the grid knows its width: star columns collapse when a page measures
+            // them without one.
             _grid.SizeChanged += (s, e) =>
             {
                 double room = e.NewSize.Width - 30 - 2 - SystemParameters.VerticalScrollBarWidth - 2;
@@ -159,17 +194,34 @@ namespace UIFramework
                 foreach (var (column, share) in shares)
                     column.Width = new DataGridLength(Math.Max(30, Math.Floor(room * share / total)));
             };
-            _grid.SelectionChanged += (s, e) => ShowEditor(_grid.SelectedItem as Record);
-            panel.Children.Add(_grid);
-
-            var editorBox = new Border
+            _grid.PreviewKeyDown += (s, e) =>
             {
-                BorderBrush = new SolidColorBrush(Theme.Line),
-                BorderThickness = new Thickness(1, 0, 1, 1),
-                Padding = new Thickness(12, 10, 12, 12),
-                Child = _editor
+                if (e.Key == Key.Delete && !IsEditing())
+                {
+                    RemoveSelected();
+                    e.Handled = true;
+                }
             };
-            panel.Children.Add(editorBox);
+
+            _empty = new TextBlock
+            {
+                FontSize = 12,
+                Foreground = Theme.MutedFg,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(24),
+                IsHitTestVisible = false
+            };
+            var gridHost = new Grid();
+            gridHost.Children.Add(_grid);
+            gridHost.Children.Add(_empty);
+            panel.Children.Add(gridHost);
+
+            var hint = Ui.Note(Text.T("list.table.hint"));
+            hint.Margin = new Thickness(0, 6, 0, 0);
+            panel.Children.Add(hint);
 
             var footer = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             _count = new TextBlock { FontSize = 12, Foreground = Theme.MutedFg, VerticalAlignment = VerticalAlignment.Center };
@@ -182,28 +234,28 @@ namespace UIFramework
             AutomationProperties.SetName(add, Text.T("list.addTo", label));
             add.Click += (s, e) =>
             {
+                CommitEdit();
                 _search.Text = "";
                 var record = Add(new JObject());
                 Renumber();
                 _grid.SelectedItem = record;
                 _grid.ScrollIntoView(record);
-                _editor.Children.OfType<FrameworkElement>().SelectMany(Inputs).FirstOrDefault()?.Focus();
+                var first = _grid.Columns.Skip(1).FirstOrDefault(c => !c.IsReadOnly && !(c is DataGridTemplateColumn));
+                if (first != null)
+                {
+                    _grid.CurrentCell = new DataGridCellInfo(record, first);
+                    _grid.Focus();
+                    _grid.BeginEdit();
+                }
                 Changed();
             };
             buttons.Children.Add(add);
             _remove = Ui.TextButton(Text.T("list.remove"), false);
             _remove.ToolTip = Text.T("list.remove.tip");
             _remove.IsEnabled = false;
-            _remove.Click += (s, e) =>
-            {
-                if (!(_grid.SelectedItem is Record record)) return;
-                int at = _records.IndexOf(record);
-                _records.Remove(record);
-                Renumber();
-                if (_records.Count > 0) _grid.SelectedItem = _records[Math.Min(at, _records.Count - 1)];
-                Changed();
-            };
+            _remove.Click += (s, e) => RemoveSelected();
             buttons.Children.Add(_remove);
+            _grid.SelectionChanged += (s, e) => _remove.IsEnabled = _grid.SelectedItems.Count > 0;
             if (_defaults != null && _defaults.Count > 0)
             {
                 var restore = Ui.TextButton(Text.T("list.restore"), false);
@@ -222,28 +274,78 @@ namespace UIFramework
             panel.Children.Add(footer);
 
             Element = panel;
-            ShowEditor(null);
         }
 
-        public JArray Value => new JArray(_records.Where(r => r.Filled).Select(r => r.Data.DeepClone()));
+        /// <summary>A switch column: a checkbox in every row that toggles with one click, no edit mode in between.</summary>
+        private static DataGridTemplateColumn SwitchColumn(SettingColumn column)
+        {
+            var box = new FrameworkElementFactory(typeof(CheckBox));
+            box.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            box.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            box.SetValue(UIElement.IsEnabledProperty, !column.ReadOnly);
+            box.SetValue(AutomationProperties.NameProperty, column.Label ?? column.Key);
+            box.SetBinding(ToggleButton.IsCheckedProperty, new Binding("[" + column.Key + "]") { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
+            return new DataGridTemplateColumn
+            {
+                Header = column.Label ?? column.Key,
+                CellTemplate = new DataTemplate { VisualTree = box },
+                IsReadOnly = true
+            };
+        }
+
+        public JArray Value
+        {
+            get
+            {
+                CommitEdit();
+                return new JArray(_records.Where(r => r.Filled).Select(r => r.Data.DeepClone()));
+            }
+        }
 
         public void Set(JArray value)
         {
             _loading = true;
+            CancelEdit();
             _records.Clear();
             if (value != null)
                 foreach (var item in value.OfType<JObject>())
                     Add((JObject)item.DeepClone());
             Renumber();
             _loading = false;
-            ShowEditor(null);
         }
 
         private Record Add(JObject data)
         {
-            var record = new Record(data, _columns);
+            var record = new Record(data, _columns, Changed);
             _records.Add(record);
             return record;
+        }
+
+        private void RemoveSelected()
+        {
+            var picked = _grid.SelectedItems.OfType<Record>().ToList();
+            if (picked.Count == 0) return;
+            CancelEdit();
+            int at = _records.IndexOf(picked[0]);
+            foreach (var record in picked)
+                _records.Remove(record);
+            Renumber();
+            if (_records.Count > 0) _grid.SelectedItem = _records[Math.Min(at, _records.Count - 1)];
+            Changed();
+        }
+
+        private bool IsEditing() => _view is IEditableCollectionView editable && (editable.IsEditingItem || editable.IsAddingNew);
+
+        private void CommitEdit()
+        {
+            if (!IsEditing()) return;
+            try { _grid.CommitEdit(DataGridEditingUnit.Row, true); } catch (InvalidOperationException) { }
+        }
+
+        private void CancelEdit()
+        {
+            if (!IsEditing()) return;
+            try { _grid.CancelEdit(DataGridEditingUnit.Row); } catch (InvalidOperationException) { }
         }
 
         private void Renumber()
@@ -265,6 +367,10 @@ namespace UIFramework
                     ? (filled == 1 ? Text.T("list.count.one") : Text.T("list.count.many", filled))
                     : Text.T("list.count.filled", filled, _records.Count);
             _count.ToolTip = Text.T("list.count.tip");
+            _empty.Text = _records.Count == 0
+                ? (_defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty"))
+                : shown == 0 ? Text.T("log.noMatch") : "";
+            _empty.Visibility = _empty.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void Changed()
@@ -274,111 +380,21 @@ namespace UIFramework
             _notify();
         }
 
-        /// <summary>The edit panel for the picked row: short columns side by side, long ones across the width.</summary>
-        private void ShowEditor(Record record)
+        private static JToken Typed(SettingColumn column, object value)
         {
-            _editor.Children.Clear();
-            _remove.IsEnabled = record != null;
-            if (record == null)
-            {
-                _editor.Children.Add(Ui.Note(_records.Count == 0
-                    ? (_defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty"))
-                    : Text.T("list.pick")));
-                return;
-            }
-            _editor.Children.Add(new TextBlock { Text = Text.T("list.editing", record.Number), FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Theme.LabelFg, Margin = new Thickness(0, 0, 0, 6) });
-
-            var shortOnes = new Grid();
-            const int across = 3;
-            for (int i = 0; i < across; i++)
-                shortOnes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            int placed = 0;
-            foreach (var column in _columns.Where(c => c.Kind != "text"))
-            {
-                if (placed % across == 0) shortOnes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                var field = Field(record, column);
-                field.Margin = new Thickness(placed % across == 0 ? 0 : 8, 0, 0, 8);
-                Grid.SetRow(field, placed / across);
-                Grid.SetColumn(field, placed % across);
-                shortOnes.Children.Add(field);
-                placed++;
-            }
-            foreach (var column in _columns.Where(c => c.Kind == "text"))
-            {
-                var field = Field(record, column);
-                field.Margin = new Thickness(0, 0, 0, 8);
-                _editor.Children.Add(field);
-            }
-            if (placed > 0)
-                _editor.Children.Add(shortOnes);
-        }
-
-        private FrameworkElement Field(Record record, SettingColumn column)
-        {
-            string label = column.Label ?? column.Key;
-            var token = record.Data[column.Key];
             if (column.Kind == "bool")
-            {
-                var check = new CheckBox { IsChecked = token != null && token.Type == JTokenType.Boolean && (bool)token, Template = Ui.SwitchTemplate(), IsEnabled = !column.ReadOnly, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 4, 0, 0) };
-                AutomationProperties.SetName(check, label);
-                RoutedEventHandler put = (s, e) => { record.Data[column.Key] = check.IsChecked == true; record.Refresh(); Changed(); };
-                check.Checked += put;
-                check.Unchecked += put;
-                return Ui.Labeled(label, check);
-            }
-            string text = token == null || token.Type == JTokenType.Null ? "" : token.Type == JTokenType.String ? (string)token : token.ToString(Newtonsoft.Json.Formatting.None);
-            var box = new TextBox { Text = text };
-            if (column.Kind == "text")
-            {
-                Ui.StyleColors(box);
-                box.Height = 58;
-                box.TextWrapping = TextWrapping.Wrap;
-                box.AcceptsReturn = false;
-                box.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-                box.Padding = new Thickness(4);
-            }
-            else
-            {
-                Ui.StyleInput(box);
-                if (column.Kind == "int" || column.Kind == "long") Ui.DigitsOnly(box);
-                else if (column.Kind == "double") Ui.DecimalsOnly(box);
-            }
-            if (column.ReadOnly)
-            {
-                box.IsReadOnly = true;
-                box.Opacity = 0.8;
-                box.ToolTip = Text.T("list.readOnly.tip");
-            }
-            AutomationProperties.SetName(box, label);
-            box.TextChanged += (s, e) =>
-            {
-                record.Data[column.Key] = Typed(column, box.Text);
-                record.Refresh();
-                Changed();
-            };
-            return Ui.Labeled(label, box);
-        }
-
-        private static JToken Typed(SettingColumn column, string text)
-        {
+                return value is bool b ? b : string.Equals(value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+            string text = (value?.ToString() ?? "").Trim();
             switch (column.Kind)
             {
                 case "int":
                 case "long":
-                    return long.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0L;
+                    return long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0L;
                 case "double":
                     return FieldBinding.TryParseFinite(text, out double d) ? d : 0.0;
                 default:
-                    return text.Trim();
+                    return text;
             }
-        }
-
-        private static IEnumerable<Control> Inputs(FrameworkElement root)
-        {
-            if (root is TextBox || root is CheckBox) { yield return (Control)root; yield break; }
-            foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<FrameworkElement>())
-                foreach (var c in Inputs(child))
-                    yield return c;
         }
     }
 }

@@ -132,7 +132,7 @@ namespace UIFramework.Tests
         }
 
         [Fact]
-        public void A_wide_list_is_a_table_that_keeps_what_no_column_shows() => Sta(() =>
+        public void A_wide_list_is_a_table_edited_in_place_that_keeps_what_no_column_shows() => Sta(() =>
         {
             var columns = new List<SettingColumn>
             {
@@ -145,9 +145,8 @@ namespace UIFramework.Tests
             Assert.Equal(2, grid.Items.Count);
             Assert.Equal("2026-11-06", (string)editor.Value[0]["SuggestedAtUtc"]);   // kept though no column shows it
 
-            grid.SelectedIndex = 0;
-            var answer = Walk(editor).OfType<TextBox>().Single(b => b.Text == "A1");
-            answer.Text = "A1 changed";
+            var first = grid.Items[0];
+            first.GetType().GetProperty("Item").SetValue(first, "A1 changed", new object[] { "Answer" });
             Assert.Equal("A1 changed", (string)editor.Value[0]["Answer"]);
             Assert.Equal("2026-11-06", (string)editor.Value[0]["SuggestedAtUtc"]);
 
