@@ -887,8 +887,7 @@
         {
           "key": "WrongAnswers",
           "kind": "string",
-          "label": "Wrong answers (a ",
-          "platform": " b "
+          "label": "Wrong answers (a | b | c)"
         },
         {
           "key": "Category",
@@ -903,6 +902,7 @@
         {
           "key": "SuggestedBy",
           "kind": "string",
+          "readOnly": true,
           "label": "Suggested by"
         }
       ],
@@ -1005,11 +1005,11 @@
       "page": "sources",
       "section": "Where questions come from",
       "label": "Question source",
-      "help": "Where each round's question comes from. Every source but 'Mine + opentdb' is the only one a round uses.",
+      "help": "Where each round's question comes from. Your own questions can be mixed into any of them below, or played alone with 'Only my questions'.",
       "options": [
         {
           "value": "opentdb",
-          "label": "opentdb only"
+          "label": "opentdb"
         },
         {
           "value": "wikidata",
@@ -1029,16 +1029,48 @@
         },
         {
           "value": "custom",
-          "label": "My questions only"
-        },
-        {
-          "value": "mixed",
-          "label": "Mine + opentdb"
+          "label": "Only my questions"
         }
       ],
+      "row": "source",
       "aliases": [
         "QuestionSource"
       ]
+    },
+    {
+      "key": "questionLanguage",
+      "default": "en",
+      "kind": "options",
+      "page": "sources",
+      "section": "Where questions come from",
+      "label": "Question language",
+      "help": "The language Wikidata, PokeAPI and IGDB questions are written in, names included where the source has them. opentdb is English and OdeNet German whatever this says; your own questions are as you wrote them.",
+      "options": [
+        {
+          "value": "en",
+          "label": "English"
+        },
+        {
+          "value": "de",
+          "label": "Deutsch"
+        }
+      ],
+      "row": "source",
+      "aliases": [
+        "QuestionLanguage"
+      ]
+    },
+    {
+      "key": "checkSource",
+      "default": null,
+      "kind": "action",
+      "page": "sources",
+      "section": "Where questions come from",
+      "label": "Check",
+      "help": "Asks the source picked beside it whether it answers right now: opentdb, Wikidata, PokeAPI, GitHub for OdeNet's word list, or Twitch for the IGDB keys. Nothing is saved.",
+      "live": true,
+      "panel": true,
+      "row": "source"
     },
     {
       "key": "sourcesNote",
@@ -1046,7 +1078,66 @@
       "kind": "note",
       "page": "sources",
       "section": "Where questions come from",
-      "help": "opentdb: thousands of English questions in two dozen categories, filtered on the Game page. Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic. OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once. PokeAPI: Pokémon types, generations, Pokédex entries and evolutions. IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below."
+      "help": "opentdb: thousands of English questions in two dozen categories, filtered on the Game page.",
+      "requires": "hide:questionSource=opentdb"
+    },
+    {
+      "key": "sourceNoteWikidata",
+      "default": null,
+      "kind": "note",
+      "page": "sources",
+      "section": "Where questions come from",
+      "help": "Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic.",
+      "requires": "hide:questionSource=wikidata"
+    },
+    {
+      "key": "sourceNoteOdenet",
+      "default": null,
+      "kind": "note",
+      "page": "sources",
+      "section": "Where questions come from",
+      "help": "OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once.",
+      "requires": "hide:questionSource=odenet"
+    },
+    {
+      "key": "sourceNotePokeapi",
+      "default": null,
+      "kind": "note",
+      "page": "sources",
+      "section": "Where questions come from",
+      "help": "PokeAPI: Pokémon types, generations, Pokédex entries and evolutions.",
+      "requires": "hide:questionSource=pokeapi"
+    },
+    {
+      "key": "sourceNoteIgdb",
+      "default": null,
+      "kind": "note",
+      "page": "sources",
+      "section": "Where questions come from",
+      "help": "IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below.",
+      "requires": "hide:questionSource=igdb"
+    },
+    {
+      "key": "sourceNoteCustom",
+      "default": null,
+      "kind": "note",
+      "page": "sources",
+      "section": "Where questions come from",
+      "help": "Only your own list on the Questions page, in the language you wrote it.",
+      "requires": "hide:questionSource=custom"
+    },
+    {
+      "key": "mixOwnQuestions",
+      "default": false,
+      "page": "sources",
+      "section": "Where questions come from",
+      "label": "Mix in my questions",
+      "help": "Draws some rounds from your own list on the Questions page instead of the source above, whichever source that is. How many is set beside it.",
+      "requires": "questionSource!=custom",
+      "row": "mix",
+      "aliases": [
+        "MixOwnQuestions"
+      ]
     },
     {
       "key": "customQuestionChance",
@@ -1054,12 +1145,12 @@
       "kind": "percent",
       "page": "sources",
       "section": "Where questions come from",
-      "label": "Mine (%)",
-      "help": "Only used by 'Mine + opentdb': how likely each round is to come from your own list. 50 is roughly every other round.",
+      "label": "Share of mine",
+      "help": "How likely each round is to come from your own list while 'Mix in my questions' is on. 50 is roughly every other round.",
       "min": 0.0,
       "max": 100.0,
-      "requires": "questionSource=mixed",
-      "row": "sourceNumbers",
+      "requires": "mixOwnQuestions",
+      "row": "mix",
       "aliases": [
         "CustomQuestionChance"
       ]
@@ -1072,31 +1163,10 @@
       "label": "Fetch ahead",
       "help": "How many opentdb questions are fetched at once and kept for later rounds. Larger means fewer API calls. The other sources keep what they fetch on disk anyway, under Chat Games\\Trivia Game\\Sources.",
       "min": 1.0,
-      "row": "sourceNumbers",
+      "requires": "questionSource=opentdb",
+      "row": "mix",
       "aliases": [
         "CacheSize"
-      ]
-    },
-    {
-      "key": "questionLanguage",
-      "default": "en",
-      "kind": "options",
-      "page": "sources",
-      "section": "Where questions come from",
-      "label": "Question language",
-      "options": [
-        {
-          "value": "en",
-          "label": "English"
-        },
-        {
-          "value": "de",
-          "label": "Deutsch"
-        }
-      ],
-      "row": "sourceNumbers",
-      "aliases": [
-        "QuestionLanguage"
       ]
     },
     {
@@ -1105,7 +1175,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "label": "Fall back to the other source",
-      "help": "If the chosen source cannot produce a question , an empty list, filters that match nothing, or opentdb being down , try the other one instead of failing the round. Only used by 'My questions only' and 'Mine + opentdb'.",
+      "help": "When one side cannot produce a question, an empty list, filters that match nothing or a source that does not answer, the round takes it from the other instead of failing: your own list and the source above while mixing, opentdb with 'Only my questions'.",
       "aliases": [
         "CustomFallback"
       ]
@@ -1116,7 +1186,8 @@
       "kind": "note",
       "page": "sources",
       "section": "IGDB access",
-      "help": "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret."
+      "help": "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret.",
+      "requires": "hide:questionSource=igdb"
     },
     {
       "key": "igdbClientId",
@@ -1125,7 +1196,7 @@
       "section": "IGDB access",
       "label": "Client ID",
       "help": "The Client ID of your Twitch developer application.",
-      "requires": "questionSource=igdb",
+      "requires": "hide:questionSource=igdb",
       "row": "igdb",
       "aliases": [
         "IgdbClientId"
@@ -1138,22 +1209,12 @@
       "section": "IGDB access",
       "label": "Client Secret",
       "help": "The Client Secret of that application. It is stored in configs.json on this PC and sent to Twitch only, to get IGDB's access token.",
-      "requires": "questionSource=igdb",
+      "requires": "hide:questionSource=igdb",
+      "masked": true,
       "row": "igdb",
       "aliases": [
         "IgdbClientSecret"
       ]
-    },
-    {
-      "key": "checkSource",
-      "default": null,
-      "kind": "action",
-      "page": "sources",
-      "section": "Is the source reachable?",
-      "label": "Check",
-      "help": "Asks the source picked above whether it answers right now: opentdb, Wikidata, PokeAPI, GitHub for OdeNet's word list, or Twitch for the IGDB keys. Nothing is saved.",
-      "live": true,
-      "panel": true
     },
     {
       "key": "suggestNote",
@@ -3562,15 +3623,39 @@
         },
         "questionSource": {
           "label": "Fragenquelle",
-          "help": "Woher die Frage jeder Runde kommt. Jede Quelle außer 'Meine + opentdb' ist die einzige, die eine Runde nutzt. opentdb: tausende englische Fragen in zwei Dutzend Kategorien. Wikidata: Fragen aus Wikidatas Fakten, Hauptstädte, Währungen, Elemente, Gemälde, Filme. OdeNet: deutscher Wortschatz, immer auf Deutsch. PokeAPI: Pokémon. IGDB: Videospiele, braucht eine eigene Twitch-Entwickleranwendung."
+          "help": "Woher die Frage jeder Runde kommt. Deine eigenen Fragen lassen sich darunter in jede Quelle mischen oder mit 'Nur meine Fragen' allein spielen."
         },
         "sourcesNote": {
           "label": null,
-          "help": "opentdb: tausende englische Fragen in zwei Dutzend Kategorien, gefiltert auf der Seite Spiel. Wikidata: Fragen aus Wikidatas Fakten (Hauptstädte, Währungen, Elemente, Monde, Gemälde, Bücher, Filme); der Chat kann ein Thema wählen. OdeNet: deutscher Wortschatz aus dem Open German WordNet, immer auf Deutsch; die Wortliste (etwa 4 MB) wird einmal heruntergeladen. PokeAPI: Pokémon-Typen, Generationen, Pokédex-Einträge und Entwicklungen. IGDB: Erscheinungsjahre, Studios und Plattformen von Videospielen; braucht eine eigene Twitch-Entwickleranwendung, siehe unten."
+          "help": "opentdb: tausende englische Fragen in zwei Dutzend Kategorien, gefiltert auf der Seite Spiel."
+        },
+        "sourceNoteWikidata": {
+          "label": null,
+          "help": "Wikidata: Fragen aus Wikidatas Fakten (Hauptstädte, Währungen, Elemente, Monde, Gemälde, Bücher, Filme); der Chat kann ein Thema wählen."
+        },
+        "sourceNoteOdenet": {
+          "label": null,
+          "help": "OdeNet: deutscher Wortschatz aus dem Open German WordNet, immer auf Deutsch; die Wortliste (etwa 4 MB) wird einmal heruntergeladen."
+        },
+        "sourceNotePokeapi": {
+          "label": null,
+          "help": "PokeAPI: Pokémon-Typen, Generationen, Pokédex-Einträge und Entwicklungen."
+        },
+        "sourceNoteIgdb": {
+          "label": null,
+          "help": "IGDB: Erscheinungsjahre, Studios und Plattformen von Videospielen; braucht eine eigene Twitch-Entwickleranwendung, siehe unten."
+        },
+        "sourceNoteCustom": {
+          "label": null,
+          "help": "Nur deine eigene Liste auf der Seite Fragen, in der Sprache, in der du sie geschrieben hast."
         },
         "customQuestionChance": {
-          "label": "Meine",
-          "help": "Nur bei 'Meine + opentdb': wie wahrscheinlich jede Runde aus deiner eigenen Liste kommt. 50 ist etwa jede zweite Runde."
+          "label": "Anteil meiner",
+          "help": "Wie wahrscheinlich jede Runde aus deiner eigenen Liste kommt, solange 'Meine Fragen einmischen' an ist. 50 ist etwa jede zweite Runde."
+        },
+        "mixOwnQuestions": {
+          "label": "Meine Fragen einmischen",
+          "help": "Zieht einen Teil der Runden aus deiner eigenen Liste auf der Seite Fragen statt aus der Quelle darüber, egal welche Quelle das ist. Wie viele, steht daneben."
         },
         "cacheSize": {
           "label": "Vorrat",
@@ -3582,7 +3667,7 @@
         },
         "customFallback": {
           "label": "Auf die andere Quelle ausweichen",
-          "help": "Kann die gewählte Quelle keine Frage liefern, eine leere Liste, Filter, die nichts treffen, oder ein opentdb, das nicht antwortet, wird die andere probiert, statt die Runde scheitern zu lassen. Nur bei 'Nur meine Fragen' und 'Meine + opentdb'."
+          "help": "Kann eine Seite keine Frage liefern, eine leere Liste, Filter, die nichts treffen, oder eine Quelle, die nicht antwortet, nimmt die Runde sie von der anderen, statt zu scheitern: deine eigene Liste und die Quelle darüber beim Einmischen, opentdb bei 'Nur meine Fragen'."
         },
         "igdbNote": {
           "label": null,
@@ -3598,7 +3683,7 @@
         },
         "checkSource": {
           "label": "Prüfen",
-          "help": "Fragt die oben gewählte Quelle, ob sie gerade antwortet: opentdb, Wikidata, PokeAPI, GitHub für OdeNets Wortliste, oder Twitch für die IGDB-Schlüssel. Nichts wird gespeichert."
+          "help": "Fragt die daneben gewählte Quelle, ob sie gerade antwortet: opentdb, Wikidata, PokeAPI, GitHub für OdeNets Wortliste oder Twitch für die IGDB-Schlüssel. Nichts wird gespeichert."
         },
         "suggestNote": {
           "label": null,
@@ -4134,10 +4219,9 @@
         "Look": "Aussehen",
         "Make it your own": "Anpassen",
         "Medium": "Mittel",
-        "Mine + opentdb": "Meine + opentdb",
         "Monthly reset": "Monatlicher Reset",
         "Multiple Choice only": "Nur Multiple Choice",
-        "My questions only": "Nur meine Fragen",
+        "Only my questions": "Nur meine Fragen",
         "OBS overlay": "OBS-Overlay",
         "OdeNet (German WordNet)": "OdeNet (deutsches WordNet)",
         "Overlay off": "Overlay aus",
@@ -4170,8 +4254,7 @@
         "Who may run a round": "Wer eine Runde leiten darf",
         "Who may suggest": "Wer vorschlagen darf",
         "Wikidata (SPARQL)": "Wikidata (SPARQL)",
-        "Your own questions": "Deine eigenen Fragen",
-        "opentdb only": "Nur opentdb"
+        "Your own questions": "Deine eigenen Fragen"
       }
     }
   }

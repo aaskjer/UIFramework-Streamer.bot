@@ -59,8 +59,8 @@ conventions cannot know.
 | `aliasFactor`  | no       | multiplies the first alias's value on the move (a fraction to percent: 100)                 |
 | `hidden`       | no       | true: no field, but the value stays in the file                                             |
 | `confirm`      | no       | for `action`: a yes/no question before the game is asked                                    |
-| `row`          | no       | the name of a row: settings that name the same row one after the other share one line of the page, whatever their kind (a bet, a role and a Try button); without it numbers sit three to a line, switches two, everything else alone |
-| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold; with `hide:` in front (`hide:questionSource=igdb`) it is hidden instead |
+| `row`          | no       | the name of a row: settings that name the same row one after the other share one line of the page, whatever their kind (a bet, a role and a Try button; a button takes the width it needs, an answer `panel` goes under the row); without it numbers sit three to a line, switches two, everything else alone |
+| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold; with `hide:` in front (`hide:questionSource=igdb`) it is hidden instead, and a section heading whose fields are all hidden hides with them |
 | `masked`       | no       | true: a text field shown as dots, with an eye button that reveals it (a token, a client secret); the value is saved like any other |
 | `readOnly`     | no       | true: shown, not editable (a status the game writes)                                        |
 | `twitchOnly`   | no       | for `bool`: the switch carries a "Twitch only" pill                                         |
@@ -96,7 +96,7 @@ Without `kind`: bool → `bool`, whole number → `int`, decimal → `double`, s
 | `colour`    | string      | colour field with a picker                 | `#rrggbb` or `#aarrggbb`                              |
 | `emote`     | string      | text field with the emote's picture beside | `platform` says `twitch`, `youtube` or `kick`         |
 | `slider`    | string/int/double | slider                               | with `options` a slider over the stops (the stop's value is stored, the labels sit under the stops); otherwise from `min` to `max` in `step`, the value beside the label; a default with a decimal makes it a `double` |
-| `list`      | array       | row editor: a cell per column, remove, *Add row*, *Restore defaults* | `columns` required; empty rows are dropped on save; with `file`/`field` in a file of its own |
+| `list`      | array       | row editor: a cell per column, remove, *Add row*, *Restore defaults*; with a `text` column or more than three columns a table instead: one line per row with a search box, the picked row in full underneath to edit | `columns` required; empty rows are dropped on save; with `file`/`field` in a file of its own; in the table a row keeps the properties no column shows |
 | `table`     | array       | a table, read-only                         | for statistics the game writes; rows from the game's `table` answer |
 | `note`      | –           | a paragraph on the page (`help`)           | no value; explains what follows; http(s) addresses are links |
 | `action`    | –           | a button                                   | no value; asks the game (`test` with the key); the answer is the footer line, with `panel` a box under the button, with `live` from the current values, with `auto` without a button and by itself. See *Answers* below |

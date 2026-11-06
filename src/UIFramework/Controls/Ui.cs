@@ -104,7 +104,8 @@ namespace UIFramework
             {
                 if (i > 0)
                     grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(weights[i], GridUnitType.Star) });
+                // A weight of 0 sizes the column to its content (a button beside a dropdown).
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = weights[i] <= 0 ? GridLength.Auto : new GridLength(weights[i], GridUnitType.Star) });
                 Grid.SetColumn(cells[i], i * 2);
                 grid.Children.Add(cells[i]);
             }
@@ -600,6 +601,21 @@ namespace UIFramework
             var style = new Style(typeof(ComboBoxItem));
             style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 4, 8, 4)));
             return style;
+        }
+
+        /// <summary>The picked row of a grid in the theme's accent instead of the system's white-on-blue, which the
+        /// dark theme turned into white on white.</summary>
+        public static void StyleSelection(DataGrid grid)
+        {
+            var soft = new SolidColorBrush(Theme.AccentSoft);
+            grid.Resources[SystemColors.HighlightBrushKey] = soft;
+            grid.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = soft;
+            grid.Resources[SystemColors.HighlightTextBrushKey] = Theme.LabelFg;
+            grid.Resources[SystemColors.InactiveSelectionHighlightTextBrushKey] = Theme.LabelFg;
+            var cell = new Style(typeof(DataGridCell));
+            cell.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
+            cell.Setters.Add(new Setter(Control.FocusVisualStyleProperty, null));
+            grid.CellStyle = cell;
         }
 
         public static Style HeaderStyle()

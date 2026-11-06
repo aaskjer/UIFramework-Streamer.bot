@@ -5,7 +5,7 @@
 // Compiles in any Streamer.bot action with no reference beyond Newtonsoft.Json.
 //
 // In Execute(), first thing:
-//     if (UiHost.Handle(args, CPH, GameActionName, "trivia", CurrentVersion, SettingsFileRelative, test: WindowTest, validate: WindowAnswers.Validate, saved: WindowSaved))
+//     if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, "Demo Game/settings.json"))
 //         return true;
 // With a Try button, a check before saving or work after it (see UiHost.Handle):
 //     if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, SettingsFile,
@@ -18,7 +18,8 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
-        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
+        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; a trailing "readonly"
+        // makes it a column the game fills and the user only reads; an emote column
         // adds "|twitch", "|youtube" or "|kick" for its picture), and the file next to the settings file that holds
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
@@ -29,24 +30,27 @@ public static class UiSchema
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
+        // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
+        public bool Masked;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
-    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free".</summary>
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
+    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked
         };
     }
 
@@ -97,9 +101,19 @@ public static class UiSchema
                 var columns = new JArray();
                 foreach (var column in s.Columns)
                 {
-                    var parts = column.Split('|');
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] };
-                    if (parts.Length > 3) cell["platform"] = parts[3];
+                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                    while (parts.Count > 3)
+                    {
+                        string last = parts[parts.Count - 1];
+                        if (last == "readonly") cell["readOnly"] = true;
+                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                        else break;
+                        parts.RemoveAt(parts.Count - 1);
+                    }
+                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
                     columns.Add(cell);
                 }
                 item["columns"] = columns;
@@ -110,6 +124,7 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Masked) item["masked"] = true;
             if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
@@ -300,16 +315,22 @@ public static class UiSchema
                 K("customDifficulty", "Schwierigkeit", "Nur deine Fragen dieser Schwierigkeit werden gezogen."),
                 K("customQuestionType", "Fragetyp", "Eine Frage zählt als Wahr/Falsch, wenn ihre einzigen zwei Optionen 'True' und 'False' sind."),
                 K("customCategories", "Kategorien im Spiel", "Nur deine Fragen unter diesen Kategorien werden gezogen. Leer heißt alle."),
-                K("questionSource", "Fragenquelle", "Woher die Frage jeder Runde kommt. Jede Quelle außer 'Meine + opentdb' ist die einzige, die eine Runde nutzt. opentdb: tausende englische Fragen in zwei Dutzend Kategorien. Wikidata: Fragen aus Wikidatas Fakten, Hauptstädte, Währungen, Elemente, Gemälde, Filme. OdeNet: deutscher Wortschatz, immer auf Deutsch. PokeAPI: Pokémon. IGDB: Videospiele, braucht eine eigene Twitch-Entwickleranwendung."),
-                K("sourcesNote", null, "opentdb: tausende englische Fragen in zwei Dutzend Kategorien, gefiltert auf der Seite Spiel. Wikidata: Fragen aus Wikidatas Fakten (Hauptstädte, Währungen, Elemente, Monde, Gemälde, Bücher, Filme); der Chat kann ein Thema wählen. OdeNet: deutscher Wortschatz aus dem Open German WordNet, immer auf Deutsch; die Wortliste (etwa 4 MB) wird einmal heruntergeladen. PokeAPI: Pokémon-Typen, Generationen, Pokédex-Einträge und Entwicklungen. IGDB: Erscheinungsjahre, Studios und Plattformen von Videospielen; braucht eine eigene Twitch-Entwickleranwendung, siehe unten."),
-                K("customQuestionChance", "Meine", "Nur bei 'Meine + opentdb': wie wahrscheinlich jede Runde aus deiner eigenen Liste kommt. 50 ist etwa jede zweite Runde."),
+                K("questionSource", "Fragenquelle", "Woher die Frage jeder Runde kommt. Deine eigenen Fragen lassen sich darunter in jede Quelle mischen oder mit 'Nur meine Fragen' allein spielen."),
+                K("sourcesNote", null, "opentdb: tausende englische Fragen in zwei Dutzend Kategorien, gefiltert auf der Seite Spiel."),
+                K("sourceNoteWikidata", null, "Wikidata: Fragen aus Wikidatas Fakten (Hauptstädte, Währungen, Elemente, Monde, Gemälde, Bücher, Filme); der Chat kann ein Thema wählen."),
+                K("sourceNoteOdenet", null, "OdeNet: deutscher Wortschatz aus dem Open German WordNet, immer auf Deutsch; die Wortliste (etwa 4 MB) wird einmal heruntergeladen."),
+                K("sourceNotePokeapi", null, "PokeAPI: Pokémon-Typen, Generationen, Pokédex-Einträge und Entwicklungen."),
+                K("sourceNoteIgdb", null, "IGDB: Erscheinungsjahre, Studios und Plattformen von Videospielen; braucht eine eigene Twitch-Entwickleranwendung, siehe unten."),
+                K("sourceNoteCustom", null, "Nur deine eigene Liste auf der Seite Fragen, in der Sprache, in der du sie geschrieben hast."),
+                K("customQuestionChance", "Anteil meiner", "Wie wahrscheinlich jede Runde aus deiner eigenen Liste kommt, solange 'Meine Fragen einmischen' an ist. 50 ist etwa jede zweite Runde."),
+                K("mixOwnQuestions", "Meine Fragen einmischen", "Zieht einen Teil der Runden aus deiner eigenen Liste auf der Seite Fragen statt aus der Quelle darüber, egal welche Quelle das ist. Wie viele, steht daneben."),
                 K("cacheSize", "Vorrat", "Wie viele opentdb-Fragen auf einmal geholt und für spätere Runden behalten werden. Mehr heißt weniger API-Aufrufe. Die anderen Quellen behalten ohnehin auf der Platte, was sie holen, unter Chat Games\\Trivia Game\\Sources."),
                 K("questionLanguage", "Fragensprache", "Die Sprache, in der Wikidata-, PokeAPI- und IGDB-Fragen geschrieben sind, Namen eingeschlossen, wo die Quelle sie hat. opentdb ist englisch und OdeNet deutsch, was auch hier steht; deine eigenen Fragen sind, wie du sie geschrieben hast."),
-                K("customFallback", "Auf die andere Quelle ausweichen", "Kann die gewählte Quelle keine Frage liefern, eine leere Liste, Filter, die nichts treffen, oder ein opentdb, das nicht antwortet, wird die andere probiert, statt die Runde scheitern zu lassen. Nur bei 'Nur meine Fragen' und 'Meine + opentdb'."),
+                K("customFallback", "Auf die andere Quelle ausweichen", "Kann eine Seite keine Frage liefern, eine leere Liste, Filter, die nichts treffen, oder eine Quelle, die nicht antwortet, nimmt die Runde sie von der anderen, statt zu scheitern: deine eigene Liste und die Quelle darüber beim Einmischen, opentdb bei 'Nur meine Fragen'."),
                 K("igdbNote", null, "IGDB gehört Twitch und antwortet nur einer bei Twitch registrierten Anwendung. Registriere eine auf https://dev.twitch.tv/console/apps: beliebiger Name, http://localhost als OAuth-Redirect-URL, Kategorie Application Integration, Client-Typ Confidential. Dann die Client-ID hierher kopieren und mit New Secret ein Client Secret anlegen."),
                 K("igdbClientId", "Client-ID", "Die Client-ID deiner Twitch-Entwickleranwendung."),
                 K("igdbClientSecret", "Client Secret", "Das Client Secret dieser Anwendung. Es liegt in configs.json auf diesem PC und geht nur an Twitch, für IGDBs Zugangstoken."),
-                K("checkSource", "Prüfen", "Fragt die oben gewählte Quelle, ob sie gerade antwortet: opentdb, Wikidata, PokeAPI, GitHub für OdeNets Wortliste, oder Twitch für die IGDB-Schlüssel. Nichts wird gespeichert."),
+                K("checkSource", "Prüfen", "Fragt die daneben gewählte Quelle, ob sie gerade antwortet: opentdb, Wikidata, PokeAPI, GitHub für OdeNets Wortliste oder Twitch für die IGDB-Schlüssel. Nichts wird gespeichert."),
                 K("suggestNote", null, "Zuschauer schreiben dir Fragen mit !suggest. Eine Nachricht trägt die ganze Frage, getrennt durch senkrechte Striche: !suggest What year did Twitch launch? | 2011 | 2007 | 2014, erst die Frage, dann die richtige Antwort, dann bis zu drei falsche."),
                 K("allowQuestionSuggestions", "Fragenvorschläge erlauben", "Aus, und !suggest antwortet mit der Nachricht 'Vorschläge aus'."),
                 K("whoSuggestsNote", null, "Ein Vorschlag wird angenommen von jemandem, der die Belohnung eingelöst hat, zu einer der Gruppen gehört oder Moderator ist, solange das an ist. Alle anderen bekommen die Nachricht 'Keine Berechtigung'."),
@@ -467,10 +488,9 @@ public static class UiSchema
                 Tx("Look", "Aussehen"),
                 Tx("Make it your own", "Anpassen"),
                 Tx("Medium", "Mittel"),
-                Tx("Mine + opentdb", "Meine + opentdb"),
                 Tx("Monthly reset", "Monatlicher Reset"),
                 Tx("Multiple Choice only", "Nur Multiple Choice"),
-                Tx("My questions only", "Nur meine Fragen"),
+                Tx("Only my questions", "Nur meine Fragen"),
                 Tx("OBS overlay", "OBS-Overlay"),
                 Tx("OdeNet (German WordNet)", "OdeNet (deutsches WordNet)"),
                 Tx("Overlay off", "Overlay aus"),
@@ -503,8 +523,7 @@ public static class UiSchema
                 Tx("Who may run a round", "Wer eine Runde leiten darf"),
                 Tx("Who may suggest", "Wer vorschlagen darf"),
                 Tx("Wikidata (SPARQL)", "Wikidata (SPARQL)"),
-                Tx("Your own questions", "Deine eigenen Fragen"),
-                Tx("opentdb only", "Nur opentdb")
+                Tx("Your own questions", "Deine eigenen Fragen")
             );
 
     // ---- The table: every setting the host reads, in page order. ----
@@ -569,22 +588,28 @@ public static class UiSchema
         S("resetKickMonthly", false, page: "game", label: "Kick", help: "Reset the Kick board monthly.", section: "Monthly reset", row: "resetKick", aliases: new[] { "ResetKickMonthly" }),
         S("resetKickDay", 0, page: "game", label: "Day", help: "Day of the month the Kick reset lands on.", section: "Monthly reset", min: 0.0, max: 31.0, row: "resetKick", aliases: new[] { "ResetKickDay" }),
         S("questionsNote", null, page: "questions", help: "One row per question: the question, its correct answer, the wrong answers separated by | (chat sees them shuffled together with the correct one), a category and a difficulty (easy, medium, hard or very hard). Suggested by says who sent a question in from chat. Rows with nothing in them are dropped when you save; Restore defaults puts the example questions back.", kind: "note", section: "Your own questions"),
-        S("customQuestions", JArray.Parse("[{\"Enabled\":true,\"Question\":\"What is the name of this channel's chat bot?\",\"CorrectAnswer\":\"Streamer.bot\",\"WrongAnswers\":\"Nightbot | Moobot | Fossabot\",\"Category\":\"This Stream\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"What do you call the short recorded moment taken from a live stream?\",\"CorrectAnswer\":\"A clip\",\"WrongAnswers\":\"A snip | A frame | A cut\",\"Category\":\"Streaming\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"On Twitch, what is a raid?\",\"CorrectAnswer\":\"Sending your viewers to another channel\",\"WrongAnswers\":\"Banning a group of users | Starting a subathon | Hosting a giveaway\",\"Category\":\"Streaming\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"True or False: a VOD is the recording of a past stream.\",\"CorrectAnswer\":\"True\",\"WrongAnswers\":\"False\",\"Category\":\"Streaming\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"Which of these is NOT a Twitch chat badge?\",\"CorrectAnswer\":\"Curator\",\"WrongAnswers\":\"Moderator | VIP | Subscriber\",\"Category\":\"Streaming\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"What does the abbreviation 'OBS' stand for?\",\"CorrectAnswer\":\"Open Broadcaster Software\",\"WrongAnswers\":\"Online Broadcast System | Optical Bitrate Streaming | Overlay Build Studio\",\"Category\":\"Tech\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"Which unit measures how much data a stream sends per second?\",\"CorrectAnswer\":\"Bitrate\",\"WrongAnswers\":\"Framerate | Latency | Resolution\",\"Category\":\"Tech\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"In video, what does 60fps stand for?\",\"CorrectAnswer\":\"60 frames per second\",\"WrongAnswers\":\"60 files per stream | 60 fades per scene | 60 filters per source\",\"Category\":\"Tech\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"What is the delay between something happening and a viewer seeing it called?\",\"CorrectAnswer\":\"Latency\",\"WrongAnswers\":\"Buffering | Throttling | Drift\",\"Category\":\"Tech\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"True or False: dropped frames are usually caused by the viewer's connection, never the streamer's.\",\"CorrectAnswer\":\"False\",\"WrongAnswers\":\"True\",\"Category\":\"Tech\",\"Difficulty\":\"hard\"},{\"Enabled\":true,\"Question\":\"Which video codec is most commonly used for live streaming to Twitch?\",\"CorrectAnswer\":\"H.264\",\"WrongAnswers\":\"ProRes | VP9 | AV1\",\"Category\":\"Tech\",\"Difficulty\":\"hard\"},{\"Enabled\":true,\"Question\":\"What is the maximum number of characters a single Twitch chat message may contain?\",\"CorrectAnswer\":\"500\",\"WrongAnswers\":\"200 | 280 | 1000\",\"Category\":\"Streaming\",\"Difficulty\":\"very hard\"}]"), page: "questions", label: "Questions", help: "Kept in Trivia-Questions.json next to the settings file. Which of them may be drawn is set below; the question source on the Sources page decides whether they are used at all.", kind: "list", section: "Your own questions", file: "Trivia-Questions.json", columns: new[] { "Enabled|bool|On", "Question|text|Question", "CorrectAnswer|string|Correct answer", "WrongAnswers|string|Wrong answers (a | b | c)", "Category|string|Category", "Difficulty|string|Difficulty", "SuggestedBy|string|Suggested by" }),
+        S("customQuestions", JArray.Parse("[{\"Enabled\":true,\"Question\":\"What is the name of this channel's chat bot?\",\"CorrectAnswer\":\"Streamer.bot\",\"WrongAnswers\":\"Nightbot | Moobot | Fossabot\",\"Category\":\"This Stream\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"What do you call the short recorded moment taken from a live stream?\",\"CorrectAnswer\":\"A clip\",\"WrongAnswers\":\"A snip | A frame | A cut\",\"Category\":\"Streaming\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"On Twitch, what is a raid?\",\"CorrectAnswer\":\"Sending your viewers to another channel\",\"WrongAnswers\":\"Banning a group of users | Starting a subathon | Hosting a giveaway\",\"Category\":\"Streaming\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"True or False: a VOD is the recording of a past stream.\",\"CorrectAnswer\":\"True\",\"WrongAnswers\":\"False\",\"Category\":\"Streaming\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"Which of these is NOT a Twitch chat badge?\",\"CorrectAnswer\":\"Curator\",\"WrongAnswers\":\"Moderator | VIP | Subscriber\",\"Category\":\"Streaming\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"What does the abbreviation 'OBS' stand for?\",\"CorrectAnswer\":\"Open Broadcaster Software\",\"WrongAnswers\":\"Online Broadcast System | Optical Bitrate Streaming | Overlay Build Studio\",\"Category\":\"Tech\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"Which unit measures how much data a stream sends per second?\",\"CorrectAnswer\":\"Bitrate\",\"WrongAnswers\":\"Framerate | Latency | Resolution\",\"Category\":\"Tech\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"In video, what does 60fps stand for?\",\"CorrectAnswer\":\"60 frames per second\",\"WrongAnswers\":\"60 files per stream | 60 fades per scene | 60 filters per source\",\"Category\":\"Tech\",\"Difficulty\":\"easy\"},{\"Enabled\":true,\"Question\":\"What is the delay between something happening and a viewer seeing it called?\",\"CorrectAnswer\":\"Latency\",\"WrongAnswers\":\"Buffering | Throttling | Drift\",\"Category\":\"Tech\",\"Difficulty\":\"medium\"},{\"Enabled\":true,\"Question\":\"True or False: dropped frames are usually caused by the viewer's connection, never the streamer's.\",\"CorrectAnswer\":\"False\",\"WrongAnswers\":\"True\",\"Category\":\"Tech\",\"Difficulty\":\"hard\"},{\"Enabled\":true,\"Question\":\"Which video codec is most commonly used for live streaming to Twitch?\",\"CorrectAnswer\":\"H.264\",\"WrongAnswers\":\"ProRes | VP9 | AV1\",\"Category\":\"Tech\",\"Difficulty\":\"hard\"},{\"Enabled\":true,\"Question\":\"What is the maximum number of characters a single Twitch chat message may contain?\",\"CorrectAnswer\":\"500\",\"WrongAnswers\":\"200 | 280 | 1000\",\"Category\":\"Streaming\",\"Difficulty\":\"very hard\"}]"), page: "questions", label: "Questions", help: "Kept in Trivia-Questions.json next to the settings file. Which of them may be drawn is set below; the question source on the Sources page decides whether they are used at all.", kind: "list", section: "Your own questions", file: "Trivia-Questions.json", columns: new[] { "Enabled|bool|On", "Question|text|Question", "CorrectAnswer|string|Correct answer", "WrongAnswers|string|Wrong answers (a | b | c)", "Category|string|Category", "Difficulty|string|Difficulty", "SuggestedBy|string|Suggested by|readonly" }),
         S("openQuestionsFolder", null, page: "questions", label: "Open the questions folder", help: "Opens the folder holding Trivia-Questions.json in Explorer.", kind: "action", section: "Your own questions"),
         S("ownFiltersNote", null, page: "questions", help: "Kept apart from the filters on the Game page, so narrowing one cannot silently empty the other.", kind: "note", section: "Which of your own questions may be drawn"),
         S("customDifficulty", "any", page: "questions", label: "Difficulty", kind: "options", section: "Which of your own questions may be drawn", options: new[] { "any|Any", "easy|Easy", "medium|Medium", "hard|Hard", "very hard|Very hard" }, row: "ownFilters", aliases: new[] { "CustomDifficulty" }),
         S("customQuestionType", "both", page: "questions", label: "Question type", help: "A question counts as True/False when its only two options are 'True' and 'False'.", kind: "options", section: "Which of your own questions may be drawn", options: new[] { "both|True/False + Multiple Choice", "boolean|True/False only", "multiple|Multiple Choice only" }, row: "ownFilters", aliases: new[] { "CustomQuestionType" }),
         S("customCategories", "", page: "questions", label: "Categories in play", help: "Only your questions filed under these categories are drawn. Empty means all of them.", kind: "namelist", section: "Which of your own questions may be drawn", aliases: new[] { "CustomCategories" }),
-        S("questionSource", "opentdb", page: "sources", label: "Question source", help: "Where each round's question comes from. Every source but 'Mine + opentdb' is the only one a round uses.", kind: "options", section: "Where questions come from", options: new[] { "opentdb|opentdb only", "wikidata|Wikidata (SPARQL)", "odenet|OdeNet (German WordNet)", "pokeapi|PokeAPI", "igdb|IGDB", "custom|My questions only", "mixed|Mine + opentdb" }, aliases: new[] { "QuestionSource" }),
-        S("sourcesNote", null, page: "sources", help: "opentdb: thousands of English questions in two dozen categories, filtered on the Game page. Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic. OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once. PokeAPI: Pokémon types, generations, Pokédex entries and evolutions. IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below.", kind: "note", section: "Where questions come from"),
-        S("customQuestionChance", 50, page: "sources", label: "Mine (%)", help: "Only used by 'Mine + opentdb': how likely each round is to come from your own list. 50 is roughly every other round.", kind: "percent", section: "Where questions come from", min: 0.0, max: 100.0, requires: "questionSource=mixed", row: "sourceNumbers", aliases: new[] { "CustomQuestionChance" }),
-        S("cacheSize", 5, page: "sources", label: "Fetch ahead", help: "How many opentdb questions are fetched at once and kept for later rounds. Larger means fewer API calls. The other sources keep what they fetch on disk anyway, under Chat Games\\Trivia Game\\Sources.", section: "Where questions come from", min: 1.0, row: "sourceNumbers", aliases: new[] { "CacheSize" }),
-        S("questionLanguage", "en", page: "sources", label: "Question language", kind: "options", section: "Where questions come from", options: new[] { "en|English", "de|Deutsch" }, row: "sourceNumbers", aliases: new[] { "QuestionLanguage" }),
-        S("customFallback", true, page: "sources", label: "Fall back to the other source", help: "If the chosen source cannot produce a question , an empty list, filters that match nothing, or opentdb being down , try the other one instead of failing the round. Only used by 'My questions only' and 'Mine + opentdb'.", section: "Where questions come from", aliases: new[] { "CustomFallback" }),
-        S("igdbNote", null, page: "sources", help: "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret.", kind: "note", section: "IGDB access"),
-        S("igdbClientId", "", page: "sources", label: "Client ID", help: "The Client ID of your Twitch developer application.", section: "IGDB access", requires: "questionSource=igdb", row: "igdb", aliases: new[] { "IgdbClientId" }),
-        S("igdbClientSecret", "", page: "sources", label: "Client Secret", help: "The Client Secret of that application. It is stored in configs.json on this PC and sent to Twitch only, to get IGDB's access token.", section: "IGDB access", requires: "questionSource=igdb", row: "igdb", aliases: new[] { "IgdbClientSecret" }),
-        S("checkSource", null, page: "sources", label: "Check", help: "Asks the source picked above whether it answers right now: opentdb, Wikidata, PokeAPI, GitHub for OdeNet's word list, or Twitch for the IGDB keys. Nothing is saved.", kind: "action", section: "Is the source reachable?", live: true, panel: true),
+        S("questionSource", "opentdb", page: "sources", label: "Question source", help: "Where each round's question comes from. Your own questions can be mixed into any of them below, or played alone with 'Only my questions'.", kind: "options", section: "Where questions come from", options: new[] { "opentdb|opentdb", "wikidata|Wikidata (SPARQL)", "odenet|OdeNet (German WordNet)", "pokeapi|PokeAPI", "igdb|IGDB", "custom|Only my questions" }, row: "source", aliases: new[] { "QuestionSource" }),
+        S("questionLanguage", "en", page: "sources", label: "Question language", help: "The language Wikidata, PokeAPI and IGDB questions are written in, names included where the source has them. opentdb is English and OdeNet German whatever this says; your own questions are as you wrote them.", kind: "options", section: "Where questions come from", options: new[] { "en|English", "de|Deutsch" }, row: "source", aliases: new[] { "QuestionLanguage" }),
+        S("checkSource", null, page: "sources", label: "Check", help: "Asks the source picked beside it whether it answers right now: opentdb, Wikidata, PokeAPI, GitHub for OdeNet's word list, or Twitch for the IGDB keys. Nothing is saved.", kind: "action", section: "Where questions come from", live: true, panel: true, row: "source"),
+        S("sourcesNote", null, page: "sources", help: "opentdb: thousands of English questions in two dozen categories, filtered on the Game page.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=opentdb"),
+        S("sourceNoteWikidata", null, page: "sources", help: "Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=wikidata"),
+        S("sourceNoteOdenet", null, page: "sources", help: "OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=odenet"),
+        S("sourceNotePokeapi", null, page: "sources", help: "PokeAPI: Pokémon types, generations, Pokédex entries and evolutions.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=pokeapi"),
+        S("sourceNoteIgdb", null, page: "sources", help: "IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=igdb"),
+        S("sourceNoteCustom", null, page: "sources", help: "Only your own list on the Questions page, in the language you wrote it.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=custom"),
+        S("mixOwnQuestions", false, page: "sources", label: "Mix in my questions", help: "Draws some rounds from your own list on the Questions page instead of the source above, whichever source that is. How many is set beside it.", section: "Where questions come from", requires: "questionSource!=custom", row: "mix", aliases: new[] { "MixOwnQuestions" }),
+        S("customQuestionChance", 50, page: "sources", label: "Share of mine", help: "How likely each round is to come from your own list while 'Mix in my questions' is on. 50 is roughly every other round.", kind: "percent", section: "Where questions come from", min: 0.0, max: 100.0, requires: "mixOwnQuestions", row: "mix", aliases: new[] { "CustomQuestionChance" }),
+        S("cacheSize", 5, page: "sources", label: "Fetch ahead", help: "How many opentdb questions are fetched at once and kept for later rounds. Larger means fewer API calls. The other sources keep what they fetch on disk anyway, under Chat Games\\Trivia Game\\Sources.", section: "Where questions come from", min: 1.0, requires: "questionSource=opentdb", row: "mix", aliases: new[] { "CacheSize" }),
+        S("customFallback", true, page: "sources", label: "Fall back to the other source", help: "When one side cannot produce a question, an empty list, filters that match nothing or a source that does not answer, the round takes it from the other instead of failing: your own list and the source above while mixing, opentdb with 'Only my questions'.", section: "Where questions come from", aliases: new[] { "CustomFallback" }),
+        S("igdbNote", null, page: "sources", help: "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret.", kind: "note", section: "IGDB access", requires: "hide:questionSource=igdb"),
+        S("igdbClientId", "", page: "sources", label: "Client ID", help: "The Client ID of your Twitch developer application.", section: "IGDB access", requires: "hide:questionSource=igdb", row: "igdb", aliases: new[] { "IgdbClientId" }),
+        S("igdbClientSecret", "", page: "sources", label: "Client Secret", help: "The Client Secret of that application. It is stored in configs.json on this PC and sent to Twitch only, to get IGDB's access token.", section: "IGDB access", requires: "hide:questionSource=igdb", row: "igdb", masked: true, aliases: new[] { "IgdbClientSecret" }),
         S("suggestNote", null, page: "suggestions", help: "Viewers write trivia for you with !suggest. One message carries the whole question, separated by pipes: !suggest What year did Twitch launch? | 2011 | 2007 | 2014, the question first, then the correct answer, then up to three wrong ones.", kind: "note", section: "Questions from chat"),
         S("allowQuestionSuggestions", false, page: "suggestions", label: "Allow question suggestions", help: "Off, and !suggest answers with the 'Suggestions off' message.", section: "Questions from chat", aliases: new[] { "AllowQuestionSuggestions" }),
         S("whoSuggestsNote", null, page: "suggestions", help: "A suggestion is accepted from somebody who redeemed the reward, belongs to one of the groups, or is a moderator while that is on. Anyone else gets the 'No permission' message.", kind: "note", section: "Who may suggest"),

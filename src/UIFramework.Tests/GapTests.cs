@@ -131,6 +131,35 @@ namespace UIFramework.Tests
             Assert.Equal("Unknown stays", german.Text("Unknown stays"));
         }
 
+        [Fact]
+        public void A_wide_list_is_a_table_that_keeps_what_no_column_shows() => Sta(() =>
+        {
+            var columns = new List<SettingColumn>
+            {
+                new SettingColumn { Key = "Question", Kind = "text", Label = "Question" },
+                new SettingColumn { Key = "Answer", Kind = "string", Label = "Answer" }
+            };
+            var rows = JArray.Parse(@"[ { ""Question"": ""Q1"", ""Answer"": ""A1"", ""SuggestedAtUtc"": ""2026-11-06"" }, { ""Question"": ""Q2"", ""Answer"": ""A2"" } ]");
+            var editor = new ListEditor("q", "Questions", columns, rows, null, "");
+            var grid = Walk(editor).OfType<DataGrid>().Single();
+            Assert.Equal(2, grid.Items.Count);
+            Assert.Equal("2026-11-06", (string)editor.Value[0]["SuggestedAtUtc"]);   // kept though no column shows it
+
+            grid.SelectedIndex = 0;
+            var answer = Walk(editor).OfType<TextBox>().Single(b => b.Text == "A1");
+            answer.Text = "A1 changed";
+            Assert.Equal("A1 changed", (string)editor.Value[0]["Answer"]);
+            Assert.Equal("2026-11-06", (string)editor.Value[0]["SuggestedAtUtc"]);
+
+            var search = Walk(editor).OfType<TextBox>().First(b => AutomationNameOf(b).StartsWith("Search"));
+            search.Text = "Q2";
+            Assert.Equal(1, grid.Items.Count);
+            Assert.Equal(2, editor.Value.Count);   // a filtered-out row is still saved
+
+            Assert.True(ListTable.Suits(columns));
+            Assert.False(ListTable.Suits(new List<SettingColumn> { new SettingColumn { Key = "Code", Kind = "emote" }, new SettingColumn { Key = "Weight", Kind = "int" } }));
+        });
+
         /// <summary>Every element under a root, through the logical tree (nothing here is rendered).</summary>
         private static IEnumerable<DependencyObject> Walk(DependencyObject root)
         {

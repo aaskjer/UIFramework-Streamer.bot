@@ -101,13 +101,19 @@ public static class UiSchema
                 var columns = new JArray();
                 foreach (var column in s.Columns)
                 {
-                    var parts = column.Split('|');
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] };
-                    for (int p = 3; p < parts.Length; p++)
+                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                    while (parts.Count > 3)
                     {
-                        if (parts[p] == "readonly") cell["readOnly"] = true;   // a column the game fills, the user only reads
-                        else cell["platform"] = parts[p];                      // an emote column: twitch, youtube or kick
+                        string last = parts[parts.Count - 1];
+                        if (last == "readonly") cell["readOnly"] = true;
+                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                        else break;
+                        parts.RemoveAt(parts.Count - 1);
                     }
+                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
                     columns.Add(cell);
                 }
                 item["columns"] = columns;

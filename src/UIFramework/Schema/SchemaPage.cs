@@ -72,12 +72,23 @@ namespace UIFramework
             return dock;
         }
 
+        private static void ShowAnswerBox(StackPanel panel)
+        {
+            if (panel.Parent is Border box && Equals(box.Tag, AnswerBox))
+                box.Visibility = panel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>Marks the box an action's answer goes into, so a row can put it under itself.</summary>
+        private const string AnswerBox = "action-answer";
+
         private static void Fill(PageContext ctx, StackPanel page, List<Setting> settings, bool firstHeading)
         {
             string section = null;
             var row = new List<FrameworkElement>();
             string rowKind = null;
             int rowMax = 1;
+            FrameworkElement heading = null;
+            var sectionFields = new List<FrameworkElement>();
 
             void Flush()
             {
@@ -89,10 +100,40 @@ namespace UIFramework
                     var cells = row.ToList();
                     while (cells.Count < rowMax && rowKind == "number")
                         cells.Add(new TextBlock());
-                    page.Children.Add(Ui.Row(cells.ToArray()));
+                    // In a named row a button takes the room it needs, and an answer box goes under the whole row.
+                    var answers = new List<FrameworkElement>();
+                    var weights = cells.Select(c => 1.0).ToArray();
+                    if (rowKind != null && rowKind.StartsWith("row ", StringComparison.Ordinal))
+                        for (int i = 0; i < cells.Count; i++)
+                        {
+                            if (cells[i] is StackPanel stack && stack.Children.Count == 2 && stack.Children[0] is Button
+                                && stack.Children[1] is Border box && Equals(box.Tag, AnswerBox))
+                            {
+                                stack.Children.Remove(box);
+                                answers.Add(box);
+                            }
+                            if (cells[i] is Button || (cells[i] is StackPanel only && only.Children.Count == 1 && only.Children[0] is Button))
+                                weights[i] = 0;
+                        }
+                    page.Children.Add(Ui.Row(weights, cells.ToArray()));
+                    foreach (var box in answers)
+                        page.Children.Add(box);
                 }
                 row.Clear();
                 rowKind = null;
+            }
+
+            // A heading whose every field is hidden (requires with hide:) hides with them.
+            void WatchSection()
+            {
+                if (heading == null || sectionFields.Count == 0) return;
+                var head = heading;
+                var fields = sectionFields.ToList();
+                void Update() => head.Visibility = fields.Any(x => x.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
+                var watch = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(UIElement.VisibilityProperty, typeof(FrameworkElement));
+                foreach (var field in fields)
+                    watch.AddValueChanged(field, (sender, e) => Update());
+                ctx.AfterBuild.Add(Update);
             }
 
             foreach (var setting in settings.Where(s => !s.Hidden).OrderBy(s => s.Order))
@@ -100,13 +141,17 @@ namespace UIFramework
                 if (setting.Section != null && setting.Section != section)
                 {
                     Flush();
+                    WatchSection();
                     section = setting.Section;
-                    page.Children.Add(Ui.Section(section, firstHeading && page.Children.Count == 0));
+                    heading = Ui.Section(section, firstHeading && page.Children.Count == 0);
+                    sectionFields.Clear();
+                    page.Children.Add(heading);
                 }
 
                 var element = Render(ctx, setting);
                 if (element == null)
                     continue;
+                sectionFields.Add(element);
 
                 string kind = NumberKinds.Contains(setting.Kind) ? "number" : setting.Kind == "bool" ? "bool" : "single";
                 int max = kind == "number" ? 3 : kind == "bool" ? 2 : 1;
@@ -126,6 +171,7 @@ namespace UIFramework
                     Flush();
             }
             Flush();
+            WatchSection();
         }
 
         /// <summary>A button or a switch beside labelled fields sits on their baseline.</summary>
@@ -371,8 +417,11 @@ namespace UIFramework
             };
             if (panel == null)
                 return button;
+            // The answer box shows once there is an answer in it, not as an empty bar before the first click.
             var result = new Border
             {
+                Tag = AnswerBox,
+                Visibility = Visibility.Collapsed,
                 Background = new SolidColorBrush(Theme.Surface),
                 CornerRadius = new CornerRadius(6),
                 Padding = new Thickness(10, 8, 10, 8),
@@ -403,7 +452,10 @@ namespace UIFramework
                     catch (Exception ex) { status = (status ?? "") + " (the clipboard was busy: " + ex.Message + ")"; }
                 }
                 if (panel != null)
+                {
                     ResultPanel.Render(panel, result ?? "", ctx.Hooks);
+                    ShowAnswerBox(panel);
+                }
                 else if (structured != null)
                 {
                     if (status != null || s.Kind == "action")
@@ -414,7 +466,7 @@ namespace UIFramework
             }
             catch (Exception ex)
             {
-                if (panel != null) ResultPanel.Render(panel, label + " failed: " + ex.Message);
+                if (panel != null) { ResultPanel.Render(panel, label + " failed: " + ex.Message); ShowAnswerBox(panel); }
                 else ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
             }
         }
