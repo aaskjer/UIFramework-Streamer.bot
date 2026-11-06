@@ -5,6 +5,9 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- The preview's `-windowshots <folder>` photographs the whole window per page, rail, header and footer included,
+  with the page at its full height, for a game's setup guide (`-pages game,emotes`, `-names access=access--cp`).
+
 ## [0.9.10] - 2026-11-06
 
 The customise mode in the window's real layout, fields dropped beside each other; the OBS fields on one line.
