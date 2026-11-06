@@ -72,6 +72,26 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void The_users_layout_puts_fields_beside_each_other_or_on_a_line_of_their_own()
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "rows-" + System.Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "uiframework.layout.json"),
+                @"{ ""fields"": { ""a"": { ""row"": ""row-a"" }, ""b"": { ""row"": ""row-a"" }, ""c"": { ""row"": """" } } }");
+            var schema = Schema.Parse(JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [
+                { ""key"": ""a"", ""default"": """", ""page"": ""game"" }, { ""key"": ""b"", ""default"": """", ""page"": ""game"" },
+                { ""key"": ""c"", ""default"": 1, ""page"": ""game"", ""row"": ""declared"" }, { ""key"": ""d"", ""default"": 2, ""page"": ""game"", ""row"": ""declared"" } ],
+                ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ] } }"));
+            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            Entry.Prepare(spec, schema);
+            var byKey = spec.ResolvedSettings.ToDictionary(s => s.Key);
+            Assert.Equal("row-a", byKey["a"].Row);
+            Assert.Equal("row-a", byKey["b"].Row);
+            Assert.Equal("~c", byKey["c"].Row);          // out of the row the game declared, on a line of its own
+            Assert.Equal("declared", byKey["d"].Row);
+        }
+
+        [Fact]
         public void The_host_block_carries_showWhen_shows_and_sections()
         {
             var s = UiSchema.S("source", "a", kind: "options", options: new[] { "a|A", "igdb|IGDB" }, shows: new[] { "igdb: clientId, secret", "a: fetchAhead" });

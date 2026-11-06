@@ -6,9 +6,10 @@ survives every import of the host.
 
 ## In the mode
 
-- **Fields** have a handle `⋮⋮`. Dragging one and dropping it anywhere on the page sorts: over another field it
-  takes that field's place (behind it when coming from above, in front when coming from below), over a heading
-  or a gap it lands between, under the last field at the end; at the edge the page scrolls along slowly.
+- **Fields** have a handle `⋮⋮`. The page shows them where they sit in the window, side by side where the window
+  puts them so. Dropping a field at the left or right edge of another puts it beside that one, on the same line
+  (an accent edge shows which side); at its top or bottom half, above or below it on a line of its own. Over a
+  heading or a gap it lands between, under the last field at the end; at the edge the page scrolls along slowly.
   Dropping on a page in the rail moves it there. Right-click: *Rename*, *Hide* / *Show*, *Move to page*,
   *Reset this field*. Values are not editable in the mode.
 - **Pages** in the rail: dragging sorts the top group; right-click: *Rename*, *Change icon* (an emoji or a
@@ -60,6 +61,7 @@ the window itself stays where it is.
 | `pages.<id>.hidden`            | the page is gone (except `about`)                                            |
 | `fields.<key>.page`            | which page the field belongs to                                              |
 | `fields.<key>.order`           | the order within the page                                                    |
+| `fields.<key>.row`             | the line the field sits on, beside the fields with the same name; `""` puts it on a line of its own, out of a row the game declared |
 | `fields.<key>.label`, `.section` | the label, the section heading                                             |
 | `fields.<key>.hidden`          | the field is gone; the value stays in the settings file                      |
 

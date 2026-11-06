@@ -250,7 +250,7 @@
     "messages.empty": "Empty, so nothing is sent.",
     "messages.yourBot": "YourBot",
     "messages.yourChannel": "YourChannel",
-    "cust.drag.field": "Drag to another place on this page, or onto a page in the rail",
+    "cust.drag.field": "Drag to another place on this page, or onto a page in the rail. Let go at the left or right edge of another field to put it beside that one, at its top or bottom for a line of its own.",
     "cust.drag.message": "Drag to another place in the list",
     "cust.rename": "Rename…",
     "cust.rename.field": "Rename '{0}'",

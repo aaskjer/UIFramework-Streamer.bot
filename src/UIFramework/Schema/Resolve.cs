@@ -63,6 +63,8 @@ namespace UIFramework
                     setting.Section = mine.Section ?? setting.Section;
                     if (mine.Hidden.HasValue) setting.Hidden = mine.Hidden.Value;
                     if (mine.Order.HasValue) setting.Order = mine.Order.Value;
+                    // "" is a line of its own: a row nobody else names.
+                    if (mine.Row != null) setting.Row = mine.Row.Length == 0 ? "~" + setting.Key : mine.Row;
                 }
                 settings.Add(setting);
             }
