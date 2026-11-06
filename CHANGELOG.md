@@ -5,6 +5,12 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- The About page lists every address once: a game whose own links repeat its repository or releases, which the
+  framework already shows, no longer gets them twice. Without a declared logo there is no empty square beside
+  the name.
+- The hint under a list table mentions the checkboxes only when the table has a switch column (a word list has
+  none).
+
 ## [0.9.11] - 2026-11-07
 
 German only where a game offers it; Lock() keeps a window as declared.
