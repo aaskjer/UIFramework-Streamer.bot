@@ -58,6 +58,7 @@ namespace UIFramework
             if (root["width"] != null) spec.Width = (double)root["width"];
             if (root["height"] != null) spec.Height = (double)root["height"];
             if (root["language"] != null) spec.Language = (string)root["language"];
+            spec.Locked = root["locked"]?.Type == JTokenType.Boolean && (bool)root["locked"];
 
             if (root["pages"] is JArray pages)
             {

@@ -96,6 +96,59 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void A_game_without_German_stays_English_whatever_the_layout_file_asks()
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "noGerman-" + System.Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            string settings = Path.Combine(folder, "settings.json");
+            File.WriteAllText(Path.Combine(folder, LayoutFile.FileName), @"{ ""language"": ""de"" }");
+            var withoutLang = Newtonsoft.Json.Linq.JObject.Parse(DeclaredSchema);
+            withoutLang.Remove("lang");
+            var schema = Schema.Parse(withoutLang.ToString());
+            try
+            {
+                var spec = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
+                Entry.Prepare(spec, schema);
+                Assert.Equal(new[] { "en" }, spec.Languages);                                       // nothing else to offer
+                Assert.Equal("Everyone", spec.ResolvedSettings.First(s => s.Key == "globalCooldown").Label);
+                Assert.Equal("Game", spec.Pages.First(p => p.Id == "game").Title);
+
+                // The same game with Lang("de"), even an empty one, offers German and is shown in it.
+                var withLang = Schema.Parse(DeclaredSchema);
+                var german = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
+                Entry.Prepare(german, withLang);
+                Assert.Equal(new[] { "en", "de" }, german.Languages);
+                Assert.Equal("Globale Abklingzeit", german.ResolvedSettings.First(s => s.Key == "globalCooldown").Label);
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
+        }
+
+        [Fact]
+        public void A_locked_window_ignores_the_users_layout()
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "locked-" + System.Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            string settings = Path.Combine(folder, "settings.json");
+            File.WriteAllText(Path.Combine(folder, LayoutFile.FileName), @"{ ""fields"": { ""numDecks"": { ""label"": ""My decks"", ""hidden"": true } } }");
+            var schema = Schema.Parse(DeclaredSchema);
+            try
+            {
+                var open = SpecJson.Parse(DeclaredWindow.Replace("LANG", "en"), settings);
+                Entry.Prepare(open, schema);
+                Assert.Equal("My decks", open.ResolvedSettings.First(s => s.Key == "numDecks").Label);
+                Assert.False(open.Locked);
+
+                var locked = SpecJson.Parse(DeclaredWindow.Replace("LANG", "en").Replace(@"""title"": ""Demo"",", @"""title"": ""Demo"", ""locked"": true,"), settings);
+                Entry.Prepare(locked, schema);
+                Assert.True(locked.Locked);
+                var decks = locked.ResolvedSettings.First(s => s.Key == "numDecks");
+                Assert.NotEqual("My decks", decks.Label);
+                Assert.False(decks.Hidden);
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
+        }
+
+        [Fact]
         public void TextFollowsTheLanguageAndFallsBackToEnglish()
         {
             try

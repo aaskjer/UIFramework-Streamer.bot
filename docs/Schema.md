@@ -159,7 +159,8 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Answer(action, text)` | what an action would answer, for the framework's preview and screenshots only                      |
 | `Override(key, …)`   | `page`, `label`, `help`, `section`, `hidden`, `order` of one setting, where the table should not say it |
 | `Help(H(heading, lines…), …)` | the Help page: a line is a note (a string), `Cmd(command, what)` or `Link(text, url)`         |
-| `Lang(code, texts…)` | the game's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)` |
+| `Lang(code, texts…)` | the game's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)`. Declaring a language is also what offers it: `Lang("de")` with no texts offers German from the conventions alone |
+| `Lock()`             | locks the layout: no customise mode (the pen button is gone, and with it export and import), and a user's renames, moves, hidden fields and accent colour in `uiframework.layout.json` are not applied. The theme stays the user's, and so does the language, picked in the footer when the game offers more than one. In the schema `"locked": true` |
 | `About(credits, sections, links, streamerBotLink, authorLink)` | the About page; sections like help; the Streamer.bot and author links are on unless turned off |
 
 ### Sections shown on a condition
@@ -183,6 +184,10 @@ declared label and help of those keys, pages are titled by id (`pages`), and sho
 by their English wording (`texts`): section headings, pill texts, page titles, option labels, message groups,
 list column headers, the log page's switch, and the help and about pages line by line (headings, notes, what a
 command does, link texts). What nothing knows stays as declared. The user's own layout (a renamed field or page) still has the last word.
+
+Only languages the game declares are offered: English always, another one once the window carries `Lang` for
+it. A game without `Lang("de")` is never shown in German, whatever a layout file asks for, so a game need not
+bring German at all; with `Lang("de")` and no texts it gets what the conventions translate.
 
 A game adds what the conventions cannot know, its own keys and sections, with `Lang` on the window; several
 calls add up, and these texts are laid over the conventions' for that language:

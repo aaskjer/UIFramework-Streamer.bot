@@ -108,6 +108,14 @@ namespace UIFramework
         /// <summary>The customise mode is on; survives the reopen that every layout change asks for.</summary>
         public bool Customizing;
 
+        /// <summary>The languages the window offers: English, and every language the game brings texts for
+        /// (Lang("de") in its block, even with no texts, offers German from the conventions alone).</summary>
+        public List<string> Languages = new List<string> { "en" };
+
+        /// <summary>The game locked its layout: no customise mode, and the user's renames, moves, hidden fields and
+        /// accent colour from uiframework.layout.json are not applied. Theme and language stay the user's.</summary>
+        public bool Locked;
+
         /// <summary>The page to show after a reopen, by id.</summary>
         public string ReopenPageId;
 

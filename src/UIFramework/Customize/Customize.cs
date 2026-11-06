@@ -489,16 +489,7 @@ namespace UIFramework
                 ctx.Parts.Boxes.Remove("accent");
             }
 
-            var language = Ui.PlainCombo(Text.T("cust.language"), "en", "de");
-            language.SelectedItem = ctx.Layout.Language == "de" ? "de" : "en";
-            language.Width = 70;
-            language.SelectionChanged += (s, e) =>
-            {
-                string code = language.SelectedItem as string ?? "en";
-                if (code == (ctx.Layout.Language ?? "en")) return;
-                ctx.Layout.Language = code == "en" ? null : code;
-                Commit(ctx, null);
-            };
+            var language = LanguagePicker(ctx.Spec, ctx.Layout, () => Commit(ctx, null));
 
             // Icon buttons like the footer's: the texts are their tooltips, so the bar stays one row wide.
             var reset = Ui.IconButton(Icons.Undo, Icons.Font, Text.T("cust.resetLayout"));
@@ -524,7 +515,8 @@ namespace UIFramework
             // when the window is narrow), and the hint as one line of its own underneath, over the full width.
             var choices = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             choices.Children.Add(Beside(Text.T("cust.accent"), accent, 0));
-            choices.Children.Add(Beside(Text.T("cust.language"), language, 12));
+            if (language != null)
+                choices.Children.Add(Beside(Text.T("cust.language"), language, 12));
             var controls = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
             foreach (var button in new[] { reset, export, import, open })
             {
@@ -558,6 +550,25 @@ namespace UIFramework
         }
 
         // ---- Helpers -----------------------------------------------------------------------------------
+
+        /// <summary>The languages the window offers, or null when there is only English to pick.</summary>
+        public static ComboBox LanguagePicker(WindowSpec spec, LayoutFile layout, Action changed)
+        {
+            if (spec.Languages == null || spec.Languages.Count < 2)
+                return null;
+            var language = Ui.PlainCombo(Text.T("cust.language"), spec.Languages.ToArray());
+            string current = layout.Language;
+            language.SelectedItem = current != null && spec.Languages.Contains(current) ? current : "en";
+            language.Width = 70;
+            language.SelectionChanged += (s, e) =>
+            {
+                string code = language.SelectedItem as string ?? "en";
+                if (code == (layout.Language ?? "en")) return;
+                layout.Language = code == "en" ? null : code;
+                changed();
+            };
+            return language;
+        }
 
         private static void Commit(PageContext ctx, string pageId)
         {

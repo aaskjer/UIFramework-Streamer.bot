@@ -211,6 +211,7 @@ public static class UiSchema
 public sealed class UiWindow
 {
     public string Title, Releases, Logo, LogPrefix, Language;
+    public bool Locked;
     public double? Width, Height;
     public readonly List<object> PageList = new List<object>();
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
@@ -241,6 +242,10 @@ public sealed class UiWindow
         }
         return this;
     }
+
+    /// <summary>Locks the layout: the window has no customise mode, and a user's renames, moves, hidden fields and
+    /// accent colour are not applied. Theme and language stay the user's to pick.</summary>
+    public UiWindow Lock(bool locked = true) { Locked = locked; return this; }
 
     /// <summary>The pages in order: a UiPage (UiSchema.P) or the id of a standard page ("messages", "log", "help", "about").</summary>
     public UiWindow Pages(params object[] pages) { PageList.AddRange(pages); return this; }
@@ -368,6 +373,7 @@ public sealed class UiWindow
         if (Logo != null) root["logo"] = Logo;
         if (LogPrefix != null) root["logPrefix"] = LogPrefix;
         if (Language != null) root["language"] = Language;
+        if (Locked) root["locked"] = true;
         if (Width.HasValue) root["width"] = Width.Value;
         if (Height.HasValue) root["height"] = Height.Value;
         if (PageList.Count > 0) root["pages"] = new JArray(PageList.Select(p => p is UiPage page ? page.ToJson() : (JToken)p.ToString()));
