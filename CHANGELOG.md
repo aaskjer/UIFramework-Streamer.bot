@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-11-06
+
+Wide lists as tables in the style of the Log page; rows with buttons; headings that hide with their fields.
+
 - A list with a `text` column or more than three columns is a table now, in the style of the Log page: one line
   per row, a search box above, and the picked row in full underneath to edit, every column a field of its size;
   Add row, Remove row and Restore defaults below. A row keeps the properties no column shows (a timestamp the game
