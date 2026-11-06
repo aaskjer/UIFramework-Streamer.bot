@@ -139,6 +139,15 @@ namespace UIFramework
         public bool TwitchOnly;
         /// <summary>A text field whose value is shown as dots until its eye button reveals it (a token, a secret).</summary>
         public bool Masked;
+        /// <summary>The field is shown only while this condition holds (<see cref="Requirement"/>):
+        /// <c>"questionSource=igdb"</c>, <c>"questionSource=opentdb|wikidata"</c>, <c>"mode!=free &amp;&amp; useBot"</c>.</summary>
+        public string ShowWhen;
+        /// <summary>On a dropdown: which fields each of its options shows, by option value; a field named here is
+        /// shown only while one of the options naming it is picked.</summary>
+        public Dictionary<string, List<string>> Shows;
+        /// <summary>The condition of the field's section (<c>.Section(name, showWhen)</c> of the window), filled in by
+        /// <see cref="Resolve"/>; not part of the schema.</summary>
+        public string SectionShowWhen;
         /// <summary>For an action: the host gets the values as they stand in the window, unsaved ones included. On
         /// any other field: the host is asked (<c>Test(key, live settings)</c>) whenever the field changes, and its
         /// answer's <c>set</c> fills in other fields, a preset slider.</summary>
@@ -197,6 +206,7 @@ namespace UIFramework
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
                 TwitchOnly = item["twitchOnly"]?.Type == JTokenType.Boolean && (bool)item["twitchOnly"],
                 Masked = item["masked"]?.Type == JTokenType.Boolean && (bool)item["masked"],
+                ShowWhen = (string)item["showWhen"],
                 Live = item["live"]?.Type == JTokenType.Boolean && (bool)item["live"],
                 Panel = item["panel"]?.Type == JTokenType.Boolean && (bool)item["panel"],
                 Auto = item["auto"]?.Type == JTokenType.Boolean && (bool)item["auto"],
@@ -205,6 +215,8 @@ namespace UIFramework
             };
             if (item["options"] is JArray options)
                 setting.Options = options.Select(SettingOption.Parse).ToList();
+            if (item["shows"] is JObject shows)
+                setting.Shows = shows.Properties().ToDictionary(p => p.Name, p => (p.Value as JArray ?? new JArray()).Select(k => k.ToString()).ToList(), StringComparer.Ordinal);
             if (item["placeholders"] is JArray placeholders)
                 setting.Placeholders = placeholders.Select(p => p.ToString()).ToList();
             if (item["columns"] is JArray columns)
@@ -244,6 +256,8 @@ namespace UIFramework
             if (Transient) item["transient"] = true;
             if (TwitchOnly) item["twitchOnly"] = true;
             if (Masked) item["masked"] = true;
+            if (ShowWhen != null) item["showWhen"] = ShowWhen;
+            if (Shows != null) item["shows"] = new JObject(Shows.Select(p => new JProperty(p.Key, new JArray(p.Value))));
             if (Live) item["live"] = true;
             if (Panel) item["panel"] = true;
             if (Auto) item["auto"] = true;
@@ -261,6 +275,7 @@ namespace UIFramework
             copy.Default = Default?.DeepClone();
             copy.Options = Options?.Select(o => new SettingOption { Value = o.Value, Label = o.Label }).ToList();
             copy.Placeholders = Placeholders?.ToList();
+            copy.Shows = Shows?.ToDictionary(p => p.Key, p => p.Value.ToList(), StringComparer.Ordinal);
             copy.Columns = Columns?.Select(c => new SettingColumn { Key = c.Key, Kind = c.Kind, Label = c.Label, Platform = c.Platform, ReadOnly = c.ReadOnly }).ToList();
             copy.Aliases = Aliases.ToList();
             copy.AliasFactors = new Dictionary<string, double>(AliasFactors, StringComparer.Ordinal);

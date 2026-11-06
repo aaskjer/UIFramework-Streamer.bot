@@ -9,6 +9,14 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   it, a switch column is a checkbox in every row that toggles with one click, several rows can be picked and
   removed at once (Remove row or Delete). Alternating rows and column lines make the cells easy to tell apart.
   The edit panel under the table is gone.
+- Fields bound to a dropdown's options, any kind of field. `showWhen` on a setting shows it only while its
+  condition holds (`questionSource=igdb`); `=` and `!=` take several values (`questionSource=opentdb|wikidata`, one
+  of them; `!=custom|igdb`, none of them), and `&&` joins conditions that must all hold. `shows` on a dropdown
+  names per option the fields it shows. `.Section(name, showWhen:)` on the window shows a whole section, heading and
+  fields, on a condition. Every condition is checked when the window opens: an unknown key or a value the dropdown
+  has no option for is listed on the Log page. `requires` keeps greying out, and its `hide:` form still works. The
+  host block gains `showWhen:` and `shows:` on `S(...)` and `Section(...)` on the window; a game takes them with its
+  next release.
 
 ## [0.9.8] - 2026-11-06
 

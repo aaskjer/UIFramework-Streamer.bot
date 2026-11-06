@@ -294,18 +294,25 @@ namespace UIFramework
                 ctx.AfterBuild.Add(() => FieldBinding.HookChangeTracking(source, () => Ask(ctx, s, label, null)));
             }
 
-            if (s.Requires != null)
+            // Greyed out while `requires` does not hold; hidden while `showWhen`, the section's condition or a
+            // `requires` with "hide:" in front does not. All of the hiding conditions must hold to show the field.
+            var target = element;
+            string grey = null;
+            var show = new List<string>();
+            if (!string.IsNullOrWhiteSpace(s.Requires))
             {
-                // "hide:" in front: the field disappears while the condition does not hold, instead of greying out.
-                var target = element;
                 string condition = s.Requires.Trim();
-                bool hide = condition.StartsWith("hide:", StringComparison.OrdinalIgnoreCase);
-                if (hide) condition = condition.Substring(5).Trim();
-                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, condition, on =>
-                {
-                    if (hide) target.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
-                    else target.IsEnabled = on;
-                }));
+                if (condition.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)) show.Add(condition.Substring(5).Trim());
+                else grey = condition;
+            }
+            if (!string.IsNullOrWhiteSpace(s.ShowWhen)) show.Add(s.ShowWhen.Trim());
+            if (!string.IsNullOrWhiteSpace(s.SectionShowWhen)) show.Add(s.SectionShowWhen.Trim());
+            if (grey != null)
+                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, grey, on => target.IsEnabled = on));
+            if (show.Count > 0)
+            {
+                string all = string.Join(" && ", show);
+                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, all, on => target.Visibility = on ? Visibility.Visible : Visibility.Collapsed));
             }
             return element;
         }

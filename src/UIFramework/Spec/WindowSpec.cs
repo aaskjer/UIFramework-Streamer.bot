@@ -39,6 +39,9 @@ namespace UIFramework
         /// <summary>Pages as the spec JSON names them; <see cref="Resolve"/> turns them into <see cref="Pages"/>.</summary>
         public readonly List<SpecPage> SpecPages = new List<SpecPage>();
 
+        /// <summary>Sections shown only while a condition holds, by their declared (English) name.</summary>
+        public readonly Dictionary<string, string> SectionConditions = new Dictionary<string, string>(StringComparer.Ordinal);
+
         /// <summary>What the spec changes about single settings, by key.</summary>
         public readonly Dictionary<string, FieldOverride> Overrides = new Dictionary<string, FieldOverride>(StringComparer.Ordinal);
 
