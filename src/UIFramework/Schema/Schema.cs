@@ -137,6 +137,8 @@ namespace UIFramework
         public bool Transient;
         /// <summary>For a bool: the switch carries a "Twitch only" pill.</summary>
         public bool TwitchOnly;
+        /// <summary>A text field whose value is shown as dots until its eye button reveals it (a token, a secret).</summary>
+        public bool Masked;
         /// <summary>For an action: the host gets the values as they stand in the window, unsaved ones included. On
         /// any other field: the host is asked (<c>Test(key, live settings)</c>) whenever the field changes, and its
         /// answer's <c>set</c> fills in other fields, a preset slider.</summary>
@@ -194,6 +196,7 @@ namespace UIFramework
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
                 TwitchOnly = item["twitchOnly"]?.Type == JTokenType.Boolean && (bool)item["twitchOnly"],
+                Masked = item["masked"]?.Type == JTokenType.Boolean && (bool)item["masked"],
                 Live = item["live"]?.Type == JTokenType.Boolean && (bool)item["live"],
                 Panel = item["panel"]?.Type == JTokenType.Boolean && (bool)item["panel"],
                 Auto = item["auto"]?.Type == JTokenType.Boolean && (bool)item["auto"],
@@ -240,6 +243,7 @@ namespace UIFramework
             if (Hidden) item["hidden"] = true;
             if (Transient) item["transient"] = true;
             if (TwitchOnly) item["twitchOnly"] = true;
+            if (Masked) item["masked"] = true;
             if (Live) item["live"] = true;
             if (Panel) item["panel"] = true;
             if (Auto) item["auto"] = true;
@@ -257,7 +261,7 @@ namespace UIFramework
             copy.Default = Default?.DeepClone();
             copy.Options = Options?.Select(o => new SettingOption { Value = o.Value, Label = o.Label }).ToList();
             copy.Placeholders = Placeholders?.ToList();
-            copy.Columns = Columns?.Select(c => new SettingColumn { Key = c.Key, Kind = c.Kind, Label = c.Label, Platform = c.Platform }).ToList();
+            copy.Columns = Columns?.Select(c => new SettingColumn { Key = c.Key, Kind = c.Kind, Label = c.Label, Platform = c.Platform, ReadOnly = c.ReadOnly }).ToList();
             copy.Aliases = Aliases.ToList();
             copy.AliasFactors = new Dictionary<string, double>(AliasFactors, StringComparer.Ordinal);
             return copy;
@@ -284,19 +288,23 @@ namespace UIFramework
         public string Key, Kind = "string", Label;
         /// <summary>For an <c>emote</c> column: twitch, youtube or kick, which says where its picture comes from.</summary>
         public string Platform;
+        /// <summary>A column the game fills and the user only reads (who suggested a question, when it arrived).</summary>
+        public bool ReadOnly;
 
         public static SettingColumn Parse(JObject o) => new SettingColumn
         {
             Key = (string)o["key"],
             Kind = (string)o["kind"] ?? "string",
             Label = (string)o["label"] ?? (string)o["key"],
-            Platform = (string)o["platform"]
+            Platform = (string)o["platform"],
+            ReadOnly = o["readOnly"]?.Type == JTokenType.Boolean && (bool)o["readOnly"]
         };
 
         public JObject ToJson()
         {
             var o = new JObject { ["key"] = Key, ["kind"] = Kind, ["label"] = Label };
             if (Platform != null) o["platform"] = Platform;
+            if (ReadOnly) o["readOnly"] = true;
             return o;
         }
     }

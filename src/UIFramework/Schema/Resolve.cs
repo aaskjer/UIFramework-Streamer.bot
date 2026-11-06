@@ -240,7 +240,7 @@ namespace UIFramework
                     spec.Problems.Add("'" + s.Key + "' is a list without columns.");
                 if (!string.IsNullOrWhiteSpace(s.Requires))
                 {
-                    var m = System.Text.RegularExpressions.Regex.Match(s.Requires.Trim(), @"^!?\s*([A-Za-z_]\w*)");
+                    var m = System.Text.RegularExpressions.Regex.Match(s.Requires.Trim(), @"^(?:hide:\s*)?!?\s*([A-Za-z_]\w*)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                     if (m.Success && !keys.Contains(m.Groups[1].Value))
                         spec.Problems.Add("'" + s.Key + "' requires '" + m.Groups[1].Value + "', which is not a setting.");
                 }

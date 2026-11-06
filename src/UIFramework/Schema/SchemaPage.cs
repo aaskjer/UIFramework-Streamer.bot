@@ -183,13 +183,13 @@ namespace UIFramework
                     break;
                 case "options":
                     var options = (s.Options ?? new List<SettingOption>()).Select(o => (o.Value, o.Label)).ToArray();
-                    element = options.Length == 0 ? f.TextField(label, s.Key, help) : f.StringComboField(label, s.Key, options, help);
+                    element = options.Length == 0 ? (s.Masked ? f.MaskedField(label, s.Key, help) : f.TextField(label, s.Key, help)) : f.StringComboField(label, s.Key, options, help);
                     break;
                 case "namelist":
-                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, "Add a name and press Enter", help));
+                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.namelist.hint"), help));
                     break;
                 case "grouplist":
-                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, "Add a Streamer.bot group", help));
+                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), help));
                     break;
                 case "colour":
                 case "color":
@@ -229,13 +229,14 @@ namespace UIFramework
                     break;
                 case "list":
                 {
-                    var editor = new ListEditor(s.Key, label, s.Columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks);
+                    var editor = new ListEditor(s.Key, label, Translated(ctx, s.Columns), f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks);
+                    ctx.Parts.Lists[s.Key] = editor;
                     editor.Margin = new Thickness(0, 8, 0, 0);
                     element = string.IsNullOrEmpty(help) ? (FrameworkElement)editor : Stack(Ui.Note(help), editor);
                     break;
                 }
                 default:
-                    element = f.TextField(label, s.Key, help);
+                    element = s.Masked ? f.MaskedField(label, s.Key, help) : f.TextField(label, s.Key, help);
                     break;
             }
             if (s.Transient)
@@ -249,10 +250,28 @@ namespace UIFramework
 
             if (s.Requires != null)
             {
+                // "hide:" in front: the field disappears while the condition does not hold, instead of greying out.
                 var target = element;
-                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, s.Requires, on => target.IsEnabled = on));
+                string condition = s.Requires.Trim();
+                bool hide = condition.StartsWith("hide:", StringComparison.OrdinalIgnoreCase);
+                if (hide) condition = condition.Substring(5).Trim();
+                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, condition, on =>
+                {
+                    if (hide) target.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+                    else target.IsEnabled = on;
+                }));
             }
             return element;
+        }
+
+        /// <summary>The columns with their labels in the window's language: a declared label the conventions or the
+        /// game's own translations know is replaced, the rest stays as declared.</summary>
+        private static List<SettingColumn> Translated(PageContext ctx, List<SettingColumn> columns)
+        {
+            var lang = ctx.Spec.Conventions?.Lang;
+            if (columns == null || lang == null || !lang.Translates)
+                return columns;
+            return columns.Select(c => new SettingColumn { Key = c.Key, Kind = c.Kind, Label = lang.Text(c.Label), Platform = c.Platform, ReadOnly = c.ReadOnly }).ToList();
         }
 
         private static void SetRange(PageContext ctx, Setting s)

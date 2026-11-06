@@ -100,6 +100,7 @@
     "addictedCut": "Auszahlungskürzung in Prozent", "latestTag": "Neueste Release-Version", "error": "Fehlertext"
   },
   "texts": {
+    "Write a log file per day": "Täglich eine Protokolldatei schreiben",
     "Game": "Spiel",
     "Access": "Zugriff",
     "Messages": "Nachrichten",
@@ -307,6 +308,14 @@
     "list.count.many": "{0} Zeilen",
     "list.count.filled": "{0} von {1} ausgefüllt",
     "list.count.tip": "Eine Zeile zählt, sobald etwas eingetragen ist; leere Zeilen fallen beim Speichern weg.",
+    "list.count.shown": "{0} von {1} angezeigt",
+    "list.search": "{0} durchsuchen",
+    "list.search.tip": "Blendet die Zeilen aus, in denen der Text nicht vorkommt. Ausgeblendete Zeilen werden trotzdem gespeichert.",
+    "list.readOnly.tip": "Vom Spiel ausgefüllt; hier zu lesen und zu kopieren, nicht zu ändern.",
+    "field.namelist.hint": "Namen eingeben und Enter drücken",
+    "field.grouplist.hint": "Streamer.bot-Gruppe hinzufügen",
+    "field.masked.show": "Zeigen, was hier steht",
+    "field.masked.hide": "Wieder verbergen",
     "log.allDays": "Alle Tage",
     "log.allResults": "Alle Ergebnisse",
     "log.allPlatforms": "Alle Plattformen",
