@@ -1,6 +1,6 @@
 {
   "host": "blackjack",
-  "version": "v17.2.0",
+  "version": "v17.3.0",
   "settingsFile": "Chat Games/Blackjack Game/BJG-Settings.json",
   "settings": [
     {
@@ -994,7 +994,28 @@
       "section": "Set it up in OBS",
       "label": "Create the browser source in OBS",
       "help": "Creates the scene above if it is missing and adds a browser source pointing at the overlay file. Needs OBS connected in Streamer.bot.",
-      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?"
+      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?",
+      "row": "obsButtons"
+    },
+    {
+      "key": "overlaySample",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Show a sample round",
+      "help": "Plays one made-up hand on the overlay for about ten seconds, the one in OBS included, so you can see where it sits and how it looks. If you are live, your viewers see it too. Uses the settings as saved; nobody's points move. While a hand, duel or House table is running the overlay is left to it.",
+      "row": "obsButtons"
+    },
+    {
+      "key": "overlayDemo",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Try the demo",
+      "help": "Opens the overlay in your browser, playing made-up hands from a solo hand to a duel and a House table in the look the saved settings give it, without Streamer.bot. Add &demo=1 to the source's URL in OBS to place it the same way.",
+      "row": "obsButtons"
     },
     {
       "key": "overlayFolder",
@@ -4028,6 +4049,10 @@
       "1": "12",
       "balance": "11,500"
     },
+    "answers": {
+      "overlaySample": "A sample hand is playing on the overlay for about ten seconds, in OBS too if the source is there. Nobody's points move.",
+      "overlayDemo": "The demo opened in your browser. In OBS, add &demo=1 to the source's URL to place it the same way."
+    },
     "headerPills": [
       {
         "key": "freeGame",
@@ -4276,12 +4301,15 @@
   },
   "lang": {
     "de": {
-      "pages": {
-        "table": "Tisch",
-        "duel": "Duell",
-        "house": "Haus"
-      },
       "keys": {
+        "overlaySample": {
+          "label": "Beispielrunde zeigen",
+          "help": "Spielt etwa zehn Sekunden lang eine erfundene Hand auf dem Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht. Bist du live, sehen es auch deine Zuschauer. Nutzt die gespeicherten Einstellungen; niemandes Punkte ändern sich. Läuft gerade eine Hand, ein Duell oder ein House-Tisch, bleibt das Overlay bei ihm."
+        },
+        "overlayDemo": {
+          "label": "Demo ansehen",
+          "help": "Öffnet das Overlay im Browser und spielt erfundene Hände, von der Solo-Hand bis zum Duell und zum House-Tisch, im Aussehen der gespeicherten Einstellungen, ohne Streamer.bot. Mit &demo=1 an der URL der Quelle in OBS lässt sie sich genauso platzieren."
+        },
         "dealerStandsOn": {
           "label": "Bleibt stehen bei",
           "help": "Der Dealer zieht, bis die Hand diesen Wert erreicht, dann hört er auf. 17 ist der Casino-Standard."
@@ -5154,6 +5182,11 @@
           "label": "Hier nicht erlaubt",
           "help": "Gesendet, wenn ein Befehl nicht zum Regelsatz des Tisches gehört - Aufgeben an einem europäischen Tisch zum Beispiel."
         }
+      },
+      "pages": {
+        "table": "Tisch",
+        "duel": "Duell",
+        "house": "Haus"
       },
       "texts": {
         "Playing a hand": "Eine Hand spielen",

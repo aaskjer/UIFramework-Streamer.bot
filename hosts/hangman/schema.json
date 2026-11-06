@@ -1182,6 +1182,26 @@
       "help": "Reloads every OBS browser source that shows hangman_overlay.html, so OBS runs the newest overlay. The game also does this by itself after an update, once OBS is connected."
     },
     {
+      "key": "overlaySample",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Show a sample round",
+      "help": "Plays one made-up round on the overlay that is open, the one in OBS included, so you can see where it sits and how it looks, an Evil Hangman swap and a win included. If you are live, your viewers see it too. Uses the settings as saved; not while a real round runs.",
+      "row": "overlayTry"
+    },
+    {
+      "key": "overlayDemo",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Try the demo",
+      "help": "Opens the overlay in your browser, playing made-up rounds the way the saved settings say, without Streamer.bot. In OBS, &demo=1 at the end of the source's address does the same, to place and size it.",
+      "row": "overlayTry"
+    },
+    {
       "key": "pointsVariable",
       "default": "points",
       "page": "access",
@@ -2584,6 +2604,8 @@
       },
       "setupObsOverlay": "'Hangman Overlay' is in scene 'Hangman', pointing at the overlay file.",
       "refreshObsOverlay": "Refreshed: Hangman Overlay",
+      "overlaySample": "Playing a sample round on the overlay for about 20 seconds. If you are live, your viewers see it too.",
+      "overlayDemo": "The demo opened in your browser. In OBS, add &demo=1 to the end of the source's address to place it the same way.",
       "openWordlistFolder": "Opened Chat Games\\Hangman Game.",
       "openOverlayFolder": "Opened Chat Games\\Hangman Game\\Overlay."
     },
@@ -3138,6 +3160,14 @@
         "refreshObsOverlay": {
           "label": "Overlay in OBS neu laden",
           "help": "Lädt jede OBS-Browserquelle neu, die hangman_overlay.html zeigt, damit OBS das neueste Overlay nimmt. Das Spiel macht das nach einem Update auch selbst, sobald OBS verbunden ist."
+        },
+        "overlaySample": {
+          "label": "Beispielrunde zeigen",
+          "help": "Spielt eine erfundene Runde auf dem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht, mit einem Evil-Hangman-Tausch und einem Sieg. Bist du live, sehen es deine Zuschauer auch. Nimmt die gespeicherten Einstellungen; nicht, solange eine echte Runde läuft."
+        },
+        "overlayDemo": {
+          "label": "Demo ansehen",
+          "help": "Öffnet das Overlay im Browser und spielt erfundene Runden, wie die gespeicherten Einstellungen es sagen, ohne Streamer.bot. In OBS tut &demo=1 am Ende der Adresse der Quelle dasselbe, um sie zu platzieren und ihre Größe einzustellen."
         },
         "requireModToStart": {
           "label": "Nur Moderatoren starten eine Runde",

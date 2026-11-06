@@ -18,7 +18,8 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
-        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
+        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; a trailing "readonly"
+        // makes it a column the game fills and the user only reads; an emote column
         // adds "|twitch", "|youtube" or "|kick" for its picture), and the file next to the settings file that holds
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
@@ -29,24 +30,33 @@ public static class UiSchema
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
+        // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
+        public bool Masked;
+        // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
+        // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
+        public string ShowWhen; public string[] Shows;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
-    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free".</summary>
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
+    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
+    /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
+    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
+            ShowWhen = showWhen, Shows = shows
         };
     }
 
@@ -97,9 +107,19 @@ public static class UiSchema
                 var columns = new JArray();
                 foreach (var column in s.Columns)
                 {
-                    var parts = column.Split('|');
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] };
-                    if (parts.Length > 3) cell["platform"] = parts[3];
+                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                    while (parts.Count > 3)
+                    {
+                        string last = parts[parts.Count - 1];
+                        if (last == "readonly") cell["readOnly"] = true;
+                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                        else break;
+                        parts.RemoveAt(parts.Count - 1);
+                    }
+                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
                     columns.Add(cell);
                 }
                 item["columns"] = columns;
@@ -110,6 +130,22 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Masked) item["masked"] = true;
+            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+            if (s.Shows != null)
+            {
+                var shows = new JObject();
+                foreach (var entry in s.Shows)
+                {
+                    int colon = entry.IndexOf(':');
+                    if (colon <= 0) continue;
+                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
+                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
+                    foreach (var key in entry.Substring(colon + 1).Split(','))
+                        if (key.Trim().Length > 0) keys.Add(key.Trim());
+                }
+                item["shows"] = shows;
+            }
             if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
@@ -174,6 +210,8 @@ public static class UiSchema
         .Answer("importWords", "{\"lines\":[\"Wikidata, countries: 25 found, 3 already in the list, 22 added to Hangman-Wordlist.json.\",\"Reopen the window to see them in the list.\"],\"status\":\"22 words imported\"}")
         .Answer("setupObsOverlay", "'Hangman Overlay' is in scene 'Hangman', pointing at the overlay file.")
         .Answer("refreshObsOverlay", "Refreshed: Hangman Overlay")
+        .Answer("overlaySample", "Playing a sample round on the overlay for about 20 seconds. If you are live, your viewers see it too.")
+        .Answer("overlayDemo", "The demo opened in your browser. In OBS, add &demo=1 to the end of the source's address to place it the same way.")
         .Answer("openWordlistFolder", "Opened Chat Games\\Hangman Game.")
         .Answer("openOverlayFolder", "Opened Chat Games\\Hangman Game\\Overlay.")
         .Log("Chat Games/Logs", "HM-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Round|Round", "Word|Word", "Guess|Guess", "Lives|Lives", "Wrong|Wrong", "Reward|Reward" },
@@ -291,6 +329,8 @@ public static class UiSchema
             K("obsSourceName", "Quelle", "Name der Browserquelle, die angelegt wird."),
             K("setupObsOverlay", "Browserquelle in OBS anlegen", "Legt die Szene oben an, wenn sie fehlt, und fügt eine Browserquelle hinzu, die auf die Overlay-Datei zeigt. Braucht OBS verbunden in Streamer.bot. Geht auch von Hand: Browserquelle > Lokale Datei > hangman_overlay.html aus dem Ordner oben."),
             K("refreshObsOverlay", "Overlay in OBS neu laden", "Lädt jede OBS-Browserquelle neu, die hangman_overlay.html zeigt, damit OBS das neueste Overlay nimmt. Das Spiel macht das nach einem Update auch selbst, sobald OBS verbunden ist."),
+            K("overlaySample", "Beispielrunde zeigen", "Spielt eine erfundene Runde auf dem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht, mit einem Evil-Hangman-Tausch und einem Sieg. Bist du live, sehen es deine Zuschauer auch. Nimmt die gespeicherten Einstellungen; nicht, solange eine echte Runde läuft."),
+            K("overlayDemo", "Demo ansehen", "Öffnet das Overlay im Browser und spielt erfundene Runden, wie die gespeicherten Einstellungen es sagen, ohne Streamer.bot. In OBS tut &demo=1 am Ende der Adresse der Quelle dasselbe, um sie zu platzieren und ihre Größe einzustellen."),
             K("requireModToStart", "Nur Moderatoren starten eine Runde", "Nur Moderatoren und der Broadcaster starten eine Runde; raten darf in einer laufenden Runde weiter jeder."),
             K("allowChannelPointStart", "Eine Belohnung startet die Runde", "Auf Twitch startet eine Kanalpunkte-Einlösung die Runde statt des Chat-Befehls, der auf Twitch dann aus ist. Raten darf weiter jeder wie gewohnt."),
             K("channelPointRewardId", "Belohnungs-ID", "Die ID der Belohnung. Zu finden unter ayrtonalexis.com/reward_checker: autorisieren, 'Get Rewards', die ID deiner Belohnung kopieren."),
@@ -545,6 +585,8 @@ public static class UiSchema
         S("obsSourceName", "Hangman Overlay", page: "overlay", label: "Source", help: "Name of the browser source to create.", section: "Set it up in OBS", aliases: new[] { "ObsSourceName" }),
         S("setupObsOverlay", null, page: "overlay", label: "Create the browser source in OBS", help: "Creates the scene above if it is missing and adds a browser source pointing at the overlay file. Needs OBS connected in Streamer.bot. You can also add it by hand: Browser Source > Local file > hangman_overlay.html from the folder above.", kind: "action", section: "Set it up in OBS", confirm: "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?"),
         S("refreshObsOverlay", null, page: "overlay", label: "Refresh the overlay in OBS", help: "Reloads every OBS browser source that shows hangman_overlay.html, so OBS runs the newest overlay. The game also does this by itself after an update, once OBS is connected.", kind: "action", section: "Set it up in OBS"),
+        S("overlaySample", null, page: "overlay", label: "Show a sample round", help: "Plays one made-up round on the overlay that is open, the one in OBS included, so you can see where it sits and how it looks, an Evil Hangman swap and a win included. If you are live, your viewers see it too. Uses the settings as saved; not while a real round runs.", kind: "action", section: "Set it up in OBS", row: "overlayTry"),
+        S("overlayDemo", null, page: "overlay", label: "Try the demo", help: "Opens the overlay in your browser, playing made-up rounds the way the saved settings say, without Streamer.bot. In OBS, &demo=1 at the end of the source's address does the same, to place and size it.", kind: "action", section: "Set it up in OBS", row: "overlayTry"),
         // ---- access ----
         S("pointsVariable", "points", page: "access", section: "Currency", aliases: new[] { "PointsVar" }),
         S("pointsName", "Points", page: "access", section: "Currency", aliases: new[] { "PointsName" }),
@@ -651,7 +693,7 @@ public sealed class UiWindow
     public readonly List<object> PageList = new List<object>();
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
     public JObject SenderMap, LogMap, AboutMap;
-    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray(), SectionList = new JArray();
     public readonly JObject LangMap = new JObject();
 
     /// <param name="title">Window title and About heading.</param>
@@ -712,6 +754,14 @@ public sealed class UiWindow
     {
         foreach (var c in cooldowns)
             CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+        return this;
+    }
+
+    /// <summary>A section (by the name its settings declare) shown only while a condition holds, heading and fields
+    /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
+    public UiWindow Section(string name, string showWhen)
+    {
+        SectionList.Add(new JObject { ["name"] = name, ["showWhen"] = showWhen });
         return this;
     }
 
@@ -804,6 +854,7 @@ public sealed class UiWindow
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
         if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
         if (PillList.Count > 0) root["headerPills"] = PillList;
+        if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;

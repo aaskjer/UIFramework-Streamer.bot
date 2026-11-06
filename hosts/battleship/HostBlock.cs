@@ -18,7 +18,8 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
-        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
+        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; a trailing "readonly"
+        // makes it a column the game fills and the user only reads; an emote column
         // adds "|twitch", "|youtube" or "|kick" for its picture), and the file next to the settings file that holds
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
@@ -29,24 +30,33 @@ public static class UiSchema
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
+        // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
+        public bool Masked;
+        // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
+        // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
+        public string ShowWhen; public string[] Shows;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
-    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free".</summary>
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
+    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
+    /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
+    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
+            ShowWhen = showWhen, Shows = shows
         };
     }
 
@@ -97,9 +107,19 @@ public static class UiSchema
                 var columns = new JArray();
                 foreach (var column in s.Columns)
                 {
-                    var parts = column.Split('|');
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] };
-                    if (parts.Length > 3) cell["platform"] = parts[3];
+                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                    while (parts.Count > 3)
+                    {
+                        string last = parts[parts.Count - 1];
+                        if (last == "readonly") cell["readOnly"] = true;
+                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                        else break;
+                        parts.RemoveAt(parts.Count - 1);
+                    }
+                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
                     columns.Add(cell);
                 }
                 item["columns"] = columns;
@@ -110,6 +130,22 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Masked) item["masked"] = true;
+            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+            if (s.Shows != null)
+            {
+                var shows = new JObject();
+                foreach (var entry in s.Shows)
+                {
+                    int colon = entry.IndexOf(':');
+                    if (colon <= 0) continue;
+                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
+                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
+                    foreach (var key in entry.Substring(colon + 1).Split(','))
+                        if (key.Trim().Length > 0) keys.Add(key.Trim());
+                }
+                item["shows"] = shows;
+            }
             if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
@@ -223,6 +259,8 @@ public static class UiSchema
             K("stopNote", null, "Der Stopp-Befehl beendet, was gerade läuft - Solo-Schlachten, die Schlacht des Chats oder ein Duell - und zahlt nichts mehr aus: keinen Siegbonus, keinen Topf, nichts für beschädigte Schiffe. Die Einsätze eines Duells werden erstattet. Wer ihn nutzen darf, wird am Befehl in Streamer.bot eingestellt."),
             K("overlayNote", null, "Das Overlay ist battleship_overlay.html im Ordner unten. Das Spiel schreibt es dorthin und hält es aktuell, deine vorherige Kopie bleibt als .bak erhalten. Sein Hintergrund ist transparent, es liegt also über jeder Szene."),
             K("obsNote", null, "Erstellt die Szene und darin eine Browserquelle in der Größe deiner Leinwand, die auf die Overlay-Datei zeigt. OBS muss in Streamer.bot unter Stream Apps > OBS Studio verbunden sein."),
+            K("overlaySample", "Beispielrunde zeigen", "Spielt eine kurze erfundene Schlacht auf jedem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht. Bist du live, sehen deine Zuschauer sie auch. Nicht während einer echten Schlacht. Nutzt die gespeicherten Einstellungen."),
+            K("overlayDemo", "Demo ansehen", "Öffnet das Overlay im Browser und spielt eine erfundene Schlacht, wie die gespeicherten Einstellungen es sagen, ohne Streamer.bot. Mit ?demo=1 an der Adresse des Overlays spielt OBS sie genauso, um die Quelle zu platzieren und zu skalieren."),
             K("overlayAdmiralName", "Name des Gegners", "Wie die CPU auf dem Overlay und im Chat heißt, als {admiral}."),
             K("overlayShowPlayerRoster", "Die Flottenliste des Spielers", "Die Schiffsliste mit Schadenspunkten unter dem eigenen Spielfeld des Spielers."),
             K("overlayShowEnemyRoster", "Die Flottenliste des Gegners", "Dieselbe Liste unter den gegnerischen Gewässern. Ihre Punkte zeigen, welche seiner Schiffe deine Treffer getroffen haben; ausschalten, um das zu verbergen. Welche Liste auch verborgen ist, die zwei Spielfelder bleiben auf gleicher Höhe."),
@@ -362,6 +400,8 @@ public static class UiSchema
         .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free game, from the Game page or !SetFreeBattleship. While it is on, ships still sink but no points are won or lost.")
         .Pill("heatEnabled", "Click to Fire on", "Click to Fire off", tooltip: "Fire by clicking the stream, from the Clicks page. Twitch only, through the Heat extension.")
         .Samples("user", "alice", "admiral", "The Admiral", "ships", "3", "size", "8", "deploy", "60", "coord", "B7", "ship", "Cruiser", "amount", "300", "points", "Points", "enemyleft", "2", "yourleft", "3", "shots", "21", "hits", "9", "accuracy", "43", "net", "+600", "team", "Chat", "round", "15", "voters", "14", "seconds", "30", "challenger", "alice", "target", "bob", "fee", "100", "count", "4", "a", "4", "b", "3", "pot", "700", "missed", "1", "max", "3", "enemy", "Team B", "teama", "Team A", "teamb", "Team B", "aleft", "2", "bleft", "1", "turn", "Team A", "players", "4", "share", "175", "winner", "Team A", "turns", "3", "game", "alice", "input", "Z9", "required", "1,000", "balance", "250", "cap", "5,000", "other", "Team B", "gap", "1", "fleet", "Carrier A1-A5, Cruiser C3-E3, Destroyer G7-G8")
+        .Answer("overlaySample", "Sent. Every open overlay, the one in OBS included, plays a short made-up battle - about 15 seconds.")
+        .Answer("overlayDemo", "The demo opened in your browser. In OBS, add ?demo=1 to the overlay's address to place and size the source the same way.")
         .Answer("clockSummary", "60s to open fire, then 90s per turn, warned at 30s and 15s left.")
         .Answer("fleetSummary", "{\"lines\":[{\"text\":\"8×8 · 3 ships · about 36 shots per battle\",\"big\":true},\"10 of 64 squares taken by ships.\"]}")
         .Answer("broadcasterFound", "Found in Streamer.bot: 123456789. Used whenever the channel ID box is empty.")
@@ -480,7 +520,9 @@ public static class UiSchema
         S("obsConnectionId", 0, page: "overlay", label: "Connection #", help: "Which of Streamer.bot's OBS connections to use, if you have more than one. 0 is the first.", section: "OBS auto-setup", min: 0.0, aliases: new[] { "ObsConnectionId" }),
         S("obsSceneName", "Battleship", page: "overlay", label: "Scene", help: "The scene the source is added to. It is created if it doesn't exist yet.", section: "OBS auto-setup", aliases: new[] { "ObsSceneName" }),
         S("obsSourceName", "Battleship Overlay", page: "overlay", label: "Source", help: "The browser source created in that scene. Nothing is touched if OBS already has a source of this name.", section: "OBS auto-setup", aliases: new[] { "ObsSourceName" }),
-        S("setupObsOverlay", null, page: "overlay", label: "Set the overlay up in OBS", help: "Writes the overlay file if it is missing, then creates the scene and the browser source, the size of your canvas. Save first: the setup reads the saved folder and names.", kind: "action", section: "OBS auto-setup", confirm: "This creates the scene if it is missing and adds a browser source the size of your canvas pointing at the overlay file, over the OBS connection set above. Save your changes first if you edited the folder or the names. Go ahead?"),
+        S("setupObsOverlay", null, page: "overlay", label: "Set the overlay up in OBS", help: "Writes the overlay file if it is missing, then creates the scene and the browser source, the size of your canvas. Save first: the setup reads the saved folder and names.", kind: "action", section: "OBS auto-setup", confirm: "This creates the scene if it is missing and adds a browser source the size of your canvas pointing at the overlay file, over the OBS connection set above. Save your changes first if you edited the folder or the names. Go ahead?", row: "obsButtons"),
+        S("overlaySample", null, page: "overlay", label: "Show a sample round", help: "Plays a short made-up battle on every overlay that is open, the one in OBS included, so you can see where it sits and how it looks. If you are live, your viewers see it too. Not while a real battle runs. Uses the settings as saved.", kind: "action", section: "OBS auto-setup", row: "obsButtons"),
+        S("overlayDemo", null, page: "overlay", label: "Try the demo", help: "Opens the overlay in your browser, playing a made-up battle the way the saved settings say, without Streamer.bot. With ?demo=1 on the overlay's address, OBS plays it the same way, to place and size the source.", kind: "action", section: "OBS auto-setup", row: "obsButtons"),
         S("overlayScale", 100, page: "overlay", label: "Scale", help: "Scales the whole overlay. 100 is full size.", kind: "percent", section: "Size", min: 10.0, max: 300.0, aliases: new[] { "OverlayScale" }, aliasFactor: 100.0),
         S("overlayFontScale", 100, page: "overlay", label: "Text size", help: "Scales the text only, on top of the overall scale.", kind: "percent", section: "Size", min: 10.0, max: 300.0, aliases: new[] { "OverlayFontScale" }, aliasFactor: 100.0),
         S("overlayResultSeconds", 8, page: "overlay", label: "Result shown", help: "How long a finished battle stays up before it fades out. At least 1.", kind: "duration", section: "Size", min: 1.0, aliases: new[] { "OverlayGameOverFadeSec" }),
@@ -636,7 +678,7 @@ public sealed class UiWindow
     public readonly List<object> PageList = new List<object>();
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
     public JObject SenderMap, LogMap, AboutMap;
-    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray(), SectionList = new JArray();
     public readonly JObject LangMap = new JObject();
 
     /// <param name="title">Window title and About heading.</param>
@@ -697,6 +739,14 @@ public sealed class UiWindow
     {
         foreach (var c in cooldowns)
             CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+        return this;
+    }
+
+    /// <summary>A section (by the name its settings declare) shown only while a condition holds, heading and fields
+    /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
+    public UiWindow Section(string name, string showWhen)
+    {
+        SectionList.Add(new JObject { ["name"] = name, ["showWhen"] = showWhen });
         return this;
     }
 
@@ -789,6 +839,7 @@ public sealed class UiWindow
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
         if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
         if (PillList.Count > 0) root["headerPills"] = PillList;
+        if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
