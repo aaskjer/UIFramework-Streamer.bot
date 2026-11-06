@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-11-06
+
+Lists filled by an action, searched and with read-only columns; masked fields; requirements that hide; German deeper.
+
 - What the last hosts asked for: an action's `set` fills a `list` (its rows as an array or as JSON text), a list
   of eight rows or more gets a search box (hidden rows are still saved), a column may be `readonly` (the game
   fills it, the user reads it), a text field may be `masked: true` (dots with an eye button, saved like any
