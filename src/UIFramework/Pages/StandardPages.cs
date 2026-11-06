@@ -28,8 +28,12 @@ namespace UIFramework
             var spec = ctx.Spec;
             var page = Ui.PageStack();
 
+            // No logo declared: no empty square beside the name.
             var logo = new Image { Width = 72, Height = 72, Margin = new Thickness(0, 0, 14, 0) };
-            Web.LoadImageAsync(logo, spec.LogoUrl);
+            if (string.IsNullOrWhiteSpace(spec.LogoUrl))
+                logo.Visibility = Visibility.Collapsed;
+            else
+                Web.LoadImageAsync(logo, spec.LogoUrl);
             var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             names.Children.Add(new TextBlock { Text = spec.Title, FontSize = 17, FontWeight = FontWeights.SemiBold, Foreground = Theme.LabelFg });
             names.Children.Add(new TextBlock
@@ -67,20 +71,28 @@ namespace UIFramework
             }
 
             page.Children.Add(Ui.Section(Text.T("about.links")));
+            // Every address once: a game that lists its repository or releases among its own links (as the
+            // framework already does from `releases`) does not get them twice.
+            var shown = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            void Link(string text, string url)
+            {
+                if (string.IsNullOrWhiteSpace(url) || !shown.Add(url.Trim().TrimEnd('/'))) return;
+                page.Children.Add(ctx.Fields.LinkLine(text, url));
+            }
             if (spec.RepoUrl != null)
             {
-                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.onGitHub", spec.Title), spec.RepoUrl));
-                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.releases"), spec.ReleasesUrl));
+                Link(Text.T("about.onGitHub", spec.Title), spec.RepoUrl);
+                Link(Text.T("about.releases"), spec.ReleasesUrl);
             }
             foreach (var link in spec.About.Links)
-                page.Children.Add(ctx.Fields.LinkLine(link.Text, link.Url));
+                Link(link.Text, link.Url);
             if (spec.RepoUrl != null)
-                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.report"), spec.RepoUrl + "/issues"));
+                Link(Text.T("about.report"), spec.RepoUrl + "/issues");
             if (spec.About.ShowAuthorLink)
-                page.Children.Add(ctx.Fields.LinkLine(Text.T("about.author"), "https://twitch.tv/aaskjer"));
+                Link(Text.T("about.author"), "https://twitch.tv/aaskjer");
             if (spec.About.ShowStreamerBotLink)
-                page.Children.Add(ctx.Fields.LinkLine("Streamer.bot", "https://streamer.bot"));
-            page.Children.Add(ctx.Fields.LinkLine(Text.T("about.framework"), "https://github.com/aaskjer/UIFramework-Streamer.bot"));
+                Link("Streamer.bot", "https://streamer.bot");
+            Link(Text.T("about.framework"), "https://github.com/aaskjer/UIFramework-Streamer.bot");
 
             return Ui.Scroll(page);
         }

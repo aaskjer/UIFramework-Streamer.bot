@@ -219,7 +219,8 @@ namespace UIFramework
             gridHost.Children.Add(_empty);
             panel.Children.Add(gridHost);
 
-            var hint = Ui.Note(Text.T("list.table.hint"));
+            // The hint names the checkboxes only when the table has a switch column.
+            var hint = Ui.Note(Text.T(_columns.Any(c => c.Kind == "bool" && !c.ReadOnly) ? "list.table.hint" : "list.table.hint.noSwitch"));
             hint.Margin = new Thickness(0, 6, 0, 0);
             panel.Children.Add(hint);
 
