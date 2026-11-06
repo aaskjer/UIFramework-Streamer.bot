@@ -566,7 +566,18 @@
       "section": "Set it up in OBS",
       "label": "Set the overlay up in OBS",
       "help": "Creates the scene if it is missing and adds a browser source the size of your canvas pointed at the overlay URL. OBS has to be connected in Streamer.bot under Stream Apps > OBS Studio. Save first: the setup reads the saved port and names.",
-      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay URL, over the OBS connection set above. Save your changes first if you edited the port or the names. Go ahead?"
+      "confirm": "This creates the scene if it is missing and adds a browser source pointing at the overlay URL, over the OBS connection set above. Save your changes first if you edited the port or the names. Go ahead?",
+      "row": "obsButtons"
+    },
+    {
+      "key": "overlaySample",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "Set it up in OBS",
+      "label": "Show a sample round",
+      "help": "Plays one made-up round on every overlay that is open, the one in OBS included, so you can see where it sits and how it looks. If you are live, your viewers see it too. Uses the settings as saved; nothing is sent while a real round or battle is on the overlay.",
+      "row": "obsButtons"
     },
     {
       "key": "copyOverlayUrl",
@@ -575,7 +586,8 @@
       "page": "overlay",
       "section": "Or add it by hand",
       "label": "Copy the overlay URL",
-      "help": "Writes the overlay page and copies its address for a Browser source in OBS: untick 'Local file', paste the URL, set the size to 1920 × 1080. The URL takes &platform=twitch for one platform's rounds only, &lang=de for German wording, &demo=1 to place the source, and &debug=1 to see whether it reached Streamer.bot."
+      "help": "Writes the overlay page and copies its address for a Browser source in OBS: untick 'Local file', paste the URL, set the size to 1920 × 1080. The URL takes &platform=twitch for one platform's rounds only, &lang=de for German wording, &demo=1 to place the source, and &debug=1 to see whether it reached Streamer.bot.",
+      "row": "byHand"
     },
     {
       "key": "openOverlayDemo",
@@ -584,7 +596,8 @@
       "page": "overlay",
       "section": "Or add it by hand",
       "label": "Try the demo",
-      "help": "Opens the overlay in your browser, playing sample rounds without Streamer.bot."
+      "help": "Opens the overlay in your browser, playing sample rounds without Streamer.bot.",
+      "row": "byHand"
     },
     {
       "key": "openOverlayFolder",
@@ -593,7 +606,8 @@
       "page": "overlay",
       "section": "Or add it by hand",
       "label": "Open the overlay folder",
-      "help": "Opens Chat Games\\RhymeTime\\Overlay, where the page is written."
+      "help": "Opens Chat Games\\RhymeTime\\Overlay, where the page is written.",
+      "row": "byHand"
     },
     {
       "key": "overlayPosition",
@@ -1185,12 +1199,21 @@
       "seconds": "12",
       "reason": "minimum bet is 10 Points."
     },
+    "answers": {
+      "overlaySample": "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above."
+    },
     "headerPills": [
       {
         "key": "freeGame",
         "on": "Free game on",
         "off": "Free game off",
         "tooltip": "Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well."
+      },
+      {
+        "key": "overlayEnabled",
+        "on": "Overlay on",
+        "off": "Overlay off",
+        "tooltip": "Whether rounds reach the OBS overlay, from the Overlay page."
       }
     ],
     "cooldowns": [
@@ -1398,6 +1421,10 @@
           "label": "Overlay in OBS einrichten",
           "help": "Legt die Szene an, wenn sie fehlt, und fügt eine Browserquelle in der Größe deiner Leinwand hinzu, die auf die Overlay-URL zeigt. OBS muss in Streamer.bot unter Stream Apps > OBS Studio verbunden sein. Erst speichern: die Einrichtung liest den gespeicherten Port und die Namen."
         },
+        "overlaySample": {
+          "label": "Beispielrunde zeigen",
+          "help": "Spielt eine erfundene Runde auf jedem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht. Bist du live, sehen es auch deine Zuschauer. Nutzt die gespeicherten Einstellungen; solange eine echte Runde oder ein Battle auf dem Overlay läuft, wird nichts gesendet."
+        },
         "copyOverlayUrl": {
           "label": "Overlay-URL kopieren",
           "help": "Schreibt die Overlay-Seite und kopiert ihre Adresse für eine Browserquelle in OBS: 'Lokale Datei' abwählen, URL einfügen, Größe 1920 × 1080. Die URL nimmt &platform=twitch nur für die Runden einer Plattform, &lang=de für deutsche Texte, &demo=1 zum Platzieren der Quelle und &debug=1, um zu sehen, ob sie Streamer.bot erreicht."
@@ -1548,6 +1575,9 @@
         }
       },
       "texts": {
+        "Overlay on": "Overlay an",
+        "Overlay off": "Overlay aus",
+        "Whether rounds reach the OBS overlay, from the Overlay page.": "Ob Runden das OBS-Overlay erreichen, von der Seite Overlay.",
         "Easy": "Leicht",
         "Medium": "Mittel",
         "Hard": "Schwer",

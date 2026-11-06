@@ -18,7 +18,8 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
-        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; an emote column
+        // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; a trailing "readonly"
+        // makes it a column the game fills and the user only reads; an emote column
         // adds "|twitch", "|youtube" or "|kick" for its picture), and the file next to the settings file that holds
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
@@ -29,24 +30,33 @@ public static class UiSchema
         public bool Transient, Live, Panel, Auto;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
+        // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
+        public bool Masked;
+        // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
+        // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
+        public string ShowWhen; public string[] Shows;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
-    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free".</summary>
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
+    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
+    /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
+    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
+            ShowWhen = showWhen, Shows = shows
         };
     }
 
@@ -97,9 +107,19 @@ public static class UiSchema
                 var columns = new JArray();
                 foreach (var column in s.Columns)
                 {
-                    var parts = column.Split('|');
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Length > 1 ? parts[1] : "string", ["label"] = parts.Length > 2 ? parts[2] : parts[0] };
-                    if (parts.Length > 3) cell["platform"] = parts[3];
+                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                    while (parts.Count > 3)
+                    {
+                        string last = parts[parts.Count - 1];
+                        if (last == "readonly") cell["readOnly"] = true;
+                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                        else break;
+                        parts.RemoveAt(parts.Count - 1);
+                    }
+                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
                     columns.Add(cell);
                 }
                 item["columns"] = columns;
@@ -110,6 +130,22 @@ public static class UiSchema
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
+            if (s.Masked) item["masked"] = true;
+            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+            if (s.Shows != null)
+            {
+                var shows = new JObject();
+                foreach (var entry in s.Shows)
+                {
+                    int colon = entry.IndexOf(':');
+                    if (colon <= 0) continue;
+                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
+                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
+                    foreach (var key in entry.Substring(colon + 1).Split(','))
+                        if (key.Trim().Length > 0) keys.Add(key.Trim());
+                }
+                item["shows"] = shows;
+            }
             if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
@@ -165,6 +201,8 @@ public static class UiSchema
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Cooldowns(C("15e49f3a-389a-4190-ac15-c50b1fd4eee6", "globalCooldown", "userCooldown"))   // !Rhyme, where the cooldowns live
         .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well.")
+        .Answer("overlaySample", "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above.")
+        .Pill("overlayEnabled", "Overlay on", "Overlay off", tooltip: "Whether rounds reach the OBS overlay, from the Overlay page.")
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
         K("timeLimit", "Sekunden zum Antworten", "Wie lange ein Chatter Zeit hat, einen Reim zu finden, bevor die Runde verloren ist."),
@@ -185,6 +223,7 @@ public static class UiSchema
         K("obsSceneName", "Szene", "Die Szene, in die die Quelle kommt. Sie wird angelegt, wenn es sie noch nicht gibt."),
         K("obsSourceName", "Quelle", "Die Browserquelle, die in dieser Szene angelegt wird. Nichts wird angefasst, wenn OBS schon eine Quelle dieses Namens hat."),
         K("setupObsOverlay", "Overlay in OBS einrichten", "Legt die Szene an, wenn sie fehlt, und fügt eine Browserquelle in der Größe deiner Leinwand hinzu, die auf die Overlay-URL zeigt. OBS muss in Streamer.bot unter Stream Apps > OBS Studio verbunden sein. Erst speichern: die Einrichtung liest den gespeicherten Port und die Namen."),
+        K("overlaySample", "Beispielrunde zeigen", "Spielt eine erfundene Runde auf jedem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht. Bist du live, sehen es auch deine Zuschauer. Nutzt die gespeicherten Einstellungen; solange eine echte Runde oder ein Battle auf dem Overlay läuft, wird nichts gesendet."),
         K("copyOverlayUrl", "Overlay-URL kopieren", "Schreibt die Overlay-Seite und kopiert ihre Adresse für eine Browserquelle in OBS: 'Lokale Datei' abwählen, URL einfügen, Größe 1920 × 1080. Die URL nimmt &platform=twitch nur für die Runden einer Plattform, &lang=de für deutsche Texte, &demo=1 zum Platzieren der Quelle und &debug=1, um zu sehen, ob sie Streamer.bot erreicht."),
         K("openOverlayDemo", "Demo ausprobieren", "Öffnet das Overlay im Browser und spielt Beispielrunden ohne Streamer.bot."),
         K("openOverlayFolder", "Overlay-Ordner öffnen", "Öffnet Chat Games\\\\RhymeTime\\\\Overlay, wo die Seite geschrieben wird."),
@@ -222,6 +261,9 @@ public static class UiSchema
         K("reasonAboveMaximum", "Grund: über dem Maximum", "Füllt {reason}, wenn der Einsatz über dem Maximum auf der Seite Spiel liegt."),
         K("globalCooldownMessage", "Abklingzeit für alle", "Gesendet, wenn der Befehl für den ganzen Chat noch in der Abklingzeit ist."),
         K("userCooldownMessage", "Abklingzeit eines Chatters", "Gesendet, wenn der Befehl für diesen einen Chatter noch in der Abklingzeit ist."),
+        Tx("Overlay on", "Overlay an"),
+        Tx("Overlay off", "Overlay aus"),
+        Tx("Whether rounds reach the OBS overlay, from the Overlay page.", "Ob Runden das OBS-Overlay erreichen, von der Seite Overlay."),
         Tx("Easy", "Leicht"),
         Tx("Medium", "Mittel"),
         Tx("Hard", "Schwer"),
@@ -304,10 +346,11 @@ public static class UiSchema
         S("obsConnectionId", 0, page: "overlay", label: "Connection #", help: "Which of Streamer.bot's OBS connections to use, if you have more than one. 0 is the first.", section: "Set it up in OBS", min: 0.0, aliases: new[] { "ObsConnectionId" }),
         S("obsSceneName", "RhymeTime", page: "overlay", label: "Scene", help: "The scene the source is added to. It is created if it is not there yet.", section: "Set it up in OBS", aliases: new[] { "ObsSceneName" }),
         S("obsSourceName", "RhymeTime Overlay", page: "overlay", label: "Source", help: "The browser source created in that scene. Nothing is touched if OBS already has a source of this name.", section: "Set it up in OBS", aliases: new[] { "ObsSourceName" }),
-        S("setupObsOverlay", null, page: "overlay", label: "Set the overlay up in OBS", help: "Creates the scene if it is missing and adds a browser source the size of your canvas pointed at the overlay URL. OBS has to be connected in Streamer.bot under Stream Apps > OBS Studio. Save first: the setup reads the saved port and names.", kind: "action", section: "Set it up in OBS", confirm: "This creates the scene if it is missing and adds a browser source pointing at the overlay URL, over the OBS connection set above. Save your changes first if you edited the port or the names. Go ahead?"),
-        S("copyOverlayUrl", null, page: "overlay", label: "Copy the overlay URL", help: "Writes the overlay page and copies its address for a Browser source in OBS: untick 'Local file', paste the URL, set the size to 1920 × 1080. The URL takes &platform=twitch for one platform's rounds only, &lang=de for German wording, &demo=1 to place the source, and &debug=1 to see whether it reached Streamer.bot.", kind: "action", section: "Or add it by hand"),
-        S("openOverlayDemo", null, page: "overlay", label: "Try the demo", help: "Opens the overlay in your browser, playing sample rounds without Streamer.bot.", kind: "action", section: "Or add it by hand"),
-        S("openOverlayFolder", null, page: "overlay", label: "Open the overlay folder", help: "Opens Chat Games\\RhymeTime\\Overlay, where the page is written.", kind: "action", section: "Or add it by hand"),
+        S("setupObsOverlay", null, page: "overlay", label: "Set the overlay up in OBS", help: "Creates the scene if it is missing and adds a browser source the size of your canvas pointed at the overlay URL. OBS has to be connected in Streamer.bot under Stream Apps > OBS Studio. Save first: the setup reads the saved port and names.", kind: "action", section: "Set it up in OBS", confirm: "This creates the scene if it is missing and adds a browser source pointing at the overlay URL, over the OBS connection set above. Save your changes first if you edited the port or the names. Go ahead?", row: "obsButtons"),
+        S("overlaySample", null, page: "overlay", label: "Show a sample round", help: "Plays one made-up round on every overlay that is open, the one in OBS included, so you can see where it sits and how it looks. If you are live, your viewers see it too. Uses the settings as saved; nothing is sent while a real round or battle is on the overlay.", kind: "action", section: "Set it up in OBS", row: "obsButtons"),
+        S("copyOverlayUrl", null, page: "overlay", label: "Copy the overlay URL", help: "Writes the overlay page and copies its address for a Browser source in OBS: untick 'Local file', paste the URL, set the size to 1920 × 1080. The URL takes &platform=twitch for one platform's rounds only, &lang=de for German wording, &demo=1 to place the source, and &debug=1 to see whether it reached Streamer.bot.", kind: "action", section: "Or add it by hand", row: "byHand"),
+        S("openOverlayDemo", null, page: "overlay", label: "Try the demo", help: "Opens the overlay in your browser, playing sample rounds without Streamer.bot.", kind: "action", section: "Or add it by hand", row: "byHand"),
+        S("openOverlayFolder", null, page: "overlay", label: "Open the overlay folder", help: "Opens Chat Games\\RhymeTime\\Overlay, where the page is written.", kind: "action", section: "Or add it by hand", row: "byHand"),
         S("overlayPosition", "left", page: "overlay", label: "Place", help: "Which side of the canvas the card sits on. A position= in the overlay's URL overrules this. Everything in this section travels with the round, so nothing has to be set up in OBS again.", kind: "options", section: "Size and place", options: new[] { "left|Left", "center|Centre", "right|Right" }, aliases: new[] { "OverlayPosition" }),
         S("overlayScale", 100, page: "overlay", label: "Size", help: "Scales the whole card. 100 is full size, 10 to 300 are the limits.", section: "Size and place", min: 10.0, max: 300.0, aliases: new[] { "OverlayScale" }),
         S("overlayResultSeconds", 8, page: "overlay", label: "Result shown", help: "How long the winning rhyme, or the examples after a lost round, stays on screen.", section: "Size and place", min: 1.0, max: 120.0, aliases: new[] { "OverlayResultSeconds" }),
@@ -356,7 +399,7 @@ public sealed class UiWindow
     public readonly List<object> PageList = new List<object>();
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
     public JObject SenderMap, LogMap, AboutMap;
-    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray(), SectionList = new JArray();
     public readonly JObject LangMap = new JObject();
 
     /// <param name="title">Window title and About heading.</param>
@@ -417,6 +460,14 @@ public sealed class UiWindow
     {
         foreach (var c in cooldowns)
             CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+        return this;
+    }
+
+    /// <summary>A section (by the name its settings declare) shown only while a condition holds, heading and fields
+    /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
+    public UiWindow Section(string name, string showWhen)
+    {
+        SectionList.Add(new JObject { ["name"] = name, ["showWhen"] = showWhen });
         return this;
     }
 
@@ -509,6 +560,7 @@ public sealed class UiWindow
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
         if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
         if (PillList.Count > 0) root["headerPills"] = PillList;
+        if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
