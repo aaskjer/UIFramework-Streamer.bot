@@ -44,10 +44,11 @@ first use, checked against its published SHA-256, and offers new releases when t
   spreadsheet. Fields can follow a dropdown, grey out or hide on a condition.
 - 🔘 **Buttons your game answers.** A test round, a preset, an OBS setup or a source check runs in your own code
   and answers with lines, a panel, emote pictures or values for other fields.
-- 🌍 **English or German.** Common settings, pages and texts are translated by the framework; a game adds its own
-  words in its block.
+- 🌍 **English, German if you want it.** A game offers German with `Lang("de")`: common settings, pages and
+  texts come translated, the game adds its own words. Without it the window stays English.
 - 🎨 **A customise mode.** Users rename, reorder, hide and move pages and fields by drag and drop, and pick the
-  theme and accent colour. All of it lives in `uiframework.layout.json` and survives every import of the game.
+  theme and accent colour. All of it lives in `uiframework.layout.json` and survives every import of the game;
+  `Lock()` turns the mode off for a game that wants its window exactly as declared.
 - 📜 **Log, help and about pages.** A filterable log reader for the game's log files, a help page from your
   notes and commands, an about page with your links, and the schema's own mistakes listed on the Log page.
 - 🔄 **Updates itself.** The stub fetches the DLL, verifies it and asks before using a newer release;
@@ -91,7 +92,7 @@ what users can change.
 
 ## 🛠️ Development
 
-`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 74 tests.
+`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 76 tests.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
 `-schema hosts/<game>/schema.json` the window a game declares. `-theme dark` or `light`, `-shots <folder>` renders
 every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),

@@ -4,6 +4,10 @@ The pen button at the bottom left turns the customise mode on. In it the window 
 touching a script; every change lands at once in `uiframework.layout.json` next to the settings file and
 survives every import of the host.
 
+A game can lock its layout with `Lock()` on its window (see [Schema.md](Schema.md)): then there is no pen button
+and the window looks the way the game declares it, whatever the layout file says. Theme and language stay the
+user's.
+
 ## In the mode
 
 - **Fields** have a handle `⋮⋮`. The page shows them where they sit in the window, side by side where the window

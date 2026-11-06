@@ -5,6 +5,14 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- German is optional for a game: the window offers English and only the languages the game declares with `Lang`.
+  A game without `Lang("de")` is never shown half in German, whatever an old layout file asks for; the language
+  picker lists only what is offered and is gone when that is English alone. `Lang("de")` with no texts offers
+  German from the conventions.
+- `Lock()` on the window (`"locked": true` in the schema) locks the layout for everyone: no customise mode, and a
+  user's renames, moves, hidden fields and accent colour are not applied. Theme and language stay the user's; the
+  language picker moves into the footer. The host block gains `Lock()`; a game takes it with its next release.
+
 - The preview's `-windowshots <folder>` photographs the whole window per page, rail, header and footer included,
   with the page at its full height, for a game's setup guide (`-pages game,emotes`, `-names access=access--cp`).
 

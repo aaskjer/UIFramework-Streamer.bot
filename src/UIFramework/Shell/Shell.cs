@@ -189,6 +189,7 @@ namespace UIFramework
                 catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Theme not moved to the layout file: " + ex.Message); }
             }
             layout.ApplyTheme();
+            if (_spec.Locked) Theme.AccentOverride = null;   // a locked window keeps the game's look
             // Values kept in files of their own (a word bank, a question list) come in after the settings file.
             Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
 
@@ -231,6 +232,7 @@ namespace UIFramework
                 layout = _spec.Layout ?? LayoutFile.Load(_spec.SettingsPath);
                 _spec.Layout = layout;
                 layout.ApplyTheme();
+                if (_spec.Locked) Theme.AccentOverride = null;
                 _spec.ReopenPageId = pageId;
                 Build();
             }
@@ -259,6 +261,7 @@ namespace UIFramework
             ctx.LiveSettings = () => settings;
             var changeListeners = new List<Action>();
             ctx.OnAnyChange = listener => changeListeners.Add(listener);
+            if (_spec.Locked) _spec.Customizing = false;
             bool customizing = _spec.Customizing && _spec.Schema != null;
 
             // ---- Pages ----
@@ -724,7 +727,23 @@ namespace UIFramework
             leftButtons.Children.Add(btnTheme);
             leftButtons.Children.Add(btnReset);
             leftButtons.Children.Add(btnResetPage);
-            leftButtons.Children.Add(btnCustomize);
+            if (!_spec.Locked)
+                leftButtons.Children.Add(btnCustomize);
+            else
+            {
+                // Locked: no customise mode, but the language stays the user's to pick when the game offers more than one.
+                var language = Customize.LanguagePicker(_spec, layout, () =>
+                {
+                    try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Language not saved: " + ex.Message); }
+                    Rebuild(null);
+                });
+                if (language != null)
+                {
+                    language.Margin = new Thickness(6, 0, 0, 0);
+                    language.ToolTip = Text.T("cust.language");
+                    leftButtons.Children.Add(language);
+                }
+            }
             var rightButtons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             if (customizing)
             {

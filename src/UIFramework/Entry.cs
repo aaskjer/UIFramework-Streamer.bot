@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
 
@@ -62,7 +64,17 @@ namespace UIFramework
         public static void Prepare(WindowSpec spec, Schema schema)
         {
             var layout = !string.IsNullOrEmpty(spec.SettingsPath) ? LayoutFile.Load(spec.SettingsPath) : new LayoutFile("layout");
+            // English always; another language only when the game brings texts for it, so a game that offers no
+            // German never shows a window half in German, whatever an old layout file asks for.
+            spec.Languages = new List<string> { "en" };
+            if (schema.Lang != null)
+                foreach (var code in schema.Lang.Properties().Select(p => p.Name))
+                    if (!spec.Languages.Contains(code)) spec.Languages.Add(code);
+            if (!string.IsNullOrEmpty(spec.Language) && !spec.Languages.Contains(spec.Language))
+                spec.Languages.Add(spec.Language);
             string language = spec.Language ?? layout.Language;
+            if (string.IsNullOrEmpty(language) || !spec.Languages.Contains(language))
+                language = "en";
             var conventions = string.IsNullOrEmpty(language) || language == "en" ? Conventions.Default : Conventions.Load(language);
             if (!ReferenceEquals(conventions, Conventions.Default) && schema.Lang?[language] is JObject mine)
             {
@@ -73,7 +85,7 @@ namespace UIFramework
             spec.Conventions = conventions;
             spec.Layout = layout;
             Text.Use(conventions.Lang);
-            Resolve.Apply(spec, schema, conventions, layout);
+            Resolve.Apply(spec, schema, conventions, spec.Locked ? null : layout);
         }
 
         /// <summary>Closes the window for a settings file without asking, for the host's Dispose.</summary>
