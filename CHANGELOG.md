@@ -5,6 +5,11 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- The list table is edited in place, as the games' own windows did before UIFramework: a click into a cell edits
+  it, a switch column is a checkbox in every row that toggles with one click, several rows can be picked and
+  removed at once (Remove row or Delete). Alternating rows and column lines make the cells easy to tell apart.
+  The edit panel under the table is gone.
+
 ## [0.9.8] - 2026-11-06
 
 Wide lists as tables in the style of the Log page; rows with buttons; headings that hide with their fields.
