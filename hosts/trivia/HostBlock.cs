@@ -32,25 +32,31 @@ public static class UiSchema
         public bool TwitchOnly;
         // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
         public bool Masked;
+        // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
+        // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
+        public string ShowWhen; public string[] Shows;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
     /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
-    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.</summary>
+    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
+    /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
+    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null, bool masked = false)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
+            ShowWhen = showWhen, Shows = shows
         };
     }
 
@@ -125,6 +131,21 @@ public static class UiSchema
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
             if (s.Masked) item["masked"] = true;
+            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+            if (s.Shows != null)
+            {
+                var shows = new JObject();
+                foreach (var entry in s.Shows)
+                {
+                    int colon = entry.IndexOf(':');
+                    if (colon <= 0) continue;
+                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
+                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
+                    foreach (var key in entry.Substring(colon + 1).Split(','))
+                        if (key.Trim().Length > 0) keys.Add(key.Trim());
+                }
+                item["shows"] = shows;
+            }
             if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
@@ -544,7 +565,7 @@ public static class UiSchema
         S("maxRoundsPerCommand", 10, page: "game", label: "Max per command", help: "The ceiling for a number typed into the start command.", section: "Rounds", min: 1.0, row: "series", aliases: new[] { "MaxRoundsPerCommand" }),
         S("blitzNote", null, page: "game", help: "A blitz round ends on the first correct answer instead of running out the clock. Which rounds turn into one is down to chance.", kind: "note", section: "Blitz rounds"),
         S("enableBlitzTrivia", true, page: "game", label: "Enable blitz rounds", help: "Off, and every round runs its full answer time.", section: "Blitz rounds", aliases: new[] { "EnableBlitzTrivia" }),
-        S("blitzChance", 10, page: "game", label: "Chance (%)", help: "How often a round becomes a blitz round, as a percentage.", kind: "percent", section: "Blitz rounds", min: 0.0, max: 100.0, row: "blitz", aliases: new[] { "BlitzChance" }),
+        S("blitzChance", 10, page: "game", label: "Chance", help: "How often a round becomes a blitz round, as a percentage.", kind: "percent", section: "Blitz rounds", min: 0.0, max: 100.0, row: "blitz", aliases: new[] { "BlitzChance" }),
         S("blitzAnswerTimeSeconds", 20, page: "game", label: "Answer time", help: "How long a blitz round accepts answers, in seconds.", section: "Blitz rounds", min: 1.0, unit: "s", row: "blitz", aliases: new[] { "BlitzAnswerTimeSeconds" }),
         S("blitzCountdownStartSeconds", 10, page: "game", label: "First reminder at", help: "Seconds left when a blitz round gets its first reminder.", section: "Blitz rounds", min: 0.0, unit: "s", row: "blitz", aliases: new[] { "BlitzCountdownStartSeconds" }),
         S("matchingNote", null, page: "game", help: "Switch all four off and no answer can ever be accepted.", kind: "note", section: "Answer matching"),
@@ -571,9 +592,9 @@ public static class UiSchema
         S("veryHardMultiplier", 3.0, page: "game", label: "Very hard", help: "Multiplier for a very hard question of your own.", section: "Payouts", min: 0.0, row: "mult2", aliases: new[] { "VeryHardMultiplier" }),
         S("blitzMultiplier", 2.0, page: "game", label: "Blitz", help: "Stacked on top for a blitz round.", section: "Payouts", min: 0.0, row: "mult2", aliases: new[] { "BlitzMultiplier" }),
         S("subscriberBoostEnabled", false, page: "game", label: "Subscriber boost", help: "Pays subscribers more. Boosts stack with each other and apply after the multipliers above.", section: "Payouts", twitchOnly: true, row: "sub", aliases: new[] { "SubscriberBoostEnabled" }),
-        S("subscriberBoostPercent", 10.0, page: "game", label: "Subscriber (%)", help: "How much more a subscriber wins, as a percentage.", kind: "percent", section: "Payouts", min: 0.0, row: "sub", aliases: new[] { "SubscriberBoostPercent" }),
+        S("subscriberBoostPercent", 10.0, page: "game", label: "Subscriber", help: "How much more a subscriber wins, as a percentage.", kind: "percent", section: "Payouts", min: 0.0, row: "sub", aliases: new[] { "SubscriberBoostPercent" }),
         S("vipBoostEnabled", false, page: "game", label: "VIP boost", help: "Pays VIPs more. Boosts stack with each other and apply after the multipliers above.", section: "Payouts", twitchOnly: true, row: "vip", aliases: new[] { "VipBoostEnabled" }),
-        S("vipBoostPercent", 20.0, page: "game", label: "VIP (%)", help: "How much more a VIP wins, as a percentage.", kind: "percent", section: "Payouts", min: 0.0, row: "vip", aliases: new[] { "VipBoostPercent" }),
+        S("vipBoostPercent", 20.0, page: "game", label: "VIP", help: "How much more a VIP wins, as a percentage.", kind: "percent", section: "Payouts", min: 0.0, row: "vip", aliases: new[] { "VipBoostPercent" }),
         S("addictedNote", null, page: "game", help: "Viewers on the addicted list collect half of whatever the above works out to. That list is on the Access page.", kind: "note", section: "Payouts"),
         S("scoreboardTopN", 5, page: "game", label: "Places shown", help: "How many viewers the leaderboard lists.", section: "Scoreboard", min: 1.0, aliases: new[] { "ScoreboardTopN" }),
         S("broadcasterAllowed", false, page: "game", label: "Include the broadcaster", help: "Off, and your own account never appears on the board.", section: "Scoreboard", aliases: new[] { "BroadcasterAllowed" }),
@@ -648,7 +669,7 @@ public static class UiSchema
         S("overlayEnabled", false, page: "overlay", label: "Send rounds to the overlay", help: "Off, and the game sends the overlay nothing, so it stays empty.", section: "OBS overlay", aliases: new[] { "OverlayEnabled" }),
         S("websocketNote", null, page: "overlay", help: "Switch it on in Streamer.bot under Servers/Clients, WebSocket Server, and tick Auto Start. Port and password have to be the ones shown there.", kind: "note", section: "Streamer.bot's WebSocket server"),
         S("overlayPort", 8080, page: "overlay", label: "Port", help: "The port of Streamer.bot's WebSocket server. 8080 unless you changed it there.", section: "Streamer.bot's WebSocket server", min: 1.0, max: 65535.0, row: "server", aliases: new[] { "OverlayPort" }),
-        S("overlayPassword", "", page: "overlay", label: "Password", help: "Only if you switched on authentication for the WebSocket server; leave it empty otherwise. It goes into the overlay's URL in OBS, because the overlay signs in with it.", section: "Streamer.bot's WebSocket server", row: "server", aliases: new[] { "OverlayPassword" }),
+        S("overlayPassword", "", page: "overlay", label: "Password", help: "Only if you switched on authentication for the WebSocket server; leave it empty otherwise. It goes into the overlay's URL in OBS, because the overlay signs in with it.", section: "Streamer.bot's WebSocket server", row: "server", masked: true, aliases: new[] { "OverlayPassword" }),
         S("obsNote", null, page: "overlay", help: "Adds a browser source the size of your canvas to the scene below, pointed at the overlay. OBS has to be connected in Streamer.bot under Stream Apps, OBS Studio. Leave the scene empty to use the one that is live in OBS right now. A source of the same name is pointed at the overlay again instead of doubled up.", kind: "note", section: "Add it to OBS"),
         S("overlayObsConnection", 0, page: "overlay", label: "Connection #", help: "Which of Streamer.bot's OBS connections to use, if you have more than one. 0 is the first.", section: "Add it to OBS", min: 0.0, row: "obs", aliases: new[] { "OverlayObsConnection" }),
         S("overlayObsScene", "Trivia", page: "overlay", label: "Scene", help: "The scene the source is added to. It is created if it doesn't exist yet. Empty: the scene that is live in OBS when you press the button.", section: "Add it to OBS", row: "obs", aliases: new[] { "OverlayObsScene" }),
@@ -664,17 +685,17 @@ public static class UiSchema
         S("overlayShowTimer", true, page: "overlay", label: "The countdown", help: "The clock and the bar running down. Off, the round still ends on time, it just isn't shown.", section: "What it shows", aliases: new[] { "OverlayShowTimer" }),
         S("overlayShowWinners", true, page: "overlay", label: "Who won", help: "The winners' names with their points under the result. Off, the result only says how many were right.", section: "What it shows", aliases: new[] { "OverlayShowWinners" }),
         S("overlayShowLeaderboard", true, page: "overlay", label: "The leaderboard after a round", help: "Follows the result with the top of the leaderboard, ranked like !TL and leaving out the same viewers.", section: "What it shows", aliases: new[] { "OverlayShowLeaderboard" }),
-        S("overlayResultSeconds", 10, page: "overlay", label: "Result shown for (s)", help: "How long the answer and the winners stay up, and the leaderboard after them.", section: "What it shows", min: 1.0, unit: "s", row: "overlayTiming", aliases: new[] { "OverlayResultSeconds" }),
+        S("overlayResultSeconds", 10, page: "overlay", label: "Result shown for", help: "How long the answer and the winners stay up, and the leaderboard after them.", section: "What it shows", min: 1.0, unit: "s", row: "overlayTiming", aliases: new[] { "OverlayResultSeconds" }),
         S("overlayLeaderboardPlaces", 5, page: "overlay", label: "Leaderboard places", help: "How many viewers the overlay's leaderboard lists, up to 10.", section: "What it shows", min: 1.0, max: 10.0, row: "overlayTiming", aliases: new[] { "OverlayLeaderboardPlaces" }),
         S("overlayPosition", "bottom", page: "overlay", label: "Question", kind: "options", section: "Look", options: new[] { "bottom|Bottom centre", "top|Top centre" }, row: "placing", aliases: new[] { "OverlayPosition" }),
-        S("overlayScale", 100, page: "overlay", label: "Size %", help: "Scales the question and the leaderboard together. 100 is the normal size, from 50 to 150.", kind: "percent", section: "Look", min: 50.0, max: 150.0, row: "placing", aliases: new[] { "OverlayScale" }),
+        S("overlayScale", 100, page: "overlay", label: "Size", help: "Scales the question and the leaderboard together. 100 is the normal size, from 50 to 150.", kind: "percent", section: "Look", min: 50.0, max: 150.0, row: "placing", aliases: new[] { "OverlayScale" }),
         S("overlayAnimations", true, page: "overlay", label: "Animations", help: "The fade and slide when the question, the result and the leaderboard come and go. Off, they simply appear.", section: "Look", aliases: new[] { "OverlayAnimations" }),
         S("overlayAccentColor", "#9B8CFF", page: "overlay", label: "Accent", help: "The option numbers and the countdown bar.", kind: "colour", section: "Look", row: "colours1", aliases: new[] { "OverlayAccentColor" }),
         S("overlayCorrectColor", "#3DDC97", page: "overlay", label: "Right answer", help: "The right option, the winners and the border of a won round.", kind: "colour", section: "Look", row: "colours1", aliases: new[] { "OverlayCorrectColor" }),
         S("overlayBlitzColor", "#FF5C5C", page: "overlay", label: "Blitz", help: "A blitz round's border, chip and countdown bar.", kind: "colour", section: "Look", row: "colours1", aliases: new[] { "OverlayBlitzColor" }),
         S("overlayTextColor", "#FFFFFF", page: "overlay", label: "Text", help: "All the text. The chips, the option tiles and the lines are drawn in it too, faintly.", kind: "colour", section: "Look", row: "colours2", aliases: new[] { "OverlayTextColor" }),
         S("overlayPanelColor", "#101016", page: "overlay", label: "Panel", help: "The background behind the question and the leaderboard.", kind: "colour", section: "Look", row: "colours2", aliases: new[] { "OverlayPanelColor" }),
-        S("overlayPanelOpacity", 90, page: "overlay", label: "Panel opacity %", help: "0 lets your scene show through completely, 100 is solid.", kind: "percent", section: "Look", min: 0.0, max: 100.0, row: "colours2", aliases: new[] { "OverlayPanelOpacity" }),
+        S("overlayPanelOpacity", 90, page: "overlay", label: "Panel opacity", help: "0 lets your scene show through completely, 100 is solid.", kind: "percent", section: "Look", min: 0.0, max: 100.0, row: "colours2", aliases: new[] { "OverlayPanelOpacity" }),
         S("lookNote", null, page: "overlay", help: "Saved changes reach an overlay that is open in OBS straight away. Show a sample round to see them there.", kind: "note", section: "Look"),
         S("cssNote", null, page: "overlay", help: "Anything else goes into the Browser source's Custom CSS in OBS, which also wins over the colours above, for example :root { --tg-width: 980px; --tg-radius: 8px; }. Add &platform=twitch to the URL to show only one platform's rounds, and &debug=1 to see whether it reached Streamer.bot.", kind: "note", section: "Make it your own"),
         Msg("Round", "questionPrefixNormal", "❓", "Prefix (Normal)", "First line of a normal round's question message.", new string[0], alias: "QuestionPrefixNormal"),
@@ -749,11 +770,12 @@ public static class UiSchema
 public sealed class UiWindow
 {
     public string Title, Releases, Logo, LogPrefix, Language;
+    public bool Locked;
     public double? Width, Height;
     public readonly List<object> PageList = new List<object>();
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
     public JObject SenderMap, LogMap, AboutMap;
-    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray(), SectionList = new JArray();
     public readonly JObject LangMap = new JObject();
 
     /// <param name="title">Window title and About heading.</param>
@@ -779,6 +801,10 @@ public sealed class UiWindow
         }
         return this;
     }
+
+    /// <summary>Locks the layout: the window has no customise mode, and a user's renames, moves, hidden fields and
+    /// accent colour are not applied. Theme and language stay the user's to pick.</summary>
+    public UiWindow Lock(bool locked = true) { Locked = locked; return this; }
 
     /// <summary>The pages in order: a UiPage (UiSchema.P) or the id of a standard page ("messages", "log", "help", "about").</summary>
     public UiWindow Pages(params object[] pages) { PageList.AddRange(pages); return this; }
@@ -814,6 +840,14 @@ public sealed class UiWindow
     {
         foreach (var c in cooldowns)
             CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+        return this;
+    }
+
+    /// <summary>A section (by the name its settings declare) shown only while a condition holds, heading and fields
+    /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
+    public UiWindow Section(string name, string showWhen)
+    {
+        SectionList.Add(new JObject { ["name"] = name, ["showWhen"] = showWhen });
         return this;
     }
 
@@ -898,6 +932,7 @@ public sealed class UiWindow
         if (Logo != null) root["logo"] = Logo;
         if (LogPrefix != null) root["logPrefix"] = LogPrefix;
         if (Language != null) root["language"] = Language;
+        if (Locked) root["locked"] = true;
         if (Width.HasValue) root["width"] = Width.Value;
         if (Height.HasValue) root["height"] = Height.Value;
         if (PageList.Count > 0) root["pages"] = new JArray(PageList.Select(p => p is UiPage page ? page.ToJson() : (JToken)p.ToString()));
@@ -906,6 +941,7 @@ public sealed class UiWindow
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
         if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
         if (PillList.Count > 0) root["headerPills"] = PillList;
+        if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
