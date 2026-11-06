@@ -106,6 +106,8 @@ namespace UIFramework
                 setting.Options = setting.Options ?? known.Options;
                 setting.Placeholders = setting.Placeholders ?? known.Placeholders;
                 setting.UnlimitedAtZero = setting.UnlimitedAtZero || known.UnlimitedAtZero;
+                // A key that belongs on a line with others (OBS connection, scene, source) sits there unless the game says otherwise.
+                setting.Row = setting.Row ?? known.Row;
                 if (setting.Default == null || setting.Default.Type == JTokenType.Null)
                     setting.Default = known.Default?.DeepClone();
                 foreach (var alias in known.Aliases)

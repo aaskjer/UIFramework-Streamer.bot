@@ -76,6 +76,9 @@
     "leaderboardEmpty":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": [], "aliases": ["MsgScoreboardEmpty", "ScoreboardEmpty", "MsgNoLeaderboard", "MsgNoStatsFound"] },
 
     "overlayEnabled":        { "kind": "bool",     "default": false, "page": "overlay", "aliases": ["OverlayEnabled"] },
+    "obsConnectionId":       { "kind": "int",      "default": 0,     "page": "overlay", "min": 0, "row": "obs", "aliases": ["ObsConnectionId"] },
+    "obsSceneName":          { "kind": "string",   "default": "",    "page": "overlay", "row": "obs", "aliases": ["ObsSceneName"] },
+    "obsSourceName":         { "kind": "string",   "default": "",    "page": "overlay", "row": "obs", "aliases": ["ObsSourceName"] },
     "overlayFolder":         { "kind": "path",     "default": "",    "page": "overlay", "aliases": ["OverlayFolder"] },
     "overlayPort":           { "kind": "int",      "default": 0,     "page": "overlay", "min": 0, "max": 65535, "aliases": ["OverlayPort"] },
     "overlayPosition":       { "kind": "options",  "default": "bottom-left", "page": "overlay", "options": ["top-left", "top-right", "bottom-left", "bottom-right", "center"], "aliases": ["OverlayPosition"] },

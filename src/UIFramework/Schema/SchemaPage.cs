@@ -37,19 +37,9 @@ namespace UIFramework
         /// dimmed so they can be shown again.</summary>
         private static void FillCustomizing(PageContext ctx, StackPanel page, List<Setting> settings)
         {
-            string section = null;
+            // The page as the window shows it, rows and all, every field in a draggable frame; hidden ones dimmed.
             string pageId = settings.Count > 0 ? settings[0].Page : "";
-            foreach (var setting in settings.OrderBy(s => s.Order))
-            {
-                if (setting.Section != null && setting.Section != section)
-                {
-                    section = setting.Section;
-                    page.Children.Add(Ui.Section(section, page.Children.Count == 0));
-                }
-                var element = Render(ctx, setting);
-                if (element != null)
-                    page.Children.Add(Customize.Wrap(ctx, setting, element, pageId));
-            }
+            Fill(ctx, page, settings, true, (s, element) => Customize.Wrap(ctx, s, element, pageId));
             if (settings.Count == 0)
                 page.Children.Add(Ui.Note("No fields on this page. Drop one here from another page, or move one with its menu."));
         }
@@ -81,7 +71,8 @@ namespace UIFramework
         /// <summary>Marks the box an action's answer goes into, so a row can put it under itself.</summary>
         private const string AnswerBox = "action-answer";
 
-        private static void Fill(PageContext ctx, StackPanel page, List<Setting> settings, bool firstHeading)
+        private static void Fill(PageContext ctx, StackPanel page, List<Setting> settings, bool firstHeading,
+            Func<Setting, FrameworkElement, FrameworkElement> wrap = null)
         {
             string section = null;
             var row = new List<FrameworkElement>();
@@ -93,7 +84,8 @@ namespace UIFramework
             void Flush()
             {
                 if (row.Count == 0) return;
-                if (row.Count == 1 && rowKind != "bool")
+                // A number on its own keeps a third of the width, as it would beside two others.
+                if (row.Count == 1 && rowKind != "bool" && rowKind != "number")
                     page.Children.Add(row[0]);
                 else
                 {
@@ -136,7 +128,7 @@ namespace UIFramework
                 ctx.AfterBuild.Add(Update);
             }
 
-            foreach (var setting in settings.Where(s => !s.Hidden).OrderBy(s => s.Order))
+            foreach (var setting in settings.Where(s => wrap != null || !s.Hidden).OrderBy(s => s.Order))
             {
                 if (setting.Section != null && setting.Section != section)
                 {
@@ -151,6 +143,8 @@ namespace UIFramework
                 var element = Render(ctx, setting);
                 if (element == null)
                     continue;
+                if (wrap != null)
+                    element = wrap(setting, element);
                 sectionFields.Add(element);
 
                 string kind = NumberKinds.Contains(setting.Kind) ? "number" : setting.Kind == "bool" ? "bool" : "single";
@@ -307,6 +301,8 @@ namespace UIFramework
             }
             if (!string.IsNullOrWhiteSpace(s.ShowWhen)) show.Add(s.ShowWhen.Trim());
             if (!string.IsNullOrWhiteSpace(s.SectionShowWhen)) show.Add(s.SectionShowWhen.Trim());
+            if (ctx.Customizing)
+                return element;
             if (grey != null)
                 ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, grey, on => target.IsEnabled = on));
             if (show.Count > 0)

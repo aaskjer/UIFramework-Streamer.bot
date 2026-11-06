@@ -170,6 +170,7 @@ namespace UIFramework
                 Label = (string)e["label"],
                 Section = (string)e["section"],
                 Order = (int?)e["order"],
+                Row = (string)e["row"],
                 Hidden = e["hidden"]?.Type == JTokenType.Boolean ? (bool?)(bool)e["hidden"] : null
             };
         }
@@ -219,7 +220,9 @@ namespace UIFramework
 
     public sealed class LayoutField
     {
-        public string Page, Label, Section;
+        /// <summary>Row: the line the user put the field on, beside others with the same name; "" puts it on a line
+        /// of its own, out of a row the game declared. Null leaves the game's layout.</summary>
+        public string Page, Label, Section, Row;
         public int? Order;
         public bool? Hidden;
     }

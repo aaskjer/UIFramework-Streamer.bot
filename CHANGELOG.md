@@ -5,6 +5,13 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- The customise mode shows a page as the window lays it out, side by side where fields share a line, instead of
+  one field per line. Dropping a field at the left or right edge of another puts it beside that one; at its top
+  or bottom, on a line of its own. The layout file keeps it as `fields.<key>.row`.
+- The OBS connection, scene and source sit on one line, in every game that declares `obsConnectionId`,
+  `obsSceneName` and `obsSourceName` (now keys of the conventions, with a `row`). A number field on its own takes
+  a third of the width, as beside two others, instead of the whole line.
+
 ## [0.9.9] - 2026-11-06
 
 List tables edited in place; fields, switches and whole sections bound to a dropdown's options.

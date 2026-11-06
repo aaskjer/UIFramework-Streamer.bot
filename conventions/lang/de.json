@@ -372,7 +372,7 @@
     "messages.empty": "Leer, es wird nichts gesendet.",
     "messages.yourBot": "DeinBot",
     "messages.yourChannel": "DeinKanal",
-    "cust.drag.field": "An eine andere Stelle dieser Seite ziehen, oder auf eine Seite in der Leiste",
+    "cust.drag.field": "Ziehen an eine andere Stelle dieser Seite oder auf eine Seite der Leiste. Am linken oder rechten Rand eines anderen Felds loslassen stellt es daneben, oben oder unten in eine eigene Zeile.",
     "cust.drag.message": "An eine andere Stelle der Liste ziehen",
     "cust.rename": "Umbenennen…",
     "cust.rename.field": "'{0}' umbenennen",

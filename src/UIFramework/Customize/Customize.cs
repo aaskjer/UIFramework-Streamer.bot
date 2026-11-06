@@ -120,13 +120,61 @@ namespace UIFramework
                 DragDrop.DoDragDrop(box, new DataObject(FieldFormat, setting.Key), DragDropEffects.Move);
             };
             box.PreviewMouseLeftButtonUp += (s, e) => pressed = null;
-            // The drop itself is taken by the page (see AcceptDrops), so it lands wherever the mouse is let go.
+            // The drop itself is taken by the page (see AcceptDrops), so it lands wherever the mouse is let go. While
+            // a field is dragged over this one, an accent edge shows where it would go: left or right of it on the same
+            // line, above or below it on a line of its own.
+            var line = new SolidColorBrush(Theme.Line);
+            var accent = new SolidColorBrush(Theme.Accent);
+            void Plain() { box.BorderBrush = line; box.BorderThickness = new Thickness(1); }
             box.DragOver += (s, e) =>
             {
+                bool field = e.Data.GetDataPresent(FieldFormat) && (string)e.Data.GetData(FieldFormat) != setting.Key;
                 e.Effects = e.Data.GetDataPresent(FieldFormat) ? DragDropEffects.Move : DragDropEffects.None;
+                if (field)
+                {
+                    box.BorderBrush = accent;
+                    switch (Zone(box, e.GetPosition(box)))
+                    {
+                        case DropZone.Left: box.BorderThickness = new Thickness(4, 1, 1, 1); break;
+                        case DropZone.Right: box.BorderThickness = new Thickness(1, 1, 4, 1); break;
+                        case DropZone.Above: box.BorderThickness = new Thickness(1, 4, 1, 1); break;
+                        default: box.BorderThickness = new Thickness(1, 1, 1, 4); break;
+                    }
+                }
                 e.Handled = true;
             };
+            box.DragLeave += (s, e) => Plain();
+            box.Drop += (s, e) => Plain();
             return box;
+        }
+
+        private enum DropZone { Left, Right, Above, Below }
+
+        /// <summary>Where a drop over a field lands: the outer quarters of its width put the dragged field beside it,
+        /// the rest above or below it on a line of its own.</summary>
+        private static DropZone Zone(FrameworkElement box, Point at)
+        {
+            double w = box.ActualWidth, h = box.ActualHeight;
+            if (w > 0 && at.X < w * 0.25) return DropZone.Left;
+            if (w > 0 && at.X > w * 0.75) return DropZone.Right;
+            return h > 0 && at.Y < h / 2 ? DropZone.Above : DropZone.Below;
+        }
+
+        /// <summary>The field frame under a point of the page, wherever it sits (a line of its own or a row).</summary>
+        private static Border FieldAt(StackPanel page, Point at)
+        {
+            Border found = null;
+            VisualTreeHelper.HitTest(page, null, result =>
+            {
+                for (DependencyObject d = result.VisualHit; d != null && d != page; d = VisualTreeHelper.GetParent(d))
+                    if (d is Border b && b.Tag is string && b.AllowDrop)
+                    {
+                        found = b;
+                        return HitTestResultBehavior.Stop;
+                    }
+                return HitTestResultBehavior.Continue;
+            }, new PointHitTestParameters(at));
+            return found;
         }
 
         /// <summary>Makes a customise page take a dragged field anywhere. Let go over another field, the dragged
@@ -157,7 +205,18 @@ namespace UIFramework
                 string dragged = (string)e.Data.GetData(FieldFormat);
                 double y = e.GetPosition(page).Y;
                 e.Handled = true;
-                var boxes = page.Children.OfType<Border>().Where(b => b.Tag is string).ToList();
+
+                // Over another field: beside it on its line (left or right quarter), or above or below it on a line
+                // of its own.
+                var target = FieldAt(page, e.GetPosition(page));
+                if (target != null && (string)target.Tag != dragged)
+                {
+                    var zone = Zone(target, e.GetPosition(target));
+                    PlaceField(ctx, pageId, dragged, (string)target.Tag, zone == DropZone.Left || zone == DropZone.Above, zone == DropZone.Left || zone == DropZone.Right);
+                    return;
+                }
+
+                var boxes = Frames(page).ToList();
                 int from = boxes.FindIndex(b => (string)b.Tag == dragged);
                 int over = boxes.FindIndex(b =>
                 {
@@ -187,6 +246,50 @@ namespace UIFramework
                 }
                 ReorderFields(ctx, pageId, dragged, before);
             };
+        }
+
+        /// <summary>Every field frame of a page in reading order, rows included.</summary>
+        private static IEnumerable<Border> Frames(Panel panel)
+        {
+            foreach (UIElement child in panel.Children)
+            {
+                if (child is Border b && b.Tag is string)
+                    yield return b;
+                else if (child is Panel inner)
+                    foreach (var nested in Frames(inner))
+                        yield return nested;
+            }
+        }
+
+        /// <summary>Puts the dragged field before or after the target. Beside it: both on the target's line (its row,
+        /// or a new one named after it). Above or below it: the dragged field on a line of its own.</summary>
+        private static void PlaceField(PageContext ctx, string pageId, string dragged, string target, bool before, bool beside)
+        {
+            var targetSetting = ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == target);
+            var draggedSetting = ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == dragged);
+            if (targetSetting == null || draggedSetting == null) return;
+            if ((draggedSetting.Kind == "template" && draggedSetting.Page == "messages") != (pageId == "messages")) return;
+            if (beside)
+            {
+                string row = targetSetting.Row;
+                if (string.IsNullOrEmpty(row) || row.StartsWith("~", StringComparison.Ordinal))
+                {
+                    row = "row-" + target;
+                    ctx.Layout.SetField(target, "row", row);
+                }
+                ctx.Layout.SetField(dragged, "row", row);
+            }
+            else
+                ctx.Layout.SetField(dragged, "row", "");
+            var onPage = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            onPage.Remove(dragged);
+            int at = onPage.IndexOf(target);
+            onPage.Insert(at < 0 ? onPage.Count : before ? at : at + 1, dragged);
+            if (draggedSetting.Page != pageId)
+                ctx.Layout.SetField(dragged, "page", pageId);
+            for (int i = 0; i < onPage.Count; i++)
+                ctx.Layout.SetField(onPage[i], "order", i * 10);
+            Commit(ctx, pageId);
         }
 
         /// <summary>Puts the dragged field in front of the target (null: at the end) and writes an order for every
