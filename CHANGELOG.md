@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.10] - 2026-11-06
+
+The customise mode in the window's real layout, fields dropped beside each other; the OBS fields on one line.
+
 - The customise mode shows a page as the window lays it out, side by side where fields share a line, instead of
   one field per line. Dropping a field at the left or right edge of another puts it beside that one; at its top
   or bottom, on a line of its own. The layout file keeps it as `fields.<key>.row`.
