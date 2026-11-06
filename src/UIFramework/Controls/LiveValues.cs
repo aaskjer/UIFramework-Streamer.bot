@@ -64,6 +64,18 @@ namespace UIFramework
                 if (Math.Abs(at - slider.Value) > 1e-9) Ui.Flash(slider);
                 return true;
             }
+            if (parts.Lists.TryGetValue(key, out var list))
+            {
+                // A list takes its rows as an array, or as the JSON text of one (an action that built them as a string).
+                JArray rows = value as JArray;
+                if (rows == null && value?.Type == JTokenType.String)
+                    try { rows = JArray.Parse((string)value); } catch (Exception) { return false; }
+                if (rows == null) return false;
+                string was = list.Serialized;
+                list.Set(rows);
+                if (!string.Equals(was, list.Serialized, StringComparison.Ordinal)) Ui.Flash(list);
+                return true;
+            }
             return false;
         }
     }

@@ -60,14 +60,15 @@ conventions cannot know.
 | `hidden`       | no       | true: no field, but the value stays in the file                                             |
 | `confirm`      | no       | for `action`: a yes/no question before the game is asked                                    |
 | `row`          | no       | the name of a row: settings that name the same row one after the other share one line of the page, whatever their kind (a bet, a role and a Try button); without it numbers sit three to a line, switches two, everything else alone |
-| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold |
+| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold; with `hide:` in front (`hide:questionSource=igdb`) it is hidden instead |
+| `masked`       | no       | true: a text field shown as dots, with an eye button that reveals it (a token, a client secret); the value is saved like any other |
 | `readOnly`     | no       | true: shown, not editable (a status the game writes)                                        |
 | `twitchOnly`   | no       | for `bool`: the switch carries a "Twitch only" pill                                         |
 | `transient`    | no       | true: shown, never saved, never counted as a change; only a live snapshot for the game carries it (the inputs of a Try button) |
 | `live`         | no       | for `action`: the game gets the values as they stand in the window, unsaved and transient ones included. On any other field: the game is asked whenever the field changes (`test` with the field's key and the live values), and `set` in its answer fills other fields (a preset slider that sets five numbers) |
 | `panel`        | no       | for `action`: the answer is shown in a box under the button instead of the footer           |
 | `auto`         | no       | for `action`: no button; the game is asked when the page is shown and shortly after every change in the window (odds that follow the settings) |
-| `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `double`, `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the game's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself) |
+| `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `double` (half as wide), `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the game's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself). A trailing `|readonly` (`readOnly: true` in JSON) makes a column the game fills and the user only reads. From eight rows a list gets a search box that hides the rows the text does not occur in |
 | `file`         | no       | a file next to the settings file that holds this value instead (a word bank, a question list); relative or absolute |
 | `field`        | no       | with `file`: the property in that file that holds the value; without it the file itself is the value |
 | `platform`     | no       | for `emote`: `twitch`, `youtube` or `kick`, where the picture comes from                     |
@@ -118,7 +119,8 @@ The game answers `test` with a line of text, or with a JSON object:
   (YouTube as the emoji), after its `text` when there is one.
 - `bar` is a stacked bar with a legend.
 - `set` puts values into other fields of the window as if typed (nothing is saved until Save: a preset button); a
-  field whose value changes glows in the accent colour for a moment.
+  field whose value changes glows in the accent colour for a moment. A `list` takes its rows as an array (or
+  the JSON text of one), so an import can fill the list it merged into.
 - `status` is the line for the footer.
 - `clipboard` is text the window puts on the clipboard (an overlay URL): the game runs on Streamer.bot's thread,
   which has no clipboard, the window's has.
@@ -163,8 +165,9 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 What the game declares is English. When the layout file names another language (`de`), the window translates
 what the conventions know: the texts of the conventions' keys (`conventions/lang/de.json`, `keys`) replace the
 declared label and help of those keys, pages are titled by id (`pages`), and short declared texts are looked up
-by their English wording (`texts`): section headings, pill texts, page titles, option labels, message groups.
-What nothing knows stays as declared. The user's own layout (a renamed field or page) still has the last word.
+by their English wording (`texts`): section headings, pill texts, page titles, option labels, message groups,
+list column headers, the log page's switch, and the help and about pages line by line (headings, notes, what a
+command does, link texts). What nothing knows stays as declared. The user's own layout (a renamed field or page) still has the last word.
 
 A game adds what the conventions cannot know, its own keys and sections, with `Lang` on the window; several
 calls add up, and these texts are laid over the conventions' for that language:
@@ -175,15 +178,16 @@ calls add up, and these texts are laid over the conventions' for that language:
 ```
 
 In the schema this is `lang: { "de": { "keys": …, "pages": …, "texts": … } }`, the shape of a conventions
-language file. The help and about pages are shown as declared; a game that wants them in another language
-declares them in that language.
+language file. A game that wants its help and about pages in another language adds a `Tx` per heading and
+line; a line without one stays English.
 
 Settings the window puts on a standard page (a switch on `log`) sit above that page's own content. Within a
 page the table's order holds (`Override(order:)` moves one); a heading where `section` changes.
 
 What the game declares is checked when the window opens: an unknown kind, a requirement on a key that is not a
 setting, a page naming a pattern no setting matches, a minimum above a maximum. The window shows a banner and
-lists the findings on the About page, so the game's author sees them without reading Streamer.bot's log.
+lists the findings on top of the Log page (on the About page in a window without one), so the game's author
+sees them without reading Streamer.bot's log.
 
 A settings action that carries a spec of its own (the JSON with the same parts as the builder, see the git
 history of `docs/Spec.md` and `stub/Stub.spec.cs`) wins over the window in the schema.

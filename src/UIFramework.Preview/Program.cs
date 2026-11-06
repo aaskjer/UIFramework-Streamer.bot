@@ -147,6 +147,14 @@ namespace UIFramework.Preview
                 try { page = pageSpec.Build != null ? pageSpec.Build(ctx) : hooks.BuildPage(pageSpec.Id, ctx); }
                 catch (Exception ex) { Console.WriteLine("FAIL " + pageSpec.Id + ": " + ex); ok = false; continue; }
                 if (page == null) { Console.WriteLine("skip " + pageSpec.Id + " (no content)"); continue; }
+                // What the shell does once every page stands: requirements, live fields, pills. Here per page, so
+                // a greyed-out or hidden field shows as it would in the window.
+                foreach (var wire in ctx.AfterBuild)
+                {
+                    try { wire(); }
+                    catch (Exception ex) { Console.WriteLine("wire " + pageSpec.Id + ": " + ex.Message); }
+                }
+                ctx.AfterBuild.Clear();
                 window.Content = new System.Windows.Controls.Border { Background = new SolidColorBrush(Theme.ContentBg), Child = page };
                 window.Show();
                 parts.Refresh(pageSpec.Id);

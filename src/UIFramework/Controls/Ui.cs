@@ -288,6 +288,18 @@ namespace UIFramework
             box.VerticalContentAlignment = VerticalAlignment.Center;
         }
 
+        /// <summary>The same look for a PasswordBox, the masked field's front.</summary>
+        public static void StyleInput(PasswordBox box)
+        {
+            box.Background = new SolidColorBrush(Theme.InputBg);
+            box.Foreground = new SolidColorBrush(Theme.InputFg);
+            box.BorderBrush = new SolidColorBrush(Theme.InputBorder);
+            box.CaretBrush = new SolidColorBrush(Theme.InputFg);
+            box.Height = 28;
+            box.Padding = new Thickness(4, 0, 4, 0);
+            box.VerticalContentAlignment = VerticalAlignment.Center;
+        }
+
         public static void DigitsOnly(TextBox box)
         {
             box.PreviewTextInput += (s, e) => e.Handled = !FieldBinding.IsDigits(e.Text);

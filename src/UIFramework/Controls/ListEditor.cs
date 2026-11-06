@@ -27,6 +27,9 @@ namespace UIFramework
         private readonly TextBlock _empty;
         private readonly string _label;
         private readonly IHostHooks _hooks;
+        private readonly TextBox _search;
+        private readonly Grid _searchHost;
+        private const int SearchFrom = 8;
         private bool _loading;
 
         public event Action Changed;
@@ -49,6 +52,18 @@ namespace UIFramework
             AutomationProperties.SetName(this, label);
 
             var panel = new StackPanel();
+
+            // A search box above the rows once there are enough of them to lose one: rows whose cells don't contain
+            // the text are hidden, the count says how many show. Nothing else changes; a hidden row is still saved.
+            _search = new TextBox { ToolTip = Text.T("list.search.tip") };
+            Ui.StyleInput(_search);
+            _search.Height = 26;
+            AutomationProperties.SetName(_search, Text.T("list.search", label));
+            _searchHost = Ui.WithHint(_search, Text.T("list.search", label));
+            _searchHost.Margin = new Thickness(0, 0, 0, 6);
+            _searchHost.Visibility = Visibility.Collapsed;
+            _search.TextChanged += (sender, e) => Filter();
+            panel.Children.Add(_searchHost);
 
             var header = Header();
             panel.Children.Add(header);
@@ -231,6 +246,7 @@ namespace UIFramework
                 case "bool":
                 {
                     var check = new CheckBox { IsChecked = value != null && value.Type == JTokenType.Boolean && (bool)value, Template = Ui.SwitchTemplate(), Margin = new Thickness(0, 6, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+                    if (column.ReadOnly) check.IsEnabled = false;
                     AutomationProperties.SetName(check, column.Label ?? column.Key);
                     check.Checked += (sender, e) => Notify();
                     check.Unchecked += (sender, e) => Notify();
@@ -240,6 +256,7 @@ namespace UIFramework
                 {
                     var box = new TextBox { Text = text, Height = 52, TextWrapping = TextWrapping.Wrap, AcceptsReturn = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(4) };
                     Ui.StyleColors(box);
+                    if (column.ReadOnly) MakeReadOnly(box);
                     AutomationProperties.SetName(box, column.Label ?? column.Key);
                     box.TextChanged += (sender, e) => Notify();
                     return box;
@@ -248,6 +265,7 @@ namespace UIFramework
                 {
                     var box = new TextBox { Text = text, VerticalAlignment = VerticalAlignment.Top };
                     Ui.StyleInput(box);
+                    if (column.ReadOnly) MakeReadOnly(box);
                     if (column.Kind == "int" || column.Kind == "long") Ui.DigitsOnly(box);
                     else if (column.Kind == "double") Ui.DecimalsOnly(box);
                     AutomationProperties.SetName(box, column.Label ?? column.Key);
@@ -255,6 +273,15 @@ namespace UIFramework
                     return box;
                 }
             }
+        }
+
+        /// <summary>A cell the game fills and the user only reads: the text stays, selectable, but cannot be typed over.</summary>
+        private static void MakeReadOnly(TextBox box)
+        {
+            box.IsReadOnly = true;
+            box.IsTabStop = false;
+            box.Opacity = 0.8;
+            box.ToolTip = Text.T("list.readOnly.tip");
         }
 
         private static JToken CellValue(SettingColumn column, Control control)
@@ -281,10 +308,27 @@ namespace UIFramework
             for (int i = 0; i < _items.Count; i++)
                 _items[i].Number.Text = (i + 1).ToString(CultureInfo.InvariantCulture);
             _empty.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            _searchHost.Visibility = _items.Count >= SearchFrom || _search.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            Filter();
+        }
+
+        /// <summary>Hides the rows the search text does not occur in, and counts.</summary>
+        private void Filter()
+        {
+            string needle = (_search.Text ?? "").Trim();
+            int shown = 0;
+            foreach (var row in _items)
+            {
+                bool hit = needle.Length == 0 || row.Cells.Values.Any(c => c is TextBox box && box.Text.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0);
+                row.Element.Visibility = hit ? Visibility.Visible : Visibility.Collapsed;
+                if (hit) shown++;
+            }
             int usable = Value.Count;
-            _count.Text = _items.Count == usable
-                ? (usable == 1 ? Text.T("list.count.one") : Text.T("list.count.many", usable))
-                : Text.T("list.count.filled", usable, _items.Count);
+            _count.Text = needle.Length > 0 && shown != _items.Count
+                ? Text.T("list.count.shown", shown, _items.Count)
+                : _items.Count == usable
+                    ? (usable == 1 ? Text.T("list.count.one") : Text.T("list.count.many", usable))
+                    : Text.T("list.count.filled", usable, _items.Count);
             _count.ToolTip = Text.T("list.count.tip");
         }
 

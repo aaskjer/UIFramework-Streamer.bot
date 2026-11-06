@@ -103,16 +103,20 @@ namespace UIFramework
 
         private static void AddSection(StackPanel page, HelpSection section, PageContext ctx, bool first)
         {
+            // In another language the conventions and the game's own translations (Tx) translate what they know,
+            // heading by heading and line by line; what nothing knows stays as declared.
+            var lang = ctx.Spec.Conventions?.Lang;
+            string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
             if (!string.IsNullOrEmpty(section.Heading))
-                page.Children.Add(Ui.Section(section.Heading, first));
+                page.Children.Add(Ui.Section(T(section.Heading), first));
             foreach (var line in section.Lines)
             {
                 if (line.Note != null)
-                    page.Children.Add(Ui.Note(line.Note));
+                    page.Children.Add(Ui.Note(T(line.Note)));
                 else if (line.Command != null)
-                    page.Children.Add(Ui.CommandRow(line.Command, line.What ?? ""));
+                    page.Children.Add(Ui.CommandRow(line.Command, T(line.What ?? "")));
                 else if (line.LinkText != null)
-                    page.Children.Add(ctx.Fields.LinkLine(line.LinkText, line.Url));
+                    page.Children.Add(ctx.Fields.LinkLine(T(line.LinkText), line.Url));
                 else if (line.Live != null)
                 {
                     var live = new StackPanel();

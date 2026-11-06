@@ -119,6 +119,37 @@ namespace UIFramework
         public FrameworkElement TextField(string label, string key, string tooltip) =>
             Ui.Labeled(label, SettingBox(label, key, tooltip));
 
+        /// <summary>A text field shown as dots (a token, a client secret). The real value lives in the setting's box,
+        /// which carries the tag, so saving, resetting, change tracking and <c>set</c> work on it unchanged; a
+        /// PasswordBox in front of it mirrors it both ways, and the eye button swaps the two.</summary>
+        public FrameworkElement MaskedField(string label, string key, string tooltip)
+        {
+            var box = SettingBox(label, key, tooltip);
+            box.Visibility = Visibility.Collapsed;
+            var masked = new PasswordBox { Password = box.Text, ToolTip = tooltip, PasswordChar = '•' };
+            Ui.StyleInput(masked);
+            AutomationProperties.SetName(masked, label);
+            bool syncing = false;
+            masked.PasswordChanged += (s, e) => { if (syncing) return; syncing = true; box.Text = masked.Password; syncing = false; };
+            box.TextChanged += (s, e) => { if (syncing) return; syncing = true; masked.Password = box.Text; syncing = false; };
+            var eye = Ui.IconButton(Icons.Eye, Icons.Font, Text.T("field.masked.show"));
+            eye.Margin = new Thickness(6, 0, 0, 0);
+            eye.Click += (s, e) =>
+            {
+                bool reveal = box.Visibility != Visibility.Visible;
+                box.Visibility = reveal ? Visibility.Visible : Visibility.Collapsed;
+                masked.Visibility = reveal ? Visibility.Collapsed : Visibility.Visible;
+                eye.ToolTip = Text.T(reveal ? "field.masked.hide" : "field.masked.show");
+                if (reveal) box.Focus(); else masked.Focus();
+            };
+            var dock = new DockPanel();
+            DockPanel.SetDock(eye, Dock.Right);
+            dock.Children.Add(eye);
+            dock.Children.Add(box);
+            dock.Children.Add(masked);
+            return Ui.Labeled(label, dock);
+        }
+
         /// <summary>A setting stored as a fraction but typed as a percentage. The factor converts one into the
         /// other on save (0.01 for a fraction, 1 for a value already in percent), and the field clamps itself as
         /// soon as it loses focus so a typo cannot reach the saved file.</summary>

@@ -5,6 +5,14 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- What the last hosts asked for: an action's `set` fills a `list` (its rows as an array or as JSON text), a list
+  of eight rows or more gets a search box (hidden rows are still saved), a column may be `readonly` (the game
+  fills it, the user reads it), a text field may be `masked: true` (dots with an eye button, saved like any
+  other), and `requires` with `hide:` in front hides a field instead of greying it out. In another language the
+  window now translates list column headers, the name-list placeholders, the log page's switch and the help and
+  about pages line by line, through the conventions' `texts` and a game's `Tx`. The preview's `-shots` wires
+  requirements and live fields like the window does, so a greyed-out or hidden field shows as such. The host
+  block gains `masked:` on `S(...)` and `|readonly` on a column; a host takes it with its next release.
 - Hangman (v13.0.0) and Trivia (v9.0.0) are the seventh and eighth hosts on the generic stub; `hosts/hangman` and
   `hosts/trivia` carry their blocks and schemas. Gaps seen there, for later releases: an action's `set` cannot
   fill a `list`; lists have no search, filter or read-only column; no masked field kind for secrets; `requires`

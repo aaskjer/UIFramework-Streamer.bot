@@ -183,7 +183,9 @@ namespace UIFramework
             root.Children.Add(toolbar);
             if (!string.IsNullOrEmpty(spec.WriteLogKey))
             {
-                var writeLog = ctx.Fields.Toggle(spec.WriteLogLabel, spec.WriteLogKey, spec.WriteLogHelp);
+                var lang = ctx.Spec.Conventions?.Lang;
+                string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
+                var writeLog = ctx.Fields.Toggle(T(spec.WriteLogLabel), spec.WriteLogKey, T(spec.WriteLogHelp));
                 writeLog.Margin = new Thickness(0, 10, 0, 0);
                 DockPanel.SetDock(writeLog, Dock.Bottom);
                 root.Children.Add(writeLog);
