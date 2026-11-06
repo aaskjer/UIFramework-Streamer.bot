@@ -31,6 +31,7 @@ namespace UIFramework
         private readonly Grid _searchHost;
         private const int SearchFrom = 8;
         private bool _loading;
+        private readonly ListTable _table;
 
         public event Action Changed;
 
@@ -50,6 +51,15 @@ namespace UIFramework
             Tag = new FieldTag(key, FieldKind.List);
             ToolTip = string.IsNullOrEmpty(help) ? null : help;
             AutomationProperties.SetName(this, label);
+
+            // A list whose row would not fit one line (a question editor) is a table with an edit panel instead.
+            if (ListTable.Suits(_columns))
+            {
+                _table = new ListTable(label, _columns, _defaults, () => Changed?.Invoke());
+                Child = _table.Element;
+                _table.Set(value);
+                return;
+            }
 
             var panel = new StackPanel();
 
@@ -117,6 +127,7 @@ namespace UIFramework
         {
             get
             {
+                if (_table != null) return _table.Value;
                 var array = new JArray();
                 foreach (var row in _items)
                 {
@@ -140,6 +151,12 @@ namespace UIFramework
         /// <summary>Replaces every row.</summary>
         public void Set(JArray value)
         {
+            if (_table != null)
+            {
+                _table.Set(value);
+                Changed?.Invoke();
+                return;
+            }
             _loading = true;
             _items.Clear();
             _rows.Children.Clear();

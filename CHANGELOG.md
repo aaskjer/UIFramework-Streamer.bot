@@ -5,6 +5,18 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- A list with a `text` column or more than three columns is a table now, in the style of the Log page: one line
+  per row, a search box above, and the picked row in full underneath to edit, every column a field of its size;
+  Add row, Remove row and Restore defaults below. A row keeps the properties no column shows (a timestamp the game
+  writes). Lists of up to three short columns (an emote and its weight) keep the row editor.
+- The picked row of a grid (the Log page, a list table) is drawn in the accent colour instead of white on white.
+- In a named `row` a button takes only the width it needs, and an action's answer box goes under the whole row; the
+  box stays hidden until there is an answer. A section heading whose fields are all hidden by `hide:` hides too.
+- A column label in the host block may contain a bar (`"Wrong answers (a | b | c)"`); trailing `readonly` and an
+  emote platform are told apart from it. German texts for the common column names (Question, Category, Word,
+  Hint, Weight, …) in the conventions.
+- The preview's `-pick n` picks the n-th row of every grid before a shot, so a list table shows its edit panel.
+
 ## [0.9.7] - 2026-11-06
 
 Lists filled by an action, searched and with read-only columns; masked fields; requirements that hide; German deeper.

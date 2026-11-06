@@ -26,6 +26,7 @@ namespace UIFramework.Preview
             string theme = Arg(args, "-theme");
             string page = Arg(args, "-page");
             int settle = int.TryParse(Arg(args, "-settle"), out int ms) ? ms : 0;
+            Screenshots.Pick = int.TryParse(Arg(args, "-pick"), out int row) ? row : 0;
 
             Directory.CreateDirectory(Path.GetDirectoryName(settings));
             if (theme != null)
@@ -127,6 +128,9 @@ namespace UIFramework.Preview
 
     internal static class Screenshots
     {
+        /// <summary>-pick n: the n-th row of every grid is picked before the shot (a list table shows its edit panel).</summary>
+        public static int Pick;
+
         public static bool Take(WindowSpec spec, IHostLog log, IHostHooks hooks, string folder, string onlyPage, int settleMs = 0)
         {
             Directory.CreateDirectory(folder);
@@ -161,6 +165,12 @@ namespace UIFramework.Preview
                 window.UpdateLayout();
                 Settle(settleMs);
                 window.UpdateLayout();
+                if (Pick > 0)
+                {
+                    foreach (var grid in Descendants(window).OfType<System.Windows.Controls.DataGrid>())
+                        if (grid.Items.Count >= Pick) grid.SelectedIndex = Pick - 1;
+                    window.UpdateLayout();
+                }
                 var bitmap = new RenderTargetBitmap((int)window.Width, (int)window.Height, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render((Visual)window.Content);
                 var encoder = new PngBitmapEncoder();
@@ -173,6 +183,17 @@ namespace UIFramework.Preview
             }
             window.Close();
             return ok;
+        }
+
+        private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+        {
+            int count = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                yield return child;
+                foreach (var d in Descendants(child)) yield return d;
+            }
         }
 
         /// <summary>Runs the dispatcher for a while, so what arrives on other threads (emote pictures) is drawn.</summary>

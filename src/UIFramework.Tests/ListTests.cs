@@ -73,7 +73,12 @@ namespace UIFramework.Tests
             int changes = 0;
             FieldBinding.HookChangeTracking(page, () => changes++);
 
-            // Typing into a cell changes the value and counts as one changed field.
+            // A list with a text column is a table: picking a row opens its fields; typing into one changes the
+            // value and counts as one changed field.
+            DataGrid grid = null;
+            FieldBinding.VisitTree(page, n => { if (n is DataGrid g) grid = g; });
+            Assert.NotNull(grid);
+            grid.SelectedIndex = 0;
             var boxes = new List<TextBox>();
             FieldBinding.VisitTree(page, n => { if (n is TextBox b) boxes.Add(b); });
             boxes.First(b => b.Text == "CAR").Text = "CAR, FAR";

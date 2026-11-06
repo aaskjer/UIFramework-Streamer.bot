@@ -135,6 +135,7 @@ namespace UIFramework
                 ColumnHeaderStyle = Ui.HeaderStyle()
             };
 
+            Ui.StyleSelection(grid);
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
