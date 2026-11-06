@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.11] - 2026-11-07
+
+German only where a game offers it; Lock() keeps a window as declared.
+
 - German is optional for a game: the window offers English and only the languages the game declares with `Lang`.
   A game without `Lang("de")` is never shown half in German, whatever an old layout file asks for; the language
   picker lists only what is offered and is gone when that is English alone. `Lang("de")` with no texts offers
