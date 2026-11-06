@@ -38,6 +38,9 @@ namespace UIFramework
                     if (over.Hidden.HasValue) setting.Hidden = over.Hidden.Value;
                     if (over.Order.HasValue) setting.Order = over.Order.Value;
                 }
+                // A section shown only on a condition: its fields carry it, looked up by the declared name.
+                if (setting.Section != null && spec.SectionConditions.TryGetValue(setting.Section, out var sectionCondition))
+                    setting.SectionShowWhen = sectionCondition;
                 // Another language than the game's: the conventions (and the game's own translations, laid over
                 // them) translate what they know; the rest stays as declared. The options are the setting's own copy.
                 if (lang.Translates)
@@ -63,6 +66,7 @@ namespace UIFramework
                 }
                 settings.Add(setting);
             }
+            Shows(spec, settings);
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
             Check(spec, settings);
@@ -225,11 +229,62 @@ namespace UIFramework
             "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list"
         };
 
+        /// <summary>A dropdown's <c>shows</c> becomes a <c>showWhen</c> on every field it names: shown while one of the
+        /// options naming it is picked. A field that has a condition already gets this one on top (both must hold).</summary>
+        private static void Shows(WindowSpec spec, List<Setting> settings)
+        {
+            var byKey = settings.GroupBy(s => s.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+            var gathered = new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.Ordinal);   // field -> dropdown -> values
+            foreach (var dropdown in settings.Where(s => s.Shows != null))
+                foreach (var option in dropdown.Shows)
+                    foreach (var key in option.Value)
+                    {
+                        if (!byKey.ContainsKey(key))
+                        {
+                            spec.Problems.Add("'" + dropdown.Key + "' shows '" + key + "' with '" + option.Key + "', which is not a setting.");
+                            continue;
+                        }
+                        if (!gathered.TryGetValue(key, out var gates)) gathered[key] = gates = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+                        if (!gates.TryGetValue(dropdown.Key, out var values)) gates[dropdown.Key] = values = new List<string>();
+                        if (!values.Contains(option.Key)) values.Add(option.Key);
+                    }
+            foreach (var entry in gathered)
+            {
+                var field = byKey[entry.Key];
+                var conditions = entry.Value.Select(g => g.Key + "=" + string.Join("|", g.Value)).ToList();
+                if (!string.IsNullOrWhiteSpace(field.ShowWhen)) conditions.Insert(0, field.ShowWhen);
+                field.ShowWhen = string.Join(" && ", conditions);
+            }
+        }
+
+        /// <summary>A condition's gates are settings, and a dropdown's wanted values are among its options.</summary>
+        private static void CheckCondition(WindowSpec spec, Dictionary<string, Setting> byKey, string owner, string what, string condition)
+        {
+            string text = (condition ?? "").Trim();
+            if (text.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)) text = text.Substring(5);
+            foreach (var part in Requirement.Parse(text))
+            {
+                string key = part.Key.TrimStart('!').Trim();
+                if (!byKey.TryGetValue(key, out var gate))
+                {
+                    spec.Problems.Add(owner + " " + what + " '" + key + "', which is not a setting.");
+                    continue;
+                }
+                if ((part.Op == "=" || part.Op == "!=") && gate.Options != null && gate.Options.Count > 0 && (gate.Kind == "options" || gate.Kind == "slider"))
+                    foreach (var value in part.Values)
+                        if (!gate.Options.Any(o => string.Equals(o.Value, value, StringComparison.OrdinalIgnoreCase)))
+                            spec.Problems.Add(owner + " " + what + " '" + key + "=" + value + "', but '" + key + "' has no option '" + value + "'.");
+            }
+        }
+
         /// <summary>What a host's author got wrong, in words: an unknown kind, a requirement on a key that is not
         /// there, a page or pill naming a setting that does not exist.</summary>
         private static void Check(WindowSpec spec, List<Setting> settings)
         {
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
+            var byKey = settings.GroupBy(s => s.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+            foreach (var section in spec.SectionConditions)
+                CheckCondition(spec, byKey, "The section '" + section.Key + "'", "is shown when", section.Value);
             foreach (var s in settings)
             {
                 if (s.Kind != null && !Kinds.Contains(s.Kind))
@@ -239,11 +294,9 @@ namespace UIFramework
                 if (s.Kind == "list" && (s.Columns == null || s.Columns.Count == 0))
                     spec.Problems.Add("'" + s.Key + "' is a list without columns.");
                 if (!string.IsNullOrWhiteSpace(s.Requires))
-                {
-                    var m = System.Text.RegularExpressions.Regex.Match(s.Requires.Trim(), @"^(?:hide:\s*)?!?\s*([A-Za-z_]\w*)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                    if (m.Success && !keys.Contains(m.Groups[1].Value))
-                        spec.Problems.Add("'" + s.Key + "' requires '" + m.Groups[1].Value + "', which is not a setting.");
-                }
+                    CheckCondition(spec, byKey, "'" + s.Key + "'", "requires", s.Requires);
+                if (!string.IsNullOrWhiteSpace(s.ShowWhen))
+                    CheckCondition(spec, byKey, "'" + s.Key + "'", "is shown when", s.ShowWhen);
                 if (s.Min.HasValue && s.Max.HasValue && s.Min > s.Max)
                     spec.Problems.Add("'" + s.Key + "' has a minimum above its maximum.");
             }

@@ -61,6 +61,8 @@ conventions cannot know.
 | `confirm`      | no       | for `action`: a yes/no question before the game is asked                                    |
 | `row`          | no       | the name of a row: settings that name the same row one after the other share one line of the page, whatever their kind (a bet, a role and a Try button; a button takes the width it needs, an answer `panel` goes under the row); without it numbers sit three to a line, switches two, everything else alone |
 | `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold; with `hide:` in front (`hide:questionSource=igdb`) it is hidden instead, and a section heading whose fields are all hidden hides with them |
+| `showWhen`     | no       | the field is shown only while the condition holds, whatever its kind (a field, a switch, a note, a button, a list): `questionSource=igdb`; several values, one of which must be picked, `questionSource=opentdb|wikidata`; none of them, `questionSource!=custom|igdb`; several conditions that must all hold, `mixOwn && questionSource!=custom`. `requires` still greys out; both can be set |
+| `shows`        | no       | on a dropdown: per option value the keys of the fields that option shows, `{ "igdb": ["igdbClientId", "igdbClientSecret"], "opentdb": ["cacheSize"] }` (host block: `shows: new[] { "igdb: igdbClientId, igdbClientSecret", "opentdb: cacheSize" }`). A field named by several options shows with any of them; a field with a `showWhen` of its own needs both |
 | `masked`       | no       | true: a text field shown as dots, with an eye button that reveals it (a token, a client secret); the value is saved like any other |
 | `readOnly`     | no       | true: shown, not editable (a status the game writes)                                        |
 | `twitchOnly`   | no       | for `bool`: the switch carries a "Twitch only" pill                                         |
@@ -159,6 +161,19 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Help(H(heading, lines…), …)` | the Help page: a line is a note (a string), `Cmd(command, what)` or `Link(text, url)`         |
 | `Lang(code, texts…)` | the game's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)` |
 | `About(credits, sections, links, streamerBotLink, authorLink)` | the About page; sections like help; the Streamer.bot and author links are on unless turned off |
+
+### Sections shown on a condition
+
+A whole section, heading and fields, can depend on a dropdown or a switch: the window's `sections` name it by the
+section its settings declare and give the condition, the same as a field's `showWhen`.
+
+```csharp
+    .Section("IGDB access", showWhen: "questionSource=igdb")
+```
+
+In the schema: `window.sections: [ { "name": "IGDB access", "showWhen": "questionSource=igdb" } ]`. A field's own
+`showWhen` and its section's both have to hold. When the window opens, every condition is checked: a key that is
+not a setting, or a value a dropdown has no option for (`questionSource=IGBD`), is listed on the Log page.
 
 ### Languages
 

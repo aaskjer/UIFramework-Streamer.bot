@@ -122,25 +122,31 @@ public static class UiSchema
         public bool TwitchOnly;
         // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
         public bool Masked;
+        // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
+        // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
+        public string ShowWhen; public string[] Shows;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
     /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
-    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.</summary>
+    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
+    /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
+    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null, bool masked = false)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
     {
         return new Setting
         {
             Key = key, Default = @default, Page = page, Label = label, Help = help, Kind = kind, Section = section, Min = min, Max = max,
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
-            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked
+            Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
+            ShowWhen = showWhen, Shows = shows
         };
     }
 
@@ -215,6 +221,21 @@ public static class UiSchema
             if (s.Auto) item["auto"] = true;
             if (s.TwitchOnly) item["twitchOnly"] = true;
             if (s.Masked) item["masked"] = true;
+            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+            if (s.Shows != null)
+            {
+                var shows = new JObject();
+                foreach (var entry in s.Shows)
+                {
+                    int colon = entry.IndexOf(':');
+                    if (colon <= 0) continue;
+                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
+                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
+                    foreach (var key in entry.Substring(colon + 1).Split(','))
+                        if (key.Trim().Length > 0) keys.Add(key.Trim());
+                }
+                item["shows"] = shows;
+            }
             if (s.Row != null) item["row"] = s.Row;
             if (s.Field != null) item["field"] = s.Field;
             if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
@@ -298,7 +319,7 @@ public sealed class UiWindow
     public readonly List<object> PageList = new List<object>();
     public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
     public JObject SenderMap, LogMap, AboutMap;
-    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray();
+    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray(), SectionList = new JArray();
     public readonly JObject LangMap = new JObject();
 
     /// <param name="title">Window title and About heading.</param>
@@ -359,6 +380,14 @@ public sealed class UiWindow
     {
         foreach (var c in cooldowns)
             CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+        return this;
+    }
+
+    /// <summary>A section (by the name its settings declare) shown only while a condition holds, heading and fields
+    /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
+    public UiWindow Section(string name, string showWhen)
+    {
+        SectionList.Add(new JObject { ["name"] = name, ["showWhen"] = showWhen });
         return this;
     }
 
@@ -451,6 +480,7 @@ public sealed class UiWindow
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
         if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
         if (PillList.Count > 0) root["headerPills"] = PillList;
+        if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;

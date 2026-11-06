@@ -156,6 +156,11 @@ namespace UIFramework
                 }
             }
 
+            if (root["sections"] is JArray sectionList)
+                foreach (var section in sectionList.OfType<JObject>())
+                    if (!string.IsNullOrWhiteSpace((string)section["name"]) && !string.IsNullOrWhiteSpace((string)section["showWhen"]))
+                        spec.SectionConditions[(string)section["name"]] = (string)section["showWhen"];
+
             if (root["headerPills"] is JArray pillList)
                 foreach (var pill in pillList.OfType<JObject>())
                 {
