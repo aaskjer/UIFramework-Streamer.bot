@@ -42,5 +42,39 @@ namespace UIFramework.Tests
             Assert.Null(EmotePictures.YouTubeUrl("🍒", null));
             Assert.Null(EmotePictures.YouTubeUrl(":no-such-emoji:", null));
         }
+
+        [Theory]
+        [InlineData("Kappa", "25")]
+        [InlineData("PogChamp", "305954156")]
+        [InlineData("LUL", "425618")]
+        [InlineData("FailFish", "360")]
+        public void Twitchs_global_emotes_have_their_id_in_the_embedded_table(string name, string id)
+        {
+            Assert.Equal(id, EmotePictures.TwitchGlobalTable()[name]);
+        }
+
+        [Fact]
+        public void The_twitch_table_tells_names_apart_by_case()
+        {
+            var table = EmotePictures.TwitchGlobalTable();
+            Assert.True(table.Count > 200);
+            Assert.NotEqual(table[":p"], table[":P"]);
+            Assert.False(table.ContainsKey("kappa"));
+        }
+
+        [Fact]
+        public void Without_a_twitch_token_a_global_emote_still_has_its_picture()
+        {
+            // A game whose Streamer.bot has no Twitch login hands over no token: Kappa comes from the embedded list.
+            var lookup = EmotePictures.TwitchLookup(new SourcesWithoutToken()).GetAwaiter().GetResult();
+            Assert.True(lookup.TryGetValue("Kappa", out var kappa));
+            Assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/25/default/{theme}/2.0", kappa.Url);
+            Assert.Null(kappa.Source);
+        }
+
+        private sealed class SourcesWithoutToken : NoHooks
+        {
+            public override string EmoteSources() => "{\"twitchUserId\":null,\"clientId\":null,\"token\":null}";
+        }
     }
 }

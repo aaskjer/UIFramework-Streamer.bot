@@ -5,6 +5,11 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- **Twitch emotes show without a Twitch login.** A fresh Streamer.bot has no Twitch token, so the window could not
+  ask the Twitch API and Kappa, LUL and the other global emotes stayed without a picture. Their ids now ship in
+  `conventions/emotes/twitch.json`; with a login the window still asks Twitch itself, for the channel's emotes too.
+  `tools/update-twitch-emotes.ps1` refreshes the list.
+
 - **The coins icon shows.** A page with the conventions' `coins` icon (Points & Bets) showed an empty box: 🪙 is
   missing from the emoji font WPF draws with, so it is 💰 now.
 - **Docs with pictures, and the conventions published.** Getting-Started, Customize, Schema and the README show
