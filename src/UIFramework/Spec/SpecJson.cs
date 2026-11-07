@@ -134,7 +134,8 @@ namespace UIFramework
                     foreach (var link in links.OfType<JObject>())
                         spec.About.Links.Add(new Link((string)link["text"], (string)link["url"]));
                 if (about["streamerBotLink"]?.Type == JTokenType.Boolean) spec.About.ShowStreamerBotLink = (bool)about["streamerBotLink"];
-                if (about["authorLink"]?.Type == JTokenType.Boolean) spec.About.ShowAuthorLink = (bool)about["authorLink"];
+                if (about["defaultLinks"]?.Type == JTokenType.Boolean) spec.About.ShowDefaultLinks = (bool)about["defaultLinks"];
+                // "authorLink" of older host blocks is read no more: the framework names no author of its own.
             }
 
             if (root["log"] is JObject log)

@@ -26,6 +26,16 @@
     "accent":   { "kind": "colour",  "default": "" }
   },
 
+  "about": {
+    "$comment": "Die Links, mit denen jede About-Seite endet, solange das Spiel sie nicht abschaltet (UiWindow.About(defaultLinks: false), im Schema about.defaultLinks). text: ein Key aus dem ui-Abschnitt der Sprachdateien oder fester Text; url: eine Adresse, {issues} ist der Issue-Tracker des Spiels, wenn es sein Repository nennt (releases), sonst der des Frameworks (issues).",
+    "links": [
+      { "text": "about.framework", "url": "https://aaskjer.github.io/projects/uiframework/" },
+      { "text": "Streamer.bot",    "url": "https://streamer.bot" },
+      { "text": "about.report",    "url": "{issues}" }
+    ],
+    "issues": "https://github.com/aaskjer/UIFramework-Streamer.bot/issues"
+  },
+
   "keys": {
     "useBot":            { "kind": "bool",     "default": true,  "page": "general",  "aliases": ["UseBot", "IsBot"] },
     "sendAction":        { "kind": "bool",     "default": false, "page": "general",  "aliases": ["SendAction"] },

@@ -13,7 +13,8 @@ namespace UIFramework
     /// <c>"cpBetMode=fixed"</c>, <c>"cpBetMode!=free"</c>, with <c>=</c>, <c>!=</c>, <c>&lt;</c>, <c>&lt;=</c>,
     /// <c>&gt;</c>, <c>&gt;=</c>. <c>=</c> and <c>!=</c> take several values separated by <c>|</c>: one of them,
     /// none of them (<c>"questionSource=opentdb|wikidata"</c>). Conditions joined by <c>&amp;&amp;</c> must all hold.
-    /// The field follows its gates live; a gate the window does not have counts as holding.
+    /// The field follows its gates live; a gate the window does not show is read from the saved value, and one the
+    /// settings do not know at all counts as holding.
     /// </summary>
     public static class Requirement
     {

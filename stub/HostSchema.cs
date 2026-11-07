@@ -366,15 +366,17 @@ public sealed class UiWindow
         return this;
     }
 
-    /// <summary>The About page: the credits line, sections like help, links; the Streamer.bot and author links are on unless turned off.</summary>
-    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool authorLink = true)
+    /// <summary>The About page: the game's credits under its name, sections like help, the game's own links. The page
+    /// ends with the framework's links (its page, Streamer.bot, where to report a problem); defaultLinks: false leaves
+    /// them out, streamerBotLink: false only that one. authorLink is kept for older games and no longer does anything.</summary>
+    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool authorLink = true, bool defaultLinks = true)
     {
         AboutMap = new JObject();
         if (credits != null) AboutMap["credits"] = credits;
         if (sections != null) AboutMap["sections"] = new JArray(sections.Select(s => s.ToJson()));
         if (links != null) AboutMap["links"] = new JArray(links.Select(l => new JObject { ["text"] = l.Json["link"], ["url"] = l.Json["url"] }));
         if (!streamerBotLink) AboutMap["streamerBotLink"] = false;
-        if (!authorLink) AboutMap["authorLink"] = false;
+        if (!defaultLinks) AboutMap["defaultLinks"] = false;
         return this;
     }
 
@@ -607,7 +609,9 @@ public sealed class UiSettings
         }
         catch (Exception ex)
         {
-            string why = Path.GetFileName(path) + " could not be read (" + ex.Message + ")";
+            string file;
+            try { file = Path.GetFileName(path); } catch (Exception) { file = path; }
+            string why = file + " could not be read (" + ex.Message + ")";
             UiSettings stand;
             try { stand = File.Exists(path + ".bak") ? new UiSettings(Read(path + ".bak")) { FromBackup = true, Problem = why + "; the backup of the last save is used." } : null; }
             catch (Exception) { stand = null; }

@@ -171,7 +171,7 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Help(H(heading, lines…), …)` | the Help page: a line is a note (a string), `Cmd(command, what)` or `Link(text, url)`         |
 | `Lang(code, texts…)` | the game's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)`. Declaring a language is also what offers it: `Lang("de")` with no texts offers German from the conventions alone |
 | `Lock()`             | locks the layout: no customise mode (the pen button is gone, and with it export and import), and a user's renames, moves, hidden fields and accent colour in `uiframework.layout.json` are not applied. The theme stays the user's, and so does the language, picked in the footer when the game offers more than one. In the schema `"locked": true` |
-| `About(credits, sections, links, streamerBotLink, authorLink)` | the About page; sections like help; the Streamer.bot and author links are on unless turned off |
+| `About(credits, sections, links, streamerBotLink, authorLink, defaultLinks)` | the About page: the game's credits under its name (none unless given; `Tx` translates them), sections like help, the game's own links. It ends with the framework's links from `conventions/keys.json` (`about.links`: the UIFramework page, Streamer.bot, *Report something that looks wrong*, which goes to the game's issues when it names its repository, else the framework's); `defaultLinks: false` leaves them out, `streamerBotLink: false` only that one. `authorLink` does nothing any more. In the schema `about: { credits, sections, links: [ { text, url } ], defaultLinks, streamerBotLink }` |
 
 ### Sections shown on a condition
 

@@ -20,6 +20,11 @@ namespace UIFramework
         public readonly Dictionary<string, Setting> FrameworkKeys = new Dictionary<string, Setting>(StringComparer.Ordinal);
         public readonly List<string> KnownPlaceholders = new List<string>();
         public Lang Lang { get; private set; } = new Lang();
+        /// <summary>The links every About page ends with (keys.json's <c>about.links</c>): a text (a ui text key or
+        /// plain text) and an address, where <c>{issues}</c> stands for the game's issue tracker, else <see cref="FrameworkIssues"/>.</summary>
+        public readonly List<Link> AboutLinks = new List<Link>();
+        /// <summary>The framework's issue tracker: where <c>{issues}</c> points for a game that names no repository.</summary>
+        public string FrameworkIssues = "https://github.com/aaskjer/UIFramework-Streamer.bot/issues";
 
         private static Conventions _default;
 
@@ -69,6 +74,14 @@ namespace UIFramework
                     conventions.FrameworkKeys[property.Name] = ParseKey(property.Name, (JObject)property.Value);
             if (root["placeholders"]?["known"] is JArray known)
                 conventions.KnownPlaceholders.AddRange(known.Select(k => k.ToString()));
+            if (root["about"] is JObject about)
+            {
+                foreach (var link in (about["links"] as JArray ?? new JArray()).OfType<JObject>())
+                    if (!string.IsNullOrWhiteSpace((string)link["url"]))
+                        conventions.AboutLinks.Add(new Link((string)link["text"] ?? (string)link["url"], (string)link["url"]));
+                if (!string.IsNullOrWhiteSpace((string)about["issues"]))
+                    conventions.FrameworkIssues = (string)about["issues"];
+            }
             return conventions;
         }
 

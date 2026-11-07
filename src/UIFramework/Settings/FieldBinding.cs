@@ -43,6 +43,10 @@ namespace UIFramework
                     settings[ct.Key] = chk.IsChecked ?? false;
                 else if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt && (transientToo || !tt.Transient))
                 {
+                    // No number in a number box: only one hidden by a condition gets this far (the check before saving
+                    // names a shown one). It keeps what is stored instead of saving 0.
+                    if (!transientToo && IsNumberKind(tt) && !IsValidNumber(tt, txt.Text))
+                        return;
                     settings[tt.Key] = ValueOf(tt, txt.Text, out bool clamped);
                     // A number pulled into its min/max shows what was saved, so the box and the file never differ.
                     if (clamped && !transientToo)
@@ -190,6 +194,20 @@ namespace UIFramework
             return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number);
         }
 
+        /// <summary>A stored whole number exactly (a number token or digits as text); false for a fraction, anything
+        /// else or a number beyond a long.</summary>
+        public static bool TryLong(JToken value, out long number)
+        {
+            number = 0;
+            if (value == null) return false;
+            if (value.Type == JTokenType.Integer)
+            {
+                try { number = (long)value; return true; }
+                catch (Exception) { return false; }
+            }
+            return value.Type == JTokenType.String && long.TryParse(((string)value).Trim(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out number);
+        }
+
         /// <summary>The text a control shows for a stored value.</summary>
         public static string Display(FieldTag tag, JToken value)
         {
@@ -208,6 +226,12 @@ namespace UIFramework
                 case FieldKind.Long:
                 case FieldKind.Int:
                 {
+                    // A whole number as it is: through a double, one past 2^53 (an id) would lose its last digits.
+                    if (tag.Factor == 1.0 && TryLong(value, out long exact))
+                    {
+                        long top = tag.Kind == FieldKind.Int ? int.MaxValue : long.MaxValue;
+                        return tag.UnlimitedAtZero && exact >= top ? "0" : exact.ToString(CultureInfo.InvariantCulture);
+                    }
                     if (!TryNumber(value, out double d)) return value == null || value.Type == JTokenType.Null ? "0" : "";
                     double ceiling = tag.Kind == FieldKind.Int ? int.MaxValue : long.MaxValue;
                     if (tag.UnlimitedAtZero && d >= ceiling) return "0";
@@ -332,16 +356,35 @@ namespace UIFramework
             var keys = new HashSet<string>(StringComparer.Ordinal);
             VisitTree(root, node =>
             {
-                if (!(node is TextBox txt) || !(FieldTag.Of(txt.Tag) is FieldTag tag) || tag.Transient) return;
-                if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
+                if (!(node is FrameworkElement fe) || !(FieldTag.Of(fe.Tag) is FieldTag tag) || tag.Transient) return;
                 var have = settings?[tag.Key];
                 if (have == null || have.Type == JTokenType.Null) return;
-                var would = ValueOf(tag, txt.Text);
-                if (!TryNumber(would, out double b)) return;
-                if (!TryNumber(have, out double a) || Math.Abs(a - b) > 1e-9 * Math.Max(1, Math.Max(Math.Abs(a), Math.Abs(b))))
-                    keys.Add(tag.Key);
+                JToken would;
+                if (node is TextBox txt)
+                {
+                    // Number boxes only: a text is shown as it is stored.
+                    if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
+                    would = ValueOf(tag, txt.Text);
+                }
+                else if (node is CheckBox chk) would = chk.IsChecked ?? false;                    // "yes" shown as off
+                else if (node is ComboBox cmb && cmb.SelectedItem is ComboBoxItem selected) would = ComboValue(tag, selected.Tag);
+                else if (node is OptionSlider slider) would = slider.Stored;                      // a scale pulls into its range
+                else return;
+                if (!SameValue(have, would)) keys.Add(tag.Key);
             });
             return keys;
+        }
+
+        /// <summary>Two stored values the same: numbers by value (in any form, float noise aside), switches by
+        /// value, anything else by its invariant text.</summary>
+        private static bool SameValue(JToken a, JToken b)
+        {
+            if (TryLong(a, out long la) && TryLong(b, out long lb)) return la == lb;
+            if (TryNumber(a, out double x) && TryNumber(b, out double y))
+                return Math.Abs(x - y) <= 1e-9 * Math.Max(1, Math.Max(Math.Abs(x), Math.Abs(y)));
+            if (a.Type == JTokenType.Boolean || b.Type == JTokenType.Boolean)
+                return a.Type == b.Type && (bool)a == (bool)b;
+            return string.Equals(Invariant(a), Invariant(b), StringComparison.Ordinal);
         }
 
         /// <summary>The keys the window has a field for that holds a value (not transient, not read-only): what it shows.</summary>
@@ -410,13 +453,22 @@ namespace UIFramework
                 // Never saved, or hidden by a showWhen or a section's condition: nothing to stop a save for.
                 if (tag.Transient || HiddenOnPage(box, root)) return;
                 string text = box.Text.Trim();
-                bool valid = tag.Kind == FieldKind.Double ? TryParseTyped(text, out _)
-                    : tag.Factor != 1.0 ? TryParseTyped(text, out double typed) && (typed >= 0 || AllowsNegative(tag))
-                    : IsWhole(text, AllowsNegative(tag));
-                if (!valid)
+                if (!IsValidNumber(tag, text))
                     invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": " + Text.T("field.empty") : ": '" + text + "'"));
             });
             return invalid;
+        }
+
+        private static bool IsNumberKind(FieldTag tag) => tag.Kind == FieldKind.Int || tag.Kind == FieldKind.Long || tag.Kind == FieldKind.Double;
+
+        /// <summary>Whether a number box's text is a number its field takes: a decimal, a whole number (with a minus
+        /// where allowed), a duration in its unit.</summary>
+        private static bool IsValidNumber(FieldTag tag, string text)
+        {
+            text = (text ?? "").Trim();
+            return tag.Kind == FieldKind.Double ? TryParseTyped(text, out _)
+                : tag.Factor != 1.0 ? TryParseTyped(text, out double typed) && (typed >= 0 || AllowsNegative(tag))
+                : IsWhole(text, AllowsNegative(tag));
         }
 
         /// <summary>Whether something between the element and its page is collapsed (a showWhen, a section's condition).

@@ -205,7 +205,9 @@ namespace UIFramework
                 _log.Warn(_spec.LogPrefix + " " + LayoutFile.FileName + ": " + layout.Problem);
             if (layout.AdoptFromHost(settings, "darkMode", "DarkMode"))
             {
-                try { layout.Save(); if (loaded.Damaged == null) _store.Save(Sidecars.Strip(settings, _spec.ResolvedSettings)); }
+                // Split with nothing changed: a list still in the settings file whose own file is not there yet moves
+                // there now, instead of being dropped with the theme key's write.
+                try { layout.Save(); if (loaded.Damaged == null) _store.Save(Sidecars.Split(settings, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>())); }
                 catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Theme not moved to the layout file: " + ex.Message); }
             }
             layout.ApplyTheme();
@@ -699,7 +701,7 @@ namespace UIFramework
                 SettingsLoad now = null;
                 try { now = _store.Load(); } catch (Exception) { now = null; }
                 var fresh = SettingsStore.ResetShown(now != null && now.Damaged == null ? now.Settings : settings, defaults, _spec.ResolvedSettings, FieldBinding.ShownKeys(pageHost));
-                try { _store.Save(Sidecars.Strip(fresh, _spec.ResolvedSettings)); }
+                try { _store.Save(Sidecars.Split(fresh, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>())); }
                 catch (Exception ex)
                 {
                     SetStatus(Text.T("status.notReset"), Theme.DangerText, ex.Message);
@@ -1005,8 +1007,10 @@ namespace UIFramework
                     if (now.Damaged == null)
                     {
                         target = now.Settings;
-                        Sidecars.Load(target, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix);
-                        foreach (var key in changed)
+                        // A list file that cannot be read now keeps the window's copy of its lists, not the defaults.
+                        var unreadable = new HashSet<string>(StringComparer.Ordinal);
+                        Sidecars.Load(target, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix, unreadable);
+                        foreach (var key in changed.Concat(unreadable))
                             if (draft[key] != null) target[key] = draft[key].DeepClone();
                     }
                     only = changed;

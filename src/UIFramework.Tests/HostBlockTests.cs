@@ -130,7 +130,7 @@ namespace UIFramework.Tests
                 .Answer("tryRoll", "@alice rolls 6")
                 .Override("sides", label: "Die sides")
                 .Help(UiSchema.H("Playing", UiSchema.Cmd("!roll", "Rolls."), "A note.", UiSchema.Link("Guide", "https://example.test")))
-                .About(credits: "By someone", links: new[] { UiSchema.Link("Discord", "https://discord.test") }, authorLink: false);
+                .About(credits: "By someone", links: new[] { UiSchema.Link("Discord", "https://discord.test") }, defaultLinks: false);
             var json = window.ToJson();
             Assert.Equal("demo-log*.txt", (string)json["log"]["files"]);
             Assert.Equal("cmd-1", (string)json["cooldowns"][0]["command"]);
@@ -159,7 +159,7 @@ namespace UIFramework.Tests
             Assert.Equal("Playing", spec.Help[0].Heading);
             Assert.Equal(3, spec.Help[0].Lines.Count);
             Assert.Equal("By someone", spec.About.Credits);
-            Assert.False(spec.About.ShowAuthorLink);
+            Assert.False(spec.About.ShowDefaultLinks);
             Assert.Equal("Discord", spec.About.Links[0].Text);
             Assert.Empty(spec.Problems);
 

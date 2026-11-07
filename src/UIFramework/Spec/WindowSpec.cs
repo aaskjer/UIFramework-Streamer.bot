@@ -183,14 +183,17 @@ namespace UIFramework
 
     public sealed class AboutSpec
     {
-        /// <summary>"Responsible: aaskjer\nCredits: ..."</summary>
-        public string Credits = "Responsible: aaskjer\nCredits: nate1280 / Streamer.bot and YOU ♡";
+        /// <summary>The game's credits under its name ("Blackjack by …"); none unless the game says so.</summary>
+        public string Credits;
         /// <summary>Sections before the links: a heading, a note, then links.</summary>
         public readonly List<HelpSection> Sections = new List<HelpSection>();
         /// <summary>Extra links under "Links", after the repository and releases links the spec supplies.</summary>
         public readonly List<Link> Links = new List<Link>();
+        /// <summary>The links every About page ends with (keys.json's <c>about.links</c>: the framework's page,
+        /// Streamer.bot, the issue tracker); false leaves only the game's own.</summary>
+        public bool ShowDefaultLinks = true;
+        /// <summary>False leaves the Streamer.bot link out of the default links.</summary>
         public bool ShowStreamerBotLink = true;
-        public bool ShowAuthorLink = true;
     }
 
     public sealed class Link
