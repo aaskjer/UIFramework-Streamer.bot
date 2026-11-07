@@ -432,7 +432,7 @@
       "label": "Fixed bet",
       "help": "What every redemption bets in Fixed mode. Must be more than 0.",
       "min": 0.0,
-      "requires": "cpBetMode=fixed",
+      "showWhen": "cpBetMode=fixed",
       "aliases": [
         "FixedBetAmount"
       ]

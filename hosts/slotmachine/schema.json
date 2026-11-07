@@ -230,7 +230,7 @@
       "help": "With 3 slots, three alike is the jackpot and this tier is not used.",
       "min": 0.0,
       "unit": "%",
-      "requires": "numberOfSlots>=4",
+      "showWhen": "numberOfSlots>=4",
       "aliases": [
         "ThreeMatchPayout"
       ]
@@ -245,7 +245,7 @@
       "help": "Only with 5 or 6 slots; fewer slots never land four alike short of the jackpot.",
       "min": 0.0,
       "unit": "%",
-      "requires": "numberOfSlots>=5",
+      "showWhen": "numberOfSlots>=5",
       "aliases": [
         "FourMatchPayout"
       ]
@@ -260,7 +260,7 @@
       "help": "Only with 6 slots.",
       "min": 0.0,
       "unit": "%",
-      "requires": "numberOfSlots>=6",
+      "showWhen": "numberOfSlots>=6",
       "aliases": [
         "FiveMatchPayout"
       ]
@@ -743,7 +743,7 @@
       "label": "Fixed bet",
       "help": "What every redemption bets in Fixed mode. Must be more than 0.",
       "min": 0.0,
-      "requires": "cpBetMode=fixed",
+      "showWhen": "cpBetMode=fixed",
       "aliases": [
         "FixedBetAmount"
       ]
