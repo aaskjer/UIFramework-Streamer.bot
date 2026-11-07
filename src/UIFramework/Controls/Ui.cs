@@ -498,8 +498,8 @@ namespace UIFramework
 
         public static void WrapToolTips(Window window)
         {
-            TipWindows.Add(window);
-            window.Closed += (sender, e) => TipWindows.Remove(window);
+            lock (TipWindows) TipWindows.Add(window);
+            window.Closed += (sender, e) => { lock (TipWindows) TipWindows.Remove(window); };
             if (_tipHandler)
                 return;
             _tipHandler = true;
@@ -516,7 +516,7 @@ namespace UIFramework
         {
             var window = Window.GetWindow(node);
             if (window != null)
-                return TipWindows.Contains(window);
+                lock (TipWindows) return TipWindows.Contains(window);
             // Inside a popup: the popup's target says which window it belongs to.
             for (var at = node; at != null; at = LogicalTreeHelper.GetParent(at) ?? (at is Visual ? VisualTreeHelper.GetParent(at) : null))
                 if (at is Popup popup)

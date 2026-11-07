@@ -20,6 +20,10 @@ namespace UIFramework
         public string Path { get; }
         public JObject Root { get; private set; } = new JObject();
 
+        /// <summary>Why the file could not be read, or null. The window then starts from defaults; the unreadable file
+        /// is kept beside it as .broken before anything is written over it.</summary>
+        public string Problem { get; private set; }
+
         public LayoutFile(string settingsPath)
         {
             Path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(settingsPath) ?? ".", FileName);
@@ -33,9 +37,18 @@ namespace UIFramework
                 if (File.Exists(file.Path))
                     file.Root = JObject.Parse(File.ReadAllText(file.Path));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                // The user's customisation in a bad moment (a half-written file, a hand edit): kept as .broken, so the
+                // next save does not take it with it, and named in the log.
                 file.Root = new JObject();
+                file.Problem = ex.Message;
+                try
+                {
+                    File.Copy(file.Path, file.Path + ".broken", true);
+                    file.Problem += " (kept as " + FileName + ".broken)";
+                }
+                catch (Exception) { }
             }
             return file;
         }
@@ -48,21 +61,33 @@ namespace UIFramework
 
         private JObject ThemeObject => Root["theme"] as JObject ?? (JObject)(Root["theme"] = new JObject());
 
+        // A value of the wrong type (a hand edit: "theme": "dark", "order": "2") reads as not set, never as an error.
+        private static JToken At(JToken parent, string key) => (parent as JObject)?[key];
+        private static string Str(JToken parent, string key) => At(parent, key)?.Type == JTokenType.String ? (string)At(parent, key) : null;
+        private static int? Int(JToken parent, string key)
+        {
+            var token = At(parent, key);
+            if (token?.Type == JTokenType.Integer) return (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (long)token));
+            if (token?.Type == JTokenType.Float) return (int)Math.Round(Math.Max(int.MinValue, Math.Min(int.MaxValue, (double)token)));
+            return null;
+        }
+        private static bool? Bool(JToken parent, string key) => At(parent, key)?.Type == JTokenType.Boolean ? (bool?)(bool)At(parent, key) : null;
+
         public bool? Dark
         {
-            get => Root["theme"]?["dark"]?.Type == JTokenType.Boolean ? (bool?)(bool)Root["theme"]["dark"] : null;
+            get => Bool(Root["theme"], "dark");
             set { if (value.HasValue) ThemeObject["dark"] = value.Value; else ThemeObject.Remove("dark"); }
         }
 
         public bool Rainbow
         {
-            get => Root["theme"]?["rainbow"]?.Type == JTokenType.Boolean && (bool)Root["theme"]["rainbow"];
+            get => Bool(Root["theme"], "rainbow") ?? false;
             set => ThemeObject["rainbow"] = value;
         }
 
         public string Accent
         {
-            get => Root["theme"]?["accent"]?.Type == JTokenType.String ? (string)Root["theme"]["accent"] : "";
+            get => Str(Root["theme"], "accent") ?? "";
             set { if (string.IsNullOrWhiteSpace(value)) ThemeObject.Remove("accent"); else ThemeObject["accent"] = value.Trim(); }
         }
 
@@ -153,10 +178,10 @@ namespace UIFramework
             if (e == null) return null;
             return new LayoutPage
             {
-                Title = (string)e["title"],
-                Icon = (string)e["icon"],
-                Order = (int?)e["order"],
-                Hidden = e["hidden"]?.Type == JTokenType.Boolean ? (bool?)(bool)e["hidden"] : null
+                Title = Str(e, "title"),
+                Icon = Str(e, "icon"),
+                Order = Int(e, "order"),
+                Hidden = Bool(e, "hidden")
             };
         }
 
@@ -166,12 +191,12 @@ namespace UIFramework
             if (e == null) return null;
             return new LayoutField
             {
-                Page = (string)e["page"],
-                Label = (string)e["label"],
-                Section = (string)e["section"],
-                Order = (int?)e["order"],
-                Row = (string)e["row"],
-                Hidden = e["hidden"]?.Type == JTokenType.Boolean ? (bool?)(bool)e["hidden"] : null
+                Page = Str(e, "page"),
+                Label = Str(e, "label"),
+                Section = Str(e, "section"),
+                Order = Int(e, "order"),
+                Row = Str(e, "row"),
+                Hidden = Bool(e, "hidden")
             };
         }
 
