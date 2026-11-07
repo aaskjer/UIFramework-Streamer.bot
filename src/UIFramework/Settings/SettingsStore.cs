@@ -229,7 +229,8 @@ namespace UIFramework
         {
             try
             {
-                JObject.Parse(File.ReadAllText(path));
+                // Any JSON: a sidecar list file is an array, and it deserves its .bak as much as the settings file.
+                JToken.Parse(File.ReadAllText(path));
                 return true;
             }
             catch (Exception)

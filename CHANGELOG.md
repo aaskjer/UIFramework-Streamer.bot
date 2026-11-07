@@ -5,6 +5,17 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- **A save keeps what it did not change.** The window writes the settings file as it is at that moment with the
+  fields the user changed laid over it, instead of the copy it read when it opened: a viewer added from chat, a
+  question suggested from chat or a status the game wrote while the window was open survive a save that did not
+  touch them. A list kept in a file of its own is written only when its list changed.
+- **A damaged list file is kept.** One that cannot be read is copied to `.broken` before the window writes over it,
+  and a list file (a JSON array) now gets its `.bak` on every save like the settings file.
+- **Numbers keep their decimals.** A number field shows up to ten decimals instead of two, so 0.005 no longer
+  shows, and saves back, as 0.01, nor 0.001 as 0.
+- **The language switch asks first.** In a locked window, picking another language with unsaved changes asks to
+  save them, as the theme button does, instead of dropping them.
+
 ## [0.9.12] - 2026-11-07
 
 About links once, no empty logo square, a table hint that fits the table.

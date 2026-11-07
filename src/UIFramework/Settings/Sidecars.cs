@@ -66,19 +66,32 @@ namespace UIFramework
                 main.Remove(setting.Key);
         }
 
-        /// <summary>Writes every sidecar value into its file (keeping whatever else the file holds) and returns the
-        /// settings without those keys, for the settings file.</summary>
-        public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath)
+        /// <summary>Writes the sidecar values into their files (keeping whatever else a file holds) and returns the
+        /// settings without those keys, for the settings file. With <paramref name="only"/>, a file is written only when
+        /// one of its keys is in it (what the user changed), so a list the game filled meanwhile is not overwritten.
+        /// A file that cannot be read is kept as .broken before it is written over.</summary>
+        public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath, ISet<string> only = null)
         {
             var main = (JObject)settings.DeepClone();
             foreach (var group in Of(schema).GroupBy(s => PathOf(s, settingsPath), StringComparer.OrdinalIgnoreCase))
             {
                 string path = group.Key;
+                if (only != null && !group.Any(s => only.Contains(s.Key)))
+                {
+                    foreach (var setting in group)
+                        main.Remove(setting.Key);
+                    continue;
+                }
                 JToken root = null;
                 if (File.Exists(path))
                 {
                     try { root = Read(path); }
-                    catch (Exception) { root = null; }   // damaged: rewritten from what the window holds
+                    catch (Exception)
+                    {
+                        // Damaged: written over from what the window holds, but a copy of it stays beside it.
+                        try { File.Copy(path, path + ".broken", true); } catch (Exception) { }
+                        root = null;
+                    }
                 }
                 foreach (var setting in group)
                 {

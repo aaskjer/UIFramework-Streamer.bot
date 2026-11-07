@@ -487,7 +487,7 @@ namespace UIFramework
             bool SaveNow()
             {
                 parts.CommitNames();
-                if (!ApplyAndSave(settings, pageHost, parts))
+                if (!ApplyAndSave(settings, pageHost, parts, baseline))
                 {
                     SetStatus(Text.T("status.notSaved"), Theme.DangerText);
                     return false;
@@ -735,6 +735,14 @@ namespace UIFramework
                 var language = Customize.LanguagePicker(_spec, layout, () =>
                 {
                     try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Language not saved: " + ex.Message); }
+                    // A rebuild starts from what is saved: unsaved edits are offered for saving first, as the theme does.
+                    // Cancel keeps the window as it is; the language then applies the next time it opens.
+                    if (Changes() > 0)
+                    {
+                        var answer = MessageBox.Show(Text.T("dialog.unsaved.switch"), Text.T("dialog.unsaved.title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                        if (answer == MessageBoxResult.Cancel) return;
+                        if (answer == MessageBoxResult.Yes && !SaveNow()) return;
+                    }
                     Rebuild(null);
                 });
                 if (language != null)
@@ -894,7 +902,7 @@ namespace UIFramework
             window.ShowDialog();
         }
 
-        private bool ApplyAndSave(JObject settings, UIElement root, WindowParts parts)
+        private bool ApplyAndSave(JObject settings, UIElement root, WindowParts parts, Dictionary<object, string> baseline = null)
         {
             try
             {
@@ -906,6 +914,7 @@ namespace UIFramework
                 }
 
                 parts.CommitNames();
+                var changed = FieldBinding.ChangedKeys(root, baseline);
                 FieldBinding.Save(settings, root);
                 _spec.Clamp?.Invoke(settings);
 
@@ -921,7 +930,32 @@ namespace UIFramework
                         return false;
                 }
 
-                _store.Save(Sidecars.Split(settings, _spec.ResolvedSettings, _spec.SettingsPath));
+                // What is written is the file as it is now with the window's changes laid over it, not the copy the window
+                // read when it opened: a key the game wrote meanwhile (a viewer added from chat, a suggested question, a
+                // status) survives a save that did not touch it. A damaged file is written from the window as before.
+                JObject target = settings;
+                ISet<string> only = null;
+                if (baseline != null)
+                {
+                    SettingsLoad now = null;
+                    try { now = _store.Load(); } catch (Exception) { now = null; }
+                    if (now != null && now.Damaged == null)
+                    {
+                        target = now.Settings;
+                        Sidecars.Load(target, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix);
+                        foreach (var key in changed)
+                            if (settings[key] != null) target[key] = settings[key].DeepClone();
+                        // Values the window clamped or the game must see keep the window's view for every key it shows.
+                        only = changed;
+                    }
+                }
+                _store.Save(Sidecars.Split(target, _spec.ResolvedSettings, _spec.SettingsPath, only));
+                if (!ReferenceEquals(target, settings))
+                {
+                    // The window's copy follows the file, so the next save and a rebuild start from what is there now.
+                    foreach (var property in target.Properties().ToList())
+                        if (!changed.Contains(property.Name)) settings[property.Name] = property.Value.DeepClone();
+                }
                 SafeHook(() => _hooks.OnSaved(settings));
                 _log.Info(_spec.LogPrefix + " Settings saved.");
                 return true;
