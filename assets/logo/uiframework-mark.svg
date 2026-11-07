@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" shape-rendering="crispEdges">
+  <title>UIFramework</title>
+  <!-- Mix A: Slice + Melt + Dither + Teleport on the 16x16 grid. U + i = you + I = your interface. -->
+  <defs>
+    <pattern id="B" width="32" height="32" patternUnits="userSpaceOnUse"><rect x="2" y="2" width="28" height="28" fill="#FFFFFF"/></pattern>
+    <pattern id="Y" width="32" height="32" patternUnits="userSpaceOnUse"><rect x="2" y="2" width="28" height="28" fill="#FFC857"/></pattern>
+    <pattern id="D" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#FFFFFF"/><rect x="16" y="16" width="16" height="16" fill="#FFFFFF"/></pattern>
+    <pattern id="Dp" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#FF4FD8"/><rect x="16" y="16" width="16" height="16" fill="#FF4FD8"/></pattern>
+    <clipPath id="k1"><rect y="96" width="512" height="64"/></clipPath>
+    <clipPath id="k2"><rect y="160" width="512" height="64"/></clipPath>
+    <clipPath id="k3"><rect y="224" width="512" height="32"/></clipPath>
+    <clipPath id="k4"><rect y="256" width="512" height="64"/></clipPath>
+    <clipPath id="k5"><rect y="320" width="512" height="32"/></clipPath>
+    <clipPath id="k6"><rect y="352" width="512" height="32"/></clipPath>
+    <clipPath id="k7"><rect y="384" width="512" height="32"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0B0B1A"/>
+  <path d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64zM352 96h64v64h-64z" fill="#FFFFFF" opacity="0.07"/>
+  <path d="M98 66h28v28h-28zM290 58h28v36h-28zM258 78h28v16h-28z" fill="#22E0FF" opacity="0.6"/>
+  <path d="M98 42h28v16h-28zM290 32h28v18h-28z" fill="#22E0FF" opacity="0.25"/>
+  <g clip-path="url(#k1)"><path d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="url(#B)"/></g>
+  <g clip-path="url(#k2)"><path transform="translate(-28 0)" d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="url(#B)"/></g>
+  <g clip-path="url(#k3)"><path transform="translate(48 0)" d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="#22E0FF"/></g>
+  <g clip-path="url(#k4)"><path d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="url(#B)"/></g>
+  <g clip-path="url(#k5)"><path d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="url(#D)"/></g>
+  <g clip-path="url(#k6)"><path transform="translate(-20 0)" d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="url(#Dp)"/></g>
+  <g clip-path="url(#k7)"><path transform="translate(16 0)" d="M96 96h64v256h-64zM256 96h64v256h-64zM128 352h160v32h-160zM160 384h96v32h-96zM352 192h64v224h-64z" fill="url(#D)"/></g>
+  <path d="M352 96h32v64h-32zM384 128h32v32h-32z" fill="url(#Y)"/>
+  <path d="M394 100h14v14h-14z" fill="#FFC857" opacity="0.8"/>
+  <path d="M422 74h24v24h-24z" fill="#FFC857" opacity="0.9"/>
+  <path d="M454 48h16v16h-16z" fill="#FFC857" opacity="0.6"/>
+  <path d="M178 418h28v28h-28zM210 418h28v60h-28zM242 418h28v14h-28zM370 418h28v44h-28zM402 418h28v20h-28z" fill="#FF4FD8"/>
+  <path d="M178 450h28v14h-28zM210 482h28v14h-28zM370 466h28v18h-28z" fill="#22E0FF"/>
+  <path d="M144 440h16v16h-16zM256 456h16v16h-16zM432 448h16v16h-16zM304 480h16v16h-16zM120 400h16v16h-16z" fill="#FFFFFF" opacity="0.8"/>
+</svg>
