@@ -469,6 +469,9 @@ namespace UIFramework
 
             var baseline = new Dictionary<object, string>();
             FieldBinding.Snapshot(pageHost, baseline);
+            // Numbers the window shows other than the file holds them (outside their limits, not a number): the next
+            // save writes them too, so what the window shows is what the game reads.
+            var repairs = FieldBinding.Repaired(settings, pageHost);
             int Changes() => FieldBinding.CountChanged(pageHost, baseline);
             changes = () => { parts.CommitNames(); return Changes(); };
             currentPage = () => (pages[current].Spec.Id, (pages[current].Page as ScrollViewer)?.VerticalOffset ?? 0);
@@ -508,13 +511,14 @@ namespace UIFramework
             bool SaveNow()
             {
                 parts.CommitNames();
-                if (!ApplyAndSave(settings, pageHost, parts, baseline))
+                if (!ApplyAndSave(settings, pageHost, parts, baseline, repairs))
                 {
                     SetStatus(Text.T("status.notSaved"), Theme.DangerText);
                     return false;
                 }
                 baseline.Clear();
                 FieldBinding.Snapshot(pageHost, baseline);
+                repairs.Clear();
                 SetStatus(Text.T("status.saved"), Theme.SuccessText);
                 return true;
             }
@@ -607,21 +611,21 @@ namespace UIFramework
                 if (from != null && !string.Equals(from, hostName, StringComparison.OrdinalIgnoreCase) &&
                     MessageBox.Show(Text.T("import.otherHost", from, hostName), Text.T("import.dialog.title"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                     return;
+                // Read as the settings file is read: old keys with their factors, dotted ones inside an object, the
+                // current key winning over an old one left beside it.
+                var provided = new HashSet<string>(StringComparer.Ordinal);
+                var read = _store.Merged(incoming, provided);
                 var known = new JObject();
                 int unknown = 0;
-                foreach (var property in incoming.Properties())
+                foreach (var key in provided)
                 {
-                    string key = _spec.Aliases.TryGetValue(property.Name, out var canonical) ? canonical : property.Name;
                     var declared = _spec.ResolvedSettings.FirstOrDefault(d => d.Key == key);
                     if (declared == null || declared.Transient || declared.Kind == "action" || declared.Kind == "note" || declared.Kind == "table")
                     {
                         unknown++;
                         continue;
                     }
-                    var value = property.Value;
-                    if (_spec.AliasFactors.TryGetValue(property.Name, out double factor) && value.Type != JTokenType.String && double.TryParse(value.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double number))
-                        value = number * factor;
-                    known[key] = value;
+                    known[key] = read[key]?.DeepClone();
                 }
                 if (known.Count == 0)
                 {
@@ -635,13 +639,19 @@ namespace UIFramework
                     Text.T("import.dialog.title"), MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes)
                     return;
-                var merged = (JObject)settings.DeepClone();
-                foreach (var property in known.Properties())
-                    merged[property.Name] = property.Value.DeepClone();
+                // Over the file as it is now, as a save does: what the game wrote meanwhile stays, and a list file is
+                // written only when the import brings its list.
+                JObject merged;
                 try
                 {
+                    var now = _store.Load();
+                    merged = now.Damaged == null ? now.Settings : (JObject)settings.DeepClone();
+                    if (now.Damaged == null)
+                        Sidecars.Load(merged, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix);
+                    foreach (var property in known.Properties())
+                        merged[property.Name] = property.Value?.DeepClone();
                     _spec.Clamp?.Invoke(merged);
-                    _store.Save(Sidecars.Split(merged, _spec.ResolvedSettings, _spec.SettingsPath));
+                    _store.Save(Sidecars.Split(merged, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>(known.Properties().Select(p => p.Name), StringComparer.Ordinal)));
                 }
                 catch (Exception ex)
                 {
@@ -688,16 +698,17 @@ namespace UIFramework
                 // game's own state) and hidden settings keep their values. A damaged file starts from the window's copy.
                 SettingsLoad now = null;
                 try { now = _store.Load(); } catch (Exception) { now = null; }
-                var fresh = SettingsStore.ResetShown(now != null && now.Damaged == null ? now.Settings : settings, defaults, _spec.ResolvedSettings);
+                var fresh = SettingsStore.ResetShown(now != null && now.Damaged == null ? now.Settings : settings, defaults, _spec.ResolvedSettings, FieldBinding.ShownKeys(pageHost));
                 try { _store.Save(Sidecars.Strip(fresh, _spec.ResolvedSettings)); }
                 catch (Exception ex)
                 {
                     SetStatus(Text.T("status.notReset"), Theme.DangerText, ex.Message);
                     return;
                 }
+                // The lists in their own files are not reset: the game hears of them as they are in those files.
+                Sidecars.Load(fresh, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
                 SafeHook(() => _hooks.OnSaved(fresh));
                 settings = fresh;
-                Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
                 Rebuild(null);
             };
             btnTheme.Click += (s, e) =>
@@ -927,7 +938,7 @@ namespace UIFramework
             window.ShowDialog();
         }
 
-        private bool ApplyAndSave(JObject settings, UIElement root, WindowParts parts, Dictionary<object, string> baseline = null)
+        private bool ApplyAndSave(JObject settings, UIElement root, WindowParts parts, Dictionary<object, string> baseline = null, ISet<string> repairs = null)
         {
             try
             {
@@ -939,13 +950,25 @@ namespace UIFramework
                 }
 
                 parts.CommitNames();
+                // A draft: the window's copy takes the values only once they are written, so a save that is declined (a
+                // warning, a game that did not check) leaves nothing behind that a rebuild would show as saved.
+                var draft = (JObject)settings.DeepClone();
+                FieldBinding.Save(draft, root);
+                // After that save: a number it pulled into its min/max shows the limit now and counts as changed; so do
+                // the numbers the window showed repaired since it opened, and what the window's own clamp changed.
                 var changed = FieldBinding.ChangedKeys(root, baseline);
-                FieldBinding.Save(settings, root);
-                _spec.Clamp?.Invoke(settings);
+                if (repairs != null) changed.UnionWith(repairs);
+                if (_spec.Clamp != null)
+                {
+                    var unclamped = (JObject)draft.DeepClone();
+                    _spec.Clamp(draft);
+                    foreach (var property in draft.Properties())
+                        if (!JToken.DeepEquals(property.Value, unclamped[property.Name])) changed.Add(property.Name);
+                }
 
-                var warnings = _spec.Warnings?.Invoke(settings) ?? new List<string>();
+                var warnings = _spec.Warnings?.Invoke(draft) ?? new List<string>();
                 string fromHost = null;
-                SafeHook(() => fromHost = _hooks.Validate(settings));
+                SafeHook(() => fromHost = _hooks.Validate(draft));
                 // A stub from 0.2.0 on tells "the game did not answer" from "no problems"; an older one says null for both.
                 const string noAnswer = "\u0001uiframework:no-answer";
                 if (fromHost != null && fromHost.StartsWith(noAnswer, StringComparison.Ordinal))
@@ -971,30 +994,27 @@ namespace UIFramework
 
                 // What is written is the file as it is now with the window's changes laid over it, not the copy the window
                 // read when it opened: a key the game wrote meanwhile (a viewer added from chat, a suggested question, a
-                // status) survives a save that did not touch it. A damaged file is written from the window as before.
-                JObject target = settings;
+                // status) survives a save that did not touch it, and a list file is written only when its list changed.
+                // A file that cannot be opened stops the save (the dialog names why); a damaged one is written from the
+                // window as before.
+                JObject target = draft;
                 ISet<string> only = null;
                 if (baseline != null)
                 {
-                    SettingsLoad now = null;
-                    try { now = _store.Load(); } catch (Exception) { now = null; }
-                    if (now != null && now.Damaged == null)
+                    var now = _store.Load();
+                    if (now.Damaged == null)
                     {
                         target = now.Settings;
                         Sidecars.Load(target, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix);
                         foreach (var key in changed)
-                            if (settings[key] != null) target[key] = settings[key].DeepClone();
-                        // Values the window clamped or the game must see keep the window's view for every key it shows.
-                        only = changed;
+                            if (draft[key] != null) target[key] = draft[key].DeepClone();
                     }
+                    only = changed;
                 }
                 _store.Save(Sidecars.Split(target, _spec.ResolvedSettings, _spec.SettingsPath, only));
-                if (!ReferenceEquals(target, settings))
-                {
-                    // The window's copy follows the file, so the next save and a rebuild start from what is there now.
-                    foreach (var property in target.Properties().ToList())
-                        if (!changed.Contains(property.Name)) settings[property.Name] = property.Value.DeepClone();
-                }
+                // The window's copy is now what was written, so the next save and a rebuild start from there.
+                foreach (var property in target.Properties().ToList())
+                    settings[property.Name] = property.Value.DeepClone();
                 SafeHook(() => _hooks.OnSaved(settings));
                 _log.Info(_spec.LogPrefix + " Settings saved.");
                 return true;

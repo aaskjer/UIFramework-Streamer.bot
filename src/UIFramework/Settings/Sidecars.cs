@@ -68,15 +68,18 @@ namespace UIFramework
 
         /// <summary>Writes the sidecar values into their files (keeping whatever else a file holds) and returns the
         /// settings without those keys, for the settings file. With <paramref name="only"/>, a file is written only when
-        /// one of its keys is in it (what the user changed), so a list the game filled meanwhile is not overwritten.
-        /// A file that cannot be read is kept as .broken before it is written over.</summary>
+        /// one of its keys is in it (what the user changed), so a list the game filled meanwhile is not overwritten; a
+        /// file that is not there yet is written anyway when the settings hold more than the default for it, so a list
+        /// moving out of the settings file into its own lands there. A file that cannot be read is kept as .broken
+        /// before it is written over.</summary>
         public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath, ISet<string> only = null)
         {
             var main = (JObject)settings.DeepClone();
             foreach (var group in Of(schema).GroupBy(s => PathOf(s, settingsPath), StringComparer.OrdinalIgnoreCase))
             {
                 string path = group.Key;
-                if (only != null && !group.Any(s => only.Contains(s.Key)))
+                bool moving = !File.Exists(path) && group.Any(s => settings[s.Key] is JToken v && v.Type != JTokenType.Null && !(v is JContainer c && !c.HasValues) && !JToken.DeepEquals(v, s.Default));
+                if (only != null && !moving && !group.Any(s => only.Contains(s.Key)))
                 {
                     foreach (var setting in group)
                         main.Remove(setting.Key);

@@ -294,6 +294,16 @@ public class CPHInline
         return Version.TryParse(text.Contains(".") ? text : text + ".0", out var v) ? v : null;
     }
 
+    /// <summary>The settings action a release needs (latest.json's minHostStub) when that is newer than this one,
+    /// else null. Missing parts count as 0, so "0.2.0.0" asks no more than "0.2.0".</summary>
+    private static Version NeedsNewerStub(JObject latest)
+    {
+        var needs = Full(ParseVersion((string)latest["minHostStub"]));
+        return needs != null && needs > Full(ParseVersion(StubVersion)) ? needs : null;
+    }
+
+    private static Version Full(Version v) => v == null ? null : new Version(v.Major, v.Minor, Math.Max(0, v.Build), Math.Max(0, v.Revision));
+
     /// <summary>The DLL, or null after the user was told what to do.</summary>
     private string EnsureFramework()
     {
@@ -460,6 +470,11 @@ public class CPHInline
                 // Nothing unchecked: the version becomes a folder name only when it is a version number, the DLL comes
                 // over HTTPS only, and a release without a hash is not installed at all.
                 string version = ReleaseVersion(latest);
+                // Also on the first install: a release that needs a newer settings action than this game's is not
+                // installed, or it would be the only DLL there and every later release check refuse to replace it.
+                if (NeedsNewerStub(latest) != null)
+                    throw new InvalidOperationException("UIFramework " + version + " needs a newer settings action (stub " + (string)latest["minHostStub"] +
+                        ", this game's is " + StubVersion + "); update the game first, or put an older UIFramework.dll into its version's folder.");
                 string url = (string)latest["url"];
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
                     throw new InvalidOperationException("latest.json names a download that is not HTTPS (" + url + "); it is not fetched.");
@@ -561,10 +576,9 @@ public class CPHInline
             return installed;
         }
         var newest = ParseVersion((string)latest["version"]);
-        var needs = ParseVersion((string)latest["minHostStub"]);
-        if (newest != null && needs != null && needs > ParseVersion(StubVersion))
+        if (newest != null && NeedsNewerStub(latest) != null)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + needs + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
+            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
             return installed;
         }
         if (newest == null || have == null || newest <= have)
