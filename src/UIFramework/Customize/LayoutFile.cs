@@ -24,6 +24,10 @@ namespace UIFramework
         /// is kept beside it as .broken before anything is written over it.</summary>
         public string Problem { get; private set; }
 
+        /// <summary>The file is there but could not be opened (another program held it while the window read it): the
+        /// window starts from defaults and writes nothing over it, since what it holds is fine.</summary>
+        public bool Unreadable { get; private set; }
+
         public LayoutFile(string settingsPath)
         {
             Path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(settingsPath) ?? ".", FileName);
@@ -35,7 +39,19 @@ namespace UIFramework
             try
             {
                 if (File.Exists(file.Path))
-                    file.Root = JObject.Parse(File.ReadAllText(file.Path));
+                    file.Root = JObject.Parse(ReadWithRetry(file.Path));
+            }
+            catch (FileNotFoundException)
+            {
+                file.Root = new JObject();   // gone between the look and the read: as if there was none
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                // Held by another writer (a game's settings action swapping it in) longer than the retries: not broken,
+                // only not readable now. Nothing is written over it this time.
+                file.Root = new JObject();
+                file.Unreadable = true;
+                file.Problem = ex.Message + " (left as it is; the window does not write it this time)";
             }
             catch (Exception ex)
             {
@@ -55,8 +71,20 @@ namespace UIFramework
 
         public void Save()
         {
+            if (Unreadable)
+                throw new IOException(FileName + " could not be read when the window opened; it is not written over.");
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path));
             SettingsStore.WriteAllTextAtomic(Path, Root.ToString(Formatting.Indented));
+        }
+
+        /// <summary>The file's text, read again a few times while another writer holds it.</summary>
+        private static string ReadWithRetry(string path)
+        {
+            for (int attempt = 1; ; attempt++)
+            {
+                try { return File.ReadAllText(path); }
+                catch (IOException ex) when (attempt < 5 && !(ex is FileNotFoundException)) { System.Threading.Thread.Sleep(40); }
+            }
         }
 
         private JObject ThemeObject => Root["theme"] as JObject ?? (JObject)(Root["theme"] = new JObject());
