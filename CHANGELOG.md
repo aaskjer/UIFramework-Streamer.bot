@@ -5,6 +5,10 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.12] - 2026-11-07
+
+About links once, no empty logo square, a table hint that fits the table.
+
 - The About page lists every address once: a game whose own links repeat its repository or releases, which the
   framework already shows, no longer gets them twice. Without a declared logo there is no empty square beside
   the name.
