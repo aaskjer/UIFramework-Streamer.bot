@@ -11,6 +11,14 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   older one opens the window. The hash a download was checked with is kept beside the DLL and checked on every
   load. A release that names a higher `minHostStub` is not offered. A game takes this with its next release, by
   pasting the new `stub/Stub.cs` as its settings action.
+- **Nothing unchecked from `latest.json`.** The settings action installs no release without a `sha256`, fetches the
+  DLL over `https://` only and refuses a `version` that is not a version number before it becomes a folder name.
+- **The release check no longer holds the window up to 10 s.** Offline (unreachable, timed out) it does not try the
+  CDN after the API; a network sign-in page instead of `latest.json` falls back to the CDN.
+- **A second click brings the window to the front.** While a game's window is open (or still opening), another run
+  of its settings action neither asks the game nor checks for a release again, and leaves the first run's queue alone.
+- **The hint for a hand-fetched DLL shows offline too.** Its example path no longer fails on `<version>` when
+  `latest.json` cannot be read.
 
 - **A save keeps what it did not change.** The window writes the settings file as it is at that moment with the
   fields the user changed laid over it, instead of the copy it read when it opened: a viewer added from chat, a
