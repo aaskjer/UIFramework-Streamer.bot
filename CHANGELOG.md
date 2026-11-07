@@ -5,6 +5,11 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.9.13] - 2026-11-07
+
+Spanish and every language offered, neutral credits, saving that keeps what the game wrote, a sturdier loader
+(stub 0.2.0), and the review's findings fixed.
+
 - **Spanish.** `conventions/lang/es.json` translates every known key, page, placeholder and window text, and the
   short wordings German translates.
 - **Every language is offered.** The language picker lists every language there are texts for, by its own name
