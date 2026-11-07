@@ -69,5 +69,8 @@ the window itself stays where it is.
 | `fields.<key>.label`, `.section` | the label, the section heading                                             |
 | `fields.<key>.hidden`          | the field is gone; the value stays in the settings file                      |
 
+A value of the wrong type (`"order": "2"`, `"theme": "dark"`) is read as not set. A file that is not JSON at all
+is copied to `uiframework.layout.json.broken`, named in the log, and the window starts from the defaults.
+
 The layout file is the fourth and last layer over the conventions, the schema and the window declaration. Keys
 the schema no longer knows are ignored. Editing by hand is fine; the window reads the file on every open.
