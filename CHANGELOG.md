@@ -30,6 +30,18 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   older DLL gets "no answer" as before instead of the stub's marker; the sample thousands separator follows the
   window's language.
 
+- **The host block needs no usings.** `stub/HostSchema.cs` names every type in full (`Newtonsoft.Json.Linq.JObject`,
+  `System.IO.File`, ...), so it compiles in any game action whatever its `using` lines say, right below them, at the
+  end or inside `CPHInline`, and a game's own usings can no longer clash with it (a `Path` or `Formatting` of
+  another namespace). Before, the game's action had to bring seven usings, and the file pasted alone into a new
+  Execute Code failed with some 150 errors ("The type or namespace name 'JObject' could not be found").
+  `tools/check-stub.ps1` compiles the block alone now. A game's present block keeps working;
+  `tools/update-host-block.ps1` brings the new one, and takes only what stands between the template's markers.
+- **Getting-Started is copy and paste.** Five steps to the running demo game, each with the ready file to paste
+  (`examples/DemoGame/DemoGame.cs`, `stub/Stub.cs`) and nothing to change, what to do when a step fails, then how
+  to make it your own game and how to add the block to a game you already have. The demo game carries its host
+  block below the usings like every game, and names its command by its text (`C("!roll", ...)`), so a `!roll`
+  made by hand gets the cooldowns too.
 - **Twitch emotes show without a Twitch login.** A fresh Streamer.bot has no Twitch token, so the window could not
   ask the Twitch API and Kappa, LUL and the other global emotes stayed without a picture. Their ids now ship in
   `conventions/emotes/twitch.json`; with a login the window still asks Twitch itself, for the channel's emotes too.

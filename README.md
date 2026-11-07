@@ -82,11 +82,12 @@ first use, checked against its published SHA-256, and offers new releases when t
 
 ## 🚀 Use it in your own project
 
-Two files, nothing to install: [docs/Getting-Started.md](docs/Getting-Started.md) walks through it in ten
-minutes, [examples/DemoGame](examples/DemoGame) is the result.
+Two files, nothing to install: [docs/Getting-Started.md](docs/Getting-Started.md) sets up the demo game step by
+step, each step with the ready file to paste, then shows how to make it your own;
+[examples/DemoGame](examples/DemoGame) is the result.
 
-1. Paste the host block from `stub/HostSchema.cs` into your game's action, fill in its table (one line per
-   setting) and its window (title, pages, help).
+1. Paste the host block from `stub/HostSchema.cs` into your game's action, right below its usings (it needs none
+   of its own), fill in its table (one line per setting) and its window (title, pages, help).
 2. Call `UiHost.Handle(args, CPH, ...)` first thing in `Execute()`; it answers the settings window.
 3. Make a second action from `stub/Stub.cs`, put your game action's name into `GameActionName`, give it a
    trigger. The window opens with pages, validation, a customise mode, export/import and self-updates.
@@ -108,7 +109,7 @@ what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and t
 
 ## 🛠️ Development
 
-`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 76 tests.
+`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 142 tests.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
 `-schema hosts/<game>/schema.json` the window a game declares. `-theme dark` or `light`, `-shots <folder>` renders
 every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),

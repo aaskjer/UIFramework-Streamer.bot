@@ -1,4 +1,5 @@
-// The host block has no usings of its own (the action file it is pasted into supplies them); these stand in.
+// The host block needs no usings (it names every type in full; tools\check-stub.ps1 compiles it alone); these are
+// the tests' own.
 global using System;
 global using System.IO;
 global using System.Linq;

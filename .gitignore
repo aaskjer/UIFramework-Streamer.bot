@@ -8,4 +8,4 @@ TestResults/
 /artifacts/
 .remember/
 release/
-*.cs.bak
+*.bak
