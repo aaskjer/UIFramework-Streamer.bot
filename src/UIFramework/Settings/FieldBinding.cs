@@ -112,7 +112,9 @@ namespace UIFramework
                 case FieldKind.Double:
                     double d = value == null || value.Type == JTokenType.Null ? 0.0 : Convert.ToDouble(((JValue)value).Value, CultureInfo.InvariantCulture);
                     double factor = tag.Factor != 0 ? tag.Factor : 1.0;
-                    return (d / factor).ToString("0.##", CultureInfo.InvariantCulture);
+                    // Up to ten decimals: a stored 0.005 shows (and saves back) as 0.005, not 0.01; float noise like
+                    // 10.000000000000002 still reads 10.
+                    return (d / factor).ToString("0.##########", CultureInfo.InvariantCulture);
                 case FieldKind.Long:
                     long l = value == null || value.Type == JTokenType.Null ? 0L : Convert.ToInt64(((JValue)value).Value, CultureInfo.InvariantCulture);
                     return (tag.UnlimitedAtZero && l == long.MaxValue ? 0L : l).ToString(CultureInfo.InvariantCulture);
@@ -202,6 +204,23 @@ namespace UIFramework
             if (node is OptionSlider slider && slider.Tag is FieldTag st)
                 return st.Transient ? null : slider.StoredText;
             return null;
+        }
+
+        /// <summary>The keys of the tagged controls whose value differs from the baseline, or that the baseline does
+        /// not know (a field built after it): what the user changed since the window opened or last saved.</summary>
+        public static HashSet<string> ChangedKeys(object root, Dictionary<object, string> baseline)
+        {
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            VisitTree(root, obj =>
+            {
+                string v = ControlValue(obj);
+                if (v == null) return;
+                var tag = obj is FrameworkElement fe ? FieldTag.Of(fe.Tag) : null;
+                if (tag == null) return;
+                if (baseline == null || !baseline.TryGetValue(obj, out string was) || !string.Equals(was, v, StringComparison.Ordinal))
+                    keys.Add(tag.Key);
+            });
+            return keys;
         }
 
         public static void Snapshot(UIElement root, Dictionary<object, string> into)
