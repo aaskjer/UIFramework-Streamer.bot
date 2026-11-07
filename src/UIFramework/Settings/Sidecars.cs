@@ -27,7 +27,7 @@ namespace UIFramework
 
         /// <summary>Puts each sidecar's value into the settings object. A missing file or field leaves the default
         /// (already in the object) in place; a damaged file is logged and leaves the default too.</summary>
-        public static void Load(JObject settings, IEnumerable<Setting> schema, string settingsPath, IHostLog log, string prefix)
+        public static void Load(JObject settings, IEnumerable<Setting> schema, string settingsPath, IHostLog log, string prefix, ISet<string> unreadable = null)
         {
             foreach (var setting in Of(schema))
             {
@@ -43,6 +43,7 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
+                    unreadable?.Add(setting.Key);
                     log?.Warn(prefix + " " + Path.GetFileName(path) + " could not be read; the window shows the defaults for '" + setting.Key + "': " + ex.Message);
                 }
             }

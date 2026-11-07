@@ -55,8 +55,12 @@ namespace UIFramework
                     string declaredLabel = over?.Label ?? declared.Label, declaredHelp = over?.Help ?? declared.Help;
                     string ownLabel = declaredLabel != null && declaredLabel != english.Label ? lang.TextOrNull(setting.Label) : null;
                     string ownHelp = declaredHelp != null && declaredHelp != english.Help ? lang.TextOrNull(setting.Help) : null;
-                    setting.Label = own.Label ?? ownLabel ?? text.Label ?? lang.Text(setting.Label);
-                    setting.Help = own.Help ?? ownHelp ?? text.Help ?? lang.Text(setting.Help);
+                    // The key's text where it is a translation: a language without a conventions file of its own has
+                    // the English one, which never replaces what the game worded itself.
+                    string keyLabel = text.Label != null && (declaredLabel == null || text.Label != english.Label) ? text.Label : null;
+                    string keyHelp = text.Help != null && (declaredHelp == null || text.Help != english.Help) ? text.Help : null;
+                    setting.Label = own.Label ?? ownLabel ?? keyLabel ?? lang.Text(setting.Label);
+                    setting.Help = own.Help ?? ownHelp ?? keyHelp ?? lang.Text(setting.Help);
                     setting.Section = lang.Text(setting.Section);
                     setting.Group = lang.Text(setting.Group);
                     if (setting.Options != null)

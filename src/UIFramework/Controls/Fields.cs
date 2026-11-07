@@ -39,6 +39,7 @@ namespace UIFramework
 
         public long Long(string key)
         {
+            if (FieldBinding.TryLong(Token(key), out long exact)) return exact;
             if (!FieldBinding.TryNumber(Token(key), out double d)) return 0;
             if (d >= long.MaxValue) return long.MaxValue;
             if (d <= long.MinValue) return long.MinValue;

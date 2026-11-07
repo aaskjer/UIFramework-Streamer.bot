@@ -86,13 +86,19 @@ namespace UIFramework
             }
             foreach (var link in spec.About.Links)
                 Link(link.Text, link.Url);
-            if (spec.RepoUrl != null)
-                Link(Text.T("about.report"), spec.RepoUrl + "/issues");
-            if (spec.About.ShowAuthorLink)
-                Link(Text.T("about.author"), "https://twitch.tv/aaskjer");
-            if (spec.About.ShowStreamerBotLink)
-                Link("Streamer.bot", "https://streamer.bot");
-            Link(Text.T("about.framework"), "https://github.com/aaskjer/UIFramework-Streamer.bot");
+            // Then the links every window ends with, as conventions/keys.json lists them (the framework's page,
+            // Streamer.bot, where to report a problem): a text is a window text's key or the text itself.
+            if (spec.About.ShowDefaultLinks)
+            {
+                var conventions = spec.Conventions ?? Conventions.Default;
+                foreach (var link in conventions.AboutLinks)
+                {
+                    if (!spec.About.ShowStreamerBotLink && link.Url.IndexOf("streamer.bot", StringComparison.OrdinalIgnoreCase) >= 0)
+                        continue;
+                    string url = link.Url.Trim() == "{issues}" ? (spec.RepoUrl != null ? spec.RepoUrl + "/issues" : conventions.FrameworkIssues) : link.Url;
+                    Link(Text.T(link.Text), url);
+                }
+            }
 
             return Ui.Scroll(page);
         }

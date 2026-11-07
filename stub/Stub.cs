@@ -106,7 +106,7 @@ public class CPHInline
 
         public string Test(string name, string settingsJson) => _owner.AskGame("test", name, settingsJson);
         // No answer is not "no problems": the window gets a marker and asks before saving unchecked.
-        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson, NoAnswer);
+        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson, KnowsNoAnswer() ? NoAnswer : null);
         public string ReadTable(string key) => _owner.AskGame("table", key, null);
         public string EmoteSources() => _owner.AskGame("emotes", null, null);
 
@@ -206,17 +206,40 @@ public class CPHInline
         return null;
     }
 
-    // One request to the game at a time: the answer comes back in one variable per game, and two runs whose pumps
-    // overlap (a window closed and opened again quickly) must not read each other's.
-    private static readonly object AskGate = new object();
+    // One request to the game at a time: its arguments and its answer variable are the game's, and two runs whose
+    // pumps overlap (a window closed and opened again quickly) must not mix them. A request that has hung inside the
+    // game action for 35 seconds holds nobody up: its arguments were read long ago, so the requests after it go on
+    // behind a new gate (a run taking over a window whose game never answered, a window opened again meanwhile).
+    private sealed class Gate { public long Since; }
+    private static Gate _askGate = new Gate();
 
     /// <summary>Sends a request to the game action on Streamer.bot's thread and returns its answer, null for none.</summary>
     private string AskGameNow(string request, string name, string values)
     {
-        if (!Monitor.TryEnter(AskGate, TimeSpan.FromSeconds(35)))
-            throw new TimeoutException("another request to the action '" + GameActionName + "' has not finished.");
-        try { return AskGameLocked(request, name, values); }
-        finally { Monitor.Exit(AskGate); }
+        var deadline = DateTime.UtcNow.AddSeconds(35);
+        while (true)
+        {
+            var gate = Volatile.Read(ref _askGate);
+            if (Monitor.TryEnter(gate, TimeSpan.FromSeconds(1)))
+            {
+                try
+                {
+                    if (!ReferenceEquals(gate, Volatile.Read(ref _askGate))) continue;   // replaced meanwhile: the new one
+                    Interlocked.Exchange(ref gate.Since, DateTime.UtcNow.Ticks);
+                    return AskGameLocked(request, name, values);
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref gate.Since, 0);
+                    Monitor.Exit(gate);
+                }
+            }
+            long since = Interlocked.Read(ref gate.Since);
+            if (since != 0 && DateTime.UtcNow.Ticks - since > TimeSpan.FromSeconds(35).Ticks)
+                Interlocked.CompareExchange(ref _askGate, new Gate(), gate);
+            else if (DateTime.UtcNow >= deadline)
+                throw new TimeoutException("another request to the action '" + GameActionName + "' has not finished.");
+        }
     }
 
     private string AskGameLocked(string request, string name, string values)
@@ -241,6 +264,13 @@ public class CPHInline
     /// <summary>What the window gets when the game did not answer at all (a timeout, a disabled or missing action),
     /// told apart from an answer that is empty. The window's save asks before saving what nobody checked.</summary>
     private const string NoAnswer = "\u0001uiframework:no-answer";
+
+    // A DLL before 0.9.13 shows the marker as a warning line; it gets null for "no answer", as it always did.
+    private static bool KnowsNoAnswer()
+    {
+        var version = ParseVersion(_show?.DeclaringType?.Assembly is Assembly a ? VersionOf(a) : null);
+        return version == null || version >= new Version(0, 9, 13);
+    }
 
     /// <summary>The same from any thread (the window's): waits for Streamer.bot's thread to run it; a failure is
     /// logged and answered with <paramref name="failed"/> (null by default), so a Try button says "no answer"
