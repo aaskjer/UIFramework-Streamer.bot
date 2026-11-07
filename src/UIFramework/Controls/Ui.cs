@@ -318,9 +318,31 @@ namespace UIFramework
             });
         }
 
+        /// <summary>Digits and a decimal mark (point or comma), and a leading minus once the field's setting allows
+        /// negatives (its tag's Min, read when typing). A paste that is not such a number is refused, not taken as 0.</summary>
         public static void DecimalsOnly(TextBox box)
         {
-            box.PreviewTextInput += (s, e) => e.Handled = !e.Text.All(c => (c >= '0' && c <= '9') || c == '.' || c == ',');
+            box.PreviewTextInput += (s, e) => e.Handled = !DecimalText(e.Text, box.SelectionStart, FieldBinding.AllowsNegative(FieldTag.Of(box.Tag)));
+            box.PreviewKeyDown += (s, e) => { if (e.Key == Key.Space) e.Handled = true; };
+            DataObject.AddPastingHandler(box, (s, e) =>
+            {
+                if (!e.DataObject.GetDataPresent(DataFormats.Text) || !DecimalText(((string)e.DataObject.GetData(DataFormats.Text)).Trim(), box.SelectionStart, FieldBinding.AllowsNegative(FieldTag.Of(box.Tag))))
+                    e.CancelCommand();
+            });
+        }
+
+        /// <summary>Whether the text may go into a decimal box at the given place: digits and marks, a minus only first.</summary>
+        public static bool DecimalText(string text, int at, bool negative)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+            for (int k = 0; k < text.Length; k++)
+            {
+                char c = text[k];
+                if ((c >= '0' && c <= '9') || c == '.' || c == ',') continue;
+                if (c == '-' && negative && at + k == 0) continue;
+                return false;
+            }
+            return true;
         }
 
         /// <summary>A grey hint inside an empty box.</summary>

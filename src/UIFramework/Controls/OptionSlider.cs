@@ -64,8 +64,21 @@ namespace UIFramework
 
         public string StoredText => FieldBinding.Invariant(Stored);
 
-        /// <summary>Moves the slider to a stored value: a stop's value or index, or a number within the range.</summary>
+        /// <summary>Moves the slider to a stored value: a stop's value or index, or a number within the range. A kept
+        /// value goes; when the slider already sat on that stop, its ValueChanged still fires, so its label and the
+        /// change count follow.</summary>
         public bool Put(JToken value)
+        {
+            if (!PutValue(value)) return false;
+            if (_kept != null)
+            {
+                _kept = null;
+                OnValueChanged(Value, Value);
+            }
+            return true;
+        }
+
+        private bool PutValue(JToken value)
         {
             string text = FieldBinding.Invariant(value);
             if (Options != null)
