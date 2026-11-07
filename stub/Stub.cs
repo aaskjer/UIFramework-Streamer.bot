@@ -314,7 +314,7 @@ public class CPHInline
             {
                 CPH.LogError(LogPrefix + " UIFramework.dll could not be downloaded: " + ex.Message);
                 Ask("The download failed:\n\n" + ex.Message + "\n\nGet UIFramework.dll by hand from\n" + FrameworkReleasesUrl +
-                    "\nand put it into the folder of its version under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, ExampleVersion()) + "\\UIFramework.dll, then open the settings again.",
+                    "\nand put it into the folder of its version under\n" + LibRoot + "\nfor example " + ExamplePath() + ", then open the settings again.",
                     MbOk, MbIconWarning);
                 OpenFolder(LibRoot);
                 return null;
@@ -322,7 +322,7 @@ public class CPHInline
         }
         if (answer == IdNo)
         {
-            Ask("Put UIFramework.dll into the folder of its version under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, ExampleVersion()) + "\\UIFramework.dll\n\n" +
+            Ask("Put UIFramework.dll into the folder of its version under\n" + LibRoot + "\nfor example " + ExamplePath() + "\n\n" +
                 "The folder opens now. Then open the settings again.\nDownloads: " + FrameworkReleasesUrl,
                 MbOk, MbIconInformation);
             OpenFolder(LibRoot);
@@ -330,11 +330,14 @@ public class CPHInline
         return null;
     }
 
-    /// <summary>The version folder a DLL fetched by hand belongs in: the one latest.json names, or a placeholder.</summary>
-    private static string ExampleVersion()
+    /// <summary>Where a DLL fetched by hand belongs: the folder of the version latest.json names, or a placeholder.
+    /// Joined by hand: Path.Combine on .NET Framework throws on the placeholder's angle brackets.</summary>
+    private static string ExamplePath()
     {
-        try { return ((string)FetchLatest()["version"]).TrimStart('v', 'V'); }
-        catch (Exception) { return "<version>"; }
+        string version;
+        try { version = ReleaseVersion(FetchLatest()); }
+        catch (Exception) { version = "<version>"; }
+        return LibRoot + "\\" + version + "\\UIFramework.dll";
     }
 
     private static void OpenFolder(string folder)
@@ -369,7 +372,7 @@ public class CPHInline
         return result;
     }
 
-    // WebClient waits 100 s by default; a release check at window open gets five.
+    // WebClient waits 100 s by default (and 300 s for each read of the body); a release check at window open gets five.
     private sealed class QuickWebClient : System.Net.WebClient
     {
         public int TimeoutMs = 5000;
@@ -377,6 +380,7 @@ public class CPHInline
         {
             var request = base.GetWebRequest(address);
             if (request != null) request.Timeout = TimeoutMs;
+            if (request is System.Net.HttpWebRequest http) http.ReadWriteTimeout = TimeoutMs;
             return request;
         }
     }
@@ -389,26 +393,50 @@ public class CPHInline
             System.Net.ServicePointManager.SecurityProtocol = current | System.Net.SecurityProtocolType.Tls12;
     }
 
-    /// <summary>What lib/v1/latest.json says: version, download url, sha256.</summary>
+    /// <summary>What lib/v1/latest.json says: version, download url, sha256. The raw CDN is asked when the API refused
+    /// (its rate limit) or answered with something that is no latest.json (a network's sign-in page), not when the
+    /// network is unreachable or timed out: that would only keep the window waiting another five seconds.</summary>
     private static JObject FetchLatest()
     {
         EnsureTls12();
-        string json;
         using (var client = new QuickWebClient())
         {
             client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
             client.Headers.Add("Accept", "application/vnd.github.raw");
-            try { json = client.DownloadString(LatestApiUrl); }
+            try { return ParseLatest(client.DownloadString(LatestApiUrl)); }
+            catch (System.Net.WebException ex) when (Unreachable(ex)) { throw; }
             catch (Exception)
             {
                 client.Headers.Remove("Accept");
-                json = client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks);
+                return ParseLatest(client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks));
             }
         }
-        var latest = JObject.Parse(json);
+    }
+
+    private static JObject ParseLatest(string json)
+    {
+        JObject latest;
+        try { latest = JObject.Parse(json); }
+        catch (Newtonsoft.Json.JsonException) { throw new InvalidOperationException("the answer was no latest.json (a sign-in page of the network?)."); }
         if (string.IsNullOrWhiteSpace((string)latest["version"]) || string.IsNullOrWhiteSpace((string)latest["url"]))
             throw new InvalidOperationException("latest.json names no version or url; no release has been published yet.");
         return latest;
+    }
+
+    // No way out at all: the CDN would not answer either.
+    private static bool Unreachable(System.Net.WebException ex) =>
+        ex.Status == System.Net.WebExceptionStatus.ConnectFailure || ex.Status == System.Net.WebExceptionStatus.NameResolutionFailure ||
+        ex.Status == System.Net.WebExceptionStatus.ProxyNameResolutionFailure || ex.Status == System.Net.WebExceptionStatus.Timeout;
+
+    /// <summary>The version latest.json names, as the folder it is installed into: two to four numbers with dots (a
+    /// leading v dropped). Anything else ("..\\..", "1.0-beta") is refused before it becomes part of a path.</summary>
+    private static string ReleaseVersion(JObject latest)
+    {
+        string named = (string)latest["version"] ?? "", version = named.TrimStart('v', 'V');
+        var parts = version.Split('.');
+        if (parts.Length < 2 || parts.Length > 4 || parts.Any(p => p.Length == 0 || p.Any(c => c < '0' || c > '9')) || !Version.TryParse(version, out _))
+            throw new InvalidOperationException("latest.json names version '" + named + "', which is no version number like 1.2.0; nothing is installed from it.");
+        return version;
     }
 
     /// <summary>Downloads the release latest.json names into lib\<version>\, checks its hash, returns the path.
@@ -425,7 +453,15 @@ public class CPHInline
             try
             {
                 latest = latest ?? FetchLatest();
-                string version = ((string)latest["version"]).TrimStart('v', 'V');
+                // Nothing unchecked: the version becomes a folder name only when it is a version number, the DLL comes
+                // over HTTPS only, and a release without a hash is not installed at all.
+                string version = ReleaseVersion(latest);
+                string url = (string)latest["url"];
+                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+                    throw new InvalidOperationException("latest.json names a download that is not HTTPS (" + url + "); it is not fetched.");
+                string expected = ((string)latest["sha256"] ?? "").Trim().ToLowerInvariant();
+                if (expected.Length == 0)
+                    throw new InvalidOperationException("latest.json names no sha256 for " + version + "; an unverified UIFramework.dll is not installed.");
                 string target = Path.Combine(LibRoot, version, "UIFramework.dll");
                 if (File.Exists(target))
                     return target;
@@ -435,24 +471,19 @@ public class CPHInline
                 using (var client = new QuickWebClient { TimeoutMs = 60000 })
                 {
                     client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
-                    client.DownloadFile((string)latest["url"], temp);
+                    client.DownloadFile(uri, temp);
                 }
-                string expected = ((string)latest["sha256"] ?? "").Trim().ToLowerInvariant();
-                if (expected.Length > 0)
+                string actual;
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                using (var stream = File.OpenRead(temp))
+                    actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                if (actual != expected)
                 {
-                    string actual;
-                    using (var sha = System.Security.Cryptography.SHA256.Create())
-                    using (var stream = File.OpenRead(temp))
-                        actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
-                    if (actual != expected)
-                    {
-                        File.Delete(temp);
-                        throw new InvalidOperationException("the downloaded file does not match the published hash (" + actual + " vs " + expected + ").");
-                    }
+                    File.Delete(temp);
+                    throw new InvalidOperationException("the downloaded file does not match the published hash (" + actual + " vs " + expected + ").");
                 }
                 File.Move(temp, target);
-                if (expected.Length > 0)
-                    File.WriteAllText(target + ".sha256", expected);
+                File.WriteAllText(target + ".sha256", expected);
                 return target;
             }
             finally
@@ -617,7 +648,52 @@ public class CPHInline
         }
     }
 
+    // ================================================================================================
+    // ONE WINDOW: Streamer.bot runs this action on every trigger, also while its window is open.
+    // ================================================================================================
+
+    // Held by the run that opens the window, until that run is over. Another run meanwhile asks neither the game nor
+    // GitHub again and leaves _botThread and the job queue to the run whose pump serves the window.
+    private static int _opening;
+    // The schema of the window that run shows; null while it is still asking the game or a dialog is up.
+    private static string _shownSchema;
+
     public bool Execute()
+    {
+        if (Interlocked.CompareExchange(ref _opening, 1, 0) != 0)
+            return BringToFront();
+        try { return Open(); }
+        finally
+        {
+            Volatile.Write(ref _shownSchema, null);
+            Volatile.Write(ref _opening, 0);
+        }
+    }
+
+    /// <summary>A run while another one has the window: the DLL brings that window to the front and returns at once.
+    /// When the window has closed but the other run's pump is still stuck in a game action, the DLL opens it again and
+    /// this run's pump serves it, so a window whose request hangs can still be closed and opened again.</summary>
+    private bool BringToFront()
+    {
+        string schema = Volatile.Read(ref _shownSchema);
+        if (schema == null)
+        {
+            CPH.LogInfo(LogPrefix + " The settings window is still opening (the game's answer or a dialog is pending); this run leaves it to that one.");
+            return true;
+        }
+        try
+        {
+            _show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            CPH.LogError(LogPrefix + " The settings window could not be brought to the front: " + ((ex as TargetInvocationException)?.InnerException?.Message ?? ex.Message));
+            return false;
+        }
+    }
+
+    private bool Open()
     {
         _botThread = Thread.CurrentThread.ManagedThreadId;
         // The game first: without its answer there is nothing to show, and the settings file is named in it.
@@ -668,8 +744,11 @@ public class CPHInline
                 Ask("No installed UIFramework.dll could be loaded; the log names each one and why.\n\nReleases: " + FrameworkReleasesUrl, MbOk, MbIconWarning);
                 return false;
             }
-            _show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) });
-            Pump();
+            Volatile.Write(ref _shownSchema, schema);
+            // False: a window for this settings file was open already and came to the front; the run that serves it
+            // pumps for it, so this one does not drain the queue beside it.
+            if ((bool)_show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) }))
+                Pump();
             return true;
         }
         catch (Exception ex)
