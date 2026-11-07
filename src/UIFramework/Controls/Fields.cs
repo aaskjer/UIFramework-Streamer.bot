@@ -217,7 +217,7 @@ namespace UIFramework
             var tag = new FieldTag(key, FieldKind.Double) { Factor = factor, Min = min, Max = max };
             var box = new TextBox
             {
-                Text = FieldBinding.Display(tag, Token(key)),
+                Text = FieldBinding.Display(tag, NumberToken(key)),
                 Tag = tag,
                 MaxLength = 6,
                 ToolTip = tooltip + Text.T("field.percentRange", min.ToString("0.##", CultureInfo.InvariantCulture), max.ToString("0.##", CultureInfo.InvariantCulture))
@@ -228,8 +228,12 @@ namespace UIFramework
             Ui.DecimalsOnly(box);
             box.LostFocus += (s, e) =>
             {
-                double clamped = FieldBinding.TryParseFinite(box.Text, out double pct) ? Math.Max(min, Math.Min(max, pct)) : min;
-                box.Text = clamped.ToString("0.##", CultureInfo.InvariantCulture);
+                // Only a number outside the range is rewritten, to its limit with every decimal it has; one within it
+                // stays as typed, and text that is no number stays for the save to name.
+                if (!FieldBinding.TryParseTyped(box.Text, out double pct)) return;
+                double clamped = Math.Max(min, Math.Min(max, pct));
+                if (clamped != pct)
+                    box.Text = clamped.ToString("0.##########", CultureInfo.InvariantCulture);
             };
             return Ui.Labeled(label + " (%)", box);
         }
@@ -563,7 +567,7 @@ namespace UIFramework
         /// <param name="labelled">false: the row alone (box, swatch, picker), for a caller that labels it inline.</param>
         public FrameworkElement ColourField(string label, string key, string tooltip, bool labelled = true)
         {
-            var box = SettingBox(label, key, tooltip + "\nType a hex code, or click the swatch to pick one.");
+            var box = SettingBox(label, key, tooltip + "\n" + Text.T("field.colour.tip"));
             box.Width = 92;
             box.HorizontalAlignment = HorizontalAlignment.Left;
 

@@ -24,22 +24,28 @@ namespace UIFramework
             {
                 bool was = toggle.IsChecked == true;
                 toggle.IsChecked = value != null && value.Type == JTokenType.Boolean ? (bool)value
-                    : string.Equals(value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+                    : string.Equals(FieldBinding.Invariant(value), "true", StringComparison.OrdinalIgnoreCase);
                 if (was != (toggle.IsChecked == true)) Ui.Flash(toggle);
                 return true;
             }
             if (parts.Combos.TryGetValue(key, out var combo))
             {
+                // The value as text the same on every Windows ("0.5", never "0,5"), numbers compared as numbers.
+                string text = FieldBinding.Invariant(value);
                 foreach (var raw in combo.Items)
                 {
                     if (!(raw is ComboBoxItem item) || item.Tag == null) continue;
                     bool hit;
                     if (item.Tag is double dd)
-                        hit = value != null && double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double want) && Math.Abs(dd - want) < 0.001;
+                        hit = FieldBinding.TryParseFinite(text, out double want) && Math.Abs(dd - want) <= 1e-9 * Math.Max(1, Math.Abs(dd));
                     else if (item.Tag is int || item.Tag is long)
-                        hit = value != null && long.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long whole) && Convert.ToInt64(item.Tag, CultureInfo.InvariantCulture) == whole;
+                        hit = FieldBinding.TryParseFinite(text, out double whole) && Convert.ToInt64(item.Tag, CultureInfo.InvariantCulture) == whole;
                     else
-                        hit = string.Equals(item.Tag.ToString(), value?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
+                    {
+                        string option = item.Tag is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : item.Tag.ToString();
+                        hit = string.Equals(option, text, StringComparison.OrdinalIgnoreCase)
+                            || (FieldBinding.TryParseInvariantDouble(option, out double a) && FieldBinding.TryParseInvariantDouble(text, out double b) && Math.Abs(a - b) <= 1e-9 * Math.Max(1, Math.Abs(a)));
+                    }
                     if (hit)
                     {
                         bool moved = !ReferenceEquals(combo.SelectedItem, item);
@@ -53,7 +59,7 @@ namespace UIFramework
             if (parts.Boxes.TryGetValue(key, out var box))
             {
                 string was = box.Text;
-                box.Text = box.Tag is FieldTag tag ? FieldBinding.Display(tag, value) : value?.ToString() ?? "";
+                box.Text = box.Tag is FieldTag tag ? FieldBinding.Display(tag, value) : FieldBinding.Invariant(value);
                 if (!string.Equals(was, box.Text, StringComparison.Ordinal)) Ui.Flash(box);
                 return true;
             }

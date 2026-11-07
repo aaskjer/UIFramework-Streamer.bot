@@ -188,6 +188,8 @@ namespace UIFramework
                 string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
                 var writeLog = ctx.Fields.Toggle(T(spec.WriteLogLabel), spec.WriteLogKey, T(spec.WriteLogHelp));
                 writeLog.Margin = new Thickness(0, 10, 0, 0);
+                // The customise mode has no Save: a switch flipped there would be dropped with the next rebuild.
+                if (ctx.Customizing) writeLog.IsEnabled = false;
                 DockPanel.SetDock(writeLog, Dock.Bottom);
                 root.Children.Add(writeLog);
             }

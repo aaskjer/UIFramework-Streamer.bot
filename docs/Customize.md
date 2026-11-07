@@ -73,7 +73,12 @@ the window itself stays where it is.
 | `fields.<key>.hidden`          | the field is gone; the value stays in the settings file                      |
 
 A value of the wrong type (`"order": "2"`, `"theme": "dark"`) is read as not set. A file that is not JSON at all
-is copied to `uiframework.layout.json.broken`, named in the log, and the window starts from the defaults.
+is copied to `uiframework.layout.json.broken`, named in the log, and the window starts from the defaults. A file
+another program holds open while the window reads it is tried again a few times; if it still cannot be opened,
+the window starts from the defaults for once and does not write over it.
+
+Dropping a field at the top or bottom of a field that shares a line with others puts it above or below that whole
+line; the row stays together.
 
 The layout file is the fourth and last layer over the conventions, the schema and the window declaration. Keys
 the schema no longer knows are ignored. Editing by hand is fine; the window reads the file on every open.

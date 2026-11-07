@@ -41,7 +41,7 @@ namespace UIFramework
             string pageId = settings.Count > 0 ? settings[0].Page : "";
             Fill(ctx, page, settings, true, (s, element) => Customize.Wrap(ctx, s, element, pageId));
             if (settings.Count == 0)
-                page.Children.Add(Ui.Note("No fields on this page. Drop one here from another page, or move one with its menu."));
+                page.Children.Add(Ui.Note(Text.T("cust.emptyPage")));
         }
 
         /// <summary>Fields the spec put on a standard page, above that page's own content.</summary>
@@ -368,8 +368,8 @@ namespace UIFramework
 
         private static FrameworkElement PathField(PageContext ctx, Setting s, string label, string help)
         {
-            var box = ctx.Fields.SettingBox(label, s.Key, help + "\nA relative path starts in the Streamer.bot folder.");
-            var open = Ui.IconButton(Icons.Folder, Icons.Font, "Open this folder");
+            var box = ctx.Fields.SettingBox(label, s.Key, help + "\n" + Text.T("field.path.tip"));
+            var open = Ui.IconButton(Icons.Folder, Icons.Font, Text.T("field.path.open"));
             open.Margin = new Thickness(6, 0, 0, 0);
             open.Click += (sender, e) =>
             {
@@ -460,7 +460,7 @@ namespace UIFramework
                 {
                     // The window's thread is an STA one, which the clipboard wants; the game's is not.
                     try { Clipboard.SetText(clipboard); }
-                    catch (Exception ex) { status = (status ?? "") + " (the clipboard was busy: " + ex.Message + ")"; }
+                    catch (Exception ex) { status = (status ?? "") + Text.T("action.clipboardBusy", ex.Message); }
                 }
                 if (panel != null)
                 {
@@ -470,15 +470,15 @@ namespace UIFramework
                 else if (structured != null)
                 {
                     if (status != null || s.Kind == "action")
-                        ctx.SetStatus(status ?? (label + ": done"), Theme.SuccessText, null);
+                        ctx.SetStatus(status ?? Text.T("action.done", label), Theme.SuccessText, null);
                 }
                 else if (result != null || s.Kind == "action")
-                    ctx.SetStatus(result ?? (label + ": done"), Theme.SuccessText, null);
+                    ctx.SetStatus(result ?? Text.T("action.done", label), Theme.SuccessText, null);
             }
             catch (Exception ex)
             {
-                if (panel != null) { ResultPanel.Render(panel, label + " failed: " + ex.Message); ShowAnswerBox(panel); }
-                else ctx.SetStatus(label + " failed", Theme.DangerText, ex.Message);
+                if (panel != null) { ResultPanel.Render(panel, Text.T("action.failedWhy", label, ex.Message)); ShowAnswerBox(panel); }
+                else ctx.SetStatus(Text.T("action.failed", label), Theme.DangerText, ex.Message);
             }
         }
 
@@ -516,7 +516,7 @@ namespace UIFramework
                     ElementStyle = cellText
                 });
 
-            var empty = Ui.Note("Nothing here yet.");
+            var empty = Ui.Note(Text.T("table.empty"));
             empty.HorizontalAlignment = HorizontalAlignment.Center;
             var host = new Grid();
             host.Children.Add(grid);
@@ -530,7 +530,7 @@ namespace UIFramework
                     string json = ctx.Hooks.ReadTable(s.Key);
                     if (!string.IsNullOrWhiteSpace(json) && JToken.Parse(json) is JArray array)
                         foreach (var item in array.OfType<JObject>())
-                            rows.Add(item.Properties().ToDictionary(p => p.Name, p => p.Value?.ToString() ?? ""));
+                            rows.Add(item.Properties().ToDictionary(p => p.Name, p => FieldBinding.Invariant(p.Value)));
                 }
                 catch (Exception ex)
                 {
@@ -540,7 +540,7 @@ namespace UIFramework
                 empty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            var reload = Ui.IconButton(Icons.Refresh, Icons.Font, "Read again");
+            var reload = Ui.IconButton(Icons.Refresh, Icons.Font, Text.T("table.reload"));
             reload.Click += (sender, e) => Load();
             var head = new DockPanel { Margin = new Thickness(0, 6, 0, 4) };
             DockPanel.SetDock(reload, Dock.Right);
