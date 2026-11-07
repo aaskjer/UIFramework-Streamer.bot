@@ -46,13 +46,13 @@ conventions cannot know.
 | `page`         | no       | the page's id; the conventions or the window set it otherwise, the rest lands on `game`     |
 | `label`        | no       | shown above the field; known keys take it from the conventions                              |
 | `help`         | no       | one sentence under the field                                                                |
-| `min`, `max`   | no       | for `int`, `double`, `duration`, `percent`                                                  |
-| `step`         | no       | the step of a `double`                                                                      |
+| `min`, `max`   | no       | for `int`, `long`, `double`, `duration`, `percent`: a number outside is saved as the nearest limit, and the field then shows that value; a `min` below 0 lets a whole-number field take a minus |
+| `step`         | no       | the step of a `double` or a `slider`                                                         |
 | `unit`         | no       | shown after the field (`s`, `%`, `px`)                                                      |
 | `options`      | no       | the choices of `options` or a `slider`: `["a", "b"]` or `["a|Label A", "b|Label B"]`       |
 | `placeholders` | no       | for `template`: the names without braces, shown as chips                                    |
 | `section`      | no       | a heading; where it changes, a new section of the page begins                               |
-| `group`        | no       | for `template`: the group in the message picker                                             |
+| `group`        | no       | for `template`: the group in the message picker (host block: `group:` on `S()` as well as `Msg()`) |
 | `factor`       | no       | for `percent`: stored = typed × factor (0.01 stores a fraction; default 1)                  |
 | `unlimitedAtZero` | no    | for `int`/`long`: 0 in the field means "no limit" and is stored as MaxValue                 |
 | `aliases`      | no       | old keys: the store reads them and writes the canonical key back. An alias with a dot (`PlatformEmotes.twitch`) takes the value out of an object of the old file; the object goes once it is empty. Two settings naming the same alias (one old switch that became two) both take its value |
@@ -60,23 +60,30 @@ conventions cannot know.
 | `hidden`       | no       | true: no field, but the value stays in the file                                             |
 | `confirm`      | no       | for `action`: a yes/no question before the game is asked                                    |
 | `row`          | no       | the name of a row: settings that name the same row one after the other share one line of the page, whatever their kind (a bet, a role and a Try button; a button takes the width it needs, an answer `panel` goes under the row); without it numbers sit three to a line, switches two, everything else alone |
-| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold; with `hide:` in front (`hide:questionSource=igdb`) it is hidden instead, and a section heading whose fields are all hidden hides with them |
-| `showWhen`     | no       | the field is shown only while the condition holds, whatever its kind (a field, a switch, a note, a button, a list): `questionSource=igdb`; several values, one of which must be picked, `questionSource=opentdb|wikidata`; none of them, `questionSource!=custom|igdb`; several conditions that must all hold, `mixOwn && questionSource!=custom`. `requires` still greys out; both can be set |
+| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold; with `hide:` in front (`hide:questionSource=igdb`) it is hidden instead, and a section heading whose fields are all hidden hides with them. `!key` holds while a switch is off or a field is empty. A key the window does not show (hidden by the user) is read from its saved value |
+| `showWhen`     | no       | the field is shown only while the condition holds, whatever its kind (a field, a switch, a note, a button, a list): `questionSource=igdb`; several values, one of which must be picked, `questionSource=opentdb|wikidata`; none of them, `questionSource!=custom|igdb`; several conditions that must all hold, `mixOwn && questionSource!=custom`; a switch that is off, `!useBot`. `requires` still greys out; both can be set |
 | `shows`        | no       | on a dropdown: per option value the keys of the fields that option shows, `{ "igdb": ["igdbClientId", "igdbClientSecret"], "opentdb": ["cacheSize"] }` (host block: `shows: new[] { "igdb: igdbClientId, igdbClientSecret", "opentdb: cacheSize" }`). A field named by several options shows with any of them; a field with a `showWhen` of its own needs both |
 | `masked`       | no       | true: a text field shown as dots, with an eye button that reveals it (a token, a client secret); the value is saved like any other |
-| `readOnly`     | no       | true: shown, not editable (a status the game writes)                                        |
+| `readOnly`     | no       | true: shown, not editable (a status the game writes); `readonly` is read too (host block: `readOnly:` on `S()`) |
 | `twitchOnly`   | no       | for `bool`: the switch carries a "Twitch only" pill                                         |
 | `transient`    | no       | true: shown, never saved, never counted as a change; only a live snapshot for the game carries it (the inputs of a Try button) |
 | `live`         | no       | for `action`: the game gets the values as they stand in the window, unsaved and transient ones included. On any other field: the game is asked whenever the field changes (`test` with the field's key and the live values), and `set` in its answer fills other fields (a preset slider that sets five numbers) |
 | `panel`        | no       | for `action`: the answer is shown in a box under the button instead of the footer           |
 | `auto`         | no       | for `action`: no button; the game is asked when the page is shown and shortly after every change in the window (odds that follow the settings) |
-| `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `double` (half as wide), `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the game's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself). A trailing `|readonly` (`readOnly: true` in JSON) makes a column the game fills and the user only reads. From eight rows a list gets a search box that hides the rows the text does not occur in |
+| `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `double` (half as wide), `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the game's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself). A trailing `|readonly` (`readOnly: true` in JSON) makes a column the game fills and the user only reads; a flag right after the kind (`"wins|int|readonly"`, `"face|emote|twitch"`) leaves the key as the header. A number column takes only a number: anything else puts the cell back to what it held. From eight rows a list gets a search box that hides the rows the text does not occur in |
 | `file`         | no       | a file next to the settings file that holds this value instead (a word bank, a question list); relative or absolute |
 | `field`        | no       | with `file`: the property in that file that holds the value; without it the file itself is the value |
 | `platform`     | no       | for `emote`: `twitch`, `youtube` or `kick`, where the picture comes from                     |
 
-Without `kind`: bool → `bool`, whole number → `int`, decimal → `double`, string → `string`, array → `list`
-(which then needs `columns`).
+Without `kind`: bool → `bool`, whole number → `int` (`long` when it does not fit an int, also where the conventions
+say `int`), decimal → `double`, string → `string`, array → `list` (which then needs `columns`).
+
+A value in the settings file that does not fit its field never stops the window from opening: a number field whose
+value is no number (`""`, `"abc"`) shows its default, a number stored as text is read (`"0,5"` is 0.5, from a German
+Windows), and a whole-number field holding a fraction shows it as it is, so the check before saving names it instead of
+cutting it. A dropdown or a slider over stops whose stored value none of its options has keeps it as an extra entry
+(the slider names it beside its label) and saves it back unchanged until the user picks another. Numbers are written
+and compared with a point whatever the system's language.
 
 ## Kinds
 
@@ -85,7 +92,7 @@ Without `kind`: bool → `bool`, whole number → `int`, decimal → `double`, s
 | `bool`      | bool        | toggle                                     |                                                       |
 | `int`       | int         | number field; with `options` a dropdown    | `min`, `max`, `unit`, `unlimitedAtZero`                |
 | `long`      | long        | number field                               | like `int`, for big balances                          |
-| `double`    | double      | number field; with `options` a dropdown    | `min`, `max`, `step`; dot or comma                    |
+| `double`    | double      | number field; with `options` a dropdown    | `min`, `max`, `step`; dot or comma; `1,000` and `1.000,5` are refused as ambiguous |
 | `percent`   | int/double  | number field 0 to 100 with `%`             | stored as the number, not a fraction (see `factor`)   |
 | `duration`  | int         | number field with a unit                   | stored in seconds; shown as s/min/h                   |
 | `string`    | string      | one-line text field                        |                                                       |
@@ -173,7 +180,8 @@ section its settings declare and give the condition, the same as a field's `show
 ```
 
 In the schema: `window.sections: [ { "name": "IGDB access", "showWhen": "questionSource=igdb" } ]`. A field's own
-`showWhen` and its section's both have to hold. When the window opens, every condition is checked: a key that is
+`showWhen` and its section's both have to hold. A field the user's layout moves to another section takes that
+section's condition, not the one it was declared in. When the window opens, every condition is checked: a key that is
 not a setting, or a value a dropdown has no option for (`questionSource=IGBD`), is listed on the Log page.
 
 ### Languages

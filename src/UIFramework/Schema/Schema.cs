@@ -171,11 +171,19 @@ namespace UIFramework
             switch (value.Type)
             {
                 case JTokenType.Boolean: return "bool";
-                case JTokenType.Integer: return "int";
+                case JTokenType.Integer: return FitsInt(value) ? "int" : "long";
                 case JTokenType.Float: return "double";
                 case JTokenType.Array: return "list";
                 default: return "string";
             }
+        }
+
+        /// <summary>A whole number that an int holds; a bigger one needs a long field.</summary>
+        public static bool FitsInt(JToken value)
+        {
+            if (value == null || value.Type != JTokenType.Integer) return true;
+            try { long l = Convert.ToInt64(((JValue)value).Value, System.Globalization.CultureInfo.InvariantCulture); return l >= int.MinValue && l <= int.MaxValue; }
+            catch (OverflowException) { return false; }
         }
 
         public static Setting Parse(JObject item)
@@ -201,7 +209,7 @@ namespace UIFramework
                 Row = (string)item["row"],
                 Confirm = (string)item["confirm"],
                 Advanced = item["advanced"]?.Type == JTokenType.Boolean && (bool)item["advanced"],
-                ReadOnly = item["readonly"]?.Type == JTokenType.Boolean && (bool)item["readonly"],
+                ReadOnly = (item["readOnly"] ?? item["readonly"])?.Type == JTokenType.Boolean && (bool)(item["readOnly"] ?? item["readonly"]),
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
                 TwitchOnly = item["twitchOnly"]?.Type == JTokenType.Boolean && (bool)item["twitchOnly"],
@@ -251,7 +259,7 @@ namespace UIFramework
             if (Row != null) item["row"] = Row;
             if (Confirm != null) item["confirm"] = Confirm;
             if (Advanced) item["advanced"] = true;
-            if (ReadOnly) item["readonly"] = true;
+            if (ReadOnly) item["readOnly"] = true;
             if (Hidden) item["hidden"] = true;
             if (Transient) item["transient"] = true;
             if (TwitchOnly) item["twitchOnly"] = true;
@@ -291,7 +299,8 @@ namespace UIFramework
         {
             if (token is JObject o)
                 return new SettingOption { Value = (string)o["value"] ?? "", Label = (string)o["label"] ?? (string)o["value"] ?? "" };
-            string text = token.ToString();
+            // A number option is read without the system's decimal mark: 0.5 stays "0.5" on a German Windows.
+            string text = FieldBinding.Invariant(token);
             return new SettingOption { Value = text, Label = text };
         }
 
@@ -312,7 +321,7 @@ namespace UIFramework
             Kind = (string)o["kind"] ?? "string",
             Label = (string)o["label"] ?? (string)o["key"],
             Platform = (string)o["platform"],
-            ReadOnly = o["readOnly"]?.Type == JTokenType.Boolean && (bool)o["readOnly"]
+            ReadOnly = (o["readOnly"] ?? o["readonly"])?.Type == JTokenType.Boolean && (bool)(o["readOnly"] ?? o["readonly"])
         };
 
         public JObject ToJson()

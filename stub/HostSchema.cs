@@ -35,6 +35,8 @@ public static class UiSchema
         // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
         // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
         public string ShowWhen; public string[] Shows;
+        // ReadOnly: shown, not editable (a status the game writes). Step: a slider's step.
+        public bool ReadOnly; public double? Step;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -43,12 +45,15 @@ public static class UiSchema
     /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
     /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
     /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
-    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
+    /// conditions "mode!=free && useBot", "!key" for a switch that is off. On a dropdown, shows names per option the fields it
+    /// shows: "igdb: clientId, clientSecret". readOnly shows a value the game writes without letting the user edit it; step is
+    /// a slider's step; group puts a message template under a heading of its own.</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
+        bool readOnly = false, double? step = null, string group = null)
     {
         return new Setting
         {
@@ -56,7 +61,7 @@ public static class UiSchema
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
-            ShowWhen = showWhen, Shows = shows
+            ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group
         };
     }
 
@@ -74,89 +79,96 @@ public static class UiSchema
     {
         var settings = new JArray();
         foreach (var s in Table)
-        {
-            var item = new JObject { ["key"] = s.Key, ["default"] = s.Default == null ? JValue.CreateNull() : JToken.FromObject(s.Default) };
-            if (s.Kind != null) item["kind"] = s.Kind;
-            if (s.Page != null) item["page"] = s.Page;
-            if (s.Section != null) item["section"] = s.Section;
-            if (s.Group != null) item["group"] = s.Group;
-            if (s.Label != null) item["label"] = s.Label;
-            if (s.Help != null) item["help"] = s.Help;
-            if (s.Min.HasValue) item["min"] = s.Min.Value;
-            if (s.Max.HasValue) item["max"] = s.Max.Value;
-            if (s.Unit != null) item["unit"] = s.Unit;
-            if (s.Platform != null) item["platform"] = s.Platform;
-            if (s.Factor.HasValue) item["factor"] = s.Factor.Value;
-            if (s.UnlimitedAtZero) item["unlimitedAtZero"] = true;
-            if (s.Hidden) item["hidden"] = true;
-            if (s.Requires != null) item["requires"] = s.Requires;
-            if (s.Confirm != null) item["confirm"] = s.Confirm;
-            if (s.Options != null)
-            {
-                var options = new JArray();
-                foreach (var option in s.Options)
-                {
-                    int bar = option.IndexOf('|');
-                    options.Add(bar < 0 ? (JToken)option : new JObject { ["value"] = option.Substring(0, bar), ["label"] = option.Substring(bar + 1) });
-                }
-                item["options"] = options;
-            }
-            if (s.Placeholders != null) item["placeholders"] = new JArray(s.Placeholders);
-            if (s.Columns != null)
-            {
-                var columns = new JArray();
-                foreach (var column in s.Columns)
-                {
-                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
-                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
-                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
-                    while (parts.Count > 3)
-                    {
-                        string last = parts[parts.Count - 1];
-                        if (last == "readonly") cell["readOnly"] = true;
-                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
-                        else break;
-                        parts.RemoveAt(parts.Count - 1);
-                    }
-                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
-                    columns.Add(cell);
-                }
-                item["columns"] = columns;
-            }
-            if (s.File != null) item["file"] = s.File;
-            if (s.Transient) item["transient"] = true;
-            if (s.Live) item["live"] = true;
-            if (s.Panel) item["panel"] = true;
-            if (s.Auto) item["auto"] = true;
-            if (s.TwitchOnly) item["twitchOnly"] = true;
-            if (s.Masked) item["masked"] = true;
-            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
-            if (s.Shows != null)
-            {
-                var shows = new JObject();
-                foreach (var entry in s.Shows)
-                {
-                    int colon = entry.IndexOf(':');
-                    if (colon <= 0) continue;
-                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
-                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
-                    foreach (var key in entry.Substring(colon + 1).Split(','))
-                        if (key.Trim().Length > 0) keys.Add(key.Trim());
-                }
-                item["shows"] = shows;
-            }
-            if (s.Row != null) item["row"] = s.Row;
-            if (s.Field != null) item["field"] = s.Field;
-            if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
-            if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
-            settings.Add(item);
-        }
+            settings.Add(ToJson(s));
         var root = new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
         if (Window != null) root["window"] = Window.ToJson();
         if (Window != null && Window.LangMap.Count > 0) root["lang"] = Window.LangMap;
         if (currency != null && currency.Detected) root["currency"] = currency.ToJson();
         return root.ToString(Formatting.None);
+    }
+
+    /// <summary>One setting as the window reads it.</summary>
+    public static JObject ToJson(Setting s)
+    {
+        var item = new JObject { ["key"] = s.Key, ["default"] = s.Default == null ? JValue.CreateNull() : JToken.FromObject(s.Default) };
+        if (s.Kind != null) item["kind"] = s.Kind;
+        if (s.Page != null) item["page"] = s.Page;
+        if (s.Section != null) item["section"] = s.Section;
+        if (s.Group != null) item["group"] = s.Group;
+        if (s.Label != null) item["label"] = s.Label;
+        if (s.Help != null) item["help"] = s.Help;
+        if (s.Min.HasValue) item["min"] = s.Min.Value;
+        if (s.Max.HasValue) item["max"] = s.Max.Value;
+        if (s.Unit != null) item["unit"] = s.Unit;
+        if (s.Platform != null) item["platform"] = s.Platform;
+        if (s.Factor.HasValue) item["factor"] = s.Factor.Value;
+        if (s.UnlimitedAtZero) item["unlimitedAtZero"] = true;
+        if (s.Hidden) item["hidden"] = true;
+        if (s.Requires != null) item["requires"] = s.Requires;
+        if (s.Confirm != null) item["confirm"] = s.Confirm;
+        if (s.Options != null)
+        {
+            var options = new JArray();
+            foreach (var option in s.Options)
+            {
+                int bar = option.IndexOf('|');
+                options.Add(bar < 0 ? (JToken)option : new JObject { ["value"] = option.Substring(0, bar), ["label"] = option.Substring(bar + 1) });
+            }
+            item["options"] = options;
+        }
+        if (s.Placeholders != null) item["placeholders"] = new JArray(s.Placeholders);
+        if (s.Columns != null)
+        {
+            var columns = new JArray();
+            foreach (var column in s.Columns)
+            {
+                var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                // A flag right after the kind ("key|int|readonly") counts as one too; the label is then the key.
+                while (parts.Count > 3 || (parts.Count == 3 && (parts[2] == "readonly" || parts[2] == "twitch" || parts[2] == "youtube" || parts[2] == "kick")))
+                {
+                    string last = parts[parts.Count - 1];
+                    if (last == "readonly") cell["readOnly"] = true;
+                    else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                    else break;
+                    parts.RemoveAt(parts.Count - 1);
+                }
+                cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
+                columns.Add(cell);
+            }
+            item["columns"] = columns;
+        }
+        if (s.File != null) item["file"] = s.File;
+        if (s.Transient) item["transient"] = true;
+        if (s.Live) item["live"] = true;
+        if (s.Panel) item["panel"] = true;
+        if (s.Auto) item["auto"] = true;
+        if (s.TwitchOnly) item["twitchOnly"] = true;
+        if (s.Masked) item["masked"] = true;
+        if (s.ReadOnly) item["readOnly"] = true;
+        if (s.Step.HasValue) item["step"] = s.Step.Value;
+        if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+        if (s.Shows != null)
+        {
+            var shows = new JObject();
+            foreach (var entry in s.Shows)
+            {
+                int colon = entry.IndexOf(':');
+                if (colon <= 0) continue;
+                var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
+                if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
+                foreach (var key in entry.Substring(colon + 1).Split(','))
+                    if (key.Trim().Length > 0) keys.Add(key.Trim());
+            }
+            item["shows"] = shows;
+        }
+        if (s.Row != null) item["row"] = s.Row;
+        if (s.Field != null) item["field"] = s.Field;
+        if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
+        if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
+        return item;
     }
 
     // ---- Shorthands for the window: a page, a help section and its lines, a cooldown. ----
@@ -624,10 +636,10 @@ public sealed class UiSettings
 
     public long Long(string key)
     {
-        var t = Token(key);
-        if (t == null) return 0;
-        if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) return Convert.ToInt64(((JValue)t).Value, CultureInfo.InvariantCulture);
-        return long.TryParse(t.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0;
+        double d = Double(key);
+        if (d >= long.MaxValue) return long.MaxValue;
+        if (d <= long.MinValue) return long.MinValue;
+        return (long)Math.Round(d);
     }
 
     public int Int(string key) { long l = Long(key); return l > int.MaxValue ? int.MaxValue : l < int.MinValue ? int.MinValue : (int)l; }
@@ -636,14 +648,22 @@ public sealed class UiSettings
     {
         var t = Token(key);
         if (t == null) return 0;
-        if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) return Convert.ToDouble(((JValue)t).Value, CultureInfo.InvariantCulture);
-        return double.TryParse(t.ToString().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0;
+        double d;
+        if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) d = Convert.ToDouble(((JValue)t).Value, CultureInfo.InvariantCulture);
+        else if (!double.TryParse(t.ToString().Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out d)) return 0;
+        return double.IsNaN(d) || double.IsInfinity(d) ? 0 : d;
     }
 
+    /// <summary>The value as text, numbers with a point whatever the system's culture ("0.5", not "0,5").</summary>
     public string String(string key)
     {
         var t = Token(key);
-        return t == null ? "" : t.Type == JTokenType.String ? (string)t : t.ToString();
+        if (t == null || t.Type == JTokenType.Null) return "";
+        if (t.Type == JTokenType.String) return (string)t;
+        if (t.Type == JTokenType.Float) return Convert.ToDouble(((JValue)t).Value, CultureInfo.InvariantCulture).ToString("R", CultureInfo.InvariantCulture);
+        if (t.Type == JTokenType.Integer) return Convert.ToString(((JValue)t).Value, CultureInfo.InvariantCulture);
+        if (t.Type == JTokenType.Boolean) return (bool)t ? "true" : "false";
+        return t.ToString(Formatting.None);
     }
 
     /// <summary>A ceiling that stores "no limit" as 0: read as long.MaxValue.</summary>

@@ -108,11 +108,14 @@ namespace UIFramework
 
             if (root["senders"] is JObject senders)
             {
-                spec.Senders.UseBot = (string)senders["useBot"] ?? spec.Senders.UseBot;
-                spec.Senders.SendAction = (string)senders["sendAction"] ?? spec.Senders.SendAction;
-                spec.Senders.CooldownUseBot = (string)senders["cooldownUseBot"] ?? spec.Senders.CooldownUseBot;
-                spec.Senders.CooldownSendAction = (string)senders["cooldownSendAction"] ?? spec.Senders.CooldownSendAction;
-                spec.Senders.CooldownGroup = (string)senders["cooldownGroup"] ?? spec.Senders.CooldownGroup;
+                // A key that is there with null hides that switch (docs/Schema.md); a key left out keeps the default.
+                string Sender(string name, string fallback) =>
+                    senders[name] == null ? fallback : senders[name].Type == JTokenType.Null ? null : (string)senders[name];
+                spec.Senders.UseBot = Sender("useBot", spec.Senders.UseBot);
+                spec.Senders.SendAction = Sender("sendAction", spec.Senders.SendAction);
+                spec.Senders.CooldownUseBot = Sender("cooldownUseBot", spec.Senders.CooldownUseBot);
+                spec.Senders.CooldownSendAction = Sender("cooldownSendAction", spec.Senders.CooldownSendAction);
+                spec.Senders.CooldownGroup = Sender("cooldownGroup", spec.Senders.CooldownGroup);
                 if (senders["numberSeparator"] != null)
                     spec.Senders.NumberSeparator = senders["numberSeparator"].Type == JTokenType.Null ? null : (string)senders["numberSeparator"];
             }

@@ -38,9 +38,7 @@ namespace UIFramework
                     if (over.Hidden.HasValue) setting.Hidden = over.Hidden.Value;
                     if (over.Order.HasValue) setting.Order = over.Order.Value;
                 }
-                // A section shown only on a condition: its fields carry it, looked up by the declared name.
-                if (setting.Section != null && spec.SectionConditions.TryGetValue(setting.Section, out var sectionCondition))
-                    setting.SectionShowWhen = sectionCondition;
+                string declaredSection = setting.Section;
                 // Another language than the game's: the conventions (and the game's own translations, laid over
                 // them) translate what they know; the rest stays as declared. The options are the setting's own copy.
                 if (lang.Translates)
@@ -66,6 +64,12 @@ namespace UIFramework
                     // "" is a line of its own: a row nobody else names.
                     if (mine.Row != null) setting.Row = mine.Row.Length == 0 ? "~" + setting.Key : mine.Row;
                 }
+                // A section shown only on a condition: its fields carry it, the section they sit in after the user's
+                // layout, by the declared name or its translation.
+                string sectionName = mine?.Section != null
+                    ? spec.SectionConditions.Keys.FirstOrDefault(k => k == mine.Section || lang.Text(k) == mine.Section) ?? mine.Section
+                    : declaredSection;
+                setting.SectionShowWhen = sectionName != null && spec.SectionConditions.TryGetValue(sectionName, out var sectionCondition) ? sectionCondition : null;
                 settings.Add(setting);
             }
             Shows(spec, settings);

@@ -31,11 +31,28 @@ namespace UIFramework
         /// <summary>The index of the stop the slider sits on; -1 for a number range.</summary>
         public int Index => Options == null ? -1 : Math.Max(0, Math.Min(Options.Count - 1, (int)Math.Round(Value)));
 
+        private JToken _kept;
+
+        /// <summary>Whether the slider still holds a kept value no stop offers.</summary>
+        public bool IsKept => _kept != null;
+
+        /// <summary>Keeps a stored value the stops do not offer: <see cref="Stored"/> returns it until the slider moves.</summary>
+        public void Keep(JToken value)
+        {
+            _kept = value?.DeepClone();
+            // Cleared before the other ValueChanged handlers run: they see the stop that was chosen.
+            ValueChanged += (s, e) => _kept = null;
+        }
+
+        /// <summary>Lets go of a kept value: the slider's own stop is the value from now on.</summary>
+        public void LetGo() => _kept = null;
+
         /// <summary>The value as the settings file holds it: the stop's value (a number when it is one), or the number.</summary>
         public JToken Stored
         {
             get
             {
+                if (_kept != null) return _kept;
                 if (Options != null)
                 {
                     string text = Options.Count == 0 ? "" : Options[Index].Value ?? "";
@@ -45,12 +62,12 @@ namespace UIFramework
             }
         }
 
-        public string StoredText => Stored.ToString();
+        public string StoredText => FieldBinding.Invariant(Stored);
 
         /// <summary>Moves the slider to a stored value: a stop's value or index, or a number within the range.</summary>
         public bool Put(JToken value)
         {
-            string text = value == null || value.Type == JTokenType.Null ? "" : value.Type == JTokenType.String ? (string)value : value.ToString();
+            string text = FieldBinding.Invariant(value);
             if (Options != null)
             {
                 int at = Options.FindIndex(o => string.Equals(o.Value, text, StringComparison.OrdinalIgnoreCase));

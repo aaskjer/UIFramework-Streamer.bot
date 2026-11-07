@@ -123,6 +123,10 @@ namespace UIFramework
             setting.Help = setting.Help ?? text.Help;
             if (setting.Kind == null)
                 setting.Kind = Setting.KindOf(setting.Default);
+            // A conventions "int" whose default is beyond an int (a maxBet of 5 billion) becomes a long field, so the
+            // value is not cut to 2147483647 on save.
+            if (setting.Kind == "int" && !Setting.FitsInt(setting.Default))
+                setting.Kind = "long";
             if (setting.Kind == "template" && setting.Page == null)
                 setting.Page = "messages";
             setting.Page = setting.Page ?? "game";

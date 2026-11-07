@@ -69,6 +69,12 @@ namespace UIFramework
                     var column = _columns.FirstOrDefault(c => c.Key == key);
                     if (column == null || column.ReadOnly) return;
                     JToken typed = Typed(column, value);
+                    if (typed == null)
+                    {
+                        // Not a number in a number column: the cell goes back to what it held.
+                        Refresh();
+                        return;
+                    }
                     if (JToken.DeepEquals(Data[key], typed)) return;
                     Data[key] = typed;
                     Refresh();
@@ -172,14 +178,17 @@ namespace UIFramework
                 if (column.Kind == "bool")
                     gridColumn = SwitchColumn(column);
                 else
+                {
+                    bool number = column.Kind == "int" || column.Kind == "long" || column.Kind == "double";
                     gridColumn = new DataGridTextColumn
                     {
                         Header = column.Label ?? column.Key,
                         Binding = new Binding("[" + column.Key + "]") { Mode = column.ReadOnly ? BindingMode.OneWay : BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.LostFocus },
                         IsReadOnly = column.ReadOnly,
                         ElementStyle = column.ReadOnly ? muted : shown,
-                        EditingElementStyle = editing
+                        EditingElementStyle = number ? NumberEditing(editing, column.Kind != "double") : editing
                     };
+                }
                 gridColumn.MinWidth = 30;
                 _grid.Columns.Add(gridColumn);
                 shares.Add((gridColumn, column.Kind == "text" ? 3.0 : column.Kind == "bool" ? 0.45 : column.Kind == "int" || column.Kind == "long" || column.Kind == "double" ? 0.7 : 1.0));
@@ -275,6 +284,15 @@ namespace UIFramework
             panel.Children.Add(footer);
 
             Element = panel;
+        }
+
+        /// <summary>The editing box of a number column takes digits (and a minus, and a decimal mark for a double) only.</summary>
+        private static Style NumberEditing(Style basedOn, bool whole)
+        {
+            var style = new Style(typeof(TextBox), basedOn);
+            style.Setters.Add(new EventSetter(UIElement.PreviewTextInputEvent, new TextCompositionEventHandler((s, e) =>
+                e.Handled = !e.Text.All(c => char.IsDigit(c) || c == '-' || (!whole && (c == '.' || c == ','))))));
+            return style;
         }
 
         /// <summary>A switch column: a checkbox in every row that toggles with one click, no edit mode in between.</summary>
@@ -390,9 +408,11 @@ namespace UIFramework
             {
                 case "int":
                 case "long":
-                    return long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0L;
+                    if (text.Length == 0) return 0L;
+                    return long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long l) ? (JToken)l : null;
                 case "double":
-                    return FieldBinding.TryParseFinite(text, out double d) ? d : 0.0;
+                    if (text.Length == 0) return 0.0;
+                    return FieldBinding.TryParseTyped(text, out double d) ? (JToken)d : null;
                 default:
                     return text;
             }
