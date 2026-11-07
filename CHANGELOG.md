@@ -39,6 +39,17 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   own files as they are, not as defaults.
 - **First install checks `minHostStub` too** (stub 0.2.0): a release that needs a newer settings action is not
   installed by an older game; "0.2.0.0" no longer counts as newer than "0.2.0".
+- **Loader details** (stub 0.2.0): a DLL that no longer matches its hash is set aside as `.broken` and its version
+  offered again, and an installed file that is not the published one is fetched anew; the hash file is written
+  before the DLL. Every game uses the UIFramework another game already loaded, so two versions never run side by
+  side, and the log says which runs. One request to the game at a time, so two runs never read each other's answer;
+  the run serving a reopened window hands the one-window flag back. A `latest.json` version that is no plain number
+  is refused in the release check too. A cooldown above a day is set to a day with a line in the log.
+- **Host block:** `UiSettings.Long` reads a whole number exactly (no detour through a double), and `Load` never
+  throws, also on a path with invalid characters.
+- **Smaller fixes:** emote pictures load over HTTPS only; `update-host-block` sees a change in letter case; the
+  release workflow refuses a pre-release tag before publishing and keeps the published DLL on a re-run; the demo's
+  dice are thread-safe.
 
 - **Settings action (stub 0.2.0):** a game's answer is unset from Streamer.bot's globals as soon as it is read, so
   the Twitch token in the emote sources no longer stays visible in the variables. A DLL saved from a browser loads

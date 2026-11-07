@@ -62,7 +62,7 @@ $newBlock = @($want.Head) + $region + @($want.Tail)
 $newBlockText = (($newBlock | ForEach-Object { if ($_.Length -gt 0) { $indent + $_ } else { $_ } }) -join $nl)
 $oldBlockText = ($fileLines[$first..$last] -join $nl)
 
-if ($newBlockText -eq $oldBlockText) {
+if ($newBlockText -ceq $oldBlockText) {   # -ceq: a change in letter case is a change too
     Write-Host "  ok   $File carries the current host block"
     exit 0
 }

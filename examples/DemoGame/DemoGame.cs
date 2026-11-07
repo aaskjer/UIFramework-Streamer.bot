@@ -74,7 +74,8 @@ public class CPHInline
     private static string Roll(UiSettings s, UiCurrency currency, string user, Action<long> pay)
     {
         int sides = UiSettings.Clamp(s.Int("sides"), 2, 100);
-        int roll = Dice.Next(1, sides + 1);
+        int roll;
+        lock (Dice) roll = Dice.Next(1, sides + 1);   // chat and the Try button roll at once; Random is not thread-safe
         string result = "no luck";
         if (roll == sides)
         {
@@ -704,9 +705,9 @@ public sealed class UiSettings
     public static UiSettings Load(string path, Action<string> log = null)
     {
         if (string.IsNullOrEmpty(path)) return new UiSettings(new JObject());
-        if (!Path.IsPathRooted(path)) path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
         try
         {
+            if (!Path.IsPathRooted(path)) path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
             if (!File.Exists(path)) return new UiSettings(new JObject());
             return new UiSettings(Read(path));
         }
@@ -761,6 +762,13 @@ public sealed class UiSettings
 
     public long Long(string key)
     {
+        // A whole number as it is: through a double, one past 2^53 would lose its last digits.
+        var t = Token(key);
+        if (t != null && t.Type == JTokenType.Integer)
+        {
+            try { return (long)t; }
+            catch (Exception) { return t.ToString().TrimStart().StartsWith("-") ? long.MinValue : long.MaxValue; }
+        }
         double d = Double(key);
         if (d >= long.MaxValue) return long.MaxValue;
         if (d <= long.MinValue) return long.MinValue;
