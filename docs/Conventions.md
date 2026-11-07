@@ -11,6 +11,7 @@ new ones to every game at once.
 | [`conventions/lang/en.json`](../conventions/lang/en.json) | English: labels and help of the known keys, page titles, placeholder help, and `ui`, every text of the window itself |
 | [`conventions/lang/de.json`](../conventions/lang/de.json) | German, the same shape, plus `texts`: short English wordings (section headings, option labels, column headers) and their German |
 | [`conventions/emotes/youtube.json`](../conventions/emotes/youtube.json) | YouTube's own emojis by `:shortcode:` and their picture, for emote fields and lists |
+| [`conventions/emotes/twitch.json`](../conventions/emotes/twitch.json) | Twitch's global emotes by name and their id, so Kappa and the like show their picture before Streamer.bot has a Twitch login; `tools/update-twitch-emotes.ps1` refreshes it |
 
 Raw files for tools and translators:
 `https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/conventions/keys.json`, and likewise

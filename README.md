@@ -130,7 +130,8 @@ conventions/             keys.json, lang/<code>.json and emotes/, embedded into 
 tools/                   update-host-block.ps1 (refresh the block in a game, keeping its table), check-stub.ps1
                          (compile the stub and the demo the Streamer.bot way), build-import.ps1 (keep an export's
                          code on the files), spec-to-window.ps1 (an old spec.json as a window declaration),
-                         conventions-doc.ps1 (the tables in docs/Conventions.md)
+                         conventions-doc.ps1 (the tables in docs/Conventions.md),
+                         update-twitch-emotes.ps1 (Twitch's global emotes for conventions/emotes)
 lib/v1/latest.json       what the loader reads: version, download url, sha256
 docs/                    Getting-Started, Schema, Conventions, Loader, Customize, Phase0-Konventionen (German);
                          images/ the screenshots

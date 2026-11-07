@@ -19,7 +19,8 @@ namespace UIFramework
     /// <c>ID:name</c>), so their picture is a URL away. Twitch emotes are typed by name: the picture is looked up
     /// once per window in the channel's and the global Twitch, 7TV, BTTV and FFZ emotes, with what the host hands
     /// over in <see cref="IHostHooks.EmoteSources"/> (the broadcaster's Twitch user id for the channel sets, client
-    /// id and token for the Twitch API). Without a host, only the global 7TV, BTTV and FFZ sets are asked. YouTube's
+    /// id and token for the Twitch API). Without a token, Twitch's global emotes come from the list embedded from
+    /// conventions/emotes/twitch.json; without a host, that list and the global 7TV, BTTV and FFZ sets. YouTube's
     /// own emojis are typed as <c>:name:</c> and found in the table embedded from conventions/emotes/youtube.json,
     /// which the host's <c>youtube</c> object in the emote sources may extend; a Unicode emoji shows itself.
     /// </summary>
@@ -54,7 +55,7 @@ namespace UIFramework
         public static readonly Regex KickCode = new Regex(@"^(?:\[emote:)?([0-9]+):([^\[\]\s:]+)\]?$", RegexOptions.Compiled);
         /// <summary>One of YouTube's own emojis as chat types it, <c>:name:</c>: group 1 is the name.</summary>
         public static readonly Regex YouTubeCode = new Regex(@"^:([A-Za-z0-9_-]+):$", RegexOptions.Compiled);
-        private static Dictionary<string, string> _youtubeTable;
+        private static Dictionary<string, string> _youtubeTable, _twitchTable;
 
         /// <summary>The name shown beneath an emote's picture: a Kick code's name, a YouTube shortcode without its
         /// colons, anything else as it is.</summary>
@@ -91,28 +92,41 @@ namespace UIFramework
         private static Dictionary<string, string> YouTubeTable()
         {
             lock (Gate)
-            {
-                if (_youtubeTable != null)
-                    return _youtubeTable;
-                var table = new Dictionary<string, string>(StringComparer.Ordinal);
-                try
-                {
-                    var assembly = typeof(EmotePictures).Assembly;
-                    string name = assembly.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("conventions.emotes.youtube.json", StringComparison.OrdinalIgnoreCase));
-                    if (name != null)
-                    {
-                        string json;
-                        using (var stream = assembly.GetManifestResourceStream(name))
-                        using (var reader = new StreamReader(stream))
-                            json = reader.ReadToEnd();
-                        foreach (var p in (JObject.Parse(json)["emojis"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())
-                            if (!string.IsNullOrEmpty((string)p.Value)) table[p.Name] = (string)p.Value;
-                    }
-                }
-                catch (Exception) { }
-                return _youtubeTable = table;
-            }
+                return _youtubeTable ?? (_youtubeTable = EmbeddedTable("conventions.emotes.youtube.json", "emojis"));
         }
+
+        /// <summary>Twitch's global emotes by name and their id, from conventions/emotes/twitch.json: the pictures
+        /// of Kappa, LUL and the like when the game hands over no Twitch token (no Twitch login yet).</summary>
+        public static Dictionary<string, string> TwitchGlobalTable()
+        {
+            lock (Gate)
+                return _twitchTable ?? (_twitchTable = EmbeddedTable("conventions.emotes.twitch.json", "emotes"));
+        }
+
+        private static Dictionary<string, string> EmbeddedTable(string resource, string section)
+        {
+            var table = new Dictionary<string, string>(StringComparer.Ordinal);
+            try
+            {
+                var assembly = typeof(EmotePictures).Assembly;
+                string name = assembly.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith(resource, StringComparison.OrdinalIgnoreCase));
+                if (name != null)
+                {
+                    string json;
+                    using (var stream = assembly.GetManifestResourceStream(name))
+                    using (var reader = new StreamReader(stream))
+                        json = reader.ReadToEnd();
+                    foreach (var p in (JObject.Parse(json)[section] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())
+                        if (!string.IsNullOrEmpty((string)p.Value)) table[p.Name] = (string)p.Value;
+                }
+            }
+            catch (Exception) { }
+            return table;
+        }
+
+        /// <summary>The picture URL of a Twitch emote by its id, with <c>{theme}</c> for dark or light.</summary>
+        private static string TwitchUrl(string id) =>
+            "https://static-cdn.jtvnw.net/emoticons/v2/" + Uri.EscapeDataString(id) + "/default/{theme}/2.0";
 
         /// <summary>A 22-px image beside an emote cell, filled in once the picture is known. The name of the extension
         /// a Twitch emote comes from (7TV, BTTV, FFZ) goes to <paramref name="onSource"/>, for a hint.</summary>
@@ -259,8 +273,20 @@ namespace UIFramework
             Ask(true, "bttv", "https://api.betterttv.net/3/cached/emotes/global");
             Ask(true, "ffz", "https://api.betterttv.net/3/cached/frankerfacez/emotes/global");
 
+            // What Twitch itself answers comes first; then Twitch's global emotes from the embedded list, so Kappa
+            // shows without a Twitch login (and when the API is down); then 7TV, BTTV and FFZ.
+            bool globals = false;
+            void AddGlobals()
+            {
+                if (globals) return;
+                globals = true;
+                foreach (var e in TwitchGlobalTable())
+                    if (!pictures.ContainsKey(e.Key))
+                        pictures[e.Key] = (TwitchUrl(e.Value), null);
+            }
             foreach (var (source, answer) in asks)
             {
+                if (source != "twitch") AddGlobals();
                 List<string> pages;
                 try { pages = answer.GetAwaiter().GetResult(); }
                 catch (Exception) { continue; }   // offline, refused or too slow: the other sources still count
@@ -270,6 +296,7 @@ namespace UIFramework
                     catch (Exception) { }         // an answer in a shape this doesn't know adds nothing
                 }
             }
+            AddGlobals();
             return pictures;
         }
 
@@ -312,7 +339,7 @@ namespace UIFramework
             {
                 case "twitch":
                     foreach (var e in answer["data"] as JArray ?? new JArray())
-                        Add((string)e["name"], (string)e["id"], i => "https://static-cdn.jtvnw.net/emoticons/v2/" + Uri.EscapeDataString(i) + "/default/{theme}/2.0", null);
+                        Add((string)e["name"], (string)e["id"], TwitchUrl, null);
                     break;
                 case "7tv":
                     var set = answer["emote_set"] as JObject ?? answer as JObject;

@@ -103,7 +103,7 @@ and compared with a point whatever the system's language.
 | `grouplist` | string      | chips with Streamer.bot's groups suggested | stored comma-separated                                |
 | `path`      | string      | text field with a folder/file dialog       | relative to the Streamer.bot folder is fine           |
 | `colour`    | string      | colour field with a picker                 | `#rrggbb` or `#aarrggbb`                              |
-| `emote`     | string      | text field with the emote's picture beside | `platform` says `twitch`, `youtube` or `kick`         |
+| `emote`     | string      | text field with the emote's picture beside | `platform` says `twitch`, `youtube` or `kick`; Twitch's global emotes show without a Twitch login, the channel's once Streamer.bot has one |
 | `slider`    | string/int/double | slider                               | with `options` a slider over the stops (the stop's value is stored, the labels sit under the stops); otherwise from `min` to `max` in `step`, the value beside the label; a default with a decimal makes it a `double` |
 | `list`      | array       | row editor: a cell per column, remove, *Add row*, *Restore defaults*; with a `text` column or more than three columns a table instead, edited in place: one line per row, a click into a cell edits it, a `bool` column is a checkbox in every row, a search box above, Delete removes the picked rows | `columns` required; empty rows are dropped on save; with `file`/`field` in a file of its own; in the table a row keeps the properties no column shows |
 | `table`     | array       | a table, read-only                         | for statistics the game writes; rows from the game's `table` answer |
