@@ -182,8 +182,9 @@ namespace UIFramework
         public static bool FitsInt(JToken value)
         {
             if (value == null || value.Type != JTokenType.Integer) return true;
+            // A number with more digits than a long is a BigInteger, which converts to nothing: it fits no int either.
             try { long l = Convert.ToInt64(((JValue)value).Value, System.Globalization.CultureInfo.InvariantCulture); return l >= int.MinValue && l <= int.MaxValue; }
-            catch (OverflowException) { return false; }
+            catch (Exception ex) when (ex is OverflowException || ex is InvalidCastException || ex is FormatException) { return false; }
         }
 
         public static Setting Parse(JObject item)
