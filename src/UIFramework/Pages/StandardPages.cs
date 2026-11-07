@@ -234,7 +234,7 @@ namespace UIFramework
                 sendAction.Margin = new Thickness(18, 0, 0, 0);
                 gameSender.Children.Add(sendAction);
             }
-            bool hasCooldownSenders = keys.CooldownUseBot != null && defs.Any(d => d.Group == keys.CooldownGroup);
+            bool hasCooldownSenders = keys.CooldownUseBot != null && defs.Any(d => keys.IsCooldownGroup(d.Group));
             var cooldownSender = new StackPanel { Orientation = Orientation.Horizontal };
             if (hasCooldownSenders)
             {
@@ -261,7 +261,7 @@ namespace UIFramework
             {
                 if (current == null)
                     return;
-                bool cooldown = hasCooldownSenders && current.Group == keys.CooldownGroup;
+                bool cooldown = hasCooldownSenders && keys.IsCooldownGroup(current.Group);
                 string text = parts.Boxes[current.Key].Text;
                 var samples = spec.SampleValues?.Invoke(ctx) ?? new Dictionary<string, string>();
                 var picked = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -300,7 +300,7 @@ namespace UIFramework
                     tokens.Children.Add(chip);
                 }
 
-                bool cooldown = hasCooldownSenders && current.Group == keys.CooldownGroup;
+                bool cooldown = hasCooldownSenders && keys.IsCooldownGroup(current.Group);
                 gameSender.Visibility = cooldown ? Visibility.Collapsed : Visibility.Visible;
                 cooldownSender.Visibility = cooldown ? Visibility.Visible : Visibility.Collapsed;
                 scope.Text = cooldown ? Text.T("messages.scope.cooldown") : Text.T("messages.scope.game");

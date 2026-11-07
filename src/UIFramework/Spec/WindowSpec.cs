@@ -150,8 +150,16 @@ namespace UIFramework
         public string SendAction = "sendAction";
         public string CooldownUseBot = "cooldownUseBot";
         public string CooldownSendAction = "cooldownSendAction";
-        /// <summary>The group name in <see cref="MessageDef.Group"/> whose messages use the cooldown senders.</summary>
+        /// <summary>The group name in <see cref="MessageDef.Group"/> whose messages use the cooldown senders, as the game
+        /// declares it.</summary>
         public string CooldownGroup = "Cooldown";
+        /// <summary>That group's name in the window's language, set by the schema's resolve: the messages' groups are
+        /// translated ("Abklingzeit"), the declared name stays as it is for the next language.</summary>
+        public string CooldownGroupShown;
+
+        /// <summary>Whether a message of this group uses the cooldown senders, in the declared or the shown wording.</summary>
+        public bool IsCooldownGroup(string group) =>
+            group != null && (group == CooldownGroup || (CooldownGroupShown != null && group == CooldownGroupShown));
         /// <summary>The key of the thousands separator setting, shown beside the message picker. Null hides it.</summary>
         public string NumberSeparator = "numberSeparator";
     }

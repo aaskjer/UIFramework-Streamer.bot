@@ -72,6 +72,31 @@ namespace UIFramework.Tests
           ""headerPills"": [ { ""key"": ""freeGame"", ""on"": ""Free game on"", ""off"": ""Free game off"", ""tooltip"": ""Free game, from the Game page."" } ] }";
 
         [Fact]
+        public void TheCooldownGroupIsFoundInEveryLanguage()
+        {
+            const string schemaJson = @"{ ""host"": ""demo"", ""version"": ""1"", ""settings"": [
+                { ""key"": ""cooldownUseBot"", ""default"": true, ""page"": ""messages"" },
+                { ""key"": ""cooldownSendAction"", ""default"": false, ""page"": ""messages"" },
+                { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""group"": ""Wins"", ""label"": ""Win"" },
+                { ""key"": ""msgCooldown"", ""default"": ""Wait {seconds}s"", ""kind"": ""template"", ""group"": ""Cooldown"", ""label"": ""Still cooling down"" } ] }";
+            try
+            {
+                foreach (var code in new[] { "de", "en" })
+                {
+                    var spec = SpecJson.Parse(@"{ ""title"": ""Demo"", ""language"": """ + code + @""" }", Path.GetTempFileName());
+                    Entry.Prepare(spec, Schema.Parse(schemaJson));
+                    var cooldown = spec.Messages.Single(m => m.Key == "msgCooldown");
+                    Assert.Equal(code == "de" ? "Abklingzeit" : "Cooldown", cooldown.Group);
+                    // The Messages page shows the cooldown senders for this group, whatever language it is in.
+                    Assert.True(spec.Senders.IsCooldownGroup(cooldown.Group), code);
+                    Assert.False(spec.Senders.IsCooldownGroup(spec.Messages.Single(m => m.Key == "msgWin").Group), code);
+                    Assert.Equal("Cooldown", spec.Senders.CooldownGroup);   // the declared name stays for the next language
+                }
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
+        }
+
+        [Fact]
         public void GermanTranslatesWhatTheGameDeclaredAndTheGamesOwnTextsComeFirst()
         {
             var spec = SpecJson.Parse(DeclaredWindow.Replace("LANG", "de"), Path.GetTempFileName());
