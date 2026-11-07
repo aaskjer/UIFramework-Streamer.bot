@@ -164,7 +164,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 239 of 239 |
-| `lang/en.json` | 72 | 13 | 16 | 0 | 239 |
-| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 239 of 239 |
+| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 240 of 240 |
+| `lang/en.json` | 72 | 13 | 16 | 0 | 240 |
+| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 240 of 240 |
 <!-- generated:end -->

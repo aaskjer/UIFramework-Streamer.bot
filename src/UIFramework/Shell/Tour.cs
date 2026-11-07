@@ -26,6 +26,9 @@ namespace UIFramework
             /// <summary>Left bright beside the target, not ringed: a page's content while its rail entry is ringed.
             /// The note then sits at the foot of this area.</summary>
             public Func<FrameworkElement> Area;
+            /// <summary>The user may use the ringed part while this stop is up: click the button, type into the field.
+            /// The rest of the window stays out of reach.</summary>
+            public bool Act;
         }
 
         private readonly Window _window;
@@ -33,7 +36,10 @@ namespace UIFramework
         private readonly List<Stop> _stops;
         private readonly Action _ended;
         private readonly Canvas _canvas = new Canvas { Background = Brushes.Transparent, ClipToBounds = true };
-        private readonly Path _shade = new Path { IsHitTestVisible = false };
+        // Hit-testable: on a stop the user may use, the shade takes the clicks around the hole and the hole lets them
+        // through to the part underneath.
+        private readonly Path _shade = new Path();
+        private FrameworkElement _watched;
         private readonly Border _ring = new Border { IsHitTestVisible = false, BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(7) };
         private readonly Border _note;
         private readonly TextBlock _count, _title, _text;
@@ -114,6 +120,7 @@ namespace UIFramework
         {
             if (!_open) return;
             _open = false;
+            Watch(null);
             _window.PreviewKeyDown -= OnKey;
             _host.Children.Remove(_canvas);
             try { _ended?.Invoke(); } catch (Exception) { }
@@ -130,7 +137,11 @@ namespace UIFramework
             _index = Math.Max(0, index);
             var stop = _stops[_index];
             try { stop.Show?.Invoke(); } catch (Exception) { }
-            _count.Text = Text.T("tour.step", _index + 1, _stops.Count);
+            _count.Text = Text.T("tour.step", _index + 1, _stops.Count) + (stop.Act ? "  ·  " + Text.T("tour.act") : "");
+            // A stop to use: clicks go through the hole to the ringed part, the shade keeps the rest; any other stop
+            // takes every click itself. The ring follows the part while it grows (an answer under a Try button).
+            _canvas.Background = stop.Act ? null : Brushes.Transparent;
+            Watch(stop.Act ? Target(stop) : null);
             _title.Text = stop.Title ?? "";
             _title.Visibility = string.IsNullOrEmpty(stop.Title) ? Visibility.Collapsed : Visibility.Visible;
             _text.Text = stop.Text ?? "";
@@ -149,6 +160,16 @@ namespace UIFramework
             }), DispatcherPriority.Loaded);
             _window.Dispatcher.BeginInvoke(new Action(() => { if (_open) _next.Focus(); }), DispatcherPriority.Input);
         }
+
+        /// <summary>Places the ring again whenever <paramref name="element"/> changes its size; null stops watching.</summary>
+        private void Watch(FrameworkElement element)
+        {
+            if (_watched != null) _watched.SizeChanged -= OnWatchedSize;
+            _watched = element;
+            if (_watched != null) _watched.SizeChanged += OnWatchedSize;
+        }
+
+        private void OnWatchedSize(object sender, SizeChangedEventArgs e) => Place();
 
         private static FrameworkElement Target(Stop stop)
         {
@@ -175,6 +196,8 @@ namespace UIFramework
         private void OnKey(object sender, KeyEventArgs e)
         {
             if (!_open) return;
+            // On a stop to use, the keys are the user's (typing into the ringed field), but for Esc and the note's own.
+            if (_stops[_index].Act && e.Key != Key.Escape && !_note.IsKeyboardFocusWithin) return;
             switch (e.Key)
             {
                 case Key.Escape: End(); break;

@@ -896,7 +896,7 @@ namespace UIFramework
                 foreach (var stop in _spec.Tour)
                 {
                     string target = stop.Target;
-                    var shown = new Tour.Stop { Title = Declared(stop.Title), Text = Declared(stop.Text) };
+                    var shown = new Tour.Stop { Title = Declared(stop.Title), Text = Declared(stop.Text), Act = stop.Act && target != null && target != "start" && target != "end" };
                     if (target == null || target == "start" || target == "end")
                     {
                         if (target != null)

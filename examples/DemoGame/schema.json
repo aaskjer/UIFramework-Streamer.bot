@@ -129,7 +129,8 @@
       {
         "target": "tryRoll",
         "title": "Try it out",
-        "text": "Rolls once with the values as they stand in the window, saved or not. Nothing goes to chat: the answer shows right under the button."
+        "text": "Press Roll now: it rolls once with the values as they stand in the window, saved or not. Nothing goes to chat; the answer shows right under the button.",
+        "act": true
       },
       {
         "target": "page:messages"
