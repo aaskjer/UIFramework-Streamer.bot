@@ -110,6 +110,9 @@ and compared with a point whatever the system's language.
 | `note`      | –           | a paragraph on the page (`help`)           | no value; explains what follows; http(s) addresses are links |
 | `action`    | –           | a button                                   | no value; asks the game (`test` with the key); the answer is the footer line, with `panel` a box under the button, with `live` from the current values, with `auto` without a button and by itself. See *Answers* below |
 
+<p align="center"><img src="images/emotes-youtube-dark.png" width="460" alt="A list of YouTube emotes with their pictures and weights"></p>
+<p align="center"><sub>A <code>list</code> with an <code>emote</code> column and a number column (Slot Machine's YouTube reels).</sub></p>
+
 ### Answers of an action
 
 The game answers `test` with a line of text, or with a JSON object:

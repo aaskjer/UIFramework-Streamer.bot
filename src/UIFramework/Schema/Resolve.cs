@@ -378,7 +378,7 @@ namespace UIFramework
             {
                 case "gear": return "⚙️";
                 case "dice": return "🎲";
-                case "coins": return "🪙";
+                case "coins": return "💰";   // 🪙 (Unicode 13) is missing from the emoji font WPF draws with
                 case "clock": return "⏱️";
                 case "shield": return "👥";
                 case "chat": return "💬";
