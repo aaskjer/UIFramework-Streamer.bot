@@ -23,6 +23,15 @@ A game that declares a known key names only what differs: `S("useBot")` is a swi
 its label, help and default from here, translated wherever the window is. The game's own keys, sections and help
 are its own; [Schema.md](Schema.md) explains how a game adds texts for them with `Lang`.
 
+The known keys are taken names: a game that declares `maxBet` gets the conventions' limits, old keys, sample
+value and translation for it, whatever it labels the field. For a meaning of its own a game uses a key of its own
+(`maxSpins`); a known key declared as another kind of value is listed as a problem when the window opens.
+
+`keys.json`'s `about` section holds the links every About page ends with (the UIFramework page, Streamer.bot,
+where to report a problem: `{issues}` is the game's issue tracker when it names its repository, else the
+framework's). Edit them there; a text is a key of the `ui` section or the text itself. A game turns them off with
+`About(defaultLinks: false)` and adds its own credits and links.
+
 ## Adding a language
 
 1. Copy `conventions/lang/en.json` to `conventions/lang/<code>.json` (`fr`, `nl`, `es`, a two-letter code) and
@@ -31,8 +40,12 @@ are its own; [Schema.md](Schema.md) explains how a game adds texts for them with
 2. Add a `texts` section like the German one for the short English wordings games use most.
 3. Run `tools/conventions-doc.ps1` so the table below counts the new file, build, and open a pull request.
 
-The build embeds every file in `conventions/lang/`, nothing else to register. A game offers the language with
-`Lang("<code>")` on its window (with or without texts of its own); a game that does not offer it stays English.
+The build embeds every file in `conventions/lang/`, nothing else to register, and every window offers it.
+
+Without a release: the same file in `UIFramework\lang\<code>.json` beside Streamer.bot (next to
+`UIFramework\lib`) is read when the window opens. It adds a language the DLL does not carry, or is laid over one
+it does (a correction, a better word), and a file that cannot be read is listed on the Log page. A game can bring
+the window's own texts for a language itself as well (`Ui(key, text)` in `Lang`, see Schema.md).
 
 ## Contents
 
@@ -151,7 +164,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 201 of 201 |
-| `lang/en.json` | 72 | 13 | 16 | 0 | 201 |
-| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 201 of 201 |
+| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 200 of 200 |
+| `lang/en.json` | 72 | 13 | 16 | 0 | 200 |
+| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 200 of 200 |
 <!-- generated:end -->

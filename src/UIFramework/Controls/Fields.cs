@@ -637,7 +637,8 @@ namespace UIFramework
         /// <summary>A number grouped with the live thousands separator, as chat would show it.</summary>
         public string Amount(double value, string separatorKey = "numberSeparator")
         {
-            string separator = LiveText(separatorKey, ".");
+            // A game without the setting: the separator of the window's language (1,500 in English, 1.500 elsewhere).
+            string separator = LiveText(separatorKey, Text.Code == "en" ? "," : ".");
             string text = Math.Round(value).ToString("N0", CultureInfo.InvariantCulture);
             return separator.Length == 0 ? text.Replace(",", "") : text.Replace(",", separator);
         }

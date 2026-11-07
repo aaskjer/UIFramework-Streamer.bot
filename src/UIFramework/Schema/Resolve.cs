@@ -29,6 +29,12 @@ namespace UIFramework
             var declaredSections = new HashSet<string>(StringComparer.Ordinal);
             foreach (var declared in schema.Settings)
             {
+                // A known key declared as another kind of value is most likely the game's own idea under a taken name:
+                // it would still get the conventions' limits, old keys and translations.
+                if (declared.Kind != null && conventions.Keys.TryGetValue(declared.Key, out var knownKey) && knownKey.Kind != null
+                    && KindFamily(declared.Kind) != KindFamily(knownKey.Kind))
+                    spec.Problems.Add("'" + declared.Key + "' is a known key of the conventions (" + (Conventions.Default.Lang.Key(declared.Key).Label ?? declared.Key) +
+                        ", " + knownKey.Kind + "), declared as '" + declared.Kind + "': it still takes the conventions' limits, old keys and translations. A key of the game's own fits another meaning.");
                 var setting = conventions.Complete(declared);
                 if (spec.Overrides.TryGetValue(setting.Key, out var over))
                 {
@@ -232,6 +238,8 @@ namespace UIFramework
                     ?? (lang.Translates ? lang.TextOrNull(page.Title) ?? lang.Page(page.Id) ?? page.Title : page.Title ?? lang.Page(page.Id))
                     ?? Conventions.Humanize(page.Id);
                 string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
+                if (page.Icon != null && UnknownIcon(page.Icon))
+                    spec.Problems.Add("The page '" + page.Id + "' has the icon '" + page.Icon + "', which the framework does not know; it shows a dot. An emoji works, or one of gear, dice, coins, clock, shield, chat, trophy, monitor, list, book, info, cards, chart, gift.");
                 // Help and About sit in their own group at the bottom of the rail, apart from the settings pages.
                 bool bottom = page.Bottom || page.Id == "about" || page.Id == "help";
                 var fields = pageFields.TryGetValue(page.Id, out var list) ? list : new List<Setting>();
@@ -342,6 +350,21 @@ namespace UIFramework
             }
         }
 
+        /// <summary>Kinds that hold the same sort of value: a whole number, a decimal, text, a switch, a list, a colour.</summary>
+        private static string KindFamily(string kind)
+        {
+            switch (kind)
+            {
+                case "int": case "long": case "duration": return "whole";
+                case "double": case "percent": return "decimal";
+                case "slider": return "slider";
+                case "bool": return "bool";
+                case "list": case "namelist": case "grouplist": case "table": return "list";
+                case "colour": case "color": return "colour";
+                default: return "text";   // string, options, text, template, path, emote, note, action
+            }
+        }
+
         /// <summary>What a host's author got wrong, in words: an unknown kind, a requirement on a key that is not
         /// there, a page or pill naming a setting that does not exist.</summary>
         private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections)
@@ -353,6 +376,20 @@ namespace UIFramework
                 CheckCondition(spec, byKey, "The section '" + section.Key + "'", "is shown when", section.Value);
                 if (!declaredSections.Contains(section.Key))
                     spec.Problems.Add("The section '" + section.Key + "' has a condition, but no setting is in a section of that name.");
+            }
+            // A section whose fields are not one after the other gets its heading twice: said, so the game can order them.
+            foreach (var page in settings.Where(s => !s.Hidden).GroupBy(s => s.Page ?? "game"))
+            {
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                var told = new HashSet<string>(StringComparer.Ordinal);
+                string previous = null;
+                foreach (var s in page.OrderBy(x => x.Order))
+                {
+                    if (s.Section == null || s.Section == previous) { previous = s.Section ?? previous; continue; }
+                    if (!seen.Add(s.Section) && told.Add(s.Section))
+                        spec.Problems.Add("The section '" + s.Section + "' on the page '" + page.Key + "' is split by another section, so its heading shows twice; declare its settings one after the other.");
+                    previous = s.Section;
+                }
             }
             foreach (var s in settings)
             {
@@ -430,9 +467,16 @@ namespace UIFramework
                 case "chart": return "📊";
                 case "gift": return "🎁";
                 case "": return "•";
-                default: return name;
+                // A word the framework does not know shows a dot, not the word; anything else is taken as an emoji.
+                default: return IsIconName(name) ? "•" : name;
             }
         }
+
+        /// <summary>A name rather than an emoji: letters, digits, '-' and '_' only.</summary>
+        private static bool IsIconName(string name) => name.Length > 1 && name.All(c => c < 128 && (char.IsLetterOrDigit(c) || c == '-' || c == '_'));
+
+        /// <summary>An icon that is a word the framework does not know (it shows as a dot).</summary>
+        public static bool UnknownIcon(string name) => !string.IsNullOrEmpty(name) && IsIconName(name) && IconGlyph(name) == "•";
 
         private static Dictionary<string, string> SampleValues(PageContext ctx, List<Setting> settings)
         {

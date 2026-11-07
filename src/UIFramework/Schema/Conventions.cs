@@ -51,8 +51,56 @@ namespace UIFramework
                     conventions.Lang.Overlay(JObject.Parse(other));
                     conventions.Lang.Code = languageCode;
                 }
+                // A file of the same shape in UIFramework\lang beside Streamer.bot: a language the DLL does not
+                // carry, or corrections to one it does, without waiting for a release. It is laid over the DLL's.
+                string external = ExternalFile(languageCode);
+                if (external != null && File.Exists(external))
+                {
+                    try
+                    {
+                        conventions.Lang.Overlay(JObject.Parse(File.ReadAllText(external)));
+                        conventions.Lang.Code = languageCode;
+                    }
+                    catch (Exception ex) { conventions.LoadProblem = Path.GetFileName(external) + " could not be read: " + ex.Message; }
+                }
             }
             return conventions;
+        }
+
+        /// <summary>Why a language file beside Streamer.bot was not used, or null; the window lists it with the
+        /// schema's problems.</summary>
+        public string LoadProblem;
+
+        /// <summary>The folder for language files beside Streamer.bot: UIFramework\lang, next to UIFramework\lib.</summary>
+        public static string ExternalFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lang");
+
+        private static string ExternalFile(string code) =>
+            code.All(c => char.IsLetterOrDigit(c) || c == '-') ? Path.Combine(ExternalFolder, code + ".json") : null;
+
+        /// <summary>Every language there are texts for: English, the files the DLL carries, the files in
+        /// <see cref="ExternalFolder"/>. A window offers all of them.</summary>
+        public static List<string> Available()
+        {
+            var codes = new List<string> { "en" };
+            const string prefix = "conventions.lang.";
+            foreach (var name in typeof(Conventions).Assembly.GetManifestResourceNames())
+            {
+                int at = name.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+                if (at < 0 || !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+                string code = name.Substring(at + prefix.Length, name.Length - at - prefix.Length - ".json".Length);
+                if (code.Length > 0 && !codes.Contains(code)) codes.Add(code);
+            }
+            try
+            {
+                if (Directory.Exists(ExternalFolder))
+                    foreach (var file in Directory.GetFiles(ExternalFolder, "*.json"))
+                    {
+                        string code = Path.GetFileNameWithoutExtension(file);
+                        if (code.Length > 0 && code.All(c => char.IsLetterOrDigit(c) || c == '-') && !codes.Contains(code)) codes.Add(code);
+                    }
+            }
+            catch (Exception) { }
+            return codes;
         }
 
         public static Conventions Parse(JObject root)
