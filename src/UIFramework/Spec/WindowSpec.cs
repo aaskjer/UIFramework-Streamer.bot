@@ -158,6 +158,9 @@ namespace UIFramework
     public sealed class TourStop
     {
         public string Target, Title, Text;
+        /// <summary>The user may use the ringed part while the stop is up ("Try it yourself"): press the button,
+        /// type into the field. Means nothing for a note in the middle.</summary>
+        public bool Act;
 
         /// <summary>The parts of the window a stop can name. "start" and "end" are notes in the middle with the
         /// framework's welcome and goodbye.</summary>

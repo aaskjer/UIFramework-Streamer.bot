@@ -14,7 +14,9 @@ namespace UIFramework
     /// </summary>
     public static class Resolve
     {
-        private static readonly string[] TrailingPages = { "log", "help", "about" };
+        // The group at the foot of the rail, in this order whatever order the game declares them in: how to play, what
+        // happened, who made it.
+        private static readonly string[] TrailingPages = { "help", "log", "about" };
 
         public static void Apply(WindowSpec spec, Schema schema, Conventions conventions, LayoutFile layout = null)
         {
@@ -217,9 +219,11 @@ namespace UIFramework
             var explicitIds = new HashSet<string>(spec.SpecPages.Select(p => p.Id), StringComparer.Ordinal);
             int Rank(SpecPage p)
             {
-                if (explicitIds.Contains(p.Id)) return spec.SpecPages.FindIndex(x => x.Id == p.Id);
                 int trailing = Array.IndexOf(TrailingPages, p.Id);
                 if (trailing >= 0) return 10000 + trailing;
+                // A page of the game's own at the foot of the rail goes above Help, Log and About.
+                if (p.Bottom) return 9000 + Math.Max(0, spec.SpecPages.FindIndex(x => x.Id == p.Id));
+                if (explicitIds.Contains(p.Id)) return spec.SpecPages.FindIndex(x => x.Id == p.Id);
                 return 1000 + (conventions.Pages.TryGetValue(p.Id, out var c) ? c.Order : 500);
             }
             // Pages the user put in order come first, in that order; the rest follow by rank. The customise mode
@@ -240,8 +244,8 @@ namespace UIFramework
                 string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
                 if (page.Icon != null && UnknownIcon(page.Icon))
                     spec.Problems.Add("The page '" + page.Id + "' has the icon '" + page.Icon + "', which the framework does not know; it shows a dot. An emoji works, or one of gear, dice, coins, clock, shield, chat, trophy, monitor, list, book, info, cards, chart, gift.");
-                // Help and About sit in their own group at the bottom of the rail, apart from the settings pages.
-                bool bottom = page.Bottom || page.Id == "about" || page.Id == "help";
+                // Help, Log and About sit in their own group at the bottom of the rail, apart from the settings pages.
+                bool bottom = page.Bottom || Array.IndexOf(TrailingPages, page.Id) >= 0;
                 var fields = pageFields.TryGetValue(page.Id, out var list) ? list : new List<Setting>();
 
                 Func<PageContext, System.Windows.UIElement> build;

@@ -427,6 +427,7 @@
     "cust.layoutFailed.text": "No se pudo escribir el diseño:\n{0}",
     "cust.layoutFailed.title": "Personalizar",
     "tip.tour": "Mostrar el recorrido por esta ventana",
+    "tour.act": "Pruébalo tú",
     "tour.next": "Siguiente",
     "tour.back": "Atrás",
     "tour.skip": "Terminar recorrido",

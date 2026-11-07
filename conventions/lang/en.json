@@ -305,6 +305,7 @@
     "cust.layoutFailed.text": "The layout could not be written:\n{0}",
     "cust.layoutFailed.title": "Customise",
     "tip.tour": "Show the tour of this window",
+    "tour.act": "Try it yourself",
     "tour.next": "Next",
     "tour.back": "Back",
     "tour.skip": "End tour",

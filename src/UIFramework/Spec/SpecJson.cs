@@ -175,7 +175,8 @@ namespace UIFramework
                     {
                         string target = (string)t["target"], title = (string)t["title"], text = (string)t["text"];
                         if (string.IsNullOrWhiteSpace(target) && string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(text)) continue;
-                        spec.Tour.Add(new TourStop(string.IsNullOrWhiteSpace(target) ? null : target.Trim(), title, text));
+                        spec.Tour.Add(new TourStop(string.IsNullOrWhiteSpace(target) ? null : target.Trim(), title, text)
+                            { Act = t["act"]?.Type == JTokenType.Boolean && (bool)t["act"] });
                     }
                 }
 

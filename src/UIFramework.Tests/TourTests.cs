@@ -122,5 +122,53 @@ namespace UIFramework.Tests
                 window.Close();
             });
         }
+
+        [Fact]
+        public void AStopToUseLetsClicksThroughToItsPartOnly()
+        {
+            Sta(() =>
+            {
+                var button = new Button { Content = "Roll", Width = 80, Height = 28, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(40) };
+                var other = new Button { Content = "Save", Width = 80, Height = 28, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(40) };
+                var host = new Grid();
+                host.Children.Add(new Grid { Children = { button, other } });
+                var window = new Window { Width = 600, Height = 500, Content = host, ShowInTaskbar = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
+                window.Show();
+                window.UpdateLayout();
+                var stops = new List<Tour.Stop>
+                {
+                    new Tour.Stop { Title = "Look", Text = "Only look.", Target = () => button },
+                    new Tour.Stop { Title = "Try it", Text = "Press Roll.", Target = () => button, Act = true }
+                };
+                var tour = Tour.Start(window, host, stops, () => { });
+                window.UpdateLayout();
+                bool Reaches(Button target)
+                {
+                    var centre = target.TranslatePoint(new Point(target.ActualWidth / 2, target.ActualHeight / 2), host);
+                    var hit = host.InputHitTest(centre) as DependencyObject;
+                    for (var node = hit; node != null; node = System.Windows.Media.VisualTreeHelper.GetParent(node))
+                        if (ReferenceEquals(node, target)) return true;
+                    return false;
+                }
+                Assert.False(Reaches(button));   // a stop to look at takes every click
+                tour.Go(1);
+                window.UpdateLayout();
+                Assert.True(Reaches(button));    // a stop to use lets the ringed part be pressed
+                Assert.False(Reaches(other));    // and nothing else
+                tour.End();
+                Assert.True(Reaches(other));
+                window.Close();
+            });
+        }
+
+        [Fact]
+        public void AStopToUseIsDeclaredAndRead()
+        {
+            Assert.Equal(true, (bool)UiSchema.Tip("tryRoll", "Try it", act: true).Json["act"]);
+            Assert.Null(UiSchema.Tip("save").Json["act"]);
+            var spec = SpecJson.Parse(@"{ ""tour"": [ { ""target"": ""tryRoll"", ""act"": true }, ""save"" ] }");
+            Assert.True(spec.Tour[0].Act);
+            Assert.False(spec.Tour[1].Act);
+        }
     }
 }

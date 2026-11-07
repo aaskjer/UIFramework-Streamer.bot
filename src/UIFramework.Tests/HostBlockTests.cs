@@ -145,7 +145,8 @@ namespace UIFramework.Tests
             Assert.Equal("aaskjer/Demo", spec.GitHubRepo);
             Assert.Equal(700, spec.Width);
             Assert.Equal("[Demo Game/Settings]", spec.LogPrefix);
-            Assert.Equal(new[] { "game", "messages", "log", "help", "about" }, spec.Pages.Select(p => p.Id).ToArray());
+            Assert.Equal(new[] { "game", "messages", "help", "log", "about" }, spec.Pages.Select(p => p.Id).ToArray());   // How to play, Log, About at the foot
+            Assert.Equal(new[] { "help", "log", "about" }, spec.Pages.Where(p => p.Bottom).Select(p => p.Id).ToArray());
             Assert.Equal("🎲", spec.Pages[0].Glyph);
             Assert.Equal("Die sides", spec.ResolvedSettings.First(s => s.Key == "sides").Label);
             Assert.Equal("Demo/Logs", spec.Log.Folder);
