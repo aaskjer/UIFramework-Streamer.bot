@@ -301,12 +301,23 @@ namespace UIFramework
         public string Raw { get; set; } = "";
         public Dictionary<string, string> Fields { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>A field by its key; "Word,Word was" names several, and the first one the line has is shown.</summary>
         public string Field(string name)
         {
+            if (string.IsNullOrEmpty(name)) return "";
+            if (name.IndexOf(',') >= 0)
+            {
+                foreach (var one in name.Split(','))
+                {
+                    string value = Field(one.Trim());
+                    if (value.Length > 0) return value;
+                }
+                return "";
+            }
             if (string.Equals(name, "User", StringComparison.OrdinalIgnoreCase)) return User;
             if (string.Equals(name, "Platform", StringComparison.OrdinalIgnoreCase)) return Platform;
             if (string.Equals(name, "Result", StringComparison.OrdinalIgnoreCase)) return Result;
-            return Fields.TryGetValue(name, out var value) ? value : "";
+            return Fields.TryGetValue(name, out var found) ? found : "";
         }
 
         public string SearchBlob
@@ -321,10 +332,13 @@ namespace UIFramework
 
         public static LogEntry Parse(string line)
         {
-            int closeIdx = string.IsNullOrEmpty(line) || line[0] != '[' ? -1 : line.IndexOf(']');
-            string payload = closeIdx >= 0 ? line.Substring(closeIdx + 1).TrimStart() : "";
             var entry = new LogEntry { Timestamp = DateTime.MinValue, Raw = line ?? "" };
-            if (closeIdx < 0 || payload.Length == 0)
+            if (string.IsNullOrEmpty(line)) return entry;
+            int closeIdx = line[0] != '[' ? -1 : line.IndexOf(']');
+            if (closeIdx < 0)
+                return ParseColumns(line, entry);
+            string payload = line.Substring(closeIdx + 1).TrimStart();
+            if (payload.Length == 0)
                 return entry;
 
             if (DateTime.TryParseExact(line.Substring(1, closeIdx - 1), "yyyy-MM-dd HH:mm:ss",
@@ -334,15 +348,58 @@ namespace UIFramework
             var parts = payload.Split(new[] { " | " }, StringSplitOptions.None);
             entry.Result = parts[0].Trim();
             for (int i = 1; i < parts.Length; i++)
+                AddField(entry, parts[i]);
+            return entry;
+        }
+
+        /// <summary>One "Key: value" segment: User and Platform to their own properties, the rest to the fields. A value
+        /// in one pair of single quotes ('apfel') loses them.</summary>
+        private static void AddField(LogEntry entry, string part)
+        {
+            int colon = part.IndexOf(':');
+            if (colon <= 0) return;
+            string key = part.Substring(0, colon).Trim();
+            string value = part.Substring(colon + 1).Trim();
+            if (value.Length >= 2 && value[0] == '\'' && value[value.Length - 1] == '\'' && value.IndexOf('\'', 1) == value.Length - 1)
+                value = value.Substring(1, value.Length - 2);
+            if (key.Length == 0) return;
+            if (key.Equals("User", StringComparison.OrdinalIgnoreCase)) entry.User = value;
+            else if (key.Equals("Platform", StringComparison.OrdinalIgnoreCase)) entry.Platform = value;
+            else entry.Fields[key] = value;
+        }
+
+        /// <summary>An older line in columns, as games wrote them before the format above:
+        /// "yyyy-MM-dd HH:mm:ss RESULT   user   [round] Key: value | Key: value". The result is the first word after the
+        /// time, a user is a word followed by a run of spaces, a round sits in brackets; the rest reads as fields.
+        /// Anything else stays a raw line without a time.</summary>
+        private static LogEntry ParseColumns(string line, LogEntry entry)
+        {
+            if (line.Length < 21 || line[19] != ' ' ||
+                !DateTime.TryParseExact(line.Substring(0, 19), "yyyy-MM-dd HH:mm:ss",
+                    System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime stamp))
+                return entry;
+            entry.Timestamp = stamp;
+            string rest = line.Substring(20).TrimStart();
+            int space = rest.IndexOf(' ');
+            entry.Result = (space < 0 ? rest : rest.Substring(0, space)).Trim();
+            rest = space < 0 ? "" : rest.Substring(space).TrimStart();
+            // A user: one word, then at least two spaces (the padding of its column), before the round or the details.
+            int gap = rest.IndexOf("  ", StringComparison.Ordinal);
+            if (gap > 0 && rest.Substring(0, gap).IndexOf(' ') < 0 && rest.Substring(0, gap).IndexOf(':') < 0)
             {
-                int colon = parts[i].IndexOf(':');
-                if (colon <= 0) continue;
-                string key = parts[i].Substring(0, colon).Trim();
-                string value = parts[i].Substring(colon + 1).Trim();
-                if (key.Equals("User", StringComparison.OrdinalIgnoreCase)) entry.User = value;
-                else if (key.Equals("Platform", StringComparison.OrdinalIgnoreCase)) entry.Platform = value;
-                else entry.Fields[key] = value;
+                entry.User = rest.Substring(0, gap);
+                rest = rest.Substring(gap).TrimStart();
             }
+            if (rest.StartsWith("[", StringComparison.Ordinal) && rest.IndexOf(']') > 0)
+            {
+                int close = rest.IndexOf(']');
+                string round = rest.Substring(1, close - 1);
+                int bar = round.IndexOf('|');
+                entry.Fields["Round"] = (bar < 0 ? round : round.Substring(0, bar)).TrimStart('R', 'r');
+                rest = rest.Substring(close + 1).TrimStart();
+            }
+            foreach (var part in rest.Split(new[] { " | " }, StringSplitOptions.None))
+                AddField(entry, part);
             return entry;
         }
     }
