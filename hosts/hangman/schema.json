@@ -1,6 +1,6 @@
 {
   "host": "hangman",
-  "version": "v13.0.0",
+  "version": "v13.0.1",
   "settingsFile": "Chat Games/Hangman Game/configs.json",
   "settings": [
     {

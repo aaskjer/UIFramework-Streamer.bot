@@ -1,6 +1,6 @@
 {
   "host": "highlow",
-  "version": "v2.1.0",
+  "version": "v2.1.1",
   "settingsFile": "Chat Games/High-Low Game/HLG-Settings.json",
   "settings": [
     {

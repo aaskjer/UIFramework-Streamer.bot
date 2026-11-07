@@ -1,6 +1,6 @@
 {
   "host": "trivia",
-  "version": "v9.0.0",
+  "version": "v9.0.1",
   "settingsFile": "Chat Games/Trivia Game/configs.json",
   "settings": [
     {

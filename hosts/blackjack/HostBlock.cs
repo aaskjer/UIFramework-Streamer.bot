@@ -2,7 +2,8 @@
 // From UIFramework/stub/HostSchema.cs (tools/update-host-block.ps1 refreshes it). The game declares its settings
 // once in UiSchema.Table and its window in UiSchema.Window, reads the settings through UiSettings, and lets
 // UiHost.Handle answer the settings window's requests. One table, so the game and its window can never disagree.
-// Compiles in any Streamer.bot action with no reference beyond Newtonsoft.Json.
+// Needs no usings and no reference beyond Newtonsoft.Json, which every action has: paste it as it is, right below
+// the action's using lines (anywhere after them works too: at the end, or inside the CPHInline class).
 //
 // In Execute(), first thing:
 //     if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, "Demo Game/settings.json"))
@@ -35,6 +36,8 @@ public static class UiSchema
         // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
         // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
         public string ShowWhen; public string[] Shows;
+        // ReadOnly: shown, not editable (a status the game writes). Step: a slider's step.
+        public bool ReadOnly; public double? Step;
     }
 
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
@@ -43,12 +46,15 @@ public static class UiSchema
     /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
     /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
     /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
-    /// conditions "mode!=free && useBot". On a dropdown, shows names per option the fields it shows: "igdb: clientId, clientSecret".</summary>
+    /// conditions "mode!=free && useBot", "!key" for a switch that is off. On a dropdown, shows names per option the fields it
+    /// shows: "igdb: clientId, clientSecret". readOnly shows a value the game writes without letting the user edit it; step is
+    /// a slider's step; group puts a message template under a heading of its own.</summary>
     public static Setting S(string key, object @default, string page = null, string label = null, string help = null, string kind = null,
         string section = null, double? min = null, double? max = null, string unit = null, double? factor = null, bool unlimitedAtZero = false,
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
-        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null)
+        string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
+        bool readOnly = false, double? step = null, string group = null)
     {
         return new Setting
         {
@@ -56,7 +62,7 @@ public static class UiSchema
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
-            ShowWhen = showWhen, Shows = shows
+            ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group
         };
     }
 
@@ -72,107 +78,131 @@ public static class UiSchema
     /// <summary>The schema with the points system the window should show as detected (UiCurrency.Detect).</summary>
     public static string ToJson(string host, string version, string settingsFile, UiCurrency currency)
     {
-        var settings = new JArray();
+        var settings = new Newtonsoft.Json.Linq.JArray();
         foreach (var s in Table)
-        {
-            var item = new JObject { ["key"] = s.Key, ["default"] = s.Default == null ? JValue.CreateNull() : JToken.FromObject(s.Default) };
-            if (s.Kind != null) item["kind"] = s.Kind;
-            if (s.Page != null) item["page"] = s.Page;
-            if (s.Section != null) item["section"] = s.Section;
-            if (s.Group != null) item["group"] = s.Group;
-            if (s.Label != null) item["label"] = s.Label;
-            if (s.Help != null) item["help"] = s.Help;
-            if (s.Min.HasValue) item["min"] = s.Min.Value;
-            if (s.Max.HasValue) item["max"] = s.Max.Value;
-            if (s.Unit != null) item["unit"] = s.Unit;
-            if (s.Platform != null) item["platform"] = s.Platform;
-            if (s.Factor.HasValue) item["factor"] = s.Factor.Value;
-            if (s.UnlimitedAtZero) item["unlimitedAtZero"] = true;
-            if (s.Hidden) item["hidden"] = true;
-            if (s.Requires != null) item["requires"] = s.Requires;
-            if (s.Confirm != null) item["confirm"] = s.Confirm;
-            if (s.Options != null)
-            {
-                var options = new JArray();
-                foreach (var option in s.Options)
-                {
-                    int bar = option.IndexOf('|');
-                    options.Add(bar < 0 ? (JToken)option : new JObject { ["value"] = option.Substring(0, bar), ["label"] = option.Substring(bar + 1) });
-                }
-                item["options"] = options;
-            }
-            if (s.Placeholders != null) item["placeholders"] = new JArray(s.Placeholders);
-            if (s.Columns != null)
-            {
-                var columns = new JArray();
-                foreach (var column in s.Columns)
-                {
-                    var parts = new System.Collections.Generic.List<string>(column.Split('|'));
-                    var cell = new JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
-                    // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
-                    // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
-                    while (parts.Count > 3)
-                    {
-                        string last = parts[parts.Count - 1];
-                        if (last == "readonly") cell["readOnly"] = true;
-                        else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
-                        else break;
-                        parts.RemoveAt(parts.Count - 1);
-                    }
-                    cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
-                    columns.Add(cell);
-                }
-                item["columns"] = columns;
-            }
-            if (s.File != null) item["file"] = s.File;
-            if (s.Transient) item["transient"] = true;
-            if (s.Live) item["live"] = true;
-            if (s.Panel) item["panel"] = true;
-            if (s.Auto) item["auto"] = true;
-            if (s.TwitchOnly) item["twitchOnly"] = true;
-            if (s.Masked) item["masked"] = true;
-            if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
-            if (s.Shows != null)
-            {
-                var shows = new JObject();
-                foreach (var entry in s.Shows)
-                {
-                    int colon = entry.IndexOf(':');
-                    if (colon <= 0) continue;
-                    var keys = shows[entry.Substring(0, colon).Trim()] as JArray;
-                    if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new JArray();
-                    foreach (var key in entry.Substring(colon + 1).Split(','))
-                        if (key.Trim().Length > 0) keys.Add(key.Trim());
-                }
-                item["shows"] = shows;
-            }
-            if (s.Row != null) item["row"] = s.Row;
-            if (s.Field != null) item["field"] = s.Field;
-            if (s.Aliases != null) item["aliases"] = new JArray(s.Aliases);
-            if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new JObject { [s.Aliases[0]] = s.AliasFactor.Value };
-            settings.Add(item);
-        }
-        var root = new JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
+            settings.Add(ToJson(s));
+        var root = new Newtonsoft.Json.Linq.JObject { ["host"] = host, ["version"] = version, ["settingsFile"] = settingsFile, ["settings"] = settings };
         if (Window != null) root["window"] = Window.ToJson();
         if (Window != null && Window.LangMap.Count > 0) root["lang"] = Window.LangMap;
         if (currency != null && currency.Detected) root["currency"] = currency.ToJson();
-        return root.ToString(Formatting.None);
+        return root.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    /// <summary>One setting as the window reads it.</summary>
+    public static Newtonsoft.Json.Linq.JObject ToJson(Setting s)
+    {
+        var item = new Newtonsoft.Json.Linq.JObject { ["key"] = s.Key, ["default"] = s.Default == null ? Newtonsoft.Json.Linq.JValue.CreateNull() : Newtonsoft.Json.Linq.JToken.FromObject(s.Default) };
+        if (s.Kind != null) item["kind"] = s.Kind;
+        if (s.Page != null) item["page"] = s.Page;
+        if (s.Section != null) item["section"] = s.Section;
+        if (s.Group != null) item["group"] = s.Group;
+        if (s.Label != null) item["label"] = s.Label;
+        if (s.Help != null) item["help"] = s.Help;
+        if (s.Min.HasValue) item["min"] = s.Min.Value;
+        if (s.Max.HasValue) item["max"] = s.Max.Value;
+        if (s.Unit != null) item["unit"] = s.Unit;
+        if (s.Platform != null) item["platform"] = s.Platform;
+        if (s.Factor.HasValue) item["factor"] = s.Factor.Value;
+        if (s.UnlimitedAtZero) item["unlimitedAtZero"] = true;
+        if (s.Hidden) item["hidden"] = true;
+        if (s.Requires != null) item["requires"] = s.Requires;
+        if (s.Confirm != null) item["confirm"] = s.Confirm;
+        if (s.Options != null)
+        {
+            var options = new Newtonsoft.Json.Linq.JArray();
+            foreach (var option in s.Options)
+            {
+                int bar = option.IndexOf('|');
+                options.Add(bar < 0 ? (Newtonsoft.Json.Linq.JToken)option : new Newtonsoft.Json.Linq.JObject { ["value"] = option.Substring(0, bar), ["label"] = option.Substring(bar + 1) });
+            }
+            item["options"] = options;
+        }
+        if (s.Placeholders != null) item["placeholders"] = new Newtonsoft.Json.Linq.JArray(s.Placeholders);
+        if (s.Columns != null)
+        {
+            var columns = new Newtonsoft.Json.Linq.JArray();
+            foreach (var column in s.Columns)
+            {
+                var parts = new System.Collections.Generic.List<string>(column.Split('|'));
+                var cell = new Newtonsoft.Json.Linq.JObject { ["key"] = parts[0], ["kind"] = parts.Count > 1 ? parts[1] : "string" };
+                // Flags at the end: readonly (the game fills it, the user only reads), an emote column's platform.
+                // What stands between kind and flags is the label, which may itself contain a | ("a | b | c").
+                // A flag right after the kind ("key|int|readonly") counts as one too; the label is then the key.
+                while (parts.Count > 3 || (parts.Count == 3 && (parts[2] == "readonly" || parts[2] == "twitch" || parts[2] == "youtube" || parts[2] == "kick")))
+                {
+                    string last = parts[parts.Count - 1];
+                    if (last == "readonly") cell["readOnly"] = true;
+                    else if (last == "twitch" || last == "youtube" || last == "kick") cell["platform"] = last;
+                    else break;
+                    parts.RemoveAt(parts.Count - 1);
+                }
+                cell["label"] = parts.Count > 2 ? string.Join("|", parts.GetRange(2, parts.Count - 2).ToArray()) : parts[0];
+                columns.Add(cell);
+            }
+            item["columns"] = columns;
+        }
+        if (s.File != null) item["file"] = s.File;
+        if (s.Transient) item["transient"] = true;
+        if (s.Live) item["live"] = true;
+        if (s.Panel) item["panel"] = true;
+        if (s.Auto) item["auto"] = true;
+        if (s.TwitchOnly) item["twitchOnly"] = true;
+        if (s.Masked) item["masked"] = true;
+        if (s.ReadOnly) item["readOnly"] = true;
+        if (s.Step.HasValue) item["step"] = s.Step.Value;
+        if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
+        if (s.Shows != null)
+        {
+            var shows = new Newtonsoft.Json.Linq.JObject();
+            foreach (var entry in s.Shows)
+            {
+                int colon = entry.IndexOf(':');
+                if (colon <= 0) continue;
+                var keys = shows[entry.Substring(0, colon).Trim()] as Newtonsoft.Json.Linq.JArray;
+                if (keys == null) shows[entry.Substring(0, colon).Trim()] = keys = new Newtonsoft.Json.Linq.JArray();
+                foreach (var key in entry.Substring(colon + 1).Split(','))
+                    if (key.Trim().Length > 0) keys.Add(key.Trim());
+            }
+            item["shows"] = shows;
+        }
+        if (s.Row != null) item["row"] = s.Row;
+        if (s.Field != null) item["field"] = s.Field;
+        if (s.Aliases != null) item["aliases"] = new Newtonsoft.Json.Linq.JArray(s.Aliases);
+        if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new Newtonsoft.Json.Linq.JObject { [s.Aliases[0]] = s.AliasFactor.Value };
+        return item;
     }
 
     // ---- Shorthands for the window: a page, a help section and its lines, a cooldown. ----
     public static UiPage P(string id, string title = null, string icon = null, params string[] fields) => new UiPage(id, title, icon, fields);
     public static UiSection H(string heading, params object[] lines) => new UiSection(heading, lines);
-    public static UiLine Cmd(string command, string what) => new UiLine(new JObject { ["command"] = command, ["what"] = what });
-    public static UiLine Note(string note) => new UiLine(new JObject { ["note"] = note });
-    public static UiLine Link(string text, string url) => new UiLine(new JObject { ["link"] = text, ["url"] = url });
+    public static UiLine Cmd(string command, string what) => new UiLine(new Newtonsoft.Json.Linq.JObject { ["command"] = command, ["what"] = what });
+    public static UiLine Note(string note) => new UiLine(new Newtonsoft.Json.Linq.JObject { ["note"] = note });
+    public static UiLine Link(string text, string url) => new UiLine(new Newtonsoft.Json.Linq.JObject { ["link"] = text, ["url"] = url });
     /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
     /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
     public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
+    /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
+    /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
+    /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
+    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.</summary>
+    public static UiLine Tip(string target, string title = null, string text = null)
+    {
+        var tip = new Newtonsoft.Json.Linq.JObject();
+        if (target != null) tip["target"] = target;
+        if (title != null) tip["title"] = title;
+        if (text != null) tip["text"] = text;
+        return new UiLine(tip);
+    }
 
     // ---- Shorthands for UiWindow.Lang: a key's texts, a page title, a declared text. ----
-    public static UiText K(string key, string label, string help = null) => new UiText("keys", key, help == null ? (JToken)label : new JObject { ["label"] = label, ["help"] = help });
+    public static UiText K(string key, string label, string help = null) => new UiText("keys", key, help == null ? (Newtonsoft.Json.Linq.JToken)label : new Newtonsoft.Json.Linq.JObject { ["label"] = label, ["help"] = help });
     public static UiText Pg(string id, string title) => new UiText("pages", id, title);
     public static UiText Tx(string declared, string translation) => new UiText("texts", declared, translation);
+    /// <summary>One of the window's own texts by its key in conventions/lang/en.json's ui section ("btn.save"), for a
+    /// language the framework has no file for yet.</summary>
+    public static UiText Ui(string key, string text) => new UiText("ui", key, text);
+    /// <summary>The help of a placeholder chip ({user}, {amount} …) in the game's language.</summary>
+    public static UiText Ph(string placeholder, string help) => new UiText("placeholders", placeholder, help);
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
@@ -809,12 +839,14 @@ public static class UiSchema
 public sealed class UiWindow
 {
     public string Title, Releases, Logo, LogPrefix, Language;
+    public bool Locked;
     public double? Width, Height;
-    public readonly List<object> PageList = new List<object>();
-    public readonly JObject SampleMap = new JObject(), AnswerMap = new JObject(), OverrideMap = new JObject();
-    public JObject SenderMap, LogMap, AboutMap;
-    public readonly JArray PillList = new JArray(), CooldownList = new JArray(), HelpList = new JArray(), SectionList = new JArray();
-    public readonly JObject LangMap = new JObject();
+    public readonly System.Collections.Generic.List<object> PageList = new System.Collections.Generic.List<object>();
+    public readonly Newtonsoft.Json.Linq.JObject SampleMap = new Newtonsoft.Json.Linq.JObject(), AnswerMap = new Newtonsoft.Json.Linq.JObject(), OverrideMap = new Newtonsoft.Json.Linq.JObject();
+    public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap;
+    public readonly Newtonsoft.Json.Linq.JArray PillList = new Newtonsoft.Json.Linq.JArray(), CooldownList = new Newtonsoft.Json.Linq.JArray(), HelpList = new Newtonsoft.Json.Linq.JArray(), SectionList = new Newtonsoft.Json.Linq.JArray();
+    public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
+    public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
 
     /// <param name="title">Window title and About heading.</param>
     /// <param name="releases">"owner/repo" on GitHub: the repository and releases links, the update check.</param>
@@ -826,19 +858,24 @@ public sealed class UiWindow
 
     /// <summary>The game's own texts in another language, laid over the conventions' when the window is in it:
     /// UiSchema.K (a key's label and help), Pg (a page's title by id), Tx (a declared text by its English wording:
-    /// a section, a pill text, a page title, an option label, a message group). Several calls add up.</summary>
+    /// a section, a pill text, a page title, an option label, a message group), Ui (one of the window's own texts by
+    /// its key) and Ph (a placeholder's help). Several calls add up.</summary>
     public UiWindow Lang(string code, params UiText[] texts)
     {
-        var lang = LangMap[code] as JObject;
-        if (lang == null) LangMap[code] = lang = new JObject();
+        var lang = LangMap[code] as Newtonsoft.Json.Linq.JObject;
+        if (lang == null) LangMap[code] = lang = new Newtonsoft.Json.Linq.JObject();
         foreach (var t in texts)
         {
-            var section = lang[t.Section] as JObject;
-            if (section == null) lang[t.Section] = section = new JObject();
+            var section = lang[t.Section] as Newtonsoft.Json.Linq.JObject;
+            if (section == null) lang[t.Section] = section = new Newtonsoft.Json.Linq.JObject();
             section[t.Name] = t.Value;
         }
         return this;
     }
+
+    /// <summary>Locks the layout: the window has no customise mode, and a user's renames, moves, hidden fields and
+    /// accent colour are not applied. Theme and language stay the user's to pick.</summary>
+    public UiWindow Lock(bool locked = true) { Locked = locked; return this; }
 
     /// <summary>The pages in order: a UiPage (UiSchema.P) or the id of a standard page ("messages", "log", "help", "about").</summary>
     public UiWindow Pages(params object[] pages) { PageList.AddRange(pages); return this; }
@@ -849,23 +886,23 @@ public sealed class UiWindow
     public UiWindow Log(string folder, string files, string writeLogKey = null, string writeLogHelp = null, string[] columns = null, string[] results = null,
         string[] platforms = null, string emptyText = null, string writeLogLabel = null)
     {
-        LogMap = new JObject { ["folder"] = folder, ["files"] = files };
+        LogMap = new Newtonsoft.Json.Linq.JObject { ["folder"] = folder, ["files"] = files };
         if (writeLogKey != null) LogMap["writeLogKey"] = writeLogKey;
         if (writeLogLabel != null) LogMap["writeLogLabel"] = writeLogLabel;
         if (writeLogHelp != null) LogMap["writeLogHelp"] = writeLogHelp;
         if (emptyText != null) LogMap["emptyText"] = emptyText;
         if (columns != null)
         {
-            var list = new JArray();
+            var list = new Newtonsoft.Json.Linq.JArray();
             foreach (var column in columns)
             {
                 int bar = column.IndexOf('|');
-                list.Add(bar < 0 ? (JToken)column : new JObject { ["header"] = column.Substring(0, bar), ["field"] = column.Substring(bar + 1) });
+                list.Add(bar < 0 ? (Newtonsoft.Json.Linq.JToken)column : new Newtonsoft.Json.Linq.JObject { ["header"] = column.Substring(0, bar), ["field"] = column.Substring(bar + 1) });
             }
             LogMap["columns"] = list;
         }
-        if (results != null) LogMap["results"] = new JArray(results);
-        if (platforms != null) LogMap["platforms"] = new JArray(platforms);
+        if (results != null) LogMap["results"] = new Newtonsoft.Json.Linq.JArray(results);
+        if (platforms != null) LogMap["platforms"] = new Newtonsoft.Json.Linq.JArray(platforms);
         return this;
     }
 
@@ -873,7 +910,7 @@ public sealed class UiWindow
     public UiWindow Cooldowns(params string[][] cooldowns)
     {
         foreach (var c in cooldowns)
-            CooldownList.Add(new JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
+            CooldownList.Add(new Newtonsoft.Json.Linq.JObject { ["command"] = c[0], ["global"] = c.Length > 1 ? c[1] : null, ["user"] = c.Length > 2 ? c[2] : null });
         return this;
     }
 
@@ -881,14 +918,14 @@ public sealed class UiWindow
     /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
     public UiWindow Section(string name, string showWhen)
     {
-        SectionList.Add(new JObject { ["name"] = name, ["showWhen"] = showWhen });
+        SectionList.Add(new Newtonsoft.Json.Linq.JObject { ["name"] = name, ["showWhen"] = showWhen });
         return this;
     }
 
     /// <summary>A pill in the window's header that follows a bool setting.</summary>
     public UiWindow Pill(string key, string on, string off = null, string tooltip = null)
     {
-        var pill = new JObject { ["key"] = key, ["on"] = on };
+        var pill = new Newtonsoft.Json.Linq.JObject { ["key"] = key, ["on"] = on };
         if (off != null) pill["off"] = off;
         if (tooltip != null) pill["tooltip"] = tooltip;
         PillList.Add(pill);
@@ -899,7 +936,7 @@ public sealed class UiWindow
     /// (useBot, sendAction, cooldownUseBot, cooldownSendAction, numberSeparator). Null hides one.</summary>
     public UiWindow Senders(string useBot = "", string sendAction = "", string cooldownUseBot = "", string cooldownSendAction = "", string numberSeparator = "", string cooldownGroup = "")
     {
-        SenderMap = SenderMap ?? new JObject();
+        SenderMap = SenderMap ?? new Newtonsoft.Json.Linq.JObject();
         if (useBot != "") SenderMap["useBot"] = useBot;
         if (sendAction != "") SenderMap["sendAction"] = sendAction;
         if (cooldownUseBot != "") SenderMap["cooldownUseBot"] = cooldownUseBot;
@@ -919,9 +956,9 @@ public sealed class UiWindow
     /// <summary>What an action would answer, for the framework's preview and screenshots: text, or a JSON object.</summary>
     public UiWindow Answer(string action, string answer)
     {
-        JToken value;
-        try { value = answer != null && answer.TrimStart().StartsWith("{") ? JObject.Parse(answer) : (JToken)answer; }
-        catch (Exception) { value = answer; }
+        Newtonsoft.Json.Linq.JToken value;
+        try { value = answer != null && answer.TrimStart().StartsWith("{") ? Newtonsoft.Json.Linq.JObject.Parse(answer) : (Newtonsoft.Json.Linq.JToken)answer; }
+        catch (System.Exception) { value = answer; }
         AnswerMap[action] = value;
         return this;
     }
@@ -929,7 +966,7 @@ public sealed class UiWindow
     /// <summary>What the window changes about one setting of the table, where the table itself should not say it.</summary>
     public UiWindow Override(string key, string page = null, string label = null, string help = null, string section = null, bool? hidden = null, int? order = null)
     {
-        var o = new JObject();
+        var o = new Newtonsoft.Json.Linq.JObject();
         if (page != null) o["page"] = page;
         if (label != null) o["label"] = label;
         if (help != null) o["help"] = help;
@@ -940,6 +977,14 @@ public sealed class UiWindow
         return this;
     }
 
+    /// <summary>A tour of the window, stop by stop (UiSchema.Tip): it starts by itself on the window's first open and
+    /// again from the ? in the header. Its texts translate through Lang's Tx like every declared text.</summary>
+    public UiWindow Tour(params UiLine[] tips)
+    {
+        foreach (var tip in tips) TourList.Add(tip.Json);
+        return this;
+    }
+
     /// <summary>The Help page's sections (UiSchema.H).</summary>
     public UiWindow Help(params UiSection[] sections)
     {
@@ -947,28 +992,31 @@ public sealed class UiWindow
         return this;
     }
 
-    /// <summary>The About page: the credits line, sections like help, links; the Streamer.bot and author links are on unless turned off.</summary>
-    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool authorLink = true)
+    /// <summary>The About page: the game's credits under its name, sections like help, the game's own links. The page
+    /// ends with the framework's links (its page, Streamer.bot, where to report a problem); defaultLinks: false leaves
+    /// them out, streamerBotLink: false only that one. authorLink is kept for older games and no longer does anything.</summary>
+    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool authorLink = true, bool defaultLinks = true)
     {
-        AboutMap = new JObject();
+        AboutMap = new Newtonsoft.Json.Linq.JObject();
         if (credits != null) AboutMap["credits"] = credits;
-        if (sections != null) AboutMap["sections"] = new JArray(sections.Select(s => s.ToJson()));
-        if (links != null) AboutMap["links"] = new JArray(links.Select(l => new JObject { ["text"] = l.Json["link"], ["url"] = l.Json["url"] }));
+        if (sections != null) AboutMap["sections"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(sections, s => s.ToJson()));
+        if (links != null) AboutMap["links"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(links, l => new Newtonsoft.Json.Linq.JObject { ["text"] = l.Json["link"], ["url"] = l.Json["url"] }));
         if (!streamerBotLink) AboutMap["streamerBotLink"] = false;
-        if (!authorLink) AboutMap["authorLink"] = false;
+        if (!defaultLinks) AboutMap["defaultLinks"] = false;
         return this;
     }
 
-    public JObject ToJson()
+    public Newtonsoft.Json.Linq.JObject ToJson()
     {
-        var root = new JObject { ["title"] = Title };
+        var root = new Newtonsoft.Json.Linq.JObject { ["title"] = Title };
         if (Releases != null) root["releases"] = Releases;
         if (Logo != null) root["logo"] = Logo;
         if (LogPrefix != null) root["logPrefix"] = LogPrefix;
         if (Language != null) root["language"] = Language;
+        if (Locked) root["locked"] = true;
         if (Width.HasValue) root["width"] = Width.Value;
         if (Height.HasValue) root["height"] = Height.Value;
-        if (PageList.Count > 0) root["pages"] = new JArray(PageList.Select(p => p is UiPage page ? page.ToJson() : (JToken)p.ToString()));
+        if (PageList.Count > 0) root["pages"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(PageList, p => p is UiPage page ? page.ToJson() : (Newtonsoft.Json.Linq.JToken)p.ToString()));
         if (OverrideMap.Count > 0) root["overrides"] = OverrideMap;
         if (SenderMap != null) root["senders"] = SenderMap;
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
@@ -979,6 +1027,7 @@ public sealed class UiWindow
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
         if (AboutMap != null) root["about"] = AboutMap;
+        if (TourList.Count > 0) root["tour"] = TourList;
         return root;
     }
 }
@@ -989,12 +1038,12 @@ public sealed class UiPage
 {
     public string Id, Title, Icon; public string[] Fields; public bool Custom, Bottom;
     public UiPage(string id, string title, string icon, string[] fields) { Id = id; Title = title; Icon = icon; Fields = fields; }
-    public JObject ToJson()
+    public Newtonsoft.Json.Linq.JObject ToJson()
     {
-        var page = new JObject { ["id"] = Id };
+        var page = new Newtonsoft.Json.Linq.JObject { ["id"] = Id };
         if (Title != null) page["title"] = Title;
         if (Icon != null) page["icon"] = Icon;
-        if (Fields != null && Fields.Length > 0) page["fields"] = new JArray(Fields);
+        if (Fields != null && Fields.Length > 0) page["fields"] = new Newtonsoft.Json.Linq.JArray(Fields);
         if (Custom) page["custom"] = true;
         if (Bottom) page["bottom"] = true;
         return page;
@@ -1006,20 +1055,20 @@ public sealed class UiSection
 {
     public string Heading; public object[] Lines;
     public UiSection(string heading, object[] lines) { Heading = heading; Lines = lines; }
-    public JObject ToJson() => new JObject { ["heading"] = Heading, ["lines"] = new JArray(Lines.Select(l => l is UiLine line ? line.Json : (JToken)l.ToString())) };
+    public Newtonsoft.Json.Linq.JObject ToJson() => new Newtonsoft.Json.Linq.JObject { ["heading"] = Heading, ["lines"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(Lines, l => l is UiLine line ? line.Json : (Newtonsoft.Json.Linq.JToken)l.ToString())) };
 }
 
 /// <summary>One translated text for UiWindow.Lang: the section of the language file it goes into, its name there, its value.</summary>
 public sealed class UiText
 {
-    public readonly string Section, Name; public readonly JToken Value;
-    public UiText(string section, string name, JToken value) { Section = section; Name = name; Value = value; }
+    public readonly string Section, Name; public readonly Newtonsoft.Json.Linq.JToken Value;
+    public UiText(string section, string name, Newtonsoft.Json.Linq.JToken value) { Section = section; Name = name; Value = value; }
 }
 
 public sealed class UiLine
 {
-    public readonly JObject Json;
-    public UiLine(JObject json) { Json = json; }
+    public readonly Newtonsoft.Json.Linq.JObject Json;
+    public UiLine(Newtonsoft.Json.Linq.JObject json) { Json = json; }
 }
 
 /// <summary>Answers the settings window's requests, which its generic settings action sends through this game's
@@ -1044,9 +1093,9 @@ public static class UiHost
     /// <param name="table">The rows of a table field by its key, as a JSON array of objects.</param>
     /// <param name="emotes">The emote sources for emote fields, as JSON (docs/Schema.md).</param>
     /// <returns>True when the action was called by the settings window and has answered; return true at once then.</returns>
-    public static bool Handle(IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile,
-        Func<string, UiSettings, string> test = null, Func<UiSettings, string> validate = null, Action<UiSettings> saved = null,
-        Func<string, string> table = null, Func<string> emotes = null)
+    public static bool Handle(System.Collections.Generic.IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile,
+        System.Func<string, UiSettings, string> test = null, System.Func<UiSettings, string> validate = null, System.Action<UiSettings> saved = null,
+        System.Func<string, string> table = null, System.Func<string> emotes = null)
     {
         string request = Arg(args, "uiframework.request");
         if (request == null && args.ContainsKey("uiframework.describe")) request = "describe";
@@ -1076,7 +1125,7 @@ public static class UiHost
                 default: CPH.LogWarn("[" + actionName + "] The settings window asked for '" + request + "', which this game does not know."); break;
             }
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
@@ -1085,7 +1134,7 @@ public static class UiHost
         return true;
     }
 
-    private static string Arg(IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
+    private static string Arg(System.Collections.Generic.IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
 }
 
 /// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and
@@ -1120,11 +1169,11 @@ public sealed class UiCurrency
     {
         string json;
         try { json = CPH.GetGlobalVar<string>(global, true); }
-        catch (Exception) { return false; }
+        catch (System.Exception) { return false; }
         if (string.IsNullOrWhiteSpace(json)) return false;
         try
         {
-            var settings = JObject.Parse(json);
+            var settings = Newtonsoft.Json.Linq.JObject.Parse(json);
             string variable = (string)settings[variableKey];
             if (string.IsNullOrWhiteSpace(variable)) return false;
             Variable = variable.Trim();
@@ -1133,69 +1182,91 @@ public sealed class UiCurrency
             Source = source;
             return true;
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             CPH.LogWarn("[UIFramework] The settings of " + source + " (" + global + ") could not be read: " + ex.Message);
             return false;
         }
     }
 
-    public JObject ToJson() => new JObject { ["source"] = Source, ["variable"] = Variable, ["name"] = Name };
+    public Newtonsoft.Json.Linq.JObject ToJson() => new Newtonsoft.Json.Linq.JObject { ["source"] = Source, ["variable"] = Variable, ["name"] = Name };
 }
 
 /// <summary>The settings file as the game reads it: every key through its default, old key names tolerated. Values
 /// an alias stored in another scale (a fraction where percent is stored now) are converted on the way.</summary>
 public sealed class UiSettings
 {
-    private readonly JObject _root;
+    private readonly Newtonsoft.Json.Linq.JObject _root;
 
-    private UiSettings(JObject root) { _root = root; }
+    private UiSettings(Newtonsoft.Json.Linq.JObject root) { _root = root; }
 
     /// <summary>Settings from JSON text, for tests and callers that already hold the values; empty text is empty settings.</summary>
     public static UiSettings Parse(string json)
     {
         try
         {
-            using (var reader = new JsonTextReader(new StringReader(string.IsNullOrWhiteSpace(json) ? "{}" : json)) { DateParseHandling = DateParseHandling.None })
-                return new UiSettings(JObject.Load(reader));
+            using (var reader = new Newtonsoft.Json.JsonTextReader(new System.IO.StringReader(string.IsNullOrWhiteSpace(json) ? "{}" : json)) { DateParseHandling = Newtonsoft.Json.DateParseHandling.None })
+                return new UiSettings(Newtonsoft.Json.Linq.JObject.Load(reader));
         }
-        catch (Exception)
+        catch (System.Exception)
         {
-            return new UiSettings(new JObject());
+            return new UiSettings(new Newtonsoft.Json.Linq.JObject());
         }
     }
 
     /// <summary>The values as they are, for a host that reads them its own way.</summary>
-    public JObject Raw => _root;
+    public Newtonsoft.Json.Linq.JObject Raw => _root;
 
-    /// <summary>Never throws: an unreadable file gives the defaults, and the game keeps running.</summary>
-    public static UiSettings Load(string path)
+    /// <summary>Why the settings did not come from the file, or null: it could not be read, and the backup of the
+    /// window's last save (FromBackup) or the defaults stand in for it.</summary>
+    public string Problem { get; private set; }
+    public bool FromBackup { get; private set; }
+
+    /// <summary>Never throws: an unreadable file gives the .bak the window's last save kept, else the defaults, and
+    /// the game keeps running; Problem says so, and log (CPH.LogWarn, say) hears it. A relative path starts in the
+    /// Streamer.bot folder, whatever the current directory.</summary>
+    public static UiSettings Load(string path, System.Action<string> log = null)
     {
+        if (string.IsNullOrEmpty(path)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
         try
         {
-            if (!File.Exists(path)) return new UiSettings(new JObject());
-            using (var reader = new JsonTextReader(new StringReader(ReadWithRetry(path))) { DateParseHandling = DateParseHandling.None })
-                return new UiSettings(JObject.Load(reader));
+            if (!System.IO.Path.IsPathRooted(path)) path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, path);
+            if (!System.IO.File.Exists(path)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+            return new UiSettings(Read(path));
         }
-        catch (Exception)
+        catch (System.Exception ex)
         {
-            return new UiSettings(new JObject());
+            string file;
+            try { file = System.IO.Path.GetFileName(path); } catch (System.Exception) { file = path; }
+            string why = file + " could not be read (" + ex.Message + ")";
+            UiSettings stand;
+            try { stand = System.IO.File.Exists(path + ".bak") ? new UiSettings(Read(path + ".bak")) { FromBackup = true, Problem = why + "; the backup of the last save is used." } : null; }
+            catch (System.Exception) { stand = null; }
+            if (stand == null) stand = new UiSettings(new Newtonsoft.Json.Linq.JObject()) { Problem = why + "; the defaults are used." };
+            if (log != null) try { log(stand.Problem); } catch (System.Exception) { }
+            return stand;
         }
+    }
+
+    private static Newtonsoft.Json.Linq.JObject Read(string path)
+    {
+        using (var reader = new Newtonsoft.Json.JsonTextReader(new System.IO.StringReader(ReadWithRetry(path))) { DateParseHandling = Newtonsoft.Json.DateParseHandling.None })
+            return Newtonsoft.Json.Linq.JObject.Load(reader);
     }
 
     private static string ReadWithRetry(string path)
     {
         for (int attempt = 1; ; attempt++)
         {
-            try { return File.ReadAllText(path); }
-            catch (IOException) when (attempt < 5) { Thread.Sleep(40); }
+            try { return System.IO.File.ReadAllText(path); }
+            catch (System.IO.IOException) when (attempt < 5) { System.Threading.Thread.Sleep(40); }
         }
     }
 
-    public JToken Token(string key)
+    public Newtonsoft.Json.Linq.JToken Token(string key)
     {
         var token = _root[key];
-        if (token != null && token.Type != JTokenType.Null) return token;
+        if (token != null && token.Type != Newtonsoft.Json.Linq.JTokenType.Null) return token;
         var setting = UiSchema.Find(key);
         if (setting?.Aliases != null)
             for (int i = 0; i < setting.Aliases.Length; i++)
@@ -1203,23 +1274,30 @@ public sealed class UiSettings
                 // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
                 string alias = setting.Aliases[i];
                 int dot = alias.IndexOf('.');
-                var old = dot > 0 ? (_root[alias.Substring(0, dot)] as JObject)?[alias.Substring(dot + 1)] : _root[alias];
-                if (old == null || old.Type == JTokenType.Null) continue;
-                if (i == 0 && setting.AliasFactor.HasValue && (old.Type == JTokenType.Integer || old.Type == JTokenType.Float))
-                    return Convert.ToDouble(((JValue)old).Value, CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
+                if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
+                    return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
                 return old;
             }
-        return setting?.Default == null ? null : JToken.FromObject(setting.Default);
+        return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);
     }
 
-    public bool Bool(string key) { var t = Token(key); return t != null && t.Type == JTokenType.Boolean && (bool)t; }
+    public bool Bool(string key) { var t = Token(key); return t != null && t.Type == Newtonsoft.Json.Linq.JTokenType.Boolean && (bool)t; }
 
     public long Long(string key)
     {
+        // A whole number as it is: through a double, one past 2^53 would lose its last digits.
         var t = Token(key);
-        if (t == null) return 0;
-        if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) return Convert.ToInt64(((JValue)t).Value, CultureInfo.InvariantCulture);
-        return long.TryParse(t.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0;
+        if (t != null && t.Type == Newtonsoft.Json.Linq.JTokenType.Integer)
+        {
+            try { return (long)t; }
+            catch (System.Exception) { return t.ToString().TrimStart().StartsWith("-") ? long.MinValue : long.MaxValue; }
+        }
+        double d = Double(key);
+        if (d >= long.MaxValue) return long.MaxValue;
+        if (d <= long.MinValue) return long.MinValue;
+        return (long)System.Math.Round(d);
     }
 
     public int Int(string key) { long l = Long(key); return l > int.MaxValue ? int.MaxValue : l < int.MinValue ? int.MinValue : (int)l; }
@@ -1228,14 +1306,22 @@ public sealed class UiSettings
     {
         var t = Token(key);
         if (t == null) return 0;
-        if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) return Convert.ToDouble(((JValue)t).Value, CultureInfo.InvariantCulture);
-        return double.TryParse(t.ToString().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0;
+        double d;
+        if (t.Type == Newtonsoft.Json.Linq.JTokenType.Integer || t.Type == Newtonsoft.Json.Linq.JTokenType.Float) d = System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)t).Value, System.Globalization.CultureInfo.InvariantCulture);
+        else if (!double.TryParse(t.ToString().Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d)) return 0;
+        return double.IsNaN(d) || double.IsInfinity(d) ? 0 : d;
     }
 
+    /// <summary>The value as text, numbers with a point whatever the system's culture ("0.5", not "0,5").</summary>
     public string String(string key)
     {
         var t = Token(key);
-        return t == null ? "" : t.Type == JTokenType.String ? (string)t : t.ToString();
+        if (t == null || t.Type == Newtonsoft.Json.Linq.JTokenType.Null) return "";
+        if (t.Type == Newtonsoft.Json.Linq.JTokenType.String) return (string)t;
+        if (t.Type == Newtonsoft.Json.Linq.JTokenType.Float) return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)t).Value, System.Globalization.CultureInfo.InvariantCulture).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+        if (t.Type == Newtonsoft.Json.Linq.JTokenType.Integer) return System.Convert.ToString(((Newtonsoft.Json.Linq.JValue)t).Value, System.Globalization.CultureInfo.InvariantCulture);
+        if (t.Type == Newtonsoft.Json.Linq.JTokenType.Boolean) return (bool)t ? "true" : "false";
+        return t.ToString(Newtonsoft.Json.Formatting.None);
     }
 
     /// <summary>A ceiling that stores "no limit" as 0: read as long.MaxValue.</summary>
