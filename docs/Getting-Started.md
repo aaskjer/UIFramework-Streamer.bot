@@ -73,9 +73,14 @@ if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, SettingsFile,
     return true;
 ```
 
+Keep the code the game action's **last sub-action**, with nothing before it that acts. The window runs the whole
+action for each of its requests, and a sub-action after the code still runs once `Handle` has answered and the
+code returned `true`: a chat message or a sound there would go out every time the window asks something.
+
 `ActionName` is this action's exact name in Streamer.bot, `SettingsFile` the settings file relative to the
 Streamer.bot folder (`"Demo Game/DemoGame-Settings.json"`); the window writes it, your game reads it with
-`UiSettings.Load(path)` and `s.Int("sides")`, `s.Bool("useBot")`, `s.String("msgRoll")`. The optional delegates
+`UiSettings.Load(path, CPH.LogWarn)` and `s.Int("sides")`, `s.Bool("useBot")`, `s.String("msgRoll")` (a damaged
+file gives the backup of the last save, and the log says so). The optional delegates
 are how the window talks to your game: `test` answers a Try button or a live field, `validate` checks before a
 save, `saved` runs after one, `table` and `emotes` fill special fields. All are optional; a game with plain
 settings passes none.

@@ -108,17 +108,20 @@ namespace UIFramework
         }
 
         /// <summary>Digits only, and a leading minus once the setting allows negatives (its tag's Min, set after the
-        /// box is built, is read when typing).</summary>
+        /// box is built, is read when typing). A duration typed in minutes or hours (a Factor) takes a decimal mark.</summary>
         private static void WholeOnly(TextBox box)
         {
             bool Allowed(string text, int at)
             {
-                bool negative = FieldBinding.AllowsNegative(FieldTag.Of(box.Tag));
+                var tag = FieldTag.Of(box.Tag);
+                bool negative = FieldBinding.AllowsNegative(tag);
+                bool decimals = tag != null && tag.Factor != 1.0;
                 for (int k = 0; k < text.Length; k++)
                 {
                     char c = text[k];
                     if (c >= '0' && c <= '9') continue;
                     if (c == '-' && negative && at + k == 0) continue;
+                    if ((c == '.' || c == ',') && decimals) continue;
                     return false;
                 }
                 return true;
@@ -135,14 +138,45 @@ namespace UIFramework
         public FrameworkElement IntField(string label, string key, string tooltip, bool unlimitedAtZero = false) =>
             Ui.Labeled(label, IntBox(label, key, tooltip, unlimitedAtZero));
 
+        /// <summary>A duration stored in whole seconds, typed and shown in its unit: "min" and "h" take minutes and
+        /// hours (1.5 min is saved as 90), "s" or none seconds. The label carries the unit.</summary>
+        public FrameworkElement DurationField(string label, string key, string tooltip, string unit, bool unlimitedAtZero = false)
+        {
+            var box = IntBox(label, key, tooltip, unlimitedAtZero);
+            var tag = (FieldTag)box.Tag;
+            tag.Factor = DurationFactor(unit);
+            if (tag.Factor != 1.0)
+            {
+                box.MaxLength = 14;
+                box.Text = FieldBinding.Display(tag, NumberToken(key));
+            }
+            return Ui.Labeled(label + " (" + (unit ?? "s") + ")", box);
+        }
+
+        /// <summary>Seconds per typed unit of a duration: 60 for "min", 3600 for "h", else 1.</summary>
+        public static double DurationFactor(string unit)
+        {
+            switch ((unit ?? "").Trim().ToLowerInvariant())
+            {
+                case "min": case "mins": case "minute": case "minutes": return 60.0;
+                case "h": case "hr": case "hrs": case "hour": case "hours": return 3600.0;
+                default: return 1.0;
+            }
+        }
+
         public FrameworkElement LongField(string label, string key, string tooltip, bool unlimitedAtZero = false) =>
             Ui.Labeled(label, LongBox(label, key, tooltip, unlimitedAtZero));
 
         public FrameworkElement DoubleField(string label, string key, string tooltip) =>
             Ui.Labeled(label, DoubleBox(label, key, tooltip));
 
-        public FrameworkElement TextField(string label, string key, string tooltip) =>
-            Ui.Labeled(label, SettingBox(label, key, tooltip));
+        /// <summary>A plain text setting, saved as typed: spaces at either end stay (see <see cref="FieldTag.KeepSpaces"/>).</summary>
+        public FrameworkElement TextField(string label, string key, string tooltip)
+        {
+            var box = SettingBox(label, key, tooltip);
+            ((FieldTag)box.Tag).KeepSpaces = true;
+            return Ui.Labeled(label, box);
+        }
 
         /// <summary>A text field shown as dots (a token, a client secret). The real value lives in the setting's box,
         /// which carries the tag, so saving, resetting, change tracking and <c>set</c> work on it unchanged; a

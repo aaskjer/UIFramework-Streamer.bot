@@ -55,7 +55,7 @@ conventions cannot know.
 | `group`        | no       | for `template`: the group in the message picker (host block: `group:` on `S()` as well as `Msg()`) |
 | `factor`       | no       | for `percent`: stored = typed × factor (0.01 stores a fraction; default 1)                  |
 | `unlimitedAtZero` | no    | for `int`/`long`: 0 in the field means "no limit" and is stored as MaxValue                 |
-| `aliases`      | no       | old keys: the store reads them and writes the canonical key back. An alias with a dot (`PlatformEmotes.twitch`) takes the value out of an object of the old file; the object goes once it is empty. Two settings naming the same alias (one old switch that became two) both take its value |
+| `aliases`      | no       | old keys: the store reads them and writes the canonical key back. An alias with a dot (`PlatformEmotes.twitch`) takes the value out of an object of the old file; the object goes once it is empty, and the old value goes from it also when the file has the canonical key already. Two settings naming the same alias (one old switch that became two) both take its value, a dotted one too. An alias that is another setting's key is not moved (the check names it) |
 | `aliasFactor`  | no       | multiplies the first alias's value on the move (a fraction to percent: 100)                 |
 | `hidden`       | no       | true: no field, but the value stays in the file                                             |
 | `confirm`      | no       | for `action`: a yes/no question before the game is asked                                    |
@@ -94,8 +94,8 @@ and compared with a point whatever the system's language.
 | `long`      | long        | number field                               | like `int`, for big balances                          |
 | `double`    | double      | number field; with `options` a dropdown    | `min`, `max`, `step`; dot or comma; `1,000` and `1.000,5` are refused as ambiguous |
 | `percent`   | int/double  | number field 0 to 100 with `%`             | stored as the number, not a fraction (see `factor`)   |
-| `duration`  | int         | number field with a unit                   | stored in seconds; shown as s/min/h                   |
-| `string`    | string      | one-line text field                        |                                                       |
+| `duration`  | int         | number field with a unit                   | stored in whole seconds; `unit` `min` or `h` types and shows minutes or hours (1.5 min is saved as 90), `s` or none seconds; `min`/`max` are seconds |
+| `string`    | string      | one-line text field                        | saved as typed, spaces at either end included (a prefix `"🎲 "`) |
 | `text`      | string      | multi-line text field                      |                                                       |
 | `template`  | string      | multi-line, placeholder chips, chat preview| `placeholders`; the preview fills them with samples   |
 | `options`   | string      | dropdown                                   | `options` required                                    |
@@ -157,7 +157,7 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | Part                 | Meaning                                                                                              |
 |----------------------|------------------------------------------------------------------------------------------------------|
 | `UiWindow(title, …)` | the window title and About heading; `releases` is `owner/repo` on GitHub (repository and releases links, the update check); `logo` a URL; `logPrefix` for the framework's log lines (default `[Title/Settings]`); `width`, `height` |
-| `Pages(…)`           | the pages in order: `P(id, title, icon, fields…)` or the id of a standard page (`messages`, `log`, `help`, `about`). `icon` is an emoji or a conventions name (`gear`, `dice`, `coins`, `clock`, `shield`, `chat`, `trophy`, `monitor`, `list`, `book`, `info`, `cards`, `chart`). `fields` are keys or patterns like `overlay*` the page claims ahead of their own page; a pattern never takes a template off the Messages page, a full key does |
+| `Pages(…)`           | the pages in order: `P(id, title, icon, fields…)` or the id of a standard page (`messages`, `log`, `help`, `about`). `icon` is an emoji or a conventions name (`gear`, `dice`, `coins`, `clock`, `shield`, `chat`, `trophy`, `monitor`, `list`, `book`, `info`, `cards`, `chart`, `gift`). `fields` are keys or patterns like `overlay*` the page claims ahead of their own page; a pattern never takes a template off the Messages page, a full key does (it is then that page's field, not an entry of the Messages picker); a field the user moved to another page in the customise mode stays there |
 | `Log(folder, files, …)` | the Log page: the folder (relative to the Streamer.bot folder) and the files in it (`BJG-log*.txt`), which the settings action reads and the page follows as they change; `writeLogKey` the bool behind "Write a log file per day", `writeLogHelp`, `columns` after Time and Result as `"Header|field"`, `results` for the filter, `platforms`, `emptyText` |
 | `Cooldowns(C(command, global, user), …)` | commands whose cooldowns follow settings: the settings action sets them in Streamer.bot after every save. The command by its id (right-click the command in Streamer.bot, *Copy Id*; an import keeps it, so it is the robust way), or by its text (`!roll`) or name for a command made by hand; `global` and `user` are the keys of the two durations, either may be null |
 | `Pill(key, on, off, tooltip)` | a pill in the header that follows a bool setting                                             |
@@ -187,8 +187,10 @@ not a setting, or a value a dropdown has no option for (`questionSource=IGBD`), 
 ### Languages
 
 What the game declares is English. When the layout file names another language (`de`), the window translates
-what the conventions know: the texts of the conventions' keys (`conventions/lang/de.json`, `keys`) replace the
-declared label and help of those keys, pages are titled by id (`pages`), and short declared texts are looked up
+what the conventions know: the texts of the conventions' keys (`conventions/lang/de.json`, `keys`) replace a
+known key's label and help where the game left them out or declared the conventions' own English wording; a
+label or help the game worded itself is looked up by that wording (`texts`, below) or stays. Pages are titled by
+id (`pages`), and short declared texts are looked up
 by their English wording (`texts`): section headings, pill texts, page titles, option labels, message groups,
 list column headers, the log page's switch, and the help and about pages line by line (headings, notes, what a
 command does, link texts). What nothing knows stays as declared. The user's own layout (a renamed field or page) still has the last word.
@@ -205,6 +207,9 @@ calls add up, and these texts are laid over the conventions' for that language:
                 Pg("fleet", "Flotte"), Tx("Shoe", "Schuh"), Tx("Free game on", "Freispiel an"))
 ```
 
+A `K` is the game's own translation of a key and replaces its label (and help) whatever the game declared;
+`K(key, label)` without a help keeps the help the conventions have for the key.
+
 In the schema this is `lang: { "de": { "keys": …, "pages": …, "texts": … } }`, the shape of a conventions
 language file. A game that wants its help and about pages in another language adds a `Tx` per heading and
 line; a line without one stays English.
@@ -213,7 +218,8 @@ Settings the window puts on a standard page (a switch on `log`) sit above that p
 page the table's order holds (`Override(order:)` moves one); a heading where `section` changes.
 
 What the game declares is checked when the window opens: an unknown kind, a requirement on a key that is not a
-setting, a page naming a pattern no setting matches, a minimum above a maximum. The window shows a banner and
+setting, a page naming a pattern no setting matches, a minimum above a maximum, a section condition for a section
+no setting is in, an old key (`aliases`) that is another setting's key. The window shows a banner and
 lists the findings on top of the Log page (on the About page in a window without one), so the game's author
 sees them without reading Streamer.bot's log.
 
@@ -249,11 +255,14 @@ writing a viewer's points stays the game's: `CPH.GetTwitchUserVarById<long>(user
 
 The values arrive as `UiSettings` with `Bool`, `Int`, `Long`, `Double`, `String`, `Ceiling` (0 as "no limit"),
 `Clamp` and `Raw` (the JSON object). `UiSettings.Load(path)` reads the settings file the same way, old keys
-through the aliases.
+through the aliases; a relative path starts in the Streamer.bot folder. A file that cannot be read gives the
+`.bak` of the window's last save, else the defaults, and `Problem` says so (`FromBackup` which);
+`UiSettings.Load(path, CPH.LogWarn)` also logs it.
 
 **A file of its own (`file`, `field`):** the value is read on open from `<folder of the settings file>\<file>`
 (the property `field`, or the file itself) and written back there on save, atomically with a `.bak`; the rest of
-the file stays. The key never enters the settings file; *Reset all* resets only the settings file and leaves
+the file stays. The key never enters the settings file; *Reset all* resets only the settings file (the settings the window
+shows: hidden ones and keys it has no field for keep their values) and leaves
 this one (its editor has *Restore defaults*). A missing file shows the `default`, so the file the game reads
 anyway (`RT-wordbank.json`) stays the only copy.
 

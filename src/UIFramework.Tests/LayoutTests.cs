@@ -95,6 +95,20 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void APagePatternLeavesAFieldTheUserMovedWhereTheUserPutIt()
+        {
+            var layout = LayoutFile.Load(SettingsPath);
+            layout.SetField("c", "page", "two");
+            layout.Save();
+
+            var spec = Resolve(@"{ ""pages"": [ { ""id"": ""one"", ""fields"": [""*""] }, ""two"" ] }");
+            var byKey = spec.ResolvedSettings.ToDictionary(s => s.Key);
+            Assert.Equal("two", byKey["c"].Page);   // the user's move wins over the pattern
+            Assert.Equal("one", byKey["d"].Page);   // claimed: it sits on the claiming page and says so
+            Assert.Contains(spec.Pages, p => p.Id == "two");
+        }
+
+        [Fact]
         public void HiddenPagesStayOutUnlessCustomising()
         {
             var layout = LayoutFile.Load(SettingsPath);

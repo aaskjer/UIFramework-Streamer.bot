@@ -33,7 +33,8 @@ public class CPHInline
                 test: (name, s) => name == "tryRoll" ? Roll(s, UiCurrency.Detect(CPH, s), "alice", null) : null))
             return true;
 
-        var settings = UiSettings.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFile));
+        // A damaged file gives the backup of the window's last save, and the log says so.
+        var settings = UiSettings.Load(SettingsFile, CPH.LogWarn);
         // The points system: Currency Core or LOYALTY POINTS when installed, else the two settings.
         var currency = UiCurrency.Detect(CPH, settings);
         string user = args.ContainsKey("user") ? Convert.ToString(args["user"]) : "someone";
@@ -692,19 +693,39 @@ public sealed class UiSettings
     /// <summary>The values as they are, for a host that reads them its own way.</summary>
     public JObject Raw => _root;
 
-    /// <summary>Never throws: an unreadable file gives the defaults, and the game keeps running.</summary>
-    public static UiSettings Load(string path)
+    /// <summary>Why the settings did not come from the file, or null: it could not be read, and the backup of the
+    /// window's last save (FromBackup) or the defaults stand in for it.</summary>
+    public string Problem { get; private set; }
+    public bool FromBackup { get; private set; }
+
+    /// <summary>Never throws: an unreadable file gives the .bak the window's last save kept, else the defaults, and
+    /// the game keeps running; Problem says so, and log (CPH.LogWarn, say) hears it. A relative path starts in the
+    /// Streamer.bot folder, whatever the current directory.</summary>
+    public static UiSettings Load(string path, Action<string> log = null)
     {
+        if (string.IsNullOrEmpty(path)) return new UiSettings(new JObject());
+        if (!Path.IsPathRooted(path)) path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
         try
         {
             if (!File.Exists(path)) return new UiSettings(new JObject());
-            using (var reader = new JsonTextReader(new StringReader(ReadWithRetry(path))) { DateParseHandling = DateParseHandling.None })
-                return new UiSettings(JObject.Load(reader));
+            return new UiSettings(Read(path));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new UiSettings(new JObject());
+            string why = Path.GetFileName(path) + " could not be read (" + ex.Message + ")";
+            UiSettings stand;
+            try { stand = File.Exists(path + ".bak") ? new UiSettings(Read(path + ".bak")) { FromBackup = true, Problem = why + "; the backup of the last save is used." } : null; }
+            catch (Exception) { stand = null; }
+            if (stand == null) stand = new UiSettings(new JObject()) { Problem = why + "; the defaults are used." };
+            if (log != null) try { log(stand.Problem); } catch (Exception) { }
+            return stand;
         }
+    }
+
+    private static JObject Read(string path)
+    {
+        using (var reader = new JsonTextReader(new StringReader(ReadWithRetry(path))) { DateParseHandling = DateParseHandling.None })
+            return JObject.Load(reader);
     }
 
     private static string ReadWithRetry(string path)

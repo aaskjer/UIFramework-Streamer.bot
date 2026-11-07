@@ -206,7 +206,7 @@ namespace UIFramework
                     SetRange(ctx, s);
                     break;
                 case "duration":
-                    element = f.IntField(label + " (" + (s.Unit ?? "s") + ")", s.Key, help, s.UnlimitedAtZero);
+                    element = f.DurationField(label, s.Key, help, s.Unit, s.UnlimitedAtZero);
                     SetRange(ctx, s);
                     break;
                 case "double":
@@ -304,13 +304,21 @@ namespace UIFramework
             if (ctx.Customizing)
                 return element;
             if (grey != null)
-                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, grey, on => target.IsEnabled = on));
+                ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, grey, on => Grey(target, !on)));
             if (show.Count > 0)
             {
                 string all = string.Join(" && ", show);
                 ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, all, on => target.Visibility = on ? Visibility.Visible : Visibility.Collapsed));
             }
             return element;
+        }
+
+        /// <summary>Greys a field out, or back in. Disabled alone looks the same as enabled on some kinds (a list, a
+        /// slider, a label above a box), so the whole field is also dimmed.</summary>
+        public static void Grey(UIElement field, bool grey)
+        {
+            field.IsEnabled = !grey;
+            field.Opacity = grey ? 0.5 : 1.0;
         }
 
         /// <summary>The columns with their labels in the window's language: a declared label the conventions or the

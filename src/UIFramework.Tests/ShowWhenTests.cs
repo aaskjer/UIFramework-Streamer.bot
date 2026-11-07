@@ -72,6 +72,17 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void A_section_no_setting_names_and_an_old_key_that_is_a_setting_are_problems()
+        {
+            var spec = Spec(@"{ ""key"": ""a"", ""default"": 1, ""section"": ""Real"" },
+                              { ""key"": ""b"", ""default"": 2, ""aliases"": [ ""a"" ] }",
+                            @"{ ""name"": ""Real"", ""showWhen"": ""b>1"" }, { ""name"": ""Typo"", ""showWhen"": ""b>1"" }", "check-sections");
+            Assert.Contains(spec.Problems, p => p.Contains("'Typo'"));
+            Assert.DoesNotContain(spec.Problems, p => p.Contains("'Real'"));
+            Assert.Contains(spec.Problems, p => p.Contains("'b'") && p.Contains("old key 'a'"));
+        }
+
+        [Fact]
         public void The_users_layout_puts_fields_beside_each_other_or_on_a_line_of_their_own()
         {
             string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "rows-" + System.Guid.NewGuid().ToString("N"));

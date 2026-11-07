@@ -183,6 +183,12 @@ namespace UIFramework
     {
         public readonly Dictionary<string, string> Pages = new Dictionary<string, string>(StringComparer.Ordinal);
         public readonly Dictionary<string, (string Label, string Help)> Keys = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
+        /// <summary>The game's own key texts for this language (UiWindow.Lang's K): they replace whatever the game
+        /// declared for the key, where the conventions' replace only what it left out or took from them.</summary>
+        public readonly Dictionary<string, (string Label, string Help)> OwnKeys = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
+        /// <summary>The key texts in English, the language the games declare in: a declared label equal to one is the
+        /// conventions' own wording, and another language translates it.</summary>
+        public readonly Dictionary<string, (string Label, string Help)> EnglishKeys = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
         public readonly Dictionary<string, (string Label, string Help)> Framework = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
         public readonly Dictionary<string, string> Placeholders = new Dictionary<string, string>(StringComparer.Ordinal);
         /// <summary>The window's own texts by key (<see cref="Text"/>).</summary>
@@ -199,15 +205,21 @@ namespace UIFramework
         {
             var lang = new Lang();
             lang.Overlay(root);
+            foreach (var pair in lang.Keys)
+                lang.EnglishKeys[pair.Key] = pair.Value;
             return lang;
         }
 
-        public void Overlay(JObject root)
+        /// <summary>Lays another language's texts over these. <paramref name="own"/>: the game's own translations,
+        /// whose key texts also go into <see cref="OwnKeys"/>.</summary>
+        public void Overlay(JObject root, bool own = false)
         {
             if (root["pages"] is JObject pages)
                 foreach (var p in pages.Properties())
                     Pages[p.Name] = p.Value.ToString();
             Read(root["keys"] as JObject, Keys);
+            if (own)
+                Read(root["keys"] as JObject, OwnKeys);
             Read(root["framework"] as JObject, Framework);
             if (root["placeholders"] is JObject placeholders)
                 foreach (var p in placeholders.Properties())
@@ -225,19 +237,24 @@ namespace UIFramework
         /// <summary>The declared text in this language, or null where the texts do not know it.</summary>
         public string TextOrNull(string declared) => declared != null && Texts.TryGetValue(declared, out var text) ? text : null;
 
-        private static void Read(JObject section, Dictionary<string, (string, string)> into)
+        /// <summary>Label and help each over what is there: a K(key, label) without help keeps the help the
+        /// conventions have for the key.</summary>
+        private static void Read(JObject section, Dictionary<string, (string Label, string Help)> into)
         {
             if (section == null) return;
             foreach (var p in section.Properties())
             {
+                into.TryGetValue(p.Name, out var was);
                 if (p.Value is JObject o)
-                    into[p.Name] = ((string)o["label"], (string)o["help"]);
+                    into[p.Name] = ((string)o["label"] ?? was.Label, (string)o["help"] ?? was.Help);
                 else
-                    into[p.Name] = (p.Value.ToString(), null);
+                    into[p.Name] = (p.Value.ToString(), was.Help);
             }
         }
 
         public (string Label, string Help) Key(string key) => Keys.TryGetValue(key, out var text) ? text : (null, null);
+        public (string Label, string Help) OwnKey(string key) => OwnKeys.TryGetValue(key, out var text) ? text : (null, null);
+        public (string Label, string Help) EnglishKey(string key) => EnglishKeys.TryGetValue(key, out var text) ? text : (null, null);
         public string Page(string id) => Pages.TryGetValue(id, out var title) ? title : null;
         public string Placeholder(string name) => Placeholders.TryGetValue(name, out var help) ? help : null;
     }

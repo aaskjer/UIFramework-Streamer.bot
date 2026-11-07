@@ -69,6 +69,25 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   `.bak` and refuses to drop lines of the game's own unless `-Force`.
 - Smaller: Ctrl+S does nothing in the customise mode; a name typed into a name list but not entered counts as a
   change when closing; an answer with only `set`/`status` keeps the result panel's previous lines.
+- **Text keeps its spaces.** A `string` field saves what was typed, spaces at either end included (`" | "`,
+  `"🎲 "`); names, paths, colours and tokens are still trimmed.
+- **Durations in minutes and hours.** A `duration` with `unit` `min` or `h` is typed and shown in that unit and
+  stored in seconds (1.5 min is 90); `min`/`max` stay seconds.
+- **A greyed-out field looks it** on every kind: a `requires` that does not hold also dims the field.
+- **German keeps the game's own wording.** A conventions key's German label and help replace the declared ones only
+  where the game left them out or used the conventions' English; a label of the game's own is translated by `Tx`
+  or stays. `K(key, label)` without a help keeps the conventions' help.
+- **`stats` and `channelPoints` pages** have an icon and a place in the order (icon name `gift` is new).
+- **Reset all keeps what the window does not show:** hidden settings and keys it has no field for.
+- **A page pattern leaves a moved field alone.** A field the user moved to another page is not claimed back by
+  `overlay*`; a claimed field's page is the claiming one, and a template a page claims by key leaves the Messages
+  picker.
+- **More checks:** a section condition for a section no setting is in, an old key that is another setting's key.
+- **Aliases:** an old key that is a setting of its own keeps its value instead of being moved and reset; a dotted
+  alias feeds shared keys too and its old value goes also when the canonical key is in the file.
+- **Host block:** `UiSettings.Load` falls back to the `.bak` of the last save on a damaged file and says so
+  (`Problem`, `FromBackup`, an optional log); a relative path starts in the Streamer.bot folder.
+- **Docs:** the game action's code is its last sub-action.
 
 ## [0.9.12] - 2026-11-07
 

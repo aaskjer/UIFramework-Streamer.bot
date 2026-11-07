@@ -104,6 +104,57 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AnOldKeyThatIsASettingOfItsOwnKeepsItsValue()
+        {
+            File.WriteAllText(File_, @"{ ""b"": ""mine"" }");
+            var store = new SettingsStore(File_, Defaults).WithAliases(new System.Collections.Generic.Dictionary<string, string> { ["b"] = "a" });
+            var settings = store.Load().Settings;
+            Assert.Equal("mine", (string)settings["b"]);
+            Assert.Equal(1, (int)settings["a"]);
+        }
+
+        [Fact]
+        public void ADottedAliasFeedsSharedKeysAndLeavesNothingBehind()
+        {
+            var defaults = JObject.Parse(@"{ ""a"": 1, ""c"": 0 }");
+            System.Func<SettingsStore> store = () => new SettingsStore(File_, defaults).WithAliases(
+                new System.Collections.Generic.Dictionary<string, string> { ["Old.x"] = "a" }, null,
+                new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> { ["Old.x"] = new System.Collections.Generic.List<string> { "c" } });
+
+            File.WriteAllText(File_, @"{ ""Old"": { ""x"": 5 } }");
+            var moved = store().Load().Settings;
+            Assert.Equal(5, (int)moved["a"]);
+            Assert.Equal(5, (int)moved["c"]);
+            Assert.Null(moved["Old"]);
+
+            // The canonical key is there already: it wins, and the old value still goes from the object.
+            File.WriteAllText(File_, @"{ ""a"": 9, ""Old"": { ""x"": 5, ""y"": 1 } }");
+            var kept = store().Load().Settings;
+            Assert.Equal(9, (int)kept["a"]);
+            Assert.Equal(5, (int)kept["c"]);
+            Assert.Null(kept["Old"]["x"]);
+            Assert.Equal(1, (int)kept["Old"]["y"]);
+        }
+
+        [Fact]
+        public void ResetAllKeepsWhatTheWindowDoesNotShow()
+        {
+            var current = JObject.Parse(@"{ ""a"": 5, ""b"": ""changed"", ""flag"": false, ""state"": ""game's own"" }");
+            var settings = new[]
+            {
+                new Setting { Key = "a" },
+                new Setting { Key = "b", Hidden = true },
+                new Setting { Key = "flag", Transient = true }
+            };
+            var fresh = SettingsStore.ResetShown(current, Defaults, settings);
+            Assert.Equal(1, (int)fresh["a"]);
+            Assert.Equal("changed", (string)fresh["b"]);
+            Assert.False((bool)fresh["flag"]);
+            Assert.Equal("game's own", (string)fresh["state"]);
+            Assert.Equal(5, (int)current["a"]);   // a copy: the window's settings are not changed under it
+        }
+
+        [Fact]
         public void DatesStayText()
         {
             File.WriteAllText(File_, @"{ ""b"": ""2026-01-01"" }");

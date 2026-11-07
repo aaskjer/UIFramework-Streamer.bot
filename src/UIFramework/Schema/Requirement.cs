@@ -105,6 +105,10 @@ namespace UIFramework
                 return c.Op == "!=" ? on != want : on == want;
             }
             string text = (present ? f.LiveText(c.Key, "") : FieldBinding.Invariant(saved)).Trim();
+            // A duration typed in minutes or hours compares in seconds, as it is stored and as its hidden value would.
+            if (present && parts.Boxes.TryGetValue(c.Key, out var box) && FieldTag.Of(box.Tag) is FieldTag tag
+                && tag.Kind == FieldKind.Int && tag.Factor != 1.0 && FieldBinding.TryParseTyped(text, out double typed))
+                text = Math.Round(typed * tag.Factor, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
             if (c.Op == null)
                 return c.Not ? text.Length == 0 : text.Length > 0;
             bool Same(string wanted) =>

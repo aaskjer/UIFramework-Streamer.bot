@@ -25,6 +25,10 @@ namespace UIFramework
         /// <summary>Never saved and never counted as a change; only a live snapshot carries it.</summary>
         public bool Transient;
 
+        /// <summary>A plain text setting: saved as typed, spaces at either end included (a separator " | ", a prefix
+        /// "🎲 "). Without it a text is trimmed, as names, paths, colours and tokens want.</summary>
+        public bool KeepSpaces;
+
         public FieldTag(string key, FieldKind kind) { Key = key; Kind = kind; }
 
         public override string ToString() => Key;

@@ -23,6 +23,51 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void LoadFallsBackToTheBackupAndSaysSo()
+        {
+            string file = TempSettings("load-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            File.WriteAllText(file, @"{ ""sides"": 12 }");
+            var fine = UiSettings.Load(file);
+            Assert.Null(fine.Problem);
+            Assert.Equal(12, fine.Raw.Value<int>("sides"));
+
+            File.WriteAllText(file + ".bak", @"{ ""sides"": 8 }");
+            File.WriteAllText(file, "{ damaged");
+            string heard = null;
+            var backup = UiSettings.Load(file, message => heard = message);
+            Assert.True(backup.FromBackup);
+            Assert.Equal(8, backup.Raw.Value<int>("sides"));
+            Assert.Contains("backup", backup.Problem);
+            Assert.Equal(backup.Problem, heard);
+
+            File.Delete(file + ".bak");
+            var none = UiSettings.Load(file);
+            Assert.False(none.FromBackup);
+            Assert.Contains("defaults", none.Problem);
+            Assert.Empty(none.Raw.Properties());
+        }
+
+        [Fact]
+        public void LoadReadsARelativePathFromTheStreamerbotFolder()
+        {
+            string name = "uif-relative-" + Guid.NewGuid().ToString("N") + ".json";
+            string full = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, name);
+            File.WriteAllText(full, @"{ ""sides"": 20 }");
+            string before = Environment.CurrentDirectory;
+            try
+            {
+                Environment.CurrentDirectory = Path.GetTempPath();
+                Assert.Equal(20, UiSettings.Load(name).Raw.Value<int>("sides"));
+            }
+            finally
+            {
+                Environment.CurrentDirectory = before;
+                File.Delete(full);
+            }
+        }
+
+        [Fact]
         public void TheWindowCarriesTheGamesOwnTranslations()
         {
             var window = new UiWindow("Demo")

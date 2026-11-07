@@ -127,23 +127,34 @@ namespace UIFramework
             var moved = new HashSet<string>(StringComparer.Ordinal);
             fromFile = (JObject)fromFile.DeepClone();
             // An alias with a dot names a value inside an object of the old file ("PlatformEmotes.twitch"): it is
-            // moved out, and the object is dropped once it is empty.
+            // moved out, to every key that takes it, and the object is dropped once it is empty. The old value goes
+            // also when the canonical key is in the file already, so it does not linger there forever.
             foreach (var pair in Aliases)
             {
                 int dot = pair.Key.IndexOf('.');
-                if (dot <= 0 || fromFile[pair.Value] != null || moved.Contains(pair.Value))
+                if (dot <= 0)
                     continue;
-                if (!(fromFile[pair.Key.Substring(0, dot)] is JObject holder) || !(holder[pair.Key.Substring(dot + 1)] is JToken inner))
+                string outer = pair.Key.Substring(0, dot), name = pair.Key.Substring(dot + 1);
+                if (!(fromFile[outer] is JObject holder) || !(holder[name] is JToken inner))
                     continue;
-                merged[pair.Value] = Convert(inner, AliasFactors.TryGetValue(pair.Key, out double f) ? f : 1.0, Defaults[pair.Value]);
-                moved.Add(pair.Value);
-                holder.Remove(pair.Key.Substring(dot + 1));
-                if (!holder.HasValues)
-                    fromFile.Remove(pair.Key.Substring(0, dot));
+                double factor = AliasFactors.TryGetValue(pair.Key, out double f) ? f : 1.0;
+                var targets = new List<string> { pair.Value };
+                if (AliasesShared.TryGetValue(pair.Key, out var also))
+                    targets.AddRange(also);
+                foreach (var target in targets)
+                    if (fromFile[target] == null && !moved.Contains(target))
+                    {
+                        merged[target] = Convert(inner, factor, Defaults[target]);
+                        moved.Add(target);
+                    }
+                holder.Remove(name);
+                if (!holder.HasValues && Defaults.Property(outer) == null)
+                    fromFile.Remove(outer);
             }
             foreach (var property in fromFile.Properties())
             {
-                if (Aliases.TryGetValue(property.Name, out string canonical))
+                // An old key that is a setting of its own again is that setting's value, not one to move.
+                if (Aliases.TryGetValue(property.Name, out string canonical) && Defaults.Property(property.Name) == null)
                 {
                     double factor = AliasFactors.TryGetValue(property.Name, out double f2) ? f2 : 1.0;
                     // The old key may feed further settings too (one switch that became two).
@@ -164,6 +175,17 @@ namespace UIFramework
                 merged[property.Name] = property.Value?.DeepClone();
             }
             return merged;
+        }
+
+        /// <summary>"Reset all": a copy of the settings with the default of every setting the window shows. Keys it
+        /// has no field for (a game's own state in the file) and hidden or transient settings keep their values.</summary>
+        public static JObject ResetShown(JObject current, JObject defaults, IEnumerable<Setting> settings)
+        {
+            var fresh = (JObject)(current ?? new JObject()).DeepClone();
+            foreach (var setting in settings)
+                if (!setting.Hidden && !setting.Transient && defaults.Property(setting.Key) != null)
+                    fresh[setting.Key] = defaults[setting.Key].DeepClone();
+            return fresh;
         }
 
         private static JToken Convert(JToken value, double factor, JToken shape)
