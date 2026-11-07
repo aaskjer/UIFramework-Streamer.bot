@@ -140,6 +140,24 @@ settings apply. The demo pays a win into that variable with `CPH.GetTwitchUserVa
   window declares something the framework cannot use (an unknown kind, a requirement on a key that is not there),
   so you see it without reading Streamer.bot's log.
 
+## What your users get on their machine
+
+This is what to tell a streamer who imports your game, or link them here:
+
+- **First open:** the settings action asks whether to download `UIFramework.dll` from this repository's
+  release into `<Streamer.bot>\UIFramework\lib\`. The file is checked against its published SHA-256 before it
+  is used. *No* opens that folder so they can put the DLL there themselves; *Cancel* leaves everything as it is.
+- **Updates:** when a newer framework release is out, the window asks before it downloads anything. *Cancel*
+  skips that version for good, *No* shows it as a pill in the window's header until it is taken.
+- **Turning the update check off:** `"autoUpdate": false` in `uiframework.layout.json`, the file next to your
+  game's settings file (`settingsFile`, relative to the Streamer.bot folder). When the file is not there yet,
+  `{ "autoUpdate": false }` is all it needs. The window then opens with the DLL it has and asks nothing.
+- **Without the window:** your game action never loads the DLL; only the settings action does. With the
+  settings action disabled the game plays on with its settings file, which can still be edited by hand.
+
+[docs/Loader.md](Loader.md) has the details: where `latest.json` comes from, the hash on every load, what
+happens offline.
+
 ## Keeping up
 
 The host block is the same in every game. When a new framework release changes it, run
