@@ -1,6 +1,6 @@
 {
   "host": "slotmachine",
-  "version": "16.2.1",
+  "version": "16.3.0",
   "settingsFile": "Chat Games/Slot Machine Game/SMG-Settings.json",
   "settings": [
     {
@@ -1374,7 +1374,24 @@
           "url": "https://discord.com/channels/834650675224248362/1446889756297527530/1446889756297527530"
         }
       ]
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "end"
+      }
+    ]
   },
   "lang": {
     "de": {

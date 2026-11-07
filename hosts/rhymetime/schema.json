@@ -1,6 +1,6 @@
 {
   "host": "rhymetime",
-  "version": "v2.2.1",
+  "version": "v2.3.0",
   "settingsFile": "Chat Games/RhymeTime/RT-settings.json",
   "settings": [
     {
@@ -498,6 +498,14 @@
       "help": "Everyone in these Streamer.bot groups is ignored when they run the command (Settings > Groups). A group that does not exist is skipped and logged.",
       "aliases": [
         "BlockedGroups"
+      ]
+    },
+    {
+      "key": "logToFile",
+      "default": true,
+      "page": "log",
+      "aliases": [
+        "LogToFile"
       ]
     },
     {
@@ -1167,6 +1175,11 @@
         "icon": "💬"
       },
       {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
+      },
+      {
         "id": "help",
         "title": "How to play",
         "icon": "📖"
@@ -1223,6 +1236,63 @@
         "user": "userCooldown"
       }
     ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "RT-log*.txt",
+      "writeLogKey": "logToFile",
+      "writeLogHelp": "Writes every settled round and battle (win, loss, timeout) to a dated 'RT-log-yyyy-MM-dd.txt' in Chat Games\\Logs, one file per day.",
+      "emptyText": "No rounds logged yet. Every settled round and battle lands here once 'Write a log file per day' is on.",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Platform",
+          "field": "Platform"
+        },
+        {
+          "header": "Mode",
+          "field": "Mode"
+        },
+        {
+          "header": "Word",
+          "field": "Word"
+        },
+        {
+          "header": "Guess",
+          "field": "Guess"
+        },
+        {
+          "header": "Difficulty",
+          "field": "Difficulty"
+        },
+        {
+          "header": "Bet",
+          "field": "Bet"
+        },
+        {
+          "header": "Change",
+          "field": "Change"
+        },
+        {
+          "header": "After",
+          "field": "After"
+        }
+      ],
+      "results": [
+        "WIN",
+        "LOSS",
+        "TIMEOUT",
+        "BATTLE-WIN",
+        "BATTLE-TIMEOUT"
+      ],
+      "platforms": [
+        "twitch",
+        "youtube",
+        "kick"
+      ]
+    },
     "help": [
       {
         "heading": "A single-player round",
@@ -1309,6 +1379,10 @@
             "what": "the OBS overlay page, written when you copy its URL or open the demo."
           },
           {
+            "command": "Chat Games\\Logs\\RT-log-yyyy-MM-dd.txt",
+            "what": "every settled round and battle, one file per day, beside the other chat games' logs; the Log page reads it."
+          },
+          {
             "note": "All of it sits in Streamer.bot's folder under Chat Games\\RhymeTime. A damaged file falls back to the .bak beside it and the broken one is kept as .broken."
           }
         ]
@@ -1344,7 +1418,24 @@
           "url": "https://tawmae.xyz/loyalty-points"
         }
       ]
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "end"
+      }
+    ]
   },
   "lang": {
     "de": {
@@ -1587,6 +1678,16 @@
         "Right": "Rechts",
         "Free mode": "Freier Modus",
         "Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well.": "Freier Modus, von der Seite Spiel oder !SetFreeRhyme. Solange er an ist, wird nichts gesetzt und nichts ausgezahlt; ein Standardeinsatz von 0 ist ebenfalls frei.",
+        "Writes every settled round and battle (win, loss, timeout) to a dated 'RT-log-yyyy-MM-dd.txt' in Chat Games\\Logs, one file per day.": "Schreibt jede abgerechnete Runde und jedes Battle (Gewinn, Niederlage, Zeitablauf) in eine datierte 'RT-log-yyyy-MM-dd.txt' in Chat Games\\Logs, eine Datei pro Tag.",
+        "No rounds logged yet. Every settled round and battle lands here once 'Write a log file per day' is on.": "Noch keine Runden protokolliert. Jede abgerechnete Runde und jedes Battle landet hier, sobald 'Logdatei pro Tag schreiben' an ist.",
+        "Player": "Spieler",
+        "Mode": "Modus",
+        "Word": "Wort",
+        "Guess": "Tipp",
+        "Difficulty": "Schwierigkeit",
+        "Bet": "Einsatz",
+        "Change": "Änderung",
+        "After": "Danach",
         "Round": "Runde"
       }
     }

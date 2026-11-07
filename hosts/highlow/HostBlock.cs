@@ -184,13 +184,15 @@ public static class UiSchema
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
     /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
     /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
-    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.</summary>
-    public static UiLine Tip(string target, string title = null, string text = null)
+    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.
+    /// act: the user may use the ringed part while the stop is up (press the Try button, type into the field).</summary>
+    public static UiLine Tip(string target, string title = null, string text = null, bool act = false)
     {
         var tip = new Newtonsoft.Json.Linq.JObject();
         if (target != null) tip["target"] = target;
         if (title != null) tip["title"] = title;
         if (text != null) tip["text"] = text;
+        if (act) tip["act"] = true;
         return new UiLine(tip);
     }
 
@@ -227,7 +229,7 @@ public static class UiSchema
 
     // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
     public static readonly UiWindow Window = new UiWindow("High-Low Game", releases: "aaskjer/High-Low-Game", logPrefix: "[High-Low Game/Settings]")
-        .Pages(P("game", "Game", "🎲"), P("channelPoints", "Channel points", "💜"), P("cooldowns", "Cooldowns", "⏳"), P("access", "Access", "👥"), P("leaderboard", "Scoreboard", "🏆"), P("messages", "Messages", "💬"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Pages(P("game", "Game", "🎲"), P("channelPoints", "Channel points", "💜"), P("cooldowns", "Cooldowns", "⏳"), P("access", "Access", "👥"), P("leaderboard", "Scoreboard", "🏆"), P("messages", "Messages", "💬"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Pill("freeGame", "Free mode on", "Free mode off", tooltip: "Free mode, from the Game page or !SetFreeHighLow. While it is on, nobody wins or loses points.")
         .Pill("isChannelPointsTrigger", "Channel points", "Chat commands", tooltip: "How guesses come in on Twitch. YouTube and Kick always use the chat commands.")
@@ -265,6 +267,8 @@ public static class UiSchema
             K("maxBet", "Höchsteinsatz", "Nur bei Eingabe und Fest: Einsätze darüber werden abgelehnt und erstattet. 0 schaltet die Obergrenze ab."),
             K("refundFailedRedemptions", "Einlösungen ohne Tipp erstatten", "Eine Einlösung, die ohne Tipp endet (blockierter Zuschauer, Abklingzeit, abgelehnter Einsatz, Fehler), bekommt ihre Kanalpunkte zurück. Twitch erstattet nur, solange die Einlösung in der Warteschlange steht; die Belohnungen dürfen sie also nicht überspringen."),
             Tx("Cost of the reward", "Kosten der Belohnung"), Tx("Fixed bet", "Fester Einsatz"), Tx("Viewer types a bet", "Zuschauer tippt einen Einsatz"), Tx("Free, like chat", "Frei, wie im Chat"),
+            K("logToFile", "Protokolldatei pro Tag schreiben", "Schreibt jeden entschiedenen Tipp, jede neue Zahl und jede erstattete Einlösung in eine datierte 'HLG-log-yyyy-MM-dd.txt' im Ordner Chat Games\\Logs, eine Datei pro Tag."),
+            Tx("Player", "Spieler"), Tx("Guess", "Tipp"), Tx("Previous", "Vorher"), Tx("New", "Neu"), Tx("Change", "Änderung"),
             Tx("How guesses come in on Twitch. YouTube and Kick always use the chat commands.", "Wie Tipps auf Twitch ankommen. YouTube und Kick nutzen immer die Chat-Befehle."))
         .Samples("guess", "!high", "result", "correct", "emoji", "🙂", "previousNumber", "42", "newNumber", "77", "number", "42", "sessionGuesses", "3", "alltimeGuesses", "57", "sign", "won", "pointsDelta", "1.234", "pointsSection", " won 1.234 Points", "currency", "Points", "seconds", "12", "amount", "500")
         .Cooldowns(
@@ -274,6 +278,9 @@ public static class UiSchema
             C("68f97444-4f77-4bab-8277-2a920fcdfddf", "alltimeGlobalCooldown", "alltimeUserCooldown"),
             C("5911cfbc-32cb-4749-bb40-3fce8eb76a1a", "sessionGlobalCooldown", "sessionUserCooldown"),
             C("df94341a-8b15-4c6c-9e1a-6af383915f8b", "personalGlobalCooldown", "personalUserCooldown"))
+        .Log("Chat Games/Logs", "HLG-log*.txt", writeLogKey: "logToFile",
+            columns: new[] { "Player|User", "Guess|Guess", "Previous|Previous", "New|New", "Change|Change" },
+            results: new[] { "WIN", "LOSS", "REFUND", "NEW-NUMBER" }, platforms: new[] { "twitch", "youtube", "kick" })
         .Help(
             H("Guessing",
                 Note("There is always a number from 1 to 100 waiting; it is drawn when Streamer.bot starts. Viewers guess whether the next number will be higher, lower or the same. The answer names both numbers, and the new one is what the next guess is measured against."),
@@ -295,8 +302,11 @@ public static class UiSchema
             H("Where things are kept",
                 Cmd("HLG-Settings.json", "everything on these pages."),
                 Cmd("uiframework.layout.json", "your layout of this window: theme, renamed or hidden pages and fields."),
-                Note("Both sit in Streamer.bot's folder under Chat Games\\High-Low Game. Permissions and the cooldowns themselves live on the commands; saving writes the Cooldowns page onto them.")))
-        .About(credits: "High-Low Game by aaskjer", links: new[] { Link("Repository", "https://github.com/aaskjer/High-Low-Game"), Link("Releases", "https://github.com/aaskjer/High-Low-Game/releases"), Link("Extension page", "https://extensions.streamer.bot/t/high-low-game/2781"), Link("StreamUP - Currency Core", "https://streamup.tips/product/currency-core") });
+                Cmd("HLG-log-yyyy-MM-dd.txt", "one file per day in Chat Games\\Logs: every settled guess, new number and refunded redemption, what the Log page shows."),
+                Note("The first two sit in Streamer.bot's folder under Chat Games\\High-Low Game. Permissions and the cooldowns themselves live on the commands; saving writes the Cooldowns page onto them.")))
+        .About(credits: "High-Low Game by aaskjer", links: new[] { Link("Repository", "https://github.com/aaskjer/High-Low-Game"), Link("Releases", "https://github.com/aaskjer/High-Low-Game/releases"), Link("Extension page", "https://extensions.streamer.bot/t/high-low-game/2781"), Link("StreamUP - Currency Core", "https://streamup.tips/product/currency-core") })
+        // The tour on the window's first open (the ? in the header shows it again); the framework brings the texts.
+        .Tour(Tip("start"), Tip("rail"), Tip("save"), Tip("customise"), Tip("end"));
 
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =
@@ -357,6 +367,8 @@ public static class UiSchema
         Msg("Channel points", "reasonAboveMaximum", "@{user}, the maximum bet is {max} {pointsName}.", "Bet: over the maximum", "Input and Fixed mode: the bet is above the maximum.", new[] { "user", "amount", "max", "pointsName" }),
         Msg("Cooldown", "globalCooldownMessage", "Please wait {seconds} seconds before trying again ⏳", "Everyone's cooldown", "Sent while a command or reward is on cooldown for the whole chat.", new[] { "user", "seconds" }, alias: "GlobalMessage"),
         Msg("Cooldown", "userCooldownMessage", "@{user}, please wait {seconds} seconds before trying again ⏳", "A viewer's cooldown", "Sent while a command or reward is on cooldown for that one viewer.", new[] { "user", "seconds" }, alias: "UserMessage"),
+        // ---- log ----
+        S("logToFile", true, page: "log", label: "Write a log file per day", help: "Writes every settled guess (win or loss), every new number and every refunded redemption to a dated 'HLG-log-yyyy-MM-dd.txt' in Chat Games\\Logs, one file per day.", aliases: new[] { "LogToFile" }),
     };
 }
 

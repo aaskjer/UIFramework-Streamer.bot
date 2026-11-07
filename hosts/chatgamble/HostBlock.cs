@@ -184,13 +184,15 @@ public static class UiSchema
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
     /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
     /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
-    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.</summary>
-    public static UiLine Tip(string target, string title = null, string text = null)
+    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.
+    /// act: the user may use the ringed part while the stop is up (press the Try button, type into the field).</summary>
+    public static UiLine Tip(string target, string title = null, string text = null, bool act = false)
     {
         var tip = new Newtonsoft.Json.Linq.JObject();
         if (target != null) tip["target"] = target;
         if (title != null) tip["title"] = title;
         if (text != null) tip["text"] = text;
+        if (act) tip["act"] = true;
         return new UiLine(tip);
     }
 
@@ -326,7 +328,9 @@ public static class UiSchema
                     Note("!gamble plays with the points of a currency system; Twitch channel points work without one. These two are found on their own:"),
                     Link("Currency Core by StreamUP", "https://streamup.tips/product/currency-core"),
                     Link("LOYALTY POINTS by tawmae", "https://tawmae.xyz/loyalty-points"))
-            }, links: new[] { Link("Classic Chat Gamble on the Streamer.bot Discord", "https://discord.com/channels/834650675224248362/1446874050310836396/1446874050310836396") });
+            }, links: new[] { Link("Classic Chat Gamble on the Streamer.bot Discord", "https://discord.com/channels/834650675224248362/1446874050310836396/1446874050310836396") })
+        // The tour on the window's first open (the ? in the header shows it again); the framework brings the texts.
+        .Tour(Tip("start"), Tip("rail"), Tip("save"), Tip("customise"), Tip("end"));
 
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =

@@ -324,7 +324,7 @@ namespace UIFramework
                     pages.Add((pageSpec, page));
             }
             if (pages.Count == 0)
-                pages.Add((new PageSpec("empty", Text.T("page.none.title"), "âš™ï¸", null), Ui.Scroll(Ui.Note(Text.T("page.none.text")))));
+                pages.Add((new PageSpec("empty", Text.T("page.none.title"), "⚙️", null), Ui.Scroll(Ui.Note(Text.T("page.none.text")))));
             foreach (var wire in ctx.AfterBuild)
             {
                 try { wire(); }
@@ -365,7 +365,7 @@ namespace UIFramework
             for (int i = 0; i < pages.Count; i++)
             {
                 int index = i;
-                var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "â€¢", () => ShowPage(index));
+                var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "•", () => ShowPage(index));
                 item.ToolTip = i < 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, i + 1) : i == 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, 0) : pages[i].Spec.Title;
                 if (customizing)
                     Customize.AttachRail(ctx, pages[i].Spec, item, () => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList());
@@ -541,7 +541,7 @@ namespace UIFramework
             };
 
             var btnTheme = layout.Rainbow
-                ? Ui.IconButton("ðŸŒˆ", null, Text.T("tip.theme"))
+                ? Ui.IconButton("🌈", null, Text.T("tip.theme"))
                 : Ui.IconButton(Theme.IsDark ? Icons.Sun : Icons.Moon, Icons.Font, Text.T("tip.theme.rainbow"));
             var btnReset = Ui.IconButton(Icons.Reset, Icons.Font, Text.T("tip.resetAll"));
             btnReset.Margin = new Thickness(6, 0, 0, 0);
@@ -1135,8 +1135,8 @@ namespace UIFramework
                     var unchecked_ = MessageBox.Show(
                         Text.Or("dialog.unchecked.text",
                             "The game did not check these settings ({0}).\n\nSave them unchecked anyway?",
-                            "Das Spiel hat diese Einstellungen nicht geprÃ¼ft ({0}).\n\nTrotzdem ungeprÃ¼ft speichern?", why.Length > 0 ? why : "-"),
-                        Text.Or("dialog.unchecked.title", "Not checked", "Nicht geprÃ¼ft"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                            "Das Spiel hat diese Einstellungen nicht geprüft ({0}).\n\nTrotzdem ungeprüft speichern?", why.Length > 0 ? why : "-"),
+                        Text.Or("dialog.unchecked.title", "Not checked", "Nicht geprüft"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (unchecked_ != MessageBoxResult.Yes)
                         return false;
                     fromHost = null;
@@ -1145,7 +1145,7 @@ namespace UIFramework
                     warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
                 if (warnings.Count > 0)
                 {
-                    var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  â€¢ ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (proceed != MessageBoxResult.Yes)
                         return false;
                 }

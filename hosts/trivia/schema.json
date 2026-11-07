@@ -1,6 +1,6 @@
 {
   "host": "trivia",
-  "version": "v9.0.1",
+  "version": "v9.1.0",
   "settingsFile": "Chat Games/Trivia Game/configs.json",
   "settings": [
     {
@@ -3352,7 +3352,24 @@
           "url": "https://discord.com/channels/834650675224248362/1519697548791644241/1519697548791644241"
         }
       ]
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "end"
+      }
+    ]
   },
   "lang": {
     "de": {

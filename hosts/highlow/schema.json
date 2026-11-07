@@ -1,6 +1,6 @@
 {
   "host": "highlow",
-  "version": "v2.1.1",
+  "version": "v2.2.0",
   "settingsFile": "Chat Games/High-Low Game/HLG-Settings.json",
   "settings": [
     {
@@ -602,6 +602,16 @@
       "aliases": [
         "UserMessage"
       ]
+    },
+    {
+      "key": "logToFile",
+      "default": true,
+      "page": "log",
+      "label": "Write a log file per day",
+      "help": "Writes every settled guess (win or loss), every new number and every refunded redemption to a dated 'HLG-log-yyyy-MM-dd.txt' in Chat Games\\Logs, one file per day.",
+      "aliases": [
+        "LogToFile"
+      ]
     }
   ],
   "window": {
@@ -638,6 +648,11 @@
         "id": "messages",
         "title": "Messages",
         "icon": "💬"
+      },
+      {
+        "id": "log",
+        "title": "Log",
+        "icon": "📜"
       },
       {
         "id": "help",
@@ -720,6 +735,44 @@
         "user": "personalUserCooldown"
       }
     ],
+    "log": {
+      "folder": "Chat Games/Logs",
+      "files": "HLG-log*.txt",
+      "writeLogKey": "logToFile",
+      "columns": [
+        {
+          "header": "Player",
+          "field": "User"
+        },
+        {
+          "header": "Guess",
+          "field": "Guess"
+        },
+        {
+          "header": "Previous",
+          "field": "Previous"
+        },
+        {
+          "header": "New",
+          "field": "New"
+        },
+        {
+          "header": "Change",
+          "field": "Change"
+        }
+      ],
+      "results": [
+        "WIN",
+        "LOSS",
+        "REFUND",
+        "NEW-NUMBER"
+      ],
+      "platforms": [
+        "twitch",
+        "youtube",
+        "kick"
+      ]
+    },
     "help": [
       {
         "heading": "Guessing",
@@ -800,7 +853,11 @@
             "what": "your layout of this window: theme, renamed or hidden pages and fields."
           },
           {
-            "note": "Both sit in Streamer.bot's folder under Chat Games\\High-Low Game. Permissions and the cooldowns themselves live on the commands; saving writes the Cooldowns page onto them."
+            "command": "HLG-log-yyyy-MM-dd.txt",
+            "what": "one file per day in Chat Games\\Logs: every settled guess, new number and refunded redemption, what the Log page shows."
+          },
+          {
+            "note": "The first two sit in Streamer.bot's folder under Chat Games\\High-Low Game. Permissions and the cooldowns themselves live on the commands; saving writes the Cooldowns page onto them."
           }
         ]
       }
@@ -825,7 +882,24 @@
           "url": "https://streamup.tips/product/currency-core"
         }
       ]
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "end"
+      }
+    ]
   },
   "lang": {
     "de": {
@@ -927,6 +1001,10 @@
         "refundFailedRedemptions": {
           "label": "Einlösungen ohne Tipp erstatten",
           "help": "Eine Einlösung, die ohne Tipp endet (blockierter Zuschauer, Abklingzeit, abgelehnter Einsatz, Fehler), bekommt ihre Kanalpunkte zurück. Twitch erstattet nur, solange die Einlösung in der Warteschlange steht; die Belohnungen dürfen sie also nicht überspringen."
+        },
+        "logToFile": {
+          "label": "Protokolldatei pro Tag schreiben",
+          "help": "Schreibt jeden entschiedenen Tipp, jede neue Zahl und jede erstattete Einlösung in eine datierte 'HLG-log-yyyy-MM-dd.txt' im Ordner Chat Games\\Logs, eine Datei pro Tag."
         }
       },
       "texts": {
@@ -938,6 +1016,11 @@
         "Fixed bet": "Fester Einsatz",
         "Viewer types a bet": "Zuschauer tippt einen Einsatz",
         "Free, like chat": "Frei, wie im Chat",
+        "Player": "Spieler",
+        "Guess": "Tipp",
+        "Previous": "Vorher",
+        "New": "Neu",
+        "Change": "Änderung",
         "How guesses come in on Twitch. YouTube and Kick always use the chat commands.": "Wie Tipps auf Twitch ankommen. YouTube und Kick nutzen immer die Chat-Befehle."
       }
     }

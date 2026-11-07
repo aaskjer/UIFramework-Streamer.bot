@@ -141,7 +141,8 @@ The game answers `test` with a line of text, or with a JSON object:
 
 The window declaration says how the window is called and laid out: what used to be a spec JSON in the settings
 action. Everything is optional; a page a setting names but the window does not is made up on the way, `messages`
-appears once there are templates, `help` and `about` sit at the bottom of the rail.
+appears once there are templates. `help`, `log` and `about` sit together at the foot of the rail, in that order
+whatever order the game declares them in (a page of the game's own with `bottom` goes above them).
 
 ```csharp
 public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases: "aaskjer/Blackjack-Game", logo: "https://…/logo.png")
@@ -161,7 +162,7 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 |----------------------|------------------------------------------------------------------------------------------------------|
 | `UiWindow(title, …)` | the window title and About heading; `releases` is `owner/repo` on GitHub (repository and releases links, the update check); `logo` a URL; `logPrefix` for the framework's log lines (default `[Title/Settings]`); `width`, `height` |
 | `Pages(…)`           | the pages in order: `P(id, title, icon, fields…)` or the id of a standard page (`messages`, `log`, `help`, `about`). `icon` is an emoji or a conventions name (`gear`, `dice`, `coins`, `clock`, `shield`, `chat`, `trophy`, `monitor`, `list`, `book`, `info`, `cards`, `chart`, `gift`). `fields` are keys or patterns like `overlay*` the page claims ahead of their own page; a pattern never takes a template off the Messages page, a full key does (it is then that page's field, not an entry of the Messages picker); a field the user moved to another page in the customise mode stays there |
-| `Log(folder, files, …)` | the Log page: the folder (relative to the Streamer.bot folder) and the files in it (`BJG-log*.txt`), which the settings action reads and the page follows as they change; `writeLogKey` the bool behind "Write a log file per day", `writeLogHelp`, `columns` after Time and Result as `"Header|field"`, `results` for the filter, `platforms`, `emptyText` |
+| `Log(folder, files, …)` | the Log page: the folder (relative to the Streamer.bot folder) and the files in it (`BJG-log*.txt`), which the settings action reads and the page follows as they change; `writeLogKey` the bool behind "Write a log file per day", `writeLogHelp`, `columns` after Time and Result as `"Header|field"` (a field may name several keys, `"Word|Word,Word was"`: the first the line has is shown), `results` for the filter, `platforms`, `emptyText`. Headers and `emptyText` translate through `Tx`. The page reads lines as `[yyyy-MM-dd HH:mm:ss] RESULT \| User: name \| Platform: twitch \| Key: value \| …`, and older lines in columns (`yyyy-MM-dd HH:mm:ss RESULT  user  [R1\|id] Key: value \| …`) as well |
 | `Cooldowns(C(command, global, user), …)` | commands whose cooldowns follow settings: the settings action sets them in Streamer.bot after every save. The command by its id (right-click the command in Streamer.bot, *Copy Id*; an import keeps it, so it is the robust way), or by its text (`!roll`) or name for a command made by hand; `global` and `user` are the keys of the two durations, either may be null |
 | `Pill(key, on, off, tooltip)` | a pill in the header that follows a bool setting                                             |
 | `Senders(…)`         | the keys of the sender switches on the Messages page where they differ from the conventions' (`useBot`, `sendAction`, `cooldownUseBot`, `cooldownSendAction`, `numberSeparator`); null hides one; `cooldownGroup` names the group the cooldown senders sit in |
@@ -186,13 +187,15 @@ window shows it whenever the user wants. A window without a tour has no **?**.
         Tip("start"),                                            // the framework's welcome, in the middle
         Tip("rail"),
         Tip("sides", "A setting", "Point at a field to read its help."),
-        Tip("tryRoll", "Try it out", "Rolls once with the values as they stand; nothing goes to chat."),
+        Tip("tryRoll", "Try it out", "Press Roll now; nothing goes to chat.", act: true),   // the user may press it
         Tip("page:messages"),
         Tip("save"), Tip("customise"), Tip("tour"),
         Tip("end", "Have fun", "Save, then type !roll in your chat."))
 ```
 
-`Tip(target, title, text)` points at:
+`Tip(target, title, text, act)` points at the target below. With `act: true` the user may use the ringed part while
+the stop is up ("Try it yourself"): press the button, type into the field; the rest of the window stays out of reach,
+and the ring follows the part as it grows (a Try button's answer). `Tip` points at:
 
 | Target | Rings | Its own text when title and text are left out |
 |--------|-------|-----------------------------------------------|
@@ -205,8 +208,8 @@ window shows it whenever the user wants. A window without a tour has no **?**.
 A stop the window cannot show is left out: a page the user hid, a field hidden by the layout, `customise` in a locked
 window. A target that is neither a setting, a page nor a part is listed under the red "i" like any other mistake in the
 declaration. The game's own titles and texts translate through `Lang(code, Tx(declared, translation))` like every
-declared text. In the schema: `window.tour: [ "start", { "target": "sides", "title": "…", "text": "…" } ]`; a stop as
-a plain string is the target alone.
+declared text. In the schema: `window.tour: [ "start", { "target": "sides", "title": "…", "text": "…", "act": true } ]`;
+a stop as a plain string is the target alone.
 
 ### Sections shown on a condition
 

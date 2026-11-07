@@ -184,13 +184,15 @@ public static class UiSchema
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
     /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
     /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
-    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.</summary>
-    public static UiLine Tip(string target, string title = null, string text = null)
+    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.
+    /// act: the user may use the ringed part while the stop is up (press the Try button, type into the field).</summary>
+    public static UiLine Tip(string target, string title = null, string text = null, bool act = false)
     {
         var tip = new Newtonsoft.Json.Linq.JObject();
         if (target != null) tip["target"] = target;
         if (title != null) tip["title"] = title;
         if (text != null) tip["text"] = text;
+        if (act) tip["act"] = true;
         return new UiLine(tip);
     }
 
@@ -244,7 +246,7 @@ public static class UiSchema
         .Answer("overlayDemo", "The demo opened in your browser. In OBS, add &demo=1 to the end of the source's address to place it the same way.")
         .Answer("openWordlistFolder", "Opened Chat Games\\Hangman Game.")
         .Answer("openOverlayFolder", "Opened Chat Games\\Hangman Game\\Overlay.")
-        .Log("Chat Games/Logs", "HM-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Round|Round", "Word|Word", "Guess|Guess", "Lives|Lives", "Wrong|Wrong", "Reward|Reward" },
+        .Log("Chat Games/Logs", "HM-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Round|Round", "Word|Word,Word was", "Guess|Guess,Letter", "Lives|Lives", "Wrong|Wrong,Wrong guesses", "Reward|Reward" },
              results: new[] { "START", "HIT-LETTR", "MISS-LTTR", "DUPE-LTTR", "WIN-LETTR", "WIN-WORD", "MISS-WORD", "MISS-PART", "DUPE-WORD", "GAME-OVER", "TIMEOUT", "STOP", "EVIL-SWAP", "GLITCH-HOLD", "STREAK-END", "AWARD-WIN", "AWARD-LTER", "CP-START", "CP-BAD-INPUT", "REFUND", "BLOCKED", "COOLDOWN", "ANTICHEAT", "ADDICTED", "FREE-START", "FREE-END" },
              platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.")
         .Help(
@@ -497,7 +499,9 @@ public static class UiSchema
             Tx("Overlay, from the Overlay page. Off: the game writes no overlay files.", "Overlay, von der Seite Overlay. Aus: das Spiel schreibt keine Overlay-Dateien."),
             Tx("Free mode, from the Game page or !SetFreeHangman. While it is on, letters and the win pay nothing.", "Freier Modus, von der Seite Spiel oder !SetFreeHangman. Solange er an ist, zahlen Buchstaben und der Gewinn nichts."),
             Tx("Who starts a round, from the Access page. Everyone can always guess.", "Wer eine Runde startet, von der Seite Zugriff. Raten darf immer jeder."),
-            Tx("No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.", "Noch keine Runden protokolliert. Jede Runde, jeder Versuch und jede Auszahlung landet hier, sobald 'Protokoll je Tag schreiben' an ist."));
+            Tx("No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.", "Noch keine Runden protokolliert. Jede Runde, jeder Versuch und jede Auszahlung landet hier, sobald 'Protokoll je Tag schreiben' an ist."))
+        // The tour on the window's first open (the ? in the header shows it again); the framework brings the texts.
+        .Tour(Tip("start"), Tip("rail"), Tip("save"), Tip("customise"), Tip("end"));
 
     // The built-in word list, as the game writes it when Hangman-Wordlist.json is missing and as the Words page
     // restores it: Word, Hint, Category, Difficulty.
