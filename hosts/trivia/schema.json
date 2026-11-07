@@ -46,7 +46,19 @@
       "kind": "note",
       "page": "game",
       "section": "Difficulty",
-      "help": "A stop of the slider fills in the six numbers it stands for; nothing is saved until you save. The game only reads the numbers, so you can fine-tune them afterwards."
+      "help": "A stop of the slider fills in the six numbers it stands for; nothing is saved until you save. The game only reads the numbers, so you can fine-tune them afterwards: the slider then shows Custom, or the stop they match."
+    },
+    {
+      "key": "difficultyNow",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Difficulty",
+      "label": "How a round plays",
+      "help": "What a round gives with the six numbers as they stand on this page, saved or not. The slider follows them: it shows the stop they match, or Custom.",
+      "live": true,
+      "panel": true,
+      "auto": true
     },
     {
       "key": "answerTimeSeconds",
@@ -3073,6 +3085,19 @@
         },
         "status": "Standard filled in; save to keep it."
       },
+      "difficultyNow": {
+        "set": {
+          "difficulty": "standard"
+        },
+        "lines": [
+          {
+            "text": "Standard · 60 s to answer, first reminder at 30 s",
+            "big": true
+          },
+          "Blitz rounds: 20 s to answer, first reminder at 10 s.",
+          "Spelling: up to 2 characters may differ, in answers of 4 characters or more."
+        ]
+      },
       "setupObsOverlay": "OBS is not connected on connection #0. Connect it in Streamer.bot under Stream Apps, OBS Studio, then try again.",
       "overlaySample": "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above.",
       "copyOverlayUrl": "Copied. Paste it into the URL of a Browser source in OBS.",
@@ -3386,7 +3411,11 @@
         },
         "difficultyNote": {
           "label": null,
-          "help": "Eine Stufe des Reglers füllt die sechs Zahlen aus, für die sie steht; gespeichert wird erst, wenn du speicherst. Das Spiel liest nur die Zahlen, du kannst sie danach also feinjustieren."
+          "help": "Eine Stufe des Reglers füllt die sechs Zahlen aus, für die sie steht; gespeichert wird erst, wenn du speicherst. Das Spiel liest nur die Zahlen, du kannst sie danach also feinjustieren: der Regler zeigt dann Eigene oder die Stufe, zu der sie passen."
+        },
+        "difficultyNow": {
+          "label": "So läuft eine Runde",
+          "help": "Was eine Runde mit den sechs Zahlen ergibt, wie sie auf dieser Seite stehen, gespeichert oder nicht. Der Regler folgt ihnen: er zeigt die Stufe, zu der sie passen, oder Eigene."
         },
         "answerTimeSeconds": {
           "label": "Antwortzeit",

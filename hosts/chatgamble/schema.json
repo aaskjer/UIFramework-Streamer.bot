@@ -549,8 +549,9 @@
         "pointsName",
         "currentPoints"
       ],
-      "file": "messages.json",
-      "field": "WinMessage"
+      "aliases": [
+        "WinMessage"
+      ]
     },
     {
       "key": "lossMessage",
@@ -566,8 +567,9 @@
         "pointsName",
         "currentPoints"
       ],
-      "file": "messages.json",
-      "field": "LossMessage"
+      "aliases": [
+        "LossMessage"
+      ]
     },
     {
       "key": "jackpotMessage",
@@ -583,8 +585,9 @@
         "pointsName",
         "currentPoints"
       ],
-      "file": "messages.json",
-      "field": "JackpotMessage"
+      "aliases": [
+        "JackpotMessage"
+      ]
     },
     {
       "key": "freeGameMessage",
@@ -598,8 +601,9 @@
         "user",
         "pointsName"
       ],
-      "file": "messages.json",
-      "field": "FreeGameMessage"
+      "aliases": [
+        "FreeGameMessage"
+      ]
     },
     {
       "key": "freeGameWinMessage",
@@ -612,8 +616,9 @@
       "placeholders": [
         "user"
       ],
-      "file": "messages.json",
-      "field": "FreeGameWinMessage"
+      "aliases": [
+        "FreeGameWinMessage"
+      ]
     },
     {
       "key": "freeGameLossMessage",
@@ -627,8 +632,9 @@
         "user",
         "pointsName"
       ],
-      "file": "messages.json",
-      "field": "FreeGameLossMessage"
+      "aliases": [
+        "FreeGameLossMessage"
+      ]
     },
     {
       "key": "freeGameJackpotMessage",
@@ -641,8 +647,9 @@
       "placeholders": [
         "user"
       ],
-      "file": "messages.json",
-      "field": "FreeGameJackpotMessage"
+      "aliases": [
+        "FreeGameJackpotMessage"
+      ]
     },
     {
       "key": "freeGameStartMessage",
@@ -653,8 +660,9 @@
       "label": "Started",
       "help": "Sent once when Free Game Mode is turned on, in the chat the command or redemption came from. Started any other way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
       "placeholders": [],
-      "file": "messages.json",
-      "field": "FreeGameStartMessage"
+      "aliases": [
+        "FreeGameStartMessage"
+      ]
     },
     {
       "key": "freeGameEndMessage",
@@ -665,8 +673,9 @@
       "label": "Ended",
       "help": "Sent once when Free Game Mode ends and the Default bet is back, in the chat the command or redemption came from. Ended any other way, say by an Execute C# Method on EndFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.",
       "placeholders": [],
-      "file": "messages.json",
-      "field": "FreeGameEndMessage"
+      "aliases": [
+        "FreeGameEndMessage"
+      ]
     },
     {
       "key": "addictedWinMessage",
@@ -683,8 +692,9 @@
         "currentPoints",
         "addictedCut"
       ],
-      "file": "messages.json",
-      "field": "AddictedWinMessage"
+      "aliases": [
+        "AddictedWinMessage"
+      ]
     },
     {
       "key": "addictedJackpotMessage",
@@ -701,8 +711,9 @@
         "currentPoints",
         "addictedCut"
       ],
-      "file": "messages.json",
-      "field": "AddictedJackpotMessage"
+      "aliases": [
+        "AddictedJackpotMessage"
+      ]
     },
     {
       "key": "addictedAdded",
@@ -716,8 +727,9 @@
         "user",
         "target"
       ],
-      "file": "messages.json",
-      "field": "AddictedAdded"
+      "aliases": [
+        "AddictedAdded"
+      ]
     },
     {
       "key": "addictedRemoved",
@@ -731,8 +743,9 @@
         "user",
         "target"
       ],
-      "file": "messages.json",
-      "field": "AddictedRemoved"
+      "aliases": [
+        "AddictedRemoved"
+      ]
     },
     {
       "key": "addictedAlreadyOnList",
@@ -746,8 +759,9 @@
         "user",
         "target"
       ],
-      "file": "messages.json",
-      "field": "AddictedAlreadyOnList"
+      "aliases": [
+        "AddictedAlreadyOnList"
+      ]
     },
     {
       "key": "addictedNotOnList",
@@ -761,8 +775,9 @@
         "user",
         "target"
       ],
-      "file": "messages.json",
-      "field": "AddictedNotOnList"
+      "aliases": [
+        "AddictedNotOnList"
+      ]
     },
     {
       "key": "addictedUsage",
@@ -775,8 +790,9 @@
       "placeholders": [
         "user"
       ],
-      "file": "messages.json",
-      "field": "AddictedUsage"
+      "aliases": [
+        "AddictedUsage"
+      ]
     },
     {
       "key": "invalidBetMessage",
@@ -790,8 +806,9 @@
         "user",
         "reason"
       ],
-      "file": "messages.json",
-      "field": "InvalidBetMessage"
+      "aliases": [
+        "InvalidBetMessage"
+      ]
     },
     {
       "key": "reasonNegativeAmount",
@@ -802,8 +819,9 @@
       "label": "Reason: not a valid amount",
       "help": "Fills {reason} when the amount is negative, not a number, has decimals, or is too large.",
       "placeholders": [],
-      "file": "messages.json",
-      "field": "ReasonNegativeAmount"
+      "aliases": [
+        "ReasonNegativeAmount"
+      ]
     },
     {
       "key": "reasonInsufficientFunds",
@@ -816,8 +834,9 @@
       "placeholders": [
         "pointsName"
       ],
-      "file": "messages.json",
-      "field": "ReasonInsufficientFunds"
+      "aliases": [
+        "ReasonInsufficientFunds"
+      ]
     },
     {
       "key": "reasonBelowMinimum",
@@ -831,8 +850,9 @@
         "min",
         "pointsName"
       ],
-      "file": "messages.json",
-      "field": "ReasonBelowMinimum"
+      "aliases": [
+        "ReasonBelowMinimum"
+      ]
     },
     {
       "key": "reasonAboveMaximum",
@@ -846,8 +866,9 @@
         "max",
         "pointsName"
       ],
-      "file": "messages.json",
-      "field": "ReasonAboveMaximum"
+      "aliases": [
+        "ReasonAboveMaximum"
+      ]
     },
     {
       "key": "reasonNoInput",
@@ -858,8 +879,9 @@
       "label": "Reason: no amount",
       "help": "Fills {reason} when no amount was given: Default bet is 0, or a Typed amount redemption came without one.",
       "placeholders": [],
-      "file": "messages.json",
-      "field": "ReasonNoInput"
+      "aliases": [
+        "ReasonNoInput"
+      ]
     },
     {
       "key": "globalCooldownMessage",
@@ -873,8 +895,9 @@
         "seconds",
         "user"
       ],
-      "file": "messages.json",
-      "field": "GlobalMessage"
+      "aliases": [
+        "GlobalMessage"
+      ]
     },
     {
       "key": "userCooldownMessage",
@@ -888,8 +911,9 @@
         "user",
         "seconds"
       ],
-      "file": "messages.json",
-      "field": "UserMessage"
+      "aliases": [
+        "UserMessage"
+      ]
     },
     {
       "key": "redemptionRefundedMessage",
@@ -902,8 +926,9 @@
       "placeholders": [
         "user"
       ],
-      "file": "messages.json",
-      "field": "RedemptionRefunded"
+      "aliases": [
+        "RedemptionRefunded"
+      ]
     }
   ],
   "window": {
@@ -1107,11 +1132,7 @@
         "lines": [
           {
             "command": "configs.json",
-            "what": "everything on these pages but the messages."
-          },
-          {
-            "command": "messages.json",
-            "what": "every chat message."
+            "what": "everything on these pages, the chat messages included."
           },
           {
             "command": "uiframework.layout.json",
