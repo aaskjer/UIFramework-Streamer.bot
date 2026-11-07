@@ -45,10 +45,12 @@ Generated from the files by `tools/conventions-doc.ps1`; edit the JSON, not this
 | `general` | General | `gear` | 10 |
 | `game` | Game | `dice` | 20 |
 | `points` | Points & Bets | `coins` | 30 |
+| `channelPoints` | Channel points | `gift` | 35 |
 | `cooldowns` | Cooldowns | `clock` | 40 |
 | `access` | Access | `shield` | 50 |
 | `messages` | Messages | `chat` | 60 |
 | `leaderboard` | Leaderboard | `trophy` | 70 |
+| `stats` | Stats | `chart` | 75 |
 | `overlay` | Overlay | `monitor` | 80 |
 | `log` | Log | `list` | 90 |
 | `help` | Help | `book` | 95 |
