@@ -282,7 +282,14 @@ namespace UIFramework
             };
         }
 
-        private static string Title(string upper) => upper.Length == 0 ? "" : upper.Substring(0, 1) + upper.Substring(1).ToLowerInvariant();
+        // "WIN" reads "Win"; every part of "GAME-OVER" or "CP_START" gets its capital: "Game-Over", "Cp_Start".
+        private static string Title(string upper)
+        {
+            var chars = upper.ToLowerInvariant().ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+                if (i == 0 || chars[i - 1] == '-' || chars[i - 1] == '_' || chars[i - 1] == ' ') chars[i] = char.ToUpperInvariant(chars[i]);
+            return new string(chars);
+        }
 
         private static DataGridTextColumn TextColumn(string header, Binding binding, Style element)
         {
