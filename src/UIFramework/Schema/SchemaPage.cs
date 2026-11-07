@@ -122,13 +122,7 @@ namespace UIFramework
             void WatchSection()
             {
                 if (heading == null || sectionFields.Count == 0) return;
-                var head = heading;
-                var fields = sectionFields.ToList();
-                void Update() => head.Visibility = fields.Any(x => x.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
-                var watch = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(UIElement.VisibilityProperty, typeof(FrameworkElement));
-                foreach (var field in fields)
-                    watch.AddValueChanged(field, (sender, e) => Update());
-                ctx.AfterBuild.Add(Update);
+                VisibilityWatch.ShowWhileAnyVisible(heading, sectionFields.ToList());
             }
 
             foreach (var setting in settings.Where(s => wrap != null || !s.Hidden).OrderBy(s => s.Order))

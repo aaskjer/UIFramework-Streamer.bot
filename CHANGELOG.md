@@ -45,6 +45,30 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   section's condition. An answer box that moves under its row hides with its button.
 - **Typed decimals are not guessed.** "1,000" or "1.000,5" in a decimal field is refused as ambiguous instead of
   read as 1.
+- **A damaged layout file is kept.** `uiframework.layout.json` that is not JSON is copied to `.broken` and logged;
+  a value of the wrong type in it (`"order": "2"`) reads as not set instead of breaking the window.
+- **A check that got no answer asks.** When the game did not answer `validate` (a timeout, a disabled action),
+  the window asks whether to save unchecked instead of taking it for "no problems" (stub 0.2.0).
+- **A hung game action no longer locks the window.** The window can be opened again while a request still hangs;
+  a request the window gave up on is skipped instead of run late (stub 0.2.0). An error in a click handler is
+  logged and shown in the status line instead of closing the window.
+- **Emote sources are asked once per window**, not once per emote cell.
+- **Rebuilds no longer leak.** A section heading follows its fields through a binding; every rebuild (language,
+  theme, customise mode) kept the old page alive before.
+- **Two windows at once** keep their own theme, accent, rainbow and language.
+- **Cooldowns are set safely** (stub 0.2.0): a misnamed key leaves the cooldown as it is instead of setting 0, one
+  command that fails leaves the others set, and the game always hears of the save.
+- **The stub writes the layout file carefully** (stub 0.2.0): only on a change, atomically, never over a file it
+  could not read. TLS 1.2 is added without pinning the process; the download mutex is honoured; the dialogs name
+  the current version's folder.
+- **Customise-mode drops** check that the field or page came from this window; a message template can no longer be
+  dropped on another page through the rail, a field dropped on its own page stays where it is, and a field moved
+  to another page leaves its old row.
+- **Release workflow** builds the tag's own commit, carries `minHostStub` over and never takes `latest.json` back.
+- **Docs:** the usings the host block needs; the nested `RunAction` pitfall. `tools/update-host-block.ps1` keeps a
+  `.bak` and refuses to drop lines of the game's own unless `-Force`.
+- Smaller: Ctrl+S does nothing in the customise mode; a name typed into a name list but not entered counts as a
+  change when closing; an answer with only `set`/`status` keeps the result panel's previous lines.
 
 ## [0.9.12] - 2026-11-07
 
