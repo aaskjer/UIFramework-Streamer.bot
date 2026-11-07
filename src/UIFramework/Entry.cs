@@ -78,7 +78,7 @@ namespace UIFramework
             var conventions = string.IsNullOrEmpty(language) || language == "en" ? Conventions.Default : Conventions.Load(language);
             if (!ReferenceEquals(conventions, Conventions.Default) && schema.Lang?[language] is JObject mine)
             {
-                conventions.Lang.Overlay(mine);   // the game's own translations over the conventions'
+                conventions.Lang.Overlay(mine, own: true);   // the game's own translations over the conventions'
                 conventions.Lang.Code = language;
             }
             spec.Schema = schema;

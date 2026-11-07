@@ -684,7 +684,11 @@ namespace UIFramework
                 var confirm = MessageBox.Show(Text.T("dialog.resetAll.text"), Text.T("dialog.resetAll.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (confirm != MessageBoxResult.Yes) return;
 
-                var fresh = (JObject)defaults.DeepClone();
+                // The file as it is now with the defaults laid over what the window shows: keys it has no field for (a
+                // game's own state) and hidden settings keep their values. A damaged file starts from the window's copy.
+                SettingsLoad now = null;
+                try { now = _store.Load(); } catch (Exception) { now = null; }
+                var fresh = SettingsStore.ResetShown(now != null && now.Damaged == null ? now.Settings : settings, defaults, _spec.ResolvedSettings);
                 try { _store.Save(Sidecars.Strip(fresh, _spec.ResolvedSettings)); }
                 catch (Exception ex)
                 {

@@ -27,6 +27,15 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void EveryConventionsPageHasAnIconAndAnOrder()
+        {
+            var missing = Conventions.Default.Lang.Pages.Keys.Where(id => !Conventions.Default.Pages.ContainsKey(id)).ToList();
+            Assert.True(missing.Count == 0, "pages with a title but no icon and order: " + string.Join(", ", missing));
+            Assert.Equal("🎁", Resolve.IconGlyph(Conventions.Default.Pages["channelPoints"].Icon));
+            Assert.Equal("📊", Resolve.IconGlyph(Conventions.Default.Pages["stats"].Icon));
+        }
+
+        [Fact]
         public void GermanCarriesEveryKeyPageAndPlaceholder()
         {
             var english = Conventions.Default.Lang;
@@ -51,9 +60,13 @@ namespace UIFramework.Tests
             { ""key"": ""numDecks"", ""default"": 6, ""page"": ""game"", ""section"": ""Shoe"", ""label"": ""Decks"" },
             { ""key"": ""freeGame"", ""default"": false, ""page"": ""game"" },
             { ""key"": ""resetScope"", ""default"": ""all"", ""page"": ""game"", ""options"": [ { ""value"": ""all"", ""label"": ""Everything"" }, { ""value"": ""wins"", ""label"": ""Wins only"" } ] },
-            { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""group"": ""Wins"", ""label"": ""Win"" }
+            { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""group"": ""Wins"", ""label"": ""Win"" },
+            { ""key"": ""userCooldown"", ""default"": 30, ""page"": ""game"", ""label"": ""Per-user cooldown"" },
+            { ""key"": ""defaultBet"", ""default"": 100, ""page"": ""game"" },
+            { ""key"": ""pointsName"", ""default"": ""Points"", ""page"": ""game"", ""label"": ""Currency"" }
           ],
-          ""lang"": { ""de"": { ""keys"": { ""numDecks"": { ""label"": ""Decks im Schuh"", ""help"": ""Wie viele."" } }, ""texts"": { ""Shoe"": ""Schuh"", ""Wins only"": ""Nur Gewinne"" } } } }";
+          ""lang"": { ""de"": { ""keys"": { ""numDecks"": { ""label"": ""Decks im Schuh"", ""help"": ""Wie viele."" }, ""defaultBet"": ""Grundeinsatz"" },
+                              ""texts"": { ""Shoe"": ""Schuh"", ""Wins only"": ""Nur Gewinne"", ""Currency"": ""Währung"" } } } }";
         private const string DeclaredWindow = @"{ ""title"": ""Demo"", ""language"": ""LANG"",
           ""pages"": [ { ""id"": ""game"", ""title"": ""Game"" }, { ""id"": ""help"", ""title"": ""How to play"" } ],
           ""headerPills"": [ { ""key"": ""freeGame"", ""on"": ""Free game on"", ""off"": ""Free game off"", ""tooltip"": ""Free game, from the Game page."" } ] }";
@@ -67,9 +80,14 @@ namespace UIFramework.Tests
             {
                 Entry.Prepare(spec, schema);
                 var cooldown = spec.ResolvedSettings.First(s => s.Key == "globalCooldown");
-                Assert.Equal("Globale Abklingzeit", cooldown.Label);           // the conventions' key text over the declared label
+                Assert.Equal("Everyone", cooldown.Label);                      // the game's own wording, no translation for it: as declared
                 Assert.Equal("Abklingzeiten", cooldown.Section);              // a section by its wording
-                Assert.StartsWith("Zeit", cooldown.Help);                      // the conventions' help over the declared one
+                Assert.Equal("Seconds.", cooldown.Help);                       // the game's own help is not replaced by the conventions'
+                Assert.Equal("Abklingzeit pro Nutzer", spec.ResolvedSettings.First(s => s.Key == "userCooldown").Label);   // the conventions' own English wording
+                Assert.Equal("Währung", spec.ResolvedSettings.First(s => s.Key == "pointsName").Label);   // the game's own wording, translated by it
+                var bet = spec.ResolvedSettings.First(s => s.Key == "defaultBet");
+                Assert.Equal("Grundeinsatz", bet.Label);                       // K(key, label): the game's label ...
+                Assert.Equal("Wenn ein Spieler keinen Betrag nennt.", bet.Help); // ... and the conventions' help it left alone
                 var decks = spec.ResolvedSettings.First(s => s.Key == "numDecks");
                 Assert.Equal("Decks im Schuh", decks.Label);                   // the game's own translation of its own key
                 Assert.Equal("Wie viele.", decks.Help);
@@ -118,7 +136,7 @@ namespace UIFramework.Tests
                 var german = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
                 Entry.Prepare(german, withLang);
                 Assert.Equal(new[] { "en", "de" }, german.Languages);
-                Assert.Equal("Globale Abklingzeit", german.ResolvedSettings.First(s => s.Key == "globalCooldown").Label);
+                Assert.Equal("Abklingzeit pro Nutzer", german.ResolvedSettings.First(s => s.Key == "userCooldown").Label);
             }
             finally { Text.Use(Conventions.Default.Lang); }
         }

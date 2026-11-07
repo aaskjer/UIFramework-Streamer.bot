@@ -26,6 +26,7 @@ namespace UIFramework
 
             // 1. Complete every setting and lay the spec's overrides on top.
             var settings = new List<Setting>();
+            var declaredSections = new HashSet<string>(StringComparer.Ordinal);
             foreach (var declared in schema.Settings)
             {
                 var setting = conventions.Complete(declared);
@@ -39,13 +40,20 @@ namespace UIFramework
                     if (over.Order.HasValue) setting.Order = over.Order.Value;
                 }
                 string declaredSection = setting.Section;
+                if (declaredSection != null) declaredSections.Add(declaredSection);
                 // Another language than the game's: the conventions (and the game's own translations, laid over
                 // them) translate what they know; the rest stays as declared. The options are the setting's own copy.
+                // A key's text replaces the declared label or help when the game left it out or declared the
+                // conventions' own English wording; one the game worded itself is translated by that wording (Tx) or
+                // stays, unless the game translated the key itself (K).
                 if (lang.Translates)
                 {
                     var text = lang.Key(setting.Key);
-                    setting.Label = text.Label ?? lang.Text(setting.Label);
-                    setting.Help = text.Help ?? lang.Text(setting.Help);
+                    var own = lang.OwnKey(setting.Key);
+                    var english = lang.EnglishKey(setting.Key);
+                    string declaredLabel = over?.Label ?? declared.Label, declaredHelp = over?.Help ?? declared.Help;
+                    setting.Label = own.Label ?? (text.Label != null && (declaredLabel == null || declaredLabel == english.Label) ? text.Label : lang.Text(setting.Label));
+                    setting.Help = own.Help ?? (text.Help != null && (declaredHelp == null || declaredHelp == english.Help) ? text.Help : lang.Text(setting.Help));
                     setting.Section = lang.Text(setting.Section);
                     setting.Group = lang.Text(setting.Group);
                     if (setting.Options != null)
@@ -75,7 +83,7 @@ namespace UIFramework
             Shows(spec, settings);
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
-            Check(spec, settings);
+            Check(spec, settings, declaredSections);
             foreach (var pill in spec.HeaderPills)
                 pill.Tooltip = lang.Text(pill.Declared);
             Currency(spec, schema, settings);
@@ -142,12 +150,21 @@ namespace UIFramework
                         spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which no setting matches.");
                     foreach (var setting in Match(pattern, settings).Where(s => !claimed.Contains(s.Key)))
                     {
+                        // The user's layout has the last word: a field the user moved to another page stays there.
+                        string moved = layout?.Field(setting.Key)?.Page;
+                        if (moved != null && moved != page.Id)
+                            continue;
                         claimed.Add(setting.Key);
+                        // Where it sits now, for the customise mode's menu and everything else that asks.
+                        setting.Page = page.Id;
                         mine.Add(setting);
                     }
                 }
                 pageFields[page.Id] = mine;
             }
+
+            // A template a page claimed by its key is that page's field, not also an entry of the Messages picker.
+            spec.Messages.RemoveAll(m => claimed.Contains(m.Key) && settings.Any(s => s.Key == m.Key && s.Page != "messages"));
 
             foreach (var setting in settings.OrderBy(s => s.Order))
             {
@@ -285,12 +302,16 @@ namespace UIFramework
 
         /// <summary>What a host's author got wrong, in words: an unknown kind, a requirement on a key that is not
         /// there, a page or pill naming a setting that does not exist.</summary>
-        private static void Check(WindowSpec spec, List<Setting> settings)
+        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections)
         {
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
             var byKey = settings.GroupBy(s => s.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
             foreach (var section in spec.SectionConditions)
+            {
                 CheckCondition(spec, byKey, "The section '" + section.Key + "'", "is shown when", section.Value);
+                if (!declaredSections.Contains(section.Key))
+                    spec.Problems.Add("The section '" + section.Key + "' has a condition, but no setting is in a section of that name.");
+            }
             foreach (var s in settings)
             {
                 if (s.Kind != null && !Kinds.Contains(s.Kind))
@@ -305,6 +326,9 @@ namespace UIFramework
                     CheckCondition(spec, byKey, "'" + s.Key + "'", "is shown when", s.ShowWhen);
                 if (s.Min.HasValue && s.Max.HasValue && s.Min > s.Max)
                     spec.Problems.Add("'" + s.Key + "' has a minimum above its maximum.");
+                foreach (var alias in s.Aliases)
+                    if (alias != s.Key && keys.Contains(alias))
+                        spec.Problems.Add("'" + s.Key + "' has the old key '" + alias + "', which is a setting of its own; that old key is not moved.");
             }
             if (!string.IsNullOrEmpty(spec.Log.WriteLogKey) && !keys.Contains(spec.Log.WriteLogKey))
                 spec.Problems.Add("The log page's switch '" + spec.Log.WriteLogKey + "' is not a setting.");
@@ -362,6 +386,7 @@ namespace UIFramework
                 case "info": return "ℹ️";
                 case "cards": return "🃏";
                 case "chart": return "📊";
+                case "gift": return "🎁";
                 case "": return "•";
                 default: return name;
             }

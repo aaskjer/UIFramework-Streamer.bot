@@ -81,6 +81,17 @@ namespace UIFramework
             string trimmed = (text ?? "").Trim();
             switch (tag.Kind)
             {
+                case FieldKind.Int when tag.Factor != 1.0 && tag.Factor > 0:
+                {
+                    // A duration typed in minutes or hours: stored as whole seconds, the limits in seconds too.
+                    double typed = TryParseTyped(trimmed, out double t) ? t : 0.0;
+                    if (tag.UnlimitedAtZero && typed == 0) return int.MaxValue;
+                    double seconds = Math.Round(typed * tag.Factor, MidpointRounding.AwayFromZero);
+                    long whole = seconds >= int.MaxValue ? int.MaxValue : seconds <= int.MinValue ? int.MinValue : (long)seconds;
+                    long kept = ClampWhole(tag, whole, int.MinValue, int.MaxValue);
+                    clamped = kept != whole;
+                    return (int)kept;
+                }
                 case FieldKind.Int:
                 {
                     if (!long.TryParse(trimmed, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long whole))
@@ -111,7 +122,7 @@ namespace UIFramework
                 case FieldKind.Template:
                     return text ?? "";
                 default:
-                    return trimmed;
+                    return tag.KeepSpaces ? text ?? "" : trimmed;
             }
         }
 
@@ -181,6 +192,9 @@ namespace UIFramework
                     if (!TryNumber(value, out double d)) return value == null || value.Type == JTokenType.Null ? "0" : "";
                     double ceiling = tag.Kind == FieldKind.Int ? int.MaxValue : long.MaxValue;
                     if (tag.UnlimitedAtZero && d >= ceiling) return "0";
+                    // A duration in minutes or hours: the seconds shown in its unit, to the second (90 s reads 1.5).
+                    if (tag.Factor != 1.0 && tag.Factor > 0)
+                        return (d / tag.Factor).ToString("0.####", CultureInfo.InvariantCulture);
                     // A fraction in a whole-number field is shown as it is, not cut: the check before saving names it.
                     if (d != Math.Floor(d)) return d.ToString("0.##########", CultureInfo.InvariantCulture);
                     if (d >= long.MaxValue) return long.MaxValue.ToString(CultureInfo.InvariantCulture);
@@ -342,7 +356,9 @@ namespace UIFramework
                 if (!(o is TextBox box) || !(FieldTag.Of(box.Tag) is FieldTag tag)) return;
                 if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
                 string text = box.Text.Trim();
-                bool valid = tag.Kind == FieldKind.Double ? TryParseTyped(text, out _) : IsWhole(text, AllowsNegative(tag));
+                bool valid = tag.Kind == FieldKind.Double ? TryParseTyped(text, out _)
+                    : tag.Factor != 1.0 ? TryParseTyped(text, out double typed) && (typed >= 0 || AllowsNegative(tag))
+                    : IsWhole(text, AllowsNegative(tag));
                 if (!valid)
                     invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": " + Text.T("field.empty") : ": '" + text + "'"));
             });

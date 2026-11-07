@@ -45,7 +45,7 @@ namespace UIFramework.Tests
             parts.Boxes["n"].Text = "12";
             parts.Boxes["big"].Text = "0";
             parts.Boxes["pct"].Text = "40";
-            parts.Boxes["name"].Text = "  trimmed  ";
+            parts.Boxes["name"].Text = " | ";
             parts.Switches["on"].IsChecked = true;
             parts.Combos["mode"].SelectedIndex = 1;
             parts.Boxes["tpl"].Text = "  kept as typed ";
@@ -54,10 +54,88 @@ namespace UIFramework.Tests
             Assert.Equal(12, (int)settings["n"]);
             Assert.Equal(long.MaxValue, (long)settings["big"]);
             Assert.Equal(0.4, (double)settings["pct"], 6);
-            Assert.Equal("trimmed", (string)settings["name"]);
+            // A plain text keeps its spaces: a separator " | " or a prefix "🎲 " is meant with them.
+            Assert.Equal(" | ", (string)settings["name"]);
             Assert.True((bool)settings["on"]);
             Assert.Equal("b", (string)settings["mode"]);
             Assert.Equal("  kept as typed ", (string)settings["tpl"]);
+        });
+
+        [Fact]
+        public void TokensAndPathsAreStillTrimmed() => Sta(() =>
+        {
+            var (f, parts, settings, _) = Make("{}", @"{ ""token"": """", ""raw"": """" }");
+            var page = new StackPanel();
+            page.Children.Add(f.MaskedField("Token", "token", ""));
+            page.Children.Add(f.SettingBox("Raw", "raw", ""));
+            parts.Boxes["token"].Text = "  abc  ";
+            parts.Boxes["raw"].Text = " C:\\x ";
+            FieldBinding.Save(settings, page);
+            Assert.Equal("abc", (string)settings["token"]);
+            Assert.Equal("C:\\x", (string)settings["raw"]);
+        });
+
+        [Fact]
+        public void DurationInMinutesIsTypedInMinutesAndStoredInSeconds() => Sta(() =>
+        {
+            var (f, parts, settings, _) = Make(@"{ ""cd"": 90, ""wait"": 7200, ""plain"": 45 }", @"{ ""cd"": 60, ""wait"": 3600, ""plain"": 30 }");
+            var page = new StackPanel();
+            page.Children.Add(f.DurationField("Cooldown", "cd", "", "min"));
+            page.Children.Add(f.DurationField("Wait", "wait", "", "h"));
+            page.Children.Add(f.DurationField("Plain", "plain", "", null));
+            Assert.Equal("1.5", parts.Boxes["cd"].Text);
+            Assert.Equal("2", parts.Boxes["wait"].Text);
+            Assert.Equal("45", parts.Boxes["plain"].Text);
+
+            parts.Boxes["cd"].Text = "2,5";
+            parts.Boxes["wait"].Text = "0.25";
+            parts.Boxes["plain"].Text = "12";
+            Assert.Empty(FieldBinding.InvalidNumberFields(page));
+            FieldBinding.Save(settings, page);
+            Assert.Equal(150, (int)settings["cd"]);
+            Assert.Equal(900, (int)settings["wait"]);
+            Assert.Equal(12, (int)settings["plain"]);
+
+            parts.Boxes["plain"].Text = "1.5";
+            Assert.Single(FieldBinding.InvalidNumberFields(page));
+        });
+
+        [Fact]
+        public void DurationLimitsAreSecondsWhateverTheUnit() => Sta(() =>
+        {
+            var (f, parts, settings, _) = Make("{}", @"{ ""cd"": 120 }");
+            var page = new StackPanel();
+            page.Children.Add(f.DurationField("Cooldown", "cd", "", "min"));
+            var tag = (FieldTag)parts.Boxes["cd"].Tag;
+            tag.Min = 60; tag.Max = 600;
+            parts.Boxes["cd"].Text = "30";
+            FieldBinding.Save(settings, page);
+            Assert.Equal(600, (int)settings["cd"]);
+            Assert.Equal("10", parts.Boxes["cd"].Text);
+        });
+
+        [Fact]
+        public void ConditionsOnADurationInMinutesCompareSeconds() => Sta(() =>
+        {
+            var (f, parts, _, _) = Make("{}", @"{ ""cd"": 120 }");
+            f.DurationField("Cooldown", "cd", "", "min");
+            Assert.Equal("2", parts.Boxes["cd"].Text);
+            Assert.True(Requirement.Holds(f, parts, "cd", ">=", "120"));
+            parts.Boxes["cd"].Text = "1";
+            Assert.False(Requirement.Holds(f, parts, "cd", ">=", "120"));
+        });
+
+        [Fact]
+        public void AGreyedFieldIsDimmedAsWellAsDisabled() => Sta(() =>
+        {
+            var (f, _, _, _) = Make("{}", @"{ ""names"": [] }");
+            var field = f.IntField("N", "n", "");
+            SchemaPage.Grey(field, true);
+            Assert.False(field.IsEnabled);
+            Assert.Equal(0.5, field.Opacity);
+            SchemaPage.Grey(field, false);
+            Assert.True(field.IsEnabled);
+            Assert.Equal(1.0, field.Opacity);
         });
 
         [Fact]
