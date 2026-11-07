@@ -75,6 +75,15 @@ if ($Check) {
 # template has nowhere. Comments and blank lines do not count; an older template's code does, so read the list.
 $templateSet = New-Object 'System.Collections.Generic.HashSet[string]'
 foreach ($l in $templateLines) { [void]$templateSet.Add($l.Trim()) }
+# Every earlier version of the template counts as the template too: a block one or more releases behind carries
+# their lines, which are not the game's own. Read from this repository's history when git is at hand.
+$repoRoot = Split-Path -Parent $PSScriptRoot
+try {
+    $revisions = @(git -C $repoRoot log --format=%H -- stub/HostSchema.cs 2>$null)
+    foreach ($rev in $revisions) {
+        foreach ($l in @(git -C $repoRoot show "${rev}:stub/HostSchema.cs" 2>$null)) { [void]$templateSet.Add(([string]$l).Trim()) }
+    }
+} catch { }
 $dropped = @(@($have.Head) + @($have.Tail) | Where-Object {
     $t = "$_".Trim()
     $t.Length -gt 0 -and -not $t.StartsWith('//') -and -not $templateSet.Contains($t)
