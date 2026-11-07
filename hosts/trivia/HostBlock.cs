@@ -240,6 +240,7 @@ public static class UiSchema
                  "rank", "1", "user", "mirabel_tv", "wins", "42", "blitzwins", "17", "blitzpoints", "9.300", "topn", "5", "platform", "Twitch", "target", "kjell_plays", "medal", "🥇")
         .Answer("checkSource", "opentdb answered - questions can be fetched.")
         .Answer("difficulty", "{\"set\":{\"answerTimeSeconds\":60,\"normalCountdownStartSeconds\":30,\"blitzAnswerTimeSeconds\":20,\"blitzCountdownStartSeconds\":10,\"fuzzyTolerance\":2,\"minLengthForFuzzy\":4},\"status\":\"Standard filled in; save to keep it.\"}")
+        .Answer("difficultyNow", "{\"set\":{\"difficulty\":\"standard\"},\"lines\":[{\"text\":\"Standard · 60 s to answer, first reminder at 30 s\",\"big\":true},\"Blitz rounds: 20 s to answer, first reminder at 10 s.\",\"Spelling: up to 2 characters may differ, in answers of 4 characters or more.\"]}")
         .Answer("setupObsOverlay", "OBS is not connected on connection #0. Connect it in Streamer.bot under Stream Apps, OBS Studio, then try again.")
         .Answer("overlaySample", "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above.")
         .Answer("copyOverlayUrl", "Copied. Paste it into the URL of a Browser source in OBS.")
@@ -304,7 +305,8 @@ public static class UiSchema
                 Pg("sources", "Quellen"),
                 Pg("suggestions", "Vorschläge"),
                 K("difficulty", "Schwierigkeit", "Setzt Antwortzeiten, Countdown-Erinnerungen und Schreibtoleranz auf einmal, von Entspannt (zwei Minuten und die lockerste Schreibprüfung) bis Brutal (eine halbe Minute, keine unscharfe Zuordnung). Jede dieser Zahlen lässt sich unten weiter von Hand ändern; Eigene sind deine eigenen Zahlen."),
-                K("difficultyNote", null, "Eine Stufe des Reglers füllt die sechs Zahlen aus, für die sie steht; gespeichert wird erst, wenn du speicherst. Das Spiel liest nur die Zahlen, du kannst sie danach also feinjustieren."),
+                K("difficultyNote", null, "Eine Stufe des Reglers füllt die sechs Zahlen aus, für die sie steht; gespeichert wird erst, wenn du speicherst. Das Spiel liest nur die Zahlen, du kannst sie danach also feinjustieren: der Regler zeigt dann Eigene oder die Stufe, zu der sie passen."),
+                K("difficultyNow", "So läuft eine Runde", "Was eine Runde mit den sechs Zahlen ergibt, wie sie auf dieser Seite stehen, gespeichert oder nicht. Der Regler folgt ihnen: er zeigt die Stufe, zu der sie passen, oder Eigene."),
                 K("answerTimeSeconds", "Antwortzeit", "Wie lange eine normale Runde Antworten annimmt, in Sekunden."),
                 K("normalCountdownStartSeconds", "Erste Erinnerung bei", "Verbleibende Sekunden, bei denen der Chat die erste Countdown-Erinnerung bekommt. Die zweite kommt bei der Hälfte davon, die dritte bei der Hälfte davon, höchstens 5. Nur die Rundenlänge begrenzt das."),
                 K("delayBetweenRoundsSeconds", "Pause zwischen Runden", "Die Pause zwischen dem Ergebnis einer Runde und der Frage der nächsten, in einer Serie."),
@@ -585,7 +587,8 @@ public static class UiSchema
     public static readonly Setting[] Table =
     {
         S("difficulty", "standard", page: "game", label: "Difficulty", help: "Sets the answer times, the countdown reminders and the spelling tolerance in one go, from Relaxed (two minutes and the loosest spelling check) to Brutal (half a minute, no fuzzy matching). Every one of those numbers can still be changed by hand below; Custom is your own numbers.", kind: "slider", section: "Difficulty", options: new[] { "relaxed|Relaxed", "gentle|Gentle", "standard|Standard", "sharp|Sharp", "brutal|Brutal", "custom|Custom" }, transient: true, live: true),
-        S("difficultyNote", null, page: "game", help: "A stop of the slider fills in the six numbers it stands for; nothing is saved until you save. The game only reads the numbers, so you can fine-tune them afterwards.", kind: "note", section: "Difficulty"),
+        S("difficultyNote", null, page: "game", help: "A stop of the slider fills in the six numbers it stands for; nothing is saved until you save. The game only reads the numbers, so you can fine-tune them afterwards: the slider then shows Custom, or the stop they match.", kind: "note", section: "Difficulty"),
+        S("difficultyNow", null, page: "game", label: "How a round plays", help: "What a round gives with the six numbers as they stand on this page, saved or not. The slider follows them: it shows the stop they match, or Custom.", kind: "action", section: "Difficulty", live: true, panel: true, auto: true),
         S("answerTimeSeconds", 60, page: "game", label: "Answer time", help: "How long a normal round accepts answers, in seconds.", section: "Rounds", min: 1.0, unit: "s", row: "roundTimes", aliases: new[] { "AnswerTimeSeconds" }),
         S("normalCountdownStartSeconds", 30, page: "game", label: "First reminder at", help: "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this.", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "NormalCountdownStartSeconds" }),
         S("delayBetweenRoundsSeconds", 5, page: "game", label: "Delay between rounds", help: "The pause between the result of one round and the question of the next, in a back-to-back run.", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "DelayBetweenRoundsSeconds" }),
