@@ -82,9 +82,9 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 - **Durations in minutes and hours.** A `duration` with `unit` `min` or `h` is typed and shown in that unit and
   stored in seconds (1.5 min is 90); `min`/`max` stay seconds.
 - **A greyed-out field looks it** on every kind: a `requires` that does not hold also dims the field.
-- **German keeps the game's own wording.** A conventions key's German label and help replace the declared ones only
-  where the game left them out or used the conventions' English; a label of the game's own is translated by `Tx`
-  or stays. `K(key, label)` without a help keeps the conventions' help.
+- **German follows the game's own wording.** A conventions key the game gave a label (or help) of its own is
+  translated by the game's `Tx` for that wording; without one the conventions' German for the key is shown, as
+  before. `K(key, label)` without a help keeps the conventions' help.
 - **`stats` and `channelPoints` pages** have an icon and a place in the order (icon name `gift` is new).
 - **Reset all keeps what the window does not show:** hidden settings and keys it has no field for.
 - **A page pattern leaves a moved field alone.** A field the user moved to another page is not claimed back by

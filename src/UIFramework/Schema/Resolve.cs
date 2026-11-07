@@ -43,17 +43,20 @@ namespace UIFramework
                 if (declaredSection != null) declaredSections.Add(declaredSection);
                 // Another language than the game's: the conventions (and the game's own translations, laid over
                 // them) translate what they know; the rest stays as declared. The options are the setting's own copy.
-                // A key's text replaces the declared label or help when the game left it out or declared the
-                // conventions' own English wording; one the game worded itself is translated by that wording (Tx) or
-                // stays, unless the game translated the key itself (K).
+                // In this order: the game's own text for the key (K); the game's translation of the wording it declared
+                // (Tx), when that wording is its own and not the conventions' English; the conventions' text for the
+                // key; the declared wording. A game that relabels a conventions key without translating the new label
+                // so still gets the conventions' translation rather than its own English.
                 if (lang.Translates)
                 {
                     var text = lang.Key(setting.Key);
                     var own = lang.OwnKey(setting.Key);
                     var english = lang.EnglishKey(setting.Key);
                     string declaredLabel = over?.Label ?? declared.Label, declaredHelp = over?.Help ?? declared.Help;
-                    setting.Label = own.Label ?? (text.Label != null && (declaredLabel == null || declaredLabel == english.Label) ? text.Label : lang.Text(setting.Label));
-                    setting.Help = own.Help ?? (text.Help != null && (declaredHelp == null || declaredHelp == english.Help) ? text.Help : lang.Text(setting.Help));
+                    string ownLabel = declaredLabel != null && declaredLabel != english.Label ? lang.TextOrNull(setting.Label) : null;
+                    string ownHelp = declaredHelp != null && declaredHelp != english.Help ? lang.TextOrNull(setting.Help) : null;
+                    setting.Label = own.Label ?? ownLabel ?? text.Label ?? lang.Text(setting.Label);
+                    setting.Help = own.Help ?? ownHelp ?? text.Help ?? lang.Text(setting.Help);
                     setting.Section = lang.Text(setting.Section);
                     setting.Group = lang.Text(setting.Group);
                     if (setting.Options != null)
