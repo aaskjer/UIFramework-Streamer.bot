@@ -18,6 +18,11 @@ public sealed class Settings
 
     public static string FilePath => Path.Combine(BaseFolder, "HLG-Settings.json");
 
+    /// <summary>Chat Games\Logs, where every chat game keeps its log: one HLG-log-yyyy-MM-dd.txt per day.</summary>
+    public static string LogDirectory => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Chat Games", "Logs");
+
+    public static string ActionLogPath => Path.Combine(LogDirectory, "HLG-log-" + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + ".txt");
+
     public static Settings Load() => new Settings(UiSettings.Load(FilePath));
 
     /// <summary>Writes the Free mode switch into HLG-Settings.json and leaves everything else in the file as it
@@ -64,6 +69,7 @@ public sealed class Settings
     public long MinBet => Math.Max(0L, _s.Long("minBet"));
     public long MaxBet => Math.Max(0L, _s.Long("maxBet"));
     public bool RefundFailedRedemptions => _s.Bool("refundFailedRedemptions");
+    public bool LogToFile => _s.Bool("logToFile");
 
     public int GlobalCooldown(string command) => Math.Max(0, _s.Int(CooldownKey(command) + "GlobalCooldown"));
     public int UserCooldown(string command) => Math.Max(0, _s.Int(CooldownKey(command) + "UserCooldown"));

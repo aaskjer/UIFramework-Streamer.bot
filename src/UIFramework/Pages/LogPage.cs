@@ -32,6 +32,14 @@ namespace UIFramework
             return PillStyle.Accent;
         }
 
+        /// <summary>A text the game declared (a column header, the empty text) in the window's language: the game's own
+        /// translation (Tx), else as declared.</summary>
+        private static string Declared(PageContext ctx, string declared)
+        {
+            var lang = ctx.Spec.Conventions?.Lang;
+            return declared != null && lang != null && lang.Translates ? lang.Text(declared) : declared;
+        }
+
         public static UIElement Build(PageContext ctx)
         {
             var spec = ctx.Spec.Log;
@@ -120,7 +128,7 @@ namespace UIFramework
             grid.Columns.Add(ResultColumn(outcome, style));
             var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn(Text.T("log.user"), "User"), new LogColumn(Text.T("log.platform"), "Platform") };
             foreach (var column in columns)
-                grid.Columns.Add(TextColumn(column.Header, new Binding { Converter = new FieldReader(column.Field) }, cellText));
+                grid.Columns.Add(TextColumn(Declared(ctx, column.Header), new Binding { Converter = new FieldReader(column.Field) }, cellText));
 
             var empty = new TextBlock
             {
@@ -189,7 +197,7 @@ namespace UIFramework
                     return true;
                 };
                 view.Refresh();
-                empty.Text = entries.Count == 0 ? (spec.EmptyText ?? Text.T("log.nothingYet")) : Text.T("log.noMatch");
+                empty.Text = entries.Count == 0 ? (spec.EmptyText != null ? Declared(ctx, spec.EmptyText) : Text.T("log.nothingYet")) : Text.T("log.noMatch");
                 empty.Visibility = view.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
             }
 

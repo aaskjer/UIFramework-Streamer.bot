@@ -1,6 +1,6 @@
 {
   "host": "hangman",
-  "version": "v13.0.1",
+  "version": "v13.1.0",
   "settingsFile": "Chat Games/Hangman Game/configs.json",
   "settings": [
     {
@@ -2656,11 +2656,11 @@
         },
         {
           "header": "Word",
-          "field": "Word"
+          "field": "Word,Word was"
         },
         {
           "header": "Guess",
-          "field": "Guess"
+          "field": "Guess,Letter"
         },
         {
           "header": "Lives",
@@ -2668,7 +2668,7 @@
         },
         {
           "header": "Wrong",
-          "field": "Wrong"
+          "field": "Wrong,Wrong guesses"
         },
         {
           "header": "Reward",
@@ -2844,7 +2844,24 @@
           "url": "https://discord.com/channels/834650675224248362/1448251872744837203/1448251872744837203"
         }
       ]
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "end"
+      }
+    ]
   },
   "lang": {
     "de": {

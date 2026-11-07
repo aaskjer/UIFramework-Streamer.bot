@@ -1153,7 +1153,24 @@
           "url": "https://discord.com/channels/834650675224248362/1446874050310836396/1446874050310836396"
         }
       ]
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "end"
+      }
+    ]
   },
   "lang": {
     "de": {

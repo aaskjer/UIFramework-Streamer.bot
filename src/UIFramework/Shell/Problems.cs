@@ -115,6 +115,7 @@ namespace UIFramework
         /// a click outside it, Esc or its close button takes it away. Returns the action that closes it.</summary>
         public static Action Open(Window window, Grid layers, FrameworkElement anchor, ProblemList problems)
         {
+            if (problems.Count == 0) return () => { };   // nothing to list, and the button is hidden anyway
             var catcher = new Border { Background = Brushes.Transparent };
             Grid.SetColumnSpan(catcher, 99);
             Grid.SetRowSpan(catcher, 99);

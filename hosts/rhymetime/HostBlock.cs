@@ -184,13 +184,15 @@ public static class UiSchema
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
     /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
     /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
-    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.</summary>
-    public static UiLine Tip(string target, string title = null, string text = null)
+    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.
+    /// act: the user may use the ringed part while the stop is up (press the Try button, type into the field).</summary>
+    public static UiLine Tip(string target, string title = null, string text = null, bool act = false)
     {
         var tip = new Newtonsoft.Json.Linq.JObject();
         if (target != null) tip["target"] = target;
         if (title != null) tip["title"] = title;
         if (text != null) tip["text"] = text;
+        if (act) tip["act"] = true;
         return new UiLine(tip);
     }
 
@@ -227,12 +229,16 @@ public static class UiSchema
 
     // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
     public static readonly UiWindow Window = new UiWindow("RhymeTime", releases: "aaskjer/RhymeTime", logPrefix: "[RhymeTime/Settings]")
-        .Pages(P("game", "Game", "🎮"), P("battle", "Battle", "⚔️"), P("words", "Word banks", "📚"), P("access", "Access", "👥"), P("overlay", "Overlay", "📺"), P("messages", "Messages", "💬"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Pages(P("game", "Game", "🎮"), P("battle", "Battle", "⚔️"), P("words", "Word banks", "📚"), P("access", "Access", "👥"), P("overlay", "Overlay", "📺"), P("messages", "Messages", "💬"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Cooldowns(C("15e49f3a-389a-4190-ac15-c50b1fd4eee6", "globalCooldown", "userCooldown"))   // !Rhyme, where the cooldowns live
         .Pill("freeGame", "Free game on", "Free game off", tooltip: "Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well.")
         .Answer("overlaySample", "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above.")
         .Pill("overlayEnabled", "Overlay on", "Overlay off", tooltip: "Whether rounds reach the OBS overlay, from the Overlay page.")
+        .Log("Chat Games/Logs", "RT-log*.txt", writeLogKey: "logToFile", writeLogHelp: "Writes every settled round and battle (win, loss, timeout) to a dated 'RT-log-yyyy-MM-dd.txt' in Chat Games\\Logs, one file per day.",
+            columns: new[] { "Player|User", "Platform|Platform", "Mode|Mode", "Word|Word", "Guess|Guess", "Difficulty|Difficulty", "Bet|Bet", "Change|Change", "After|After" },
+            results: new[] { "WIN", "LOSS", "TIMEOUT", "BATTLE-WIN", "BATTLE-TIMEOUT" }, platforms: new[] { "twitch", "youtube", "kick" },
+            emptyText: "No rounds logged yet. Every settled round and battle lands here once 'Write a log file per day' is on.")
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
         K("timeLimit", "Sekunden zum Antworten", "Wie lange ein Chatter Zeit hat, einen Reim zu finden, bevor die Runde verloren ist."),
@@ -303,6 +309,9 @@ public static class UiSchema
         Tx("Right", "Rechts"),
         Tx("Free mode", "Freier Modus"),
         Tx("Free mode, from the Game page or !SetFreeRhyme. While it is on, nothing is staked and nothing is paid out; a default bet of 0 is free as well.", "Freier Modus, von der Seite Spiel oder !SetFreeRhyme. Solange er an ist, wird nichts gesetzt und nichts ausgezahlt; ein Standardeinsatz von 0 ist ebenfalls frei."),
+        Tx("Writes every settled round and battle (win, loss, timeout) to a dated 'RT-log-yyyy-MM-dd.txt' in Chat Games\\Logs, one file per day.", "Schreibt jede abgerechnete Runde und jedes Battle (Gewinn, Niederlage, Zeitablauf) in eine datierte 'RT-log-yyyy-MM-dd.txt' in Chat Games\\Logs, eine Datei pro Tag."),
+        Tx("No rounds logged yet. Every settled round and battle lands here once 'Write a log file per day' is on.", "Noch keine Runden protokolliert. Jede abgerechnete Runde und jedes Battle landet hier, sobald 'Logdatei pro Tag schreiben' an ist."),
+        Tx("Player", "Spieler"), Tx("Mode", "Modus"), Tx("Word", "Wort"), Tx("Guess", "Tipp"), Tx("Difficulty", "Schwierigkeit"), Tx("Bet", "Einsatz"), Tx("Change", "Änderung"), Tx("After", "Danach"),
         Tx("Round", "Runde"))
         .Samples("word", "STREAM", "guess", "DREAM", "timeLimit", "30", "winAmount", "3,000", "attempts", "1", "maxAttempts", "3", "examples", "DREAM, TEAM, THEME, CREAM, BEAM", "difficulty", "medium", "reward", "500", "winner", "bob", "seconds", "12", "reason", "minimum bet is 10 Points.")
         .Help(
@@ -328,13 +337,16 @@ public static class UiSchema
                 Cmd("RT-wordbank.json", "the three word banks."),
                 Cmd("uiframework.layout.json", "your layout of this window: theme, renamed or hidden pages and fields."),
                 Cmd("Overlay\\", "the OBS overlay page, written when you copy its URL or open the demo."),
+                Cmd("Chat Games\\Logs\\RT-log-yyyy-MM-dd.txt", "every settled round and battle, one file per day, beside the other chat games' logs; the Log page reads it."),
                 Note("All of it sits in Streamer.bot's folder under Chat Games\\RhymeTime. A damaged file falls back to the .bak beside it and the broken one is kept as .broken.")))
         .About(credits: "RhymeTime by aaskjer",
             sections: new[]
             {
                 H("Good to know",
                     Note("Rhyme lookups use wordotron.com. Turn the dictionary check off on the Game page if you would rather the game never called out."))
-            }, links: new[] { Link("Repository", "https://github.com/aaskjer/RhymeTime"), Link("Releases", "https://github.com/aaskjer/RhymeTime/releases"), Link("StreamUP - Currency Core", "https://streamup.tips/product/currency-core"), Link("tawmae - LOYALTY POINTS", "https://tawmae.xyz/loyalty-points") });
+            }, links: new[] { Link("Repository", "https://github.com/aaskjer/RhymeTime"), Link("Releases", "https://github.com/aaskjer/RhymeTime/releases"), Link("StreamUP - Currency Core", "https://streamup.tips/product/currency-core"), Link("tawmae - LOYALTY POINTS", "https://tawmae.xyz/loyalty-points") })
+        // The tour on the window's first open (the ? in the header shows it again); the framework brings the texts.
+        .Tour(Tip("start"), Tip("rail"), Tip("save"), Tip("customise"), Tip("end"));
 
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =
@@ -370,6 +382,8 @@ public static class UiSchema
         // ---- access ----
         S("blockedUsers", "", page: "access", help: "These names are ignored when they run the command, with no reply in chat.", section: "Who may not play", aliases: new[] { "BlockedUsers" }),
         S("blockedGroups", "", page: "access", help: "Everyone in these Streamer.bot groups is ignored when they run the command (Settings > Groups). A group that does not exist is skipped and logged.", section: "Who may not play", aliases: new[] { "BlockedGroups" }),
+        // ---- log ----
+        S("logToFile", true, page: "log", aliases: new[] { "LogToFile" }),
         // ---- overlay ----
         S("overlayEnabled", false, page: "overlay", label: "Send rounds to the overlay", help: "A browser source that shows the word being rhymed with its countdown, then the rhyme that won it and what it paid. It listens to Streamer.bot's own WebSocket server. Off, and the game sends it nothing.", section: "OBS overlay", aliases: new[] { "OverlayEnabled" }),
         S("overlayPort", 8080, page: "overlay", label: "Port", help: "The port of Streamer.bot's WebSocket server (Servers/Clients > WebSocket Server, tick Auto Start). 8080 unless you changed it there. With its authentication on, add &password= and the password to the end of the URL in OBS.", section: "Streamer.bot's WebSocket server", min: 1.0, max: 65535.0, aliases: new[] { "OverlayPort" }),

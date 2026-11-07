@@ -1,9 +1,17 @@
 # Changelog
 
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
-its section here before the tag is pushed. Everything before 1.0.0 is published as a pre-release.
+its section here before the tag is pushed. Everything before 1.0.0 was published as a pre-release; 1.0.0 and on are
+stable releases.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-07
+
+The first stable release: the settings window every chat game of aaskjer's runs on (Blackjack, Battleship, Classic
+Chat Gamble, Hangman, High-Low, RhymeTime, Slot Machine, Trivia), with a tour of itself, its problems behind one
+red button, and a Log page that reads old and new log lines alike. From here on, the host block and the settings
+action change only in ways the CHANGELOG says, and a release that breaks a game needs a new major version.
 
 - **Problems behind a red "i".** What the game declares that does not fit, and what fails while the window is
   open (a page that cannot be built, a handler that throws, a failed save, an unreadable layout file), no longer
@@ -12,6 +20,19 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   clipboard for a bug report. Esc, the close button or a click beside it closes it. Every line still goes to
   Streamer.bot's log. The status line's "Something went wrong" points at the **i**. Preview:
   `-windowshots <folder> -problems` photographs the window with the **i**, then with its panel open.
+- **A tour stop to try out.** `Tip(target, title, text, act: true)` lets the user use the ringed part while the stop
+  is up: clicks go through the ring to it, keys reach it, the rest of the window stays out of reach, and the ring
+  follows the part as it grows (a Try button's answer). The note says *Try it yourself*. The demo game's *Roll*
+  stop is one.
+- **How to play, Log and About at the foot of the rail.** The three sit together at the bottom of the page list,
+  in this order, whatever order a game declares them in; a game's own bottom page goes above them.
+- **The Log page reads more.** Older lines in columns (`yyyy-MM-dd HH:mm:ss RESULT  user  [R1|id] Key: value | ...`)
+  show their time, result, player, round and fields instead of an empty row. A column may name several keys
+  (`"Word|Word,Word was"`): the first the line has is shown. A value in one pair of single quotes loses them.
+  Results read with a capital per part (*Game-Over*, *Hit-Lettr*), and column headers and the empty text translate
+  through the game's `Tx` like every declared text.
+- **Every chat game has a tour** and the current host block; High-Low and RhymeTime have a Log page now, and
+  Hangman's log fills every column ([hosts/](hosts)).
 
 ## [0.10.0] - 2026-11-07
 
