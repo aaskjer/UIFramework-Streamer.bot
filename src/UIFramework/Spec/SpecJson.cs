@@ -166,6 +166,19 @@ namespace UIFramework
                     if (!string.IsNullOrWhiteSpace((string)section["name"]) && !string.IsNullOrWhiteSpace((string)section["showWhen"]))
                         spec.SectionConditions[(string)section["name"]] = (string)section["showWhen"];
 
+            if (root["tour"] is JArray tour)
+                foreach (var stop in tour)
+                {
+                    // A stop is an object, or just the name of its target ("save"): the framework's own text then.
+                    if (stop.Type == JTokenType.String) spec.Tour.Add(new TourStop(stop.ToString()));
+                    else if (stop is JObject t)
+                    {
+                        string target = (string)t["target"], title = (string)t["title"], text = (string)t["text"];
+                        if (string.IsNullOrWhiteSpace(target) && string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(text)) continue;
+                        spec.Tour.Add(new TourStop(string.IsNullOrWhiteSpace(target) ? null : target.Trim(), title, text));
+                    }
+                }
+
             if (root["headerPills"] is JArray pillList)
                 foreach (var pill in pillList.OfType<JObject>())
                 {

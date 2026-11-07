@@ -65,10 +65,17 @@ Fire the trigger from step 3. Without a hotkey or a deck at hand: right-click th
 
 - **The first time** a question comes up: download `UIFramework.dll` into `<Streamer.bot>\UIFramework\lib\`?
   *Yes*. The file is checked against its published SHA-256 before it is used.
-- **The window opens:** a *Game* page (sides of the die, points per win, a *Roll* button that tries a roll without
-  sending anything to chat), *Messages* (the chat text, with placeholder chips and a preview), *Help*, *About*.
+- **The window opens with a tour** that rings one part after the other and says what it does: the pages, a
+  setting, the *Roll* button that tries a roll without sending anything to chat, the *Messages* page with its
+  placeholder chips and chat preview, saving, resetting, the theme and the customise mode. *Next* goes on, Esc
+  ends it; it starts by itself only this once, the **?** at the top right shows it again. Your own game gets one
+  with `.Tour(...)` in its window ([Schema.md](Schema.md#the-tour)).
 - Change a value and save. The window writes `<Streamer.bot>\Demo Game\DemoGame-Settings.json` and sets the
   cooldowns of `!roll`.
+
+<p align="center">
+  <img src="images/demo-tour-dark.png" width="48%" alt="The tour on the first open: a setting ringed, its note beside it">
+</p>
 
 <p align="center">
   <img src="images/demo-game-dark.png" width="32%" alt="The demo's Game page, dark">

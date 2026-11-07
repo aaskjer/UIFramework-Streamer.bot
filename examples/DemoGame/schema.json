@@ -113,6 +113,50 @@
     ],
     "about": {
       "credits": "An example game for UIFramework for streamer.bot."
-    }
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "sides",
+        "title": "A setting",
+        "text": "Each setting has its own field; point at it to read its help. This one takes a number from 2 to 100, and the window keeps it in those limits."
+      },
+      {
+        "target": "tryRoll",
+        "title": "Try it out",
+        "text": "Rolls once with the values as they stand in the window, saved or not. Nothing goes to chat: the answer shows right under the button."
+      },
+      {
+        "target": "page:messages"
+      },
+      {
+        "target": "status"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "reset"
+      },
+      {
+        "target": "theme"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "tour"
+      },
+      {
+        "target": "end",
+        "title": "Have fun",
+        "text": "Save, then type !roll in your chat. The highest side of the die wins the points."
+      }
+    ]
   }
 }

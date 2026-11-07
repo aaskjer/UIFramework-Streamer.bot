@@ -16,6 +16,8 @@ namespace UIFramework
         public readonly Dictionary<string, ComboBox> Combos = new Dictionary<string, ComboBox>(StringComparer.Ordinal);
         public readonly Dictionary<string, OptionSlider> Sliders = new Dictionary<string, OptionSlider>(StringComparer.Ordinal);
         public readonly Dictionary<string, ListEditor> Lists = new Dictionary<string, ListEditor>(StringComparer.Ordinal);
+        /// <summary>Every setting's whole field as its page shows it (label, control, help), for the tour to point at.</summary>
+        public readonly Dictionary<string, System.Windows.FrameworkElement> Elements = new Dictionary<string, System.Windows.FrameworkElement>(StringComparer.Ordinal);
 
         // Keyed by page id, so switching pages only redraws the one in front.
         private readonly Dictionary<string, List<Action>> _refreshers = new Dictionary<string, List<Action>>(StringComparer.Ordinal);

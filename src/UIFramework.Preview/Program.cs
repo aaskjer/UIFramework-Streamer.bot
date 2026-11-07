@@ -65,7 +65,9 @@ namespace UIFramework.Preview
             {
                 if (double.TryParse(Arg(args, "-width"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double width))
                     spec.Width = width;
-                var request = new WindowCapture { Folder = windowShots, SettleMs = settle > 0 ? settle : 1500, Pick = Screenshots.Pick };
+                // -tour: the window's tour, one shot per stop (tour-01.png, ...), instead of the pages.
+                var request = new WindowCapture { Folder = windowShots, SettleMs = settle > 0 ? settle : 1500, Pick = Screenshots.Pick,
+                    Tour = Array.Exists(args, a => a.Equals("-tour", StringComparison.OrdinalIgnoreCase)) };
                 string only = Arg(args, "-pages");
                 if (only != null) request.Only = new HashSet<string>(only.Split(',').Select(p => p.Trim()), StringComparer.Ordinal);
                 string names = Arg(args, "-names");

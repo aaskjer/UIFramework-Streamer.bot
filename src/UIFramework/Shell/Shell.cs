@@ -243,6 +243,9 @@ namespace UIFramework
             DispatcherTimer rainbowTimer = null;
             KeyEventHandler keyHandler = null;
             bool captureStarted = false;
+            // The tour, while it is up; the shell's shortcuts wait for it. StartTour is set by every build.
+            Tour tour = null;
+            Action startTour = null;
 
             void Rebuild(string pageId)
             {
@@ -261,6 +264,7 @@ namespace UIFramework
 
             void Build()
             {
+            tour?.End();
             rainbowTimer?.Stop();
             rainbowTimer = null;
             Theme.IsRainbow = false;
@@ -429,6 +433,15 @@ namespace UIFramework
                 }, TaskScheduler.Default);
 
             var header = new DockPanel();
+            // The ? at the far right shows the window's tour again, when it has one; not in the customise mode.
+            var btnTour = Ui.IconButton(Icons.Help, Icons.Font, Text.T("tip.tour"));
+            btnTour.Margin = new Thickness(8, -4, -4, -4);
+            btnTour.Click += (s, e) => startTour?.Invoke();
+            if (_spec.Tour.Count > 0 && !customizing)
+            {
+                DockPanel.SetDock(btnTour, Dock.Right);
+                header.Children.Add(btnTour);
+            }
             DockPanel.SetDock(pills, Dock.Right);
             header.Children.Add(pills);
             header.Children.Add(pageTitle);
@@ -741,7 +754,7 @@ namespace UIFramework
                 window.PreviewKeyDown -= keyHandler;
             keyHandler = (s, e) =>
             {
-                if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == 0 || (tour != null && tour.Open))
                     return;
                 if (e.Key == Key.S)
                 {
@@ -841,7 +854,80 @@ namespace UIFramework
             }
             root.Children.Add(footer);
             root.Children.Add(body);
-            window.Content = root;
+            // The window's content, and over it, while it is up, the tour.
+            var layers = new Grid();
+            layers.Children.Add(root);
+            window.Content = layers;
+
+            // ---- The tour: each stop the spec names, resolved against this build's parts. ----
+            var tourParts = new Dictionary<string, FrameworkElement>(StringComparer.Ordinal)
+            {
+                ["rail"] = railBorder, ["save"] = btnSave, ["saveExit"] = btnSaveExit, ["cancel"] = btnCancel, ["status"] = status,
+                ["reset"] = btnReset, ["resetPage"] = btnResetPage, ["theme"] = btnTheme, ["tour"] = btnTour
+            };
+            if (!_spec.Locked) tourParts["customise"] = btnCustomize;
+            List<Tour.Stop> TourStops()
+            {
+                var lang = _spec.Conventions?.Lang;
+                string Declared(string text) => text == null || lang == null ? text : lang.Text(text);
+                string Own(string key) { string text = Text.T(key); return text == key ? null : text; }
+                var stops = new List<Tour.Stop>();
+                foreach (var stop in _spec.Tour)
+                {
+                    string target = stop.Target;
+                    var shown = new Tour.Stop { Title = Declared(stop.Title), Text = Declared(stop.Text) };
+                    if (target == null || target == "start" || target == "end")
+                    {
+                        if (target != null)
+                        {
+                            shown.Title = shown.Title ?? Own("tour." + target + ".title");
+                            shown.Text = shown.Text ?? Own("tour." + target + ".text");
+                        }
+                    }
+                    else if (target.StartsWith("page:", StringComparison.Ordinal))
+                    {
+                        string id = target.Substring(5);
+                        int index = pages.FindIndex(p => p.Spec.Id == id);
+                        if (index < 0) continue;   // hidden by the user, or not there
+                        var item = rail.Items[index];
+                        shown.Target = () => item;
+                        shown.Area = () => pageHost;   // the page itself stays bright beside its ringed rail entry
+                        shown.Show = () => ShowPage(index);
+                        shown.Title = shown.Title ?? pages[index].Spec.Title;
+                        shown.Text = shown.Text ?? Own("tour.page." + id + ".text") ?? Own("tour.page.text");
+                    }
+                    else if (tourParts.TryGetValue(target, out var part))
+                    {
+                        if (part.Visibility != Visibility.Visible || !(part.Parent is FrameworkElement)) continue;
+                        shown.Target = () => part;
+                        shown.Title = shown.Title ?? Own("tour." + target + ".title");
+                        shown.Text = shown.Text ?? Own("tour." + target + ".text");
+                    }
+                    else if (parts.Elements.TryGetValue(target, out var field))
+                    {
+                        int index = pages.FindIndex(p => Inside(field, p.Page));
+                        if (index < 0) continue;
+                        var setting = _spec.ResolvedSettings.FirstOrDefault(s => s.Key == target);
+                        shown.Target = () => field;
+                        shown.Show = () => ShowPage(index);
+                        shown.Title = shown.Title ?? setting?.Label ?? Conventions.Humanize(target);
+                        shown.Text = shown.Text ?? setting?.Help;
+                    }
+                    else
+                        continue;
+                    if (string.IsNullOrEmpty(shown.Title) && string.IsNullOrEmpty(shown.Text)) continue;
+                    stops.Add(shown);
+                }
+                return stops;
+            }
+            startTour = () =>
+            {
+                tour?.End();
+                var stops = TourStops();
+                int back = current;
+                // When it ends, the page that was in front comes back.
+                tour = Tour.Start(window, layers, stops, () => { tour = null; if (back < pages.Count) ShowPage(back); });
+            };
 
             int startPage = _spec.ReopenPageId == null ? -1 : pages.FindIndex(p => p.Spec.Id == _spec.ReopenPageId);
             _spec.ReopenPageId = null;
@@ -870,6 +956,24 @@ namespace UIFramework
                     // Text drawn on a transparent bitmap loses its ClearType and comes out faint: the shot gets the
                     // window's background under everything.
                     if (root.Background == null) root.Background = window.Background;
+                    if (request.Tour)
+                    {
+                        // The tour, stop by stop, as the user sees it: tour-01.png, tour-02.png, ...
+                        startTour?.Invoke();
+                        for (int stop = 0; tour != null && stop < tour.Count; stop++)
+                        {
+                            tour.Go(stop);
+                            window.UpdateLayout();
+                            WindowCapture.Settle(Math.Max(300, request.SettleMs / 3));
+                            string file = Path.Combine(request.Folder, "tour-" + (stop + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture) + ".png");
+                            WindowCapture.Save(layers, file, layers.ActualWidth, layers.ActualHeight);
+                            request.Written.Add(file);
+                        }
+                        tour?.End();
+                        closeConfirmed = true;
+                        window.Close();
+                        return;
+                    }
                     for (int i = 0; i < pages.Count; i++)
                     {
                         string id = pages[i].Spec.Id;
@@ -907,6 +1011,19 @@ namespace UIFramework
             }
 
             Build();
+
+            // The first open of a window with a tour shows it, once: the layout file remembers that it was shown.
+            bool tourOffered = false;
+            window.ContentRendered += (s, e) =>
+            {
+                if (tourOffered || Capture != null) return;
+                tourOffered = true;
+                if (_spec.Tour.Count == 0 || _spec.Customizing || layout.TourSeen) return;
+                layout.TourSeen = true;
+                try { layout.Save(); }
+                catch (Exception ex) { _log.Warn(_spec.LogPrefix + " " + LayoutFile.FileName + " not written (the tour will show again): " + ex.Message); }
+                window.Dispatcher.BeginInvoke(new Action(() => startTour?.Invoke()), DispatcherPriority.Loaded);
+            };
 
             window.Closing += (s, e) =>
             {
@@ -1031,6 +1148,14 @@ namespace UIFramework
             }
         }
 
+        /// <summary>Whether <paramref name="element"/> sits somewhere inside <paramref name="page"/>, laid out or not.</summary>
+        private static bool Inside(DependencyObject element, DependencyObject page)
+        {
+            for (var node = element; node != null; node = LogicalTreeHelper.GetParent(node) ?? (node is Visual || node is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) : null))
+                if (ReferenceEquals(node, page)) return true;
+            return false;
+        }
+
         private void SafeHook(Action hook)
         {
             try { hook(); }
@@ -1056,6 +1181,8 @@ namespace UIFramework
         public int SettleMs = 1500;
         public int Pick;
         public double MaxHeight = 2400;
+        /// <summary>Photograph the window's tour, one shot per stop, instead of the pages.</summary>
+        public bool Tour;
         public readonly List<string> Written = new List<string>();
 
         public static void Save(FrameworkElement element, string file) => Save(element, file, element.ActualWidth, element.ActualHeight);

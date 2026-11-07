@@ -417,6 +417,20 @@ namespace UIFramework
             foreach (var key in spec.Overrides.Keys)
                 if (!keys.Contains(key))
                     spec.Problems.Add("The spec overrides '" + key + "', which is not a setting.");
+            // The tour: a stop names a setting, a page or a part of the window; one naming nothing known is skipped.
+            var pageIds = new HashSet<string>(spec.SpecPages.Select(p => p.Id).Concat(settings.Select(s => s.Page)).Where(id => id != null), StringComparer.Ordinal)
+                { "messages", "log", "help", "about" };
+            foreach (var stop in spec.Tour)
+            {
+                if (stop.Target == null) continue;
+                if (stop.Target.StartsWith("page:", StringComparison.Ordinal))
+                {
+                    if (!pageIds.Contains(stop.Target.Substring(5)))
+                        spec.Problems.Add("The tour points at the page '" + stop.Target.Substring(5) + "', which the window does not have; that stop is skipped.");
+                }
+                else if (!keys.Contains(stop.Target) && Array.IndexOf(TourStop.Parts, stop.Target) < 0)
+                    spec.Problems.Add("The tour points at '" + stop.Target + "', which is neither a setting nor a part of the window (" + string.Join(", ", TourStop.Parts) + "); that stop is skipped.");
+            }
         }
 
         /// <summary>A points system the game found installed: a pill in the header, and the two points settings say

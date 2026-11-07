@@ -8,6 +8,9 @@ namespace UIFramework
     {
         public static readonly FontFamily Font = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets");
 
+        /// <summary>The question mark of the tour button.</summary>
+        public const string Help = "";
+
         public const string Sun = "", Moon = "", Reset = "", Refresh = "";
         public const string Remove = "", Open = "", ChevronDown = "";
         public const string Edit = "", Pin = "", Folder = "", Check = "";
