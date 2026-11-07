@@ -1133,7 +1133,7 @@
       "section": "Where questions come from",
       "label": "Mix in my questions",
       "help": "Draws some rounds from your own list on the Questions page instead of the source above, whichever source that is. How many is set beside it.",
-      "requires": "questionSource!=custom",
+      "showWhen": "questionSource!=custom",
       "row": "mix",
       "aliases": [
         "MixOwnQuestions"
@@ -1150,6 +1150,7 @@
       "min": 0.0,
       "max": 100.0,
       "requires": "mixOwnQuestions",
+      "showWhen": "questionSource!=custom",
       "row": "mix",
       "aliases": [
         "CustomQuestionChance"
@@ -1163,7 +1164,7 @@
       "label": "Fetch ahead",
       "help": "How many opentdb questions are fetched at once and kept for later rounds. Larger means fewer API calls. The other sources keep what they fetch on disk anyway, under Chat Games\\Trivia Game\\Sources.",
       "min": 1.0,
-      "requires": "questionSource=opentdb",
+      "showWhen": "questionSource=opentdb",
       "row": "mix",
       "aliases": [
         "CacheSize"

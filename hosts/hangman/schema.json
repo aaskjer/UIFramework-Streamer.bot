@@ -638,7 +638,6 @@
       "section": "Import words",
       "label": "Topic",
       "help": "Wikidata: countries, capitals, cities, rivers, mountains, elements, instruments, sports, dogs, or custom with a class below. OdeNet: animals, plants, food, objects, people, body, places, materials, nature, feelings.",
-      "requires": "importSource!=pokeapi",
       "options": [
         {
           "value": "countries",
@@ -721,7 +720,8 @@
           "label": "Feelings (OdeNet)"
         }
       ],
-      "transient": true
+      "transient": true,
+      "showWhen": "importSource=wikidata|odenet"
     },
     {
       "key": "importCustomClass",
@@ -730,8 +730,8 @@
       "section": "Import words",
       "label": "Wikidata class (Q-ID)",
       "help": "For the custom topic: the Q-ID of the class whose instances become words, like Q11424 for films.",
-      "requires": "importSource=wikidata",
-      "transient": true
+      "transient": true,
+      "showWhen": "importSource=wikidata && importTopic=custom"
     },
     {
       "key": "importGenerationFrom",
@@ -742,8 +742,8 @@
       "help": "First Pokémon generation to include, 1 to 9.",
       "min": 1.0,
       "max": 9.0,
-      "requires": "importSource=pokeapi",
       "transient": true,
+      "showWhen": "importSource=pokeapi",
       "row": "gen"
     },
     {
@@ -755,8 +755,8 @@
       "help": "Last Pokémon generation to include, 1 to 9.",
       "min": 1.0,
       "max": 9.0,
-      "requires": "importSource=pokeapi",
       "transient": true,
+      "showWhen": "importSource=pokeapi",
       "row": "gen"
     },
     {
@@ -766,8 +766,8 @@
       "section": "Import words",
       "label": "IGDB client ID",
       "help": "Client ID of your Twitch developer app (dev.twitch.tv/console/apps). Kept in Streamer.bot's global variables after the first import, so it needs typing only once.",
-      "requires": "importSource=igdb",
-      "transient": true
+      "transient": true,
+      "showWhen": "importSource=igdb"
     },
     {
       "key": "importIgdbClientSecret",
@@ -776,8 +776,8 @@
       "section": "Import words",
       "label": "IGDB client secret",
       "help": "Client secret of that app; kept with the ID after the first import.",
-      "requires": "importSource=igdb",
-      "transient": true
+      "transient": true,
+      "showWhen": "importSource=igdb"
     },
     {
       "key": "importIgdbMinRatings",
@@ -787,8 +787,8 @@
       "label": "At least this many ratings on IGDB",
       "help": "Only games with at least this many ratings on IGDB. Higher means better-known titles.",
       "min": 0.0,
-      "requires": "importSource=igdb",
-      "transient": true
+      "transient": true,
+      "showWhen": "importSource=igdb"
     },
     {
       "key": "importCategory",
