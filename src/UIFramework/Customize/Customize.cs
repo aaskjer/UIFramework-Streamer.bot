@@ -19,6 +19,24 @@ namespace UIFramework
     {
         private const string FieldFormat = "UIFramework.Field";
         private const string PageFormat = "UIFramework.Page";
+        // The layout file of the window a drag started in: with two games' windows open, a field or page dragged
+        // from one is not dropped into the other (where a key of the same name would be moved instead).
+        private const string OwnerFormat = "UIFramework.Layout";
+
+        private static DataObject DragData(PageContext ctx, string format, string id)
+        {
+            var data = new DataObject(format, id);
+            data.SetData(OwnerFormat, ctx.Layout?.Path ?? "");
+            return data;
+        }
+
+        /// <summary>The field key or page id being dragged, when it is one of this window's; null otherwise.</summary>
+        private static string Dragged(PageContext ctx, IDataObject data, string format)
+        {
+            if (!data.GetDataPresent(format) || !data.GetDataPresent(OwnerFormat)) return null;
+            if (!string.Equals(data.GetData(OwnerFormat) as string, ctx.Layout?.Path ?? "", StringComparison.OrdinalIgnoreCase)) return null;
+            return data.GetData(format) as string;
+        }
 
         // ---- Fields ------------------------------------------------------------------------------------
 
@@ -117,7 +135,7 @@ namespace UIFramework
                 var delta = e.GetPosition(box) - pressed.Value;
                 if (Math.Abs(delta.X) < 6 && Math.Abs(delta.Y) < 6) return;
                 pressed = null;
-                DragDrop.DoDragDrop(box, new DataObject(FieldFormat, setting.Key), DragDropEffects.Move);
+                DragDrop.DoDragDrop(box, DragData(ctx, FieldFormat, setting.Key), DragDropEffects.Move);
             };
             box.PreviewMouseLeftButtonUp += (s, e) => pressed = null;
             // The drop itself is taken by the page (see AcceptDrops), so it lands wherever the mouse is let go. While
@@ -128,8 +146,9 @@ namespace UIFramework
             void Plain() { box.BorderBrush = line; box.BorderThickness = new Thickness(1); }
             box.DragOver += (s, e) =>
             {
-                bool field = e.Data.GetDataPresent(FieldFormat) && (string)e.Data.GetData(FieldFormat) != setting.Key;
-                e.Effects = e.Data.GetDataPresent(FieldFormat) ? DragDropEffects.Move : DragDropEffects.None;
+                string over = Dragged(ctx, e.Data, FieldFormat);
+                bool field = over != null && over != setting.Key;
+                e.Effects = over != null ? DragDropEffects.Move : DragDropEffects.None;
                 if (field)
                 {
                     box.BorderBrush = accent;
@@ -189,20 +208,20 @@ namespace UIFramework
             scroll.AllowDrop = true;
             scroll.PreviewDragOver += (s, e) =>
             {
-                if (!e.Data.GetDataPresent(FieldFormat)) return;
+                if (Dragged(ctx, e.Data, FieldFormat) == null) return;
                 double y = e.GetPosition(scroll).Y;
                 if (y < 20) scroll.ScrollToVerticalOffset(scroll.VerticalOffset - 5);
                 else if (y > scroll.ActualHeight - 20) scroll.ScrollToVerticalOffset(scroll.VerticalOffset + 5);
             };
             scroll.DragOver += (s, e) =>
             {
-                e.Effects = e.Data.GetDataPresent(FieldFormat) ? DragDropEffects.Move : DragDropEffects.None;
+                e.Effects = Dragged(ctx, e.Data, FieldFormat) != null ? DragDropEffects.Move : DragDropEffects.None;
                 e.Handled = true;
             };
             scroll.Drop += (s, e) =>
             {
-                if (!e.Data.GetDataPresent(FieldFormat)) return;
-                string dragged = (string)e.Data.GetData(FieldFormat);
+                string dragged = Dragged(ctx, e.Data, FieldFormat);
+                if (dragged == null) return;
                 double y = e.GetPosition(page).Y;
                 e.Handled = true;
 
@@ -394,28 +413,42 @@ namespace UIFramework
                 var delta = e.GetPosition(item) - pressed.Value;
                 if (Math.Abs(delta.X) < 6 && Math.Abs(delta.Y) < 6) return;
                 pressed = null;
-                DragDrop.DoDragDrop(item, new DataObject(PageFormat, page.Id), DragDropEffects.Move);
+                DragDrop.DoDragDrop(item, DragData(ctx, PageFormat, page.Id), DragDropEffects.Move);
             };
             item.PreviewMouseLeftButtonUp += (s, e) => pressed = null;
+            // A field this page can take: one of this window's, not a message template (those stay on Messages), and
+            // not already here. The drop checks it again; DragOver alone does not stop every drop.
+            Setting FieldFor(DragEventArgs e)
+            {
+                string key = Dragged(ctx, e.Data, FieldFormat);
+                if (key == null || page.Build == null || fixedPage || page.Id == "help" || page.Id == "log" || page.Id == "messages") return null;
+                var setting = ctx.Spec.ResolvedSettings.FirstOrDefault(x => x.Key == key);
+                if (setting == null || (setting.Kind == "template" && setting.Page == "messages") || setting.Page == page.Id) return null;
+                return setting;
+            }
             item.DragOver += (s, e) =>
             {
-                bool ok = (e.Data.GetDataPresent(PageFormat) && !page.Bottom) || (e.Data.GetDataPresent(FieldFormat) && page.Build != null && !fixedPage && page.Id != "help" && page.Id != "log" && page.Id != "messages");
+                bool ok = (Dragged(ctx, e.Data, PageFormat) != null && !page.Bottom) || FieldFor(e) != null;
                 e.Effects = ok ? DragDropEffects.Move : DragDropEffects.None;
                 e.Handled = true;
             };
             item.Drop += (s, e) =>
             {
+                e.Handled = true;
                 if (e.Data.GetDataPresent(FieldFormat))
                 {
-                    string key = (string)e.Data.GetData(FieldFormat);
-                    ctx.Layout.SetField(key, "page", page.Id);
-                    ctx.Layout.SetField(key, "order", null);
+                    var setting = FieldFor(e);
+                    if (setting == null) return;
+                    ctx.Layout.SetField(setting.Key, "page", page.Id);
+                    ctx.Layout.SetField(setting.Key, "order", null);
+                    // A row is a line of the page it was on: the field arrives on a line of its own.
+                    if (!string.IsNullOrEmpty(setting.Row)) ctx.Layout.SetField(setting.Key, "row", "");
                     Commit(ctx, page.Id);
                 }
                 else if (e.Data.GetDataPresent(PageFormat))
                 {
-                    string dragged = (string)e.Data.GetData(PageFormat);
-                    if (dragged == page.Id) return;
+                    string dragged = Dragged(ctx, e.Data, PageFormat);
+                    if (dragged == null || dragged == page.Id || page.Bottom) return;
                     var order = topPages().Select(p => p.Id).ToList();
                     order.Remove(dragged);
                     int at = order.IndexOf(page.Id);

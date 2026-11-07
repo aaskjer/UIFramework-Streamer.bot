@@ -33,6 +33,8 @@ namespace UIFramework
 
         private Window _window;
         private volatile bool _shuttingDown;
+        // The status line of the window that is up, for an error a handler did not catch.
+        private Action<string> _onError;
 
         /// <summary>Set by a tool (the preview's -windowshots): instead of waiting for the user, the window photographs
         /// every page whole (rail, header, footer, the page at its full height) and closes. Never set in Streamer.bot.</summary>
@@ -98,7 +100,7 @@ namespace UIFramework
             lock (Gate)
             {
                 if (Claimed.Add(_gateKey))
-                    return true;
+                    return _owns = true;
                 OpenWindows.TryGetValue(_gateKey, out open);
             }
             _log.Info(_spec.LogPrefix + " The settings window is already open - brought it to the front instead of opening another.");
@@ -113,10 +115,16 @@ namespace UIFramework
             return false;
         }
 
+        // Whether this shell still holds the claim: the window thread lets go when its window closes, and Run's own
+        // release afterwards must not take the claim of a window opened again in between.
+        private bool _owns;
+
         private void Release()
         {
             lock (Gate)
             {
+                if (!_owns) return;
+                _owns = false;
                 Claimed.Remove(_gateKey);
                 OpenWindows.Remove(_gateKey);
             }
@@ -138,6 +146,9 @@ namespace UIFramework
                     }
                     finally
                     {
+                        // The window is gone: the next open may claim it again, even while the pump below is still
+                        // stuck in a game action that never returns.
+                        Release();
                         Dispatcher.CurrentDispatcher.InvokeShutdown();
                     }
                 }
@@ -161,6 +172,13 @@ namespace UIFramework
 
         private void ShowWindow(Task<string> update)
         {
+            // A mistake in one handler (a click, a timer) is logged and the window stays, with what the user typed.
+            Dispatcher.CurrentDispatcher.UnhandledException += (s, e) =>
+            {
+                _log.Error(_spec.LogPrefix + " " + e.Exception.GetType().Name + " in the window: " + e.Exception.Message);
+                try { _onError?.Invoke(e.Exception.Message); } catch (Exception) { }
+                e.Handled = true;
+            };
             string fileName = Path.GetFileName(_spec.SettingsPath);
             SettingsLoad loaded;
             try { loaded = _store.Load(); }
@@ -183,6 +201,8 @@ namespace UIFramework
                 Entry.Prepare(_spec, _spec.Schema);
             var layout = _spec.Layout ?? LayoutFile.Load(_spec.SettingsPath);
             _spec.Layout = layout;
+            if (layout.Problem != null)
+                _log.Warn(_spec.LogPrefix + " " + LayoutFile.FileName + ": " + layout.Problem);
             if (layout.AdoptFromHost(settings, "darkMode", "DarkMode"))
             {
                 try { layout.Save(); if (loaded.Damaged == null) _store.Save(Sidecars.Strip(settings, _spec.ResolvedSettings)); }
@@ -445,11 +465,12 @@ namespace UIFramework
                 status.ToolTip = why ?? text;
             }
             ctx.SetStatus = (text, colour, why) => SetStatus(text, colour, why);
+            _onError = message => SetStatus(Text.Or("status.error", "Something went wrong (see the log)", "Etwas ist schiefgegangen (siehe Log)"), Theme.DangerText, message);
 
             var baseline = new Dictionary<object, string>();
             FieldBinding.Snapshot(pageHost, baseline);
             int Changes() => FieldBinding.CountChanged(pageHost, baseline);
-            changes = Changes;
+            changes = () => { parts.CommitNames(); return Changes(); };
             currentPage = () => (pages[current].Spec.Id, (pages[current].Page as ScrollViewer)?.VerticalOffset ?? 0);
             void ShowChanges()
             {
@@ -707,7 +728,7 @@ namespace UIFramework
                     return;
                 if (e.Key == Key.S)
                 {
-                    SaveNow();
+                    if (!customizing) SaveNow();   // the customise mode has no Save; its changes are written as made
                     e.Handled = true;
                 }
                 else if (e.Key >= Key.D1 && e.Key <= Key.D9 && e.Key - Key.D1 < pages.Count)
@@ -921,6 +942,20 @@ namespace UIFramework
                 var warnings = _spec.Warnings?.Invoke(settings) ?? new List<string>();
                 string fromHost = null;
                 SafeHook(() => fromHost = _hooks.Validate(settings));
+                // A stub from 0.2.0 on tells "the game did not answer" from "no problems"; an older one says null for both.
+                const string noAnswer = "\u0001uiframework:no-answer";
+                if (fromHost != null && fromHost.StartsWith(noAnswer, StringComparison.Ordinal))
+                {
+                    string why = fromHost.Substring(noAnswer.Length).TrimStart(':', ' ');
+                    var unchecked_ = MessageBox.Show(
+                        Text.Or("dialog.unchecked.text",
+                            "The game did not check these settings ({0}).\n\nSave them unchecked anyway?",
+                            "Das Spiel hat diese Einstellungen nicht geprüft ({0}).\n\nTrotzdem ungeprüft speichern?", why.Length > 0 ? why : "-"),
+                        Text.Or("dialog.unchecked.title", "Not checked", "Nicht geprüft"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (unchecked_ != MessageBoxResult.Yes)
+                        return false;
+                    fromHost = null;
+                }
                 if (!string.IsNullOrWhiteSpace(fromHost))
                     warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
                 if (warnings.Count > 0)

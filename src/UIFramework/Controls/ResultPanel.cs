@@ -30,22 +30,23 @@ namespace UIFramework
 
         public static void Render(StackPanel panel, string result, IHostHooks hooks = null)
         {
-            panel.Children.Clear();
             string text = (result ?? "").Trim();
             var structured = TryParse(text);
             if (structured == null)
             {
+                panel.Children.Clear();
                 panel.Children.Add(Line(text, false));
                 return;
             }
             if (structured["lines"] == null && structured["bar"] == null)
             {
-                // An answer that only sets fields or a status leaves the panel as it was, or empty.
+                // An answer that only sets fields or a status leaves the panel as it was; an empty panel gets the status.
                 string status = (string)structured["status"];
-                if (!string.IsNullOrEmpty(status))
+                if (panel.Children.Count == 0 && !string.IsNullOrEmpty(status))
                     panel.Children.Add(Line(status, false));
                 return;
             }
+            panel.Children.Clear();
 
             var lines = structured["lines"] as JArray ?? new JArray();
             var bar = (structured["bar"] as JArray ?? new JArray()).OfType<JObject>().ToList();

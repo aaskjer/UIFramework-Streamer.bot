@@ -11,8 +11,18 @@ everything below is what they do.
 
 Paste the block from [`stub/HostSchema.cs`](../stub/HostSchema.cs) (everything between
 `// --- UIFramework host block` and `// --- end UIFramework host block ---`) at the end of your action's code,
-after your `CPHInline` class. It compiles in any action; it needs nothing beyond Newtonsoft.Json, which every
-action has.
+after your `CPHInline` class. It needs no reference beyond Newtonsoft.Json, which every action has, but it does
+need these usings at the top of the action's code (Streamer.bot's template has only some of them):
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+```
 
 Fill in the two spots marked in it:
 
@@ -70,6 +80,17 @@ are how the window talks to your game: `test` answers a Try button or a live fie
 save, `saved` runs after one, `table` and `emotes` fill special fields. All are optional; a game with plain
 settings passes none.
 
+**The window waits five seconds for an answer.** The settings action runs your game action with
+`CPH.RunAction(..., true)` and waits; a request it has given up on is skipped, not run late. So inside `test`,
+`validate`, `saved`, `table` and `emotes`:
+
+- Do not call `CPH.RunAction(other, true)` on an action that sits in the same **blocking** action queue as the
+  settings action or your game action: it cannot start until they end, which is after the five seconds, and the
+  window shows "no answer" (for a save: asks whether to save unchecked). Run such work with
+  `CPH.RunAction(other, false)`, or keep the game action and the settings action out of blocking queues.
+- Keep it short: no `CPH.Wait`, no web requests. Work that takes long goes into `saved` with `RunAction(..., false)`
+  or into the game's own run.
+
 ## 3. The settings action is the stub, unchanged
 
 Make a second action, paste [`stub/Stub.cs`](../stub/Stub.cs) as its Execute Code and change its one line:
@@ -114,5 +135,8 @@ The host block is the same in every game. When a new framework release changes i
 tools\update-host-block.ps1 -File "C:\...\YourGame.cs"
 ```
 
-which swaps the block and keeps your Window and Table. The settings action never changes per project; replace it
+which swaps the block and keeps your Window and Table. It keeps a copy of the file as `.bak` before it writes,
+and it refuses (and writes nothing) when the old block holds lines of yours outside the Window and the Table,
+which the swap would drop, or when the Table's end cannot be told for sure; `-Force` writes anyway, `-Check`
+only tells whether the block is current. The settings action never changes per project; replace it
 with the new `stub/Stub.cs` when a release says so.

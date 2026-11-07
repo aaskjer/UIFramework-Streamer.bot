@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 
 namespace UIFramework
@@ -10,14 +11,28 @@ namespace UIFramework
     /// </summary>
     public static class Text
     {
-        private static Lang _lang;
+        // Per window thread, like the theme: two games' windows in different languages each keep theirs. A thread that
+        // set none reads the last language set anywhere.
+        [ThreadStatic] private static Lang _lang;
+        private static volatile Lang _shared;
 
         /// <summary>The texts to use from now on (the conventions' language, English merged underneath).</summary>
-        public static void Use(Lang lang) => _lang = lang;
+        public static void Use(Lang lang) { _lang = lang; _shared = lang; }
+
+        /// <summary>The window's language code ("en", "de").</summary>
+        public static string Code => (_lang ?? _shared ?? Conventions.Default.Lang).Code ?? "en";
+
+        /// <summary>A text the language files may not have yet: theirs when they do, else the given English or German.</summary>
+        public static string Or(string key, string english, string german, params object[] args)
+        {
+            string text = T(key);
+            if (text == key) text = Code == "de" ? german : english;
+            return args.Length == 0 ? text : string.Format(CultureInfo.InvariantCulture, text, args);
+        }
 
         public static string T(string key)
         {
-            var lang = _lang ?? Conventions.Default.Lang;
+            var lang = _lang ?? _shared ?? Conventions.Default.Lang;
             if (lang.Ui.TryGetValue(key, out var text)) return text;
             if (!ReferenceEquals(lang, Conventions.Default.Lang) && Conventions.Default.Lang.Ui.TryGetValue(key, out text)) return text;
             return key;
