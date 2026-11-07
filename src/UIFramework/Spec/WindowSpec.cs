@@ -123,6 +123,10 @@ namespace UIFramework
         /// <summary>The page to show after a reopen, by id.</summary>
         public string ReopenPageId;
 
+        /// <summary>The tour of the window, stop by stop: shown on the window's first open (the layout file remembers
+        /// it) and again from the header's ? button. Empty: no tour, no button.</summary>
+        public readonly List<TourStop> Tour = new List<TourStop>();
+
         public string RepoUrl => string.IsNullOrEmpty(GitHubRepo) ? null : "https://github.com/" + GitHubRepo;
         public string ReleasesUrl => RepoUrl == null ? null : RepoUrl + "/releases";
     }
@@ -146,6 +150,22 @@ namespace UIFramework
         {
             Id = id; Title = title; Glyph = glyph; Build = build; Bottom = bottom;
         }
+    }
+
+    /// <summary>One stop of the window's tour: what it points at, and what it says there. The target is a setting's
+    /// key, "page:&lt;id&gt;" for a page in the rail, a part of the window (<see cref="Parts"/>), or null for a note in the
+    /// middle of the window. Title and text null: the framework's own for that part, in the window's language.</summary>
+    public sealed class TourStop
+    {
+        public string Target, Title, Text;
+
+        /// <summary>The parts of the window a stop can name. "start" and "end" are notes in the middle with the
+        /// framework's welcome and goodbye.</summary>
+        public static readonly string[] Parts =
+            { "start", "end", "rail", "save", "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour" };
+
+        public TourStop() { }
+        public TourStop(string target, string title = null, string text = null) { Target = target; Title = title; Text = text; }
     }
 
     public sealed class SenderKeys

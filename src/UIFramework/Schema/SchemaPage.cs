@@ -140,6 +140,7 @@ namespace UIFramework
                 var element = Render(ctx, setting);
                 if (element == null)
                     continue;
+                ctx.Parts.Elements[setting.Key] = element;
                 if (wrap != null)
                     element = wrap(setting, element);
                 sectionFields.Add(element);

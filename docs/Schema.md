@@ -172,6 +172,41 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Lang(code, texts…)` | the game's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)`, `Ui(key, text)` for the window's own texts, `Ph(placeholder, help)`. A language with a conventions file is offered anyway; `Lang` adds the game's words to it, or offers a language the framework does not have |
 | `Lock()`             | locks the layout: no customise mode (the pen button is gone, and with it export and import), and a user's renames, moves, hidden fields and accent colour in `uiframework.layout.json` are not applied. The theme stays the user's, and so does the language, picked in the footer when the game offers more than one. In the schema `"locked": true` |
 | `About(credits, sections, links, streamerBotLink, authorLink, defaultLinks)` | the About page: the game's credits under its name (none unless given; `Tx` translates them), sections like help, the game's own links. It ends with the framework's links from `conventions/keys.json` (`about.links`: the UIFramework page, Streamer.bot, *Report something that looks wrong*, which goes to the game's issues when it names its repository, else the framework's); `defaultLinks: false` leaves them out, `streamerBotLink: false` only that one. `authorLink` does nothing any more. In the schema `about: { credits, sections, links: [ { text, url } ], defaultLinks, streamerBotLink }` |
+| `Tour(Tip(target, title, text), …)` | a tour of the window that starts by itself on its first open; see *The tour* below |
+
+### The tour
+
+A window can explain itself: on its first open the tour dims the window, rings one part at a time and says what it
+does beside it, with *Back*, *Next* and *End tour* (Esc ends it, the arrow keys and Enter step through it). Afterwards
+`"tourSeen": true` in `uiframework.layout.json` keeps it from starting again, and the **?** at the top right of the
+window shows it whenever the user wants. A window without a tour has no **?**.
+
+```csharp
+    .Tour(
+        Tip("start"),                                            // the framework's welcome, in the middle
+        Tip("rail"),
+        Tip("sides", "A setting", "Point at a field to read its help."),
+        Tip("tryRoll", "Try it out", "Rolls once with the values as they stand; nothing goes to chat."),
+        Tip("page:messages"),
+        Tip("save"), Tip("customise"), Tip("tour"),
+        Tip("end", "Have fun", "Save, then type !roll in your chat."))
+```
+
+`Tip(target, title, text)` points at:
+
+| Target | Rings | Its own text when title and text are left out |
+|--------|-------|-----------------------------------------------|
+| a setting's key | the field, on its page (the page comes to the front) | the setting's label and help |
+| `page:<id>` | the page's entry in the rail; the page itself stays bright | the page's title; for `messages`, `log`, `help` and `about` a line about the page |
+| `rail`, `save`, `saveExit`, `cancel`, `status`, `reset`, `resetPage`, `theme`, `customise`, `tour` | that part of the window (`tour` is the **?** itself) | the framework's, in the window's language |
+| `start`, `end` | nothing: a note in the middle | the framework's welcome and goodbye |
+| null | nothing: a note in the middle | none; give a title or a text |
+
+A stop the window cannot show is left out: a page the user hid, a field hidden by the layout, `customise` in a locked
+window. A target that is neither a setting, a page nor a part is listed on the Log page like any other mistake in the
+declaration. The game's own titles and texts translate through `Lang(code, Tx(declared, translation))` like every
+declared text. In the schema: `window.tour: [ "start", { "target": "sides", "title": "…", "text": "…" } ]`; a stop as
+a plain string is the target alone.
 
 ### Sections shown on a condition
 

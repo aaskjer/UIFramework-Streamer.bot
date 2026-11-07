@@ -131,6 +131,14 @@ namespace UIFramework
             set => Root["autoUpdate"] = value;
         }
 
+        /// <summary>The window's tour has been shown here once: it no longer starts by itself (the ? button still
+        /// shows it). Set to false, or removed, it starts again on the next open.</summary>
+        public bool TourSeen
+        {
+            get => Root["tourSeen"]?.Type == JTokenType.Boolean && (bool)Root["tourSeen"];
+            set { if (value) Root["tourSeen"] = true; else Root.Remove("tourSeen"); }
+        }
+
         // The loader's note for the window's header pill: a framework release the user answered "No" to in the
         // update dialog. Set by the stub on "No", removed once the release is taken, skipped or overtaken.
         public string FrameworkAvailable { get => Text("frameworkAvailable"); set => SetText("frameworkAvailable", value); }

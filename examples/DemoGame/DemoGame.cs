@@ -204,6 +204,18 @@ public static class UiSchema
     /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
     /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
     public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
+    /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
+    /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
+    /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
+    /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.</summary>
+    public static UiLine Tip(string target, string title = null, string text = null)
+    {
+        var tip = new Newtonsoft.Json.Linq.JObject();
+        if (target != null) tip["target"] = target;
+        if (title != null) tip["title"] = title;
+        if (text != null) tip["text"] = text;
+        return new UiLine(tip);
+    }
 
     // ---- Shorthands for UiWindow.Lang: a key's texts, a page title, a declared text. ----
     public static UiText K(string key, string label, string help = null) => new UiText("keys", key, help == null ? (Newtonsoft.Json.Linq.JToken)label : new Newtonsoft.Json.Linq.JObject { ["label"] = label, ["help"] = help });
@@ -243,7 +255,22 @@ public static class UiSchema
         .Answer("tryRoll", "@alice rolls a 6 on a d6: a win, 10 points.")
         .Cooldowns(C("!roll", "globalCooldown", "userCooldown"))   // the command by its text: the two settings reach it after every save
         .Help(H("Playing", Cmd("!roll", "Rolls the die once."), "The highest side wins the points; every other side is no luck."))
-        .About(credits: "An example game for UIFramework for streamer.bot.");
+        .About(credits: "An example game for UIFramework for streamer.bot.")
+        // The tour on the window's first open (the ? in the header shows it again). A part of the window or a page
+        // with no texts gets the framework's own, in the window's language.
+        .Tour(
+            Tip("start"),
+            Tip("rail"),
+            Tip("sides", "A setting", "Each setting has its own field; point at it to read its help. This one takes a number from 2 to 100, and the window keeps it in those limits."),
+            Tip("tryRoll", "Try it out", "Rolls once with the values as they stand in the window, saved or not. Nothing goes to chat: the answer shows right under the button."),
+            Tip("page:messages"),
+            Tip("status"),
+            Tip("save"),
+            Tip("reset"),
+            Tip("theme"),
+            Tip("customise"),
+            Tip("tour"),
+            Tip("end", "Have fun", "Save, then type !roll in your chat. The highest side of the die wins the points."));
 
     // ---- The table: every setting the host reads, in page order. ----
     public static readonly Setting[] Table =
@@ -273,6 +300,7 @@ public sealed class UiWindow
     public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap;
     public readonly Newtonsoft.Json.Linq.JArray PillList = new Newtonsoft.Json.Linq.JArray(), CooldownList = new Newtonsoft.Json.Linq.JArray(), HelpList = new Newtonsoft.Json.Linq.JArray(), SectionList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
+    public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
 
     /// <param name="title">Window title and About heading.</param>
     /// <param name="releases">"owner/repo" on GitHub: the repository and releases links, the update check.</param>
@@ -403,6 +431,14 @@ public sealed class UiWindow
         return this;
     }
 
+    /// <summary>A tour of the window, stop by stop (UiSchema.Tip): it starts by itself on the window's first open and
+    /// again from the ? in the header. Its texts translate through Lang's Tx like every declared text.</summary>
+    public UiWindow Tour(params UiLine[] tips)
+    {
+        foreach (var tip in tips) TourList.Add(tip.Json);
+        return this;
+    }
+
     /// <summary>The Help page's sections (UiSchema.H).</summary>
     public UiWindow Help(params UiSection[] sections)
     {
@@ -445,6 +481,7 @@ public sealed class UiWindow
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
         if (AboutMap != null) root["about"] = AboutMap;
+        if (TourList.Count > 0) root["tour"] = TourList;
         return root;
     }
 }
