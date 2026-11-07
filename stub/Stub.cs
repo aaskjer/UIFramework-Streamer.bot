@@ -178,6 +178,9 @@ public class CPHInline
         if (!CPH.RunAction(GameActionName, true))
             throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled?");
         string answer = CPH.GetGlobalVar<string>(var, false);
+        // Gone once read: an answer can carry a secret (the emote sources hold the Twitch token), and a global stays
+        // readable by every action and visible in Streamer.bot's variables until it is unset.
+        CPH.UnsetGlobalVar(var, false);
         return string.IsNullOrEmpty(answer) ? null : answer;
     }
 
@@ -210,6 +213,9 @@ public class CPHInline
     // ================================================================================================
 
     private const string FrameworkName = "UIFramework for streamer.bot";
+    // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
+    // and is not offered to this one.
+    private const string StubVersion = "0.2.0";
     // The API answers with the file as it is on main right now; the raw CDN keeps a copy for up to five minutes and
     // ignores a cache-busting query, so it is the fallback only (rate limit on the API, or the API unreachable).
     private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/v1/latest.json?ref=main";
@@ -217,16 +223,20 @@ public class CPHInline
     private const string FrameworkReleasesUrl = "https://github.com/aaskjer/UIFramework-Streamer.bot/releases";
     private static readonly string LibRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
 
-    private static string FindFramework()
+    private static string FindFramework() => FrameworkCandidates().FirstOrDefault();
+
+    /// <summary>Every installed UIFramework.dll, newest first: when the newest cannot be loaded (a damaged file, a
+    /// build this stub does not fit), the next older one opens the window instead.</summary>
+    private static List<string> FrameworkCandidates()
     {
         if (!Directory.Exists(LibRoot))
-            return null;
+            return new List<string>();
         return Directory.GetDirectories(LibRoot)
             .Select(dir => new { Dir = dir, Version = ParseVersion(Path.GetFileName(dir)) })
             .Where(x => x.Version != null && File.Exists(Path.Combine(x.Dir, "UIFramework.dll")))
             .OrderByDescending(x => x.Version)
             .Select(x => Path.Combine(x.Dir, "UIFramework.dll"))
-            .FirstOrDefault();
+            .ToList();
     }
 
     private static Version ParseVersion(string text)
@@ -377,6 +387,8 @@ public class CPHInline
                     }
                 }
                 File.Move(temp, target);
+                if (expected.Length > 0)
+                    File.WriteAllText(target + ".sha256", expected);
                 return target;
             }
             finally
@@ -438,6 +450,12 @@ public class CPHInline
             return installed;
         }
         var newest = ParseVersion((string)latest["version"]);
+        var needs = ParseVersion((string)latest["minHostStub"]);
+        if (newest != null && needs != null && needs > ParseVersion(StubVersion))
+        {
+            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + needs + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
+            return installed;
+        }
         if (newest == null || have == null || newest <= have)
         {
             CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
@@ -502,7 +520,20 @@ public class CPHInline
         lock (BridgeGate)
         {
             if (_show != null) return true;
-            var assembly = Assembly.LoadFrom(dllPath);
+            // The hash the download checked, kept beside the file: a DLL damaged or swapped since is not loaded.
+            string hashFile = dllPath + ".sha256";
+            if (File.Exists(hashFile))
+            {
+                string expected = File.ReadAllText(hashFile).Trim().ToLowerInvariant(), actual;
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                using (var stream = File.OpenRead(dllPath))
+                    actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                if (actual != expected)
+                    throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with.");
+            }
+            // UnsafeLoadFrom: a DLL saved from a browser carries Windows' "downloaded from the internet" mark, which
+            // LoadFrom refuses in Streamer.bot (NotSupportedException); this loads it like any other.
+            var assembly = Assembly.UnsafeLoadFrom(dllPath);
             var entry = assembly.GetType("UIFramework.Entry");
             _show = entry?.GetMethod("Show", new[] { typeof(string), typeof(string), typeof(string), typeof(object), typeof(Action) });
             _close = entry?.GetMethod("Close", new[] { typeof(string) });
@@ -541,9 +572,24 @@ public class CPHInline
         try
         {
             dll = OfferUpdate(dll);
-            if (!Bind(dll))
+            // The chosen DLL first, then every other installed one, newest first: one that cannot be loaded leaves the
+            // window to an older one instead of locking every game out.
+            bool bound = false;
+            foreach (var candidate in new[] { dll }.Concat(FrameworkCandidates().Where(c => !string.Equals(c, dll, StringComparison.OrdinalIgnoreCase))))
             {
-                CPH.LogError(LogPrefix + " " + dll + " has no UIFramework.Entry.Show; a newer or older build than this action expects.");
+                try
+                {
+                    if (Bind(candidate)) { bound = true; break; }
+                    CPH.LogError(LogPrefix + " " + candidate + " has no UIFramework.Entry.Show; a newer or older build than this action expects.");
+                }
+                catch (Exception ex)
+                {
+                    CPH.LogError(LogPrefix + " " + candidate + " could not be loaded: " + ((ex as TargetInvocationException)?.InnerException?.Message ?? ex.Message));
+                }
+            }
+            if (!bound)
+            {
+                Ask("No installed UIFramework.dll could be loaded; the log names each one and why.\n\nReleases: " + FrameworkReleasesUrl, MbOk, MbIconWarning);
                 return false;
             }
             _show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) });
