@@ -5,6 +5,13 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- **Settings action (stub 0.2.0):** a game's answer is unset from Streamer.bot's globals as soon as it is read, so
+  the Twitch token in the emote sources no longer stays visible in the variables. A DLL saved from a browser loads
+  (it was refused as "downloaded from the internet"). When the newest installed DLL cannot be loaded, the next
+  older one opens the window. The hash a download was checked with is kept beside the DLL and checked on every
+  load. A release that names a higher `minHostStub` is not offered. A game takes this with its next release, by
+  pasting the new `stub/Stub.cs` as its settings action.
+
 - **A save keeps what it did not change.** The window writes the settings file as it is at that moment with the
   fields the user changed laid over it, instead of the copy it read when it opened: a viewer added from chat, a
   question suggested from chat or a status the game wrote while the window was open survive a save that did not
