@@ -47,6 +47,33 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   is refused in the release check too. A cooldown above a day is set to a day with a line in the log.
 - **Host block:** `UiSettings.Long` reads a whole number exactly (no detour through a double), and `Load` never
   throws, also on a path with invalid characters.
+- **Conditions compare what is stored, shown or not.** A `percent` compares as its fraction
+  (`reshuffleThreshold>=0.5` for 50 %), a `duration` in seconds, an "unlimited" 0 as the number it is saved as; a
+  field hidden by the user no longer compares differently. `!list` holds for an empty list.
+- **The check names a comparison that never holds:** `<`, `<=`, `>`, `>=` against text, or on a field that holds
+  no number. A slider on a scale (`min`, `max`, `step`) is no longer reported as "without options".
+- **A huge number in the settings file breaks nothing:** a whole number with more digits than a long reads as the
+  largest value instead of failing the page.
+- **Saving is not stopped by fields it never writes:** a Try field left empty, or a number hidden by a `showWhen`
+  or its section's condition. Fields on another page are still checked.
+- **A page pattern leaves the sender switches and the log switch where they are**, so no key gets two fields that
+  overwrite each other on save. A page naming one by key is listed as a problem.
+- **The placeholder chips' tooltips follow a language switch**; a host's own help is kept.
+- **Percent fields keep their decimals.** Leaving the box rewrites only a number outside its range, to that limit;
+  12.345 stays 12.345. A value in the file that is no number shows the default instead of an empty box that blocks
+  saving.
+- **Customise keeps rows together.** A field dropped at the top or bottom of a field that shares a line goes above
+  or below the whole line, not between its members. The log page's "log file per day" switch is greyed in the
+  customise mode, which has no Save.
+- **A slider's kept value goes on Reset page and `set`** also when the slider already sits on the stop it is put
+  on; its label follows.
+- **German windows have no English left** in the customise tag "hidden", the empty-page note, the path and colour
+  tooltips, an action's "done"/"failed" and the table's "Nothing here yet"/"Read again".
+- **A layout file another program holds is not lost.** It is read again a few times; if it is still held, the
+  window starts from the defaults for once and does not write over it. Only a file that is no JSON goes to `.broken`.
+- **Numbers the same on every Windows:** decimal boxes take a minus where the setting allows negatives and refuse a
+  paste that is no number; a list cell refuses "1,000" like the table (also when saved while it has the focus) and
+  shows "2.5", not "2,5"; a value an action sets finds its option on a German system.
 - **Smaller fixes:** emote pictures load over HTTPS only; `update-host-block` sees a change in letter case; the
   release workflow refuses a pre-release tag before publishing and keeps the published DLL on a re-run; the demo's
   dice are thread-safe.

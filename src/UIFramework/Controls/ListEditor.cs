@@ -289,12 +289,13 @@ namespace UIFramework
                         Ui.DecimalsOnly(box);
                         // Text that is no clear number ("1,000": a thousand or one?) is refused when the cell is left,
                         // as the table refuses it: the cell goes back to the last number it held.
-                        string accepted = text;
+                        // The last number is kept on the cell, so a save while the cell still has the focus takes it too.
+                        box.Tag = text;
                         box.LostFocus += (sender, e) =>
                         {
                             string typed = box.Text.Trim();
-                            if (typed.Length > 0 && !FieldBinding.TryParseTyped(typed, out _)) box.Text = accepted;
-                            else accepted = box.Text;
+                            if (typed.Length > 0 && !FieldBinding.TryParseTyped(typed, out _)) box.Text = box.Tag as string ?? "";
+                            else box.Tag = box.Text;
                         };
                     }
                     AutomationProperties.SetName(box, column.Label ?? column.Key);
@@ -324,7 +325,9 @@ namespace UIFramework
                 case "long":
                     return long.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0L;
                 case "double":
-                    return FieldBinding.TryParseTyped(text, out double d) ? d : 0.0;
+                    if (FieldBinding.TryParseTyped(text, out double d)) return d;
+                    // Not a clear number ("1,000") in a cell that still has the focus: the last number it held.
+                    return text.Trim().Length > 0 && control.Tag is string kept && FieldBinding.TryParseTyped(kept, out double was) ? was : 0.0;
                 case "text":
                     return text.Trim();
                 default:
