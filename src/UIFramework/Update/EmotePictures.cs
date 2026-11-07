@@ -203,11 +203,15 @@ namespace UIFramework
 
         private static ImageSource Download(string url)
         {
+            // HTTPS only: a picture URL from an extension's API is not trusted to name a file or a share (file://,
+            // \\server), which WebClient would open and Windows would send the user's login to.
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+                return null;
             try
             {
                 byte[] bytes;
                 using (var client = new WebClient())
-                    bytes = client.DownloadData(url);
+                    bytes = client.DownloadData(uri);
                 using (var ms = new MemoryStream(bytes))
                 {
                     var bmp = new BitmapImage();

@@ -76,12 +76,12 @@ public class CPHInline
                             int? seconds;
                             if (!string.IsNullOrEmpty(global))
                             {
-                                if ((seconds = Seconds(settings, global)) != null) _owner.CPH.CommandSetGlobalCooldownDuration(command, seconds.Value);
+                                if ((seconds = Seconds(settings, global, _owner)) != null) _owner.CPH.CommandSetGlobalCooldownDuration(command, seconds.Value);
                                 else _owner.CPH.LogWarn(LogPrefix + " The window names '" + global + "' for a cooldown, but the settings have no such number; that cooldown was left as it is.");
                             }
                             if (!string.IsNullOrEmpty(user))
                             {
-                                if ((seconds = Seconds(settings, user)) != null) _owner.CPH.CommandSetUserCooldownDuration(command, seconds.Value);
+                                if ((seconds = Seconds(settings, user, _owner)) != null) _owner.CPH.CommandSetUserCooldownDuration(command, seconds.Value);
                                 else _owner.CPH.LogWarn(LogPrefix + " The window names '" + user + "' for a cooldown, but the settings have no such number; that cooldown was left as it is.");
                             }
                         }
@@ -92,13 +92,15 @@ public class CPHInline
             }, false);
         }
 
-        // A cooldown in whole seconds: a number of the settings, at least 0 and at most a day; null when the key is
-        // missing or not a number, so a misnamed key never zeroes a cooldown.
-        private static int? Seconds(JObject settings, string key)
+        // A cooldown in whole seconds: a number of the settings, at least 0 and at most a day (a longer one is set to a
+        // day, and the log says so); null when the key is missing or not a number, so a misnamed key never zeroes a cooldown.
+        private static int? Seconds(JObject settings, string key, CPHInline owner)
         {
             var token = settings[key];
             if (token == null || (token.Type != JTokenType.Integer && token.Type != JTokenType.Float)) return null;
             double value = (double)token;
+            if (value > 86400)
+                owner.CPH.LogWarn(LogPrefix + " The cooldown '" + key + "' is " + Math.Round(value) + " seconds; it is set to a day (86400), the longest the settings action sets.");
             return (int)Math.Max(0, Math.Min(86400, Math.Round(value)));
         }
 
@@ -204,8 +206,20 @@ public class CPHInline
         return null;
     }
 
+    // One request to the game at a time: the answer comes back in one variable per game, and two runs whose pumps
+    // overlap (a window closed and opened again quickly) must not read each other's.
+    private static readonly object AskGate = new object();
+
     /// <summary>Sends a request to the game action on Streamer.bot's thread and returns its answer, null for none.</summary>
     private string AskGameNow(string request, string name, string values)
+    {
+        if (!Monitor.TryEnter(AskGate, TimeSpan.FromSeconds(35)))
+            throw new TimeoutException("another request to the action '" + GameActionName + "' has not finished.");
+        try { return AskGameLocked(request, name, values); }
+        finally { Monitor.Exit(AskGate); }
+    }
+
+    private string AskGameLocked(string request, string name, string values)
     {
         string var = request == "describe" ? SchemaVar(GameActionName) : AnswerVar(GameActionName);
         CPH.UnsetGlobalVar(var, false);
@@ -483,7 +497,12 @@ public class CPHInline
                     throw new InvalidOperationException("latest.json names no sha256 for " + version + "; an unverified UIFramework.dll is not installed.");
                 string target = Path.Combine(LibRoot, version, "UIFramework.dll");
                 if (File.Exists(target))
-                    return target;
+                {
+                    if (HashOf(target) == expected)
+                        return target;
+                    // There, but not the published file (damaged, copied in wrong): set aside and fetched again.
+                    SetAside(target);
+                }
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
                 string temp = target + ".download";
                 EnsureTls12();
@@ -492,17 +511,15 @@ public class CPHInline
                     client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
                     client.DownloadFile(uri, temp);
                 }
-                string actual;
-                using (var sha = System.Security.Cryptography.SHA256.Create())
-                using (var stream = File.OpenRead(temp))
-                    actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                string actual = HashOf(temp);
                 if (actual != expected)
                 {
                     File.Delete(temp);
                     throw new InvalidOperationException("the downloaded file does not match the published hash (" + actual + " vs " + expected + ").");
                 }
-                File.Move(temp, target);
+                // The hash first: a game loading meanwhile never finds the DLL without it, or with half of it.
                 File.WriteAllText(target + ".sha256", expected);
+                File.Move(temp, target);
                 return target;
             }
             finally
@@ -575,7 +592,13 @@ public class CPHInline
             CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; the release check failed: " + ex.Message);
             return installed;
         }
-        var newest = ParseVersion((string)latest["version"]);
+        Version newest;
+        try { newest = ParseVersion(ReleaseVersion(latest)); }
+        catch (Exception ex)
+        {
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; " + ex.Message);
+            return installed;
+        }
         if (newest != null && NeedsNewerStub(latest) != null)
         {
             CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
@@ -596,7 +619,7 @@ public class CPHInline
         CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
 
         bool loaded;
-        lock (BridgeGate) loaded = _show != null;
+        lock (BridgeGate) loaded = _show != null || LoadedFramework() != null;
         var answer = Ask(
             "A newer version of " + FrameworkName + " is available: " + newest + " (installed: " + have + ").\n\n" +
             "Yes: download it now" + (loaded ? "; it is used from the next start of Streamer.bot." : " and open the settings with it.") + "\n" +
@@ -640,27 +663,70 @@ public class CPHInline
     private static readonly object BridgeGate = new object();
     private static MethodInfo _show, _close;
 
+    private static string HashOf(string path)
+    {
+        using (var sha = System.Security.Cryptography.SHA256.Create())
+        using (var stream = File.OpenRead(path))
+            return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+    }
+
+    /// <summary>Moves a DLL that does not match its hash out of the way (UIFramework.dll.broken), so the next open
+    /// finds its version missing and offers it again instead of failing on it every time.</summary>
+    private static void SetAside(string dllPath)
+    {
+        try
+        {
+            if (File.Exists(dllPath + ".broken")) File.Delete(dllPath + ".broken");
+            File.Move(dllPath, dllPath + ".broken");
+            if (File.Exists(dllPath + ".sha256")) File.Delete(dllPath + ".sha256");
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>The UIFramework another game in this Streamer.bot loaded already, or null. Every game uses that one
+    /// until Streamer.bot restarts, so two versions never run side by side.</summary>
+    private static Assembly LoadedFramework() =>
+        AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a =>
+        {
+            try { return a.GetName().Name == "UIFramework" && a.GetType("UIFramework.Entry") != null; }
+            catch (Exception) { return false; }
+        });
+
+    /// <summary>The version a loaded UIFramework came from: the name of its folder under lib (lib\0.9.13\...).</summary>
+    private static string VersionOf(Assembly assembly)
+    {
+        try { return Path.GetFileName(Path.GetDirectoryName(assembly.Location)); }
+        catch (Exception) { return "?"; }
+    }
+
     private static bool Bind(string dllPath)
     {
         lock (BridgeGate)
         {
             if (_show != null) return true;
-            // The hash the download checked, kept beside the file: a DLL damaged or swapped since is not loaded.
-            string hashFile = dllPath + ".sha256";
-            if (File.Exists(hashFile))
+            var signature = new[] { typeof(string), typeof(string), typeof(string), typeof(object), typeof(Action) };
+            // Another game's UIFramework is already running: this one uses it too, and a newer DLL waits for the next start.
+            var loaded = LoadedFramework();
+            var shared = loaded?.GetType("UIFramework.Entry")?.GetMethod("Show", signature);
+            if (shared != null)
             {
-                string expected = File.ReadAllText(hashFile).Trim().ToLowerInvariant(), actual;
-                using (var sha = System.Security.Cryptography.SHA256.Create())
-                using (var stream = File.OpenRead(dllPath))
-                    actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
-                if (actual != expected)
-                    throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with.");
+                _show = shared;
+                _close = loaded.GetType("UIFramework.Entry").GetMethod("Close", new[] { typeof(string) });
+                return true;
+            }
+            // The hash the download checked, kept beside the file: a damaged DLL is not loaded but set aside, and its
+            // version is offered again. (A file put in by hand has no hash file and is loaded as it is.)
+            string hashFile = dllPath + ".sha256";
+            if (File.Exists(hashFile) && HashOf(dllPath) != File.ReadAllText(hashFile).Trim().ToLowerInvariant())
+            {
+                SetAside(dllPath);
+                throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with; it was set aside as .broken and is offered again next time.");
             }
             // UnsafeLoadFrom: a DLL saved from a browser carries Windows' "downloaded from the internet" mark, which
             // LoadFrom refuses in Streamer.bot (NotSupportedException); this loads it like any other.
             var assembly = Assembly.UnsafeLoadFrom(dllPath);
             var entry = assembly.GetType("UIFramework.Entry");
-            _show = entry?.GetMethod("Show", new[] { typeof(string), typeof(string), typeof(string), typeof(object), typeof(Action) });
+            _show = entry?.GetMethod("Show", signature);
             _close = entry?.GetMethod("Close", new[] { typeof(string) });
             return _show != null;
         }
@@ -679,6 +745,9 @@ public class CPHInline
     // since when (ticks).
     private static int _openingRun, _askingGame;
     private static long _askingSince;
+    // Runs inside the DLL's Show (a window open and pumped by them), and whether the run that holds _opening ended
+    // while another still served a window: then that one hands the flags back when it is done.
+    private static int _serving, _ownerGone;
 
     public bool Execute()
     {
@@ -688,11 +757,35 @@ public class CPHInline
         try { return Open(); }
         finally
         {
-            // A run whose window was taken over by a later one leaves the flags to that one.
+            // A run whose window was taken over by a later one leaves the flags to that one; while another run still
+            // serves a window it opened again, that run hands them back when it is done.
             if (Volatile.Read(ref _openingRun) == run)
             {
-                Volatile.Write(ref _shownSchema, null);
-                Volatile.Write(ref _opening, 0);
+                if (Volatile.Read(ref _serving) == 0) Release();
+                else Volatile.Write(ref _ownerGone, 1);
+            }
+        }
+    }
+
+    private static void Release()
+    {
+        Volatile.Write(ref _ownerGone, 0);
+        Volatile.Write(ref _shownSchema, null);
+        Volatile.Write(ref _opening, 0);
+    }
+
+    /// <summary>The DLL's Show, counted in <see cref="_serving"/>: true when it showed a window (and pumped for it until
+    /// it closed), false when one was open already and came to the front.</summary>
+    private bool Serve(string schema)
+    {
+        Interlocked.Increment(ref _serving);
+        try { return (bool)_show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) }); }
+        finally
+        {
+            if (Interlocked.Decrement(ref _serving) == 0 && Interlocked.CompareExchange(ref _ownerGone, 0, 1) == 1)
+            {
+                Pump();
+                Release();
             }
         }
     }
@@ -725,7 +818,7 @@ public class CPHInline
         }
         try
         {
-            _show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) });
+            if (Serve(schema)) Pump();
             return true;
         }
         catch (Exception ex)
@@ -740,6 +833,7 @@ public class CPHInline
         _botThread = Thread.CurrentThread.ManagedThreadId;
         // The game first: without its answer there is nothing to show, and the settings file is named in it.
         string schema;
+        Volatile.Write(ref _ownerGone, 0);
         Interlocked.Exchange(ref _askingSince, DateTime.UtcNow.Ticks);
         Volatile.Write(ref _askingGame, 1);
         try
@@ -792,7 +886,9 @@ public class CPHInline
             Volatile.Write(ref _shownSchema, schema);
             // False: a window for this settings file was open already and came to the front; the run that serves it
             // pumps for it, so this one does not drain the queue beside it.
-            if ((bool)_show.Invoke(null, new object[] { null, schema, SettingsPath, new Host(this), new Action(Pump) }))
+            if (LoadedFramework() is Assembly running && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
+                CPH.LogInfo(LogPrefix + " UIFramework " + VersionOf(running) + " is running already in this Streamer.bot; " + Path.GetFileName(Path.GetDirectoryName(dll)) + " is used from the next start of Streamer.bot.");
+            if (Serve(schema))
                 Pump();
             return true;
         }

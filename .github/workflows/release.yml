@@ -42,6 +42,9 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart('v')
+          # Three numbers and nothing else: a pre-release tag (v1.0.0-rc1) stops here, before anything is published,
+          # since the loader and latest.json know plain versions only.
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { Write-Error "$tag is not vX.Y.Z; only plain versions are released." }
           "version=$version" >> $env:GITHUB_OUTPUT
           $csproj = 'src/UIFramework/UIFramework.csproj'
           $xml = Get-Content $csproj -Raw
@@ -72,8 +75,18 @@ jobs:
       - name: Hash
         id: h
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $dll = 'src/UIFramework/bin/Release/net48/UIFramework.dll'
+          # A re-run keeps the DLL the release has already: a rebuild can differ by a byte, and hosts would meet a
+          # hash in latest.json that their download does not match.
+          gh release download '${{ github.ref_name }}' --pattern UIFramework.dll --output published.dll --clobber 2>$null
+          if ($LASTEXITCODE -eq 0 -and (Test-Path published.dll)) {
+            Write-Host 'The release has its UIFramework.dll already; it is kept.'
+            $dll = 'published.dll'
+          }
+          $global:LASTEXITCODE = 0
           $sha = (Get-FileHash $dll -Algorithm SHA256).Hash.ToLower()
           "sha=$sha" >> $env:GITHUB_OUTPUT
           Copy-Item $dll UIFramework.dll
