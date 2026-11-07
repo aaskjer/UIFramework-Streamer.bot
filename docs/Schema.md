@@ -208,7 +208,9 @@ calls add up, and these texts are laid over the conventions' for that language:
 ```
 
 A `K` is the game's own translation of a key and replaces its label (and help) whatever the game declared;
-`K(key, label)` without a help keeps the help the conventions have for the key.
+`K(key, label)` without a help keeps the help the conventions have for the key. A conventions key the game gave
+a label of its own is translated by a `Tx` for that label; without one it shows the conventions' text for the key,
+and only a key the conventions do not translate either keeps the declared wording.
 
 In the schema this is `lang: { "de": { "keys": …, "pages": …, "texts": … } }`, the shape of a conventions
 language file. A game that wants its help and about pages in another language adds a `Tx` per heading and

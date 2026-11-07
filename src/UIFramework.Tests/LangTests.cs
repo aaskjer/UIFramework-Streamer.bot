@@ -80,9 +80,9 @@ namespace UIFramework.Tests
             {
                 Entry.Prepare(spec, schema);
                 var cooldown = spec.ResolvedSettings.First(s => s.Key == "globalCooldown");
-                Assert.Equal("Everyone", cooldown.Label);                      // the game's own wording, no translation for it: as declared
+                Assert.Equal("Globale Abklingzeit", cooldown.Label);           // the game's own wording, untranslated: the conventions' text
                 Assert.Equal("Abklingzeiten", cooldown.Section);              // a section by its wording
-                Assert.Equal("Seconds.", cooldown.Help);                       // the game's own help is not replaced by the conventions'
+                Assert.StartsWith("Zeit", cooldown.Help);                      // the same for the help
                 Assert.Equal("Abklingzeit pro Nutzer", spec.ResolvedSettings.First(s => s.Key == "userCooldown").Label);   // the conventions' own English wording
                 Assert.Equal("Währung", spec.ResolvedSettings.First(s => s.Key == "pointsName").Label);   // the game's own wording, translated by it
                 var bet = spec.ResolvedSettings.First(s => s.Key == "defaultBet");
