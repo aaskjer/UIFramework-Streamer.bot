@@ -23,6 +23,22 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   seconds, then the window carries on without its answer; before, it waited for good and could not be closed. A
   game that has not sent its schema for a minute no longer locks its settings until Streamer.bot restarts: the
   next run opens the window.
+- **A declined save leaves nothing behind.** The window's values go into a draft; only a save that is written
+  takes them over. Before, a save declined at a warning kept them in the window's copy, and after a theme or
+  language switch they looked saved while the file still held the old ones.
+- **A number pulled into its limits is written.** A value outside a field's min/max (or no number at all) that the
+  window shows as its limit or default is written with the next save, also when the user did not touch that field;
+  so is what the game's clamp changed. Before, the box said 25 and the game kept reading 50.
+- **A save that cannot read the settings file stops** and says why, instead of writing every list file from the
+  copy the window opened with. A list moving out of the settings file into its own lands there with the first
+  save.
+- **Import reads like the settings file:** old keys with their factors on any Windows language (an old 0.18 is 18 %
+  on a German system too), old keys inside an object, the current key winning. It lays the import over the file as
+  it is now and writes only the lists it brings.
+- **Reset all** keeps read-only settings and those on pages the user hid, and the game hears of the lists in their
+  own files as they are, not as defaults.
+- **First install checks `minHostStub` too** (stub 0.2.0): a release that needs a newer settings action is not
+  installed by an older game; "0.2.0.0" no longer counts as newer than "0.2.0".
 
 - **Settings action (stub 0.2.0):** a game's answer is unset from Streamer.bot's globals as soon as it is read, so
   the Twitch token in the emote sources no longer stays visible in the variables. A DLL saved from a browser loads

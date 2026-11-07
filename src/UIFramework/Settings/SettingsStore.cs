@@ -121,7 +121,11 @@ namespace UIFramework
 
         /// <summary>The defaults with the file's values on top. Keys the defaults do not know are kept, so a
         /// setting the window has no field for survives a save.</summary>
-        public JObject Merged(JObject fromFile)
+        public JObject Merged(JObject fromFile) => Merged(fromFile, null);
+
+        /// <summary>The same, and the keys that got their value from the file (through an old key too) go into
+        /// <paramref name="provided"/>: what an import brings.</summary>
+        public JObject Merged(JObject fromFile, ISet<string> provided)
         {
             var merged = (JObject)Defaults.DeepClone();
             var moved = new HashSet<string>(StringComparer.Ordinal);
@@ -173,17 +177,21 @@ namespace UIFramework
                     continue;
                 }
                 merged[property.Name] = property.Value?.DeepClone();
+                provided?.Add(property.Name);
             }
+            provided?.UnionWith(moved);
             return merged;
         }
 
         /// <summary>"Reset all": a copy of the settings with the default of every setting the window shows. Keys it
-        /// has no field for (a game's own state in the file) and hidden or transient settings keep their values.</summary>
-        public static JObject ResetShown(JObject current, JObject defaults, IEnumerable<Setting> settings)
+        /// has no field for (a game's own state in the file), hidden, transient and read-only settings keep their
+        /// values. With <paramref name="shown"/> (the keys the window has a field for), so do settings on a page the
+        /// user hid or that no page shows.</summary>
+        public static JObject ResetShown(JObject current, JObject defaults, IEnumerable<Setting> settings, ISet<string> shown = null)
         {
             var fresh = (JObject)(current ?? new JObject()).DeepClone();
             foreach (var setting in settings)
-                if (!setting.Hidden && !setting.Transient && defaults.Property(setting.Key) != null)
+                if (!setting.Hidden && !setting.Transient && !setting.ReadOnly && defaults.Property(setting.Key) != null && (shown == null || shown.Contains(setting.Key)))
                     fresh[setting.Key] = defaults[setting.Key].DeepClone();
             return fresh;
         }

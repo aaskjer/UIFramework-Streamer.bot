@@ -267,9 +267,11 @@ through the aliases; a relative path starts in the Streamer.bot folder. A file t
 **A file of its own (`file`, `field`):** the value is read on open from `<folder of the settings file>\<file>`
 (the property `field`, or the file itself) and written back there on save, atomically with a `.bak`; the rest of
 the file stays. The key never enters the settings file; *Reset all* resets only the settings file (the settings the window
-shows: hidden ones and keys it has no field for keep their values) and leaves
+shows: hidden and read-only ones, those on a page the user hid and keys it has no field for keep their values) and leaves
 this one (its editor has *Restore defaults*). A missing file shows the `default`, so the file the game reads
-anyway (`RT-wordbank.json`) stays the only copy.
+anyway (`RT-wordbank.json`) stays the only copy. A save writes the file only when its value changed, so a list the
+game added to while the window was open keeps those entries; a value an older version kept in the settings file
+moves into the file with the first save.
 
 ## Export and import
 
@@ -277,7 +279,8 @@ The customise mode's bar (the pen, bottom left) has *Export* and *Import*: Expor
 (transient ones left out, values from files of their own included) as
 `{ "uiframework": "settings", "host", "version", "exported", "settings": { … } }` to a file of the user's
 choosing; Import replaces the saved settings, after asking, with such a file or a settings file itself (old keys
-through the aliases), keeps the file as it was as `.bak` and rebuilds the window on them. A file of another host
-asks; what the window does not know is skipped.
+through the aliases, read as the settings file is read), keeps the file as it was as `.bak` and rebuilds the window
+on them. What the imported file does not name keeps its value, also what the game wrote while the window was open.
+A file of another host asks; what the window does not know is skipped.
 
 Tooltips have a fixed width and wrap instead of running across the screen.

@@ -304,6 +304,39 @@ namespace UIFramework
             return keys;
         }
 
+        /// <summary>The keys of the number boxes whose value, as the window would save it, is not the one the settings
+        /// hold: a value outside the field's limits or not a number, which the box shows as its limit or its default.
+        /// The window writes these with the next save, so the box and the file agree. A key the settings do not have
+        /// is left to the game's own default.</summary>
+        public static HashSet<string> Repaired(JObject settings, object root)
+        {
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            VisitTree(root, node =>
+            {
+                if (!(node is TextBox txt) || !(FieldTag.Of(txt.Tag) is FieldTag tag) || tag.Transient) return;
+                if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
+                var have = settings?[tag.Key];
+                if (have == null || have.Type == JTokenType.Null) return;
+                var would = ValueOf(tag, txt.Text);
+                if (!TryNumber(would, out double b)) return;
+                if (!TryNumber(have, out double a) || Math.Abs(a - b) > 1e-9 * Math.Max(1, Math.Max(Math.Abs(a), Math.Abs(b))))
+                    keys.Add(tag.Key);
+            });
+            return keys;
+        }
+
+        /// <summary>The keys the window has a field for that holds a value (not transient, not read-only): what it shows.</summary>
+        public static HashSet<string> ShownKeys(object root)
+        {
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            VisitTree(root, node =>
+            {
+                if (ControlValue(node) != null && node is FrameworkElement fe && FieldTag.Of(fe.Tag) is FieldTag tag && !tag.Transient)
+                    keys.Add(tag.Key);
+            });
+            return keys;
+        }
+
         public static void Snapshot(UIElement root, Dictionary<object, string> into)
         {
             VisitTree(root, obj =>

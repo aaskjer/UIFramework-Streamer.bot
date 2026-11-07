@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -152,6 +153,37 @@ namespace UIFramework.Tests
             Assert.False((bool)fresh["flag"]);
             Assert.Equal("game's own", (string)fresh["state"]);
             Assert.Equal(5, (int)current["a"]);   // a copy: the window's settings are not changed under it
+        }
+
+        [Fact]
+        public void ResetAllKeepsReadOnlyAndWhatNoFieldShows()
+        {
+            var current = JObject.Parse(@"{ ""a"": 5, ""b"": ""status"", ""flag"": false }");
+            var settings = new[] { new Setting { Key = "a" }, new Setting { Key = "b", ReadOnly = true }, new Setting { Key = "flag" } };
+            var fresh = SettingsStore.ResetShown(current, Defaults, settings, new System.Collections.Generic.HashSet<string> { "a", "b" });
+            Assert.Equal(1, (int)fresh["a"]);
+            Assert.Equal("status", (string)fresh["b"]);   // a status the game writes
+            Assert.False((bool)fresh["flag"]);            // on a page the user hid: no field shows it
+        }
+
+        [Fact]
+        public void AnImportIsReadLikeTheSettingsFileOnAnyCulture()
+        {
+            var was = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+            try
+            {
+                var defaults = JObject.Parse(@"{ ""matchChance"": 10, ""emotesTwitch"": [], ""a"": 1 }");
+                var store = new SettingsStore(File_, defaults).WithAliases(
+                    new System.Collections.Generic.Dictionary<string, string> { ["AllowMatchChance"] = "matchChance", ["PlatformEmotes.twitch"] = "emotesTwitch" },
+                    new System.Collections.Generic.Dictionary<string, double> { ["AllowMatchChance"] = 100 });
+                var provided = new System.Collections.Generic.HashSet<string>();
+                var read = store.Merged(JObject.Parse(@"{ ""AllowMatchChance"": 0.18, ""PlatformEmotes"": { ""twitch"": [ { ""Code"": ""Kappa"" } ] }, ""state"": 1 }"), provided);
+                Assert.Equal(18, (double)read["matchChance"], 6);                   // the factor applies on a German system too
+                Assert.Equal("Kappa", (string)read["emotesTwitch"][0]["Code"]);    // a dotted old key
+                Assert.Equal(new[] { "emotesTwitch", "matchChance", "state" }, provided.OrderBy(k => k, StringComparer.Ordinal).ToArray());
+            }
+            finally { System.Threading.Thread.CurrentThread.CurrentCulture = was; }
         }
 
         [Fact]

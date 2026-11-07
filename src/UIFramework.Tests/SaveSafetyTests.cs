@@ -67,6 +67,35 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void Numbers_the_window_shows_repaired_are_found() => Sta(() =>
+        {
+            var parts = new WindowParts();
+            var defaults = JObject.Parse(@"{ ""big"": 10, ""bad"": 2, ""fine"": 3, ""text"": ""x"" }");
+            var settings = JObject.Parse(@"{ ""big"": 50, ""bad"": ""abc"", ""fine"": 5, ""text"": "" x "" }");
+            var fields = new Fields(parts, settings, defaults, _ => { });
+            var page = new StackPanel();
+            page.Children.Add(fields.IntField("Big", "big", ""));
+            page.Children.Add(fields.IntField("Bad", "bad", ""));
+            page.Children.Add(fields.IntField("Fine", "fine", ""));
+            ((FieldTag)parts.Boxes["big"].Tag).Max = 25;
+            // Above its maximum: saved as 25. Not a number: the box shows the default. Within its limits: as it is.
+            Assert.Equal(new[] { "bad", "big" }, FieldBinding.Repaired(settings, page).OrderBy(k => k).ToArray());
+        });
+
+        [Fact]
+        public void A_list_file_that_is_not_there_yet_is_written_although_nobody_changed_it()
+        {
+            string folder = Folder();
+            string settingsPath = Path.Combine(folder, "settings.json");
+            string listPath = Path.Combine(folder, "words.json");
+            var schema = new[] { new Setting { Key = "words", Kind = "list", File = "words.json" } };
+            // The list still sits in the settings file (an older version of the game kept it there).
+            var main = Sidecars.Split(JObject.Parse(@"{ ""words"": [ { ""Word"": ""moved"" } ], ""x"": 1 }"), schema, settingsPath, new HashSet<string> { "x" });
+            Assert.Null(main["words"]);
+            Assert.Contains("moved", File.ReadAllText(listPath));
+        }
+
+        [Fact]
         public void A_list_file_gets_its_bak_like_the_settings_file()
         {
             string folder = Folder();
