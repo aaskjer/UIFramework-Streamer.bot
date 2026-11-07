@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/uiframework-logo-dark.png">
+    <img src="assets/logo/uiframework-logo-light.png" alt="UIFramework - your interface" width="520">
+  </picture>
+</p>
+
 <h1 align="center">UIFramework for streamer.bot</h1>
 
 <p align="center">
