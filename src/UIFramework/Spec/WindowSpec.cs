@@ -73,6 +73,10 @@ namespace UIFramework
         /// <summary>Tooltip for a placeholder chip: (message key, token) to text, or null for none.</summary>
         public Func<string, string, string> TokenHelp;
 
+        /// <summary>The conventions' <see cref="TokenHelp"/> the schema's resolve set: while TokenHelp is still this
+        /// one, it is set again for the window's language on every resolve. One the host set itself stays.</summary>
+        internal Func<string, string, string> TokenHelpFromConventions;
+
         /// <summary>The keys of the four sender switches on the Messages page. Defaults are the canonical names;
         /// a host still on its old names sets its own.</summary>
         public SenderKeys Senders = new SenderKeys();

@@ -199,9 +199,9 @@ namespace UIFramework
         private static JToken Convert(JToken value, double factor, JToken shape)
         {
             if (value == null) return JValue.CreateNull();
-            if (factor != 1.0 && (value.Type == JTokenType.Integer || value.Type == JTokenType.Float))
+            if (factor != 1.0 && (value.Type == JTokenType.Integer || value.Type == JTokenType.Float) && FieldBinding.ToDouble(((JValue)value).Value, out double number))
             {
-                double scaled = System.Convert.ToDouble(((JValue)value).Value, System.Globalization.CultureInfo.InvariantCulture) * factor;
+                double scaled = number * factor;
                 if (shape?.Type == JTokenType.Integer && Math.Abs(scaled - Math.Round(scaled)) < 1e-9)
                     return (long)Math.Round(scaled);
                 return scaled;
