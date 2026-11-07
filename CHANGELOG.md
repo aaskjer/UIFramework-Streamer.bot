@@ -5,6 +5,27 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-07
+
+A tour of the window on its first open.
+
+- **The window explains itself.** A game declares a tour in its window, `.Tour(Tip(target, title, text), ...)`:
+  on the window's first open the window dims and one part after the other is ringed in the accent colour, with a
+  note beside it (*Back*, *Next*, *End tour*; Esc ends it, the arrow keys and Enter step through it). A stop
+  points at a setting (its page comes to the front), a page (`page:messages`; the page stays bright beside its
+  rail entry), a part of the window (`rail`, `save`, `saveExit`, `cancel`, `status`, `reset`, `resetPage`,
+  `theme`, `customise`, `tour`) or nothing (`start`, `end`, a note of the game's own). Parts and the standard
+  pages bring their own texts in English, German and Spanish, a setting its label and help; the game's own texts
+  translate through `Tx`. `"tourSeen": true` in `uiframework.layout.json` keeps it from starting again; the **?**
+  at the top right shows it whenever the user wants. A stop the window cannot show (a page the user hid,
+  `customise` in a locked window) is left out; a target that is neither a setting, a page nor a part is listed
+  like any other mistake in the declaration. See [docs/Schema.md](docs/Schema.md#the-tour).
+- **The demo game has a tour**: the pages, a setting, the *Roll* button, the Messages page, the unsaved-changes
+  line, saving, resetting, the theme, the customise mode and the **?** itself.
+- **Host block:** `UiSchema.Tip` and `UiWindow.Tour`. A game without a tour needs nothing new; an older DLL
+  ignores a tour it does not know.
+- **Preview:** `-windowshots <folder> -tour` photographs every stop of the tour (`tour-01.png`, ...).
+
 ## [0.9.13] - 2026-11-07
 
 Spanish and every language offered, neutral credits, saving that keeps what the game wrote, a sturdier loader
