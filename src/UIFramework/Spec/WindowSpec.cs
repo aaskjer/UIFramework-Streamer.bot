@@ -86,7 +86,7 @@ namespace UIFramework
         public readonly List<HelpSection> Help = new List<HelpSection>();
 
         /// <summary>What <see cref="Resolve"/> found wrong with the schema or the spec (an unknown kind, a
-        /// requirement on a key that is not there): shown in a banner and listed on the About page, so the
+        /// requirement on a key that is not there): listed under the red "i" in the header, so the
         /// host's author sees it without reading Streamer.bot's log.</summary>
         public readonly List<string> Problems = new List<string>();
 

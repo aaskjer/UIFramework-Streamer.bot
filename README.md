@@ -65,7 +65,7 @@ first use, checked against its published SHA-256, and offers new releases when t
   theme and accent colour. All of it lives in `uiframework.layout.json` and survives every import of the game;
   `Lock()` turns the mode off for a game that wants its window exactly as declared.
 - 📜 **Log, help and about pages.** A filterable log reader for the game's log files, a help page from your
-  notes and commands, an about page with your links, and the schema's own mistakes listed on the Log page.
+  notes and commands, an about page with your links. Mistakes in the schema sit behind a red **i** in the header.
 - 🔄 **Updates itself.** The stub fetches the DLL, verifies it and asks before using a newer release;
   `"autoUpdate": false` turns the check off.
 

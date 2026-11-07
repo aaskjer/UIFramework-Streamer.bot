@@ -44,7 +44,7 @@ The build embeds every file in `conventions/lang/`, nothing else to register, an
 
 Without a release: the same file in `UIFramework\lang\<code>.json` beside Streamer.bot (next to
 `UIFramework\lib`) is read when the window opens. It adds a language the DLL does not carry, or is laid over one
-it does (a correction, a better word), and a file that cannot be read is listed on the Log page. A game can bring
+it does (a correction, a better word), and a file that cannot be read is listed under the red "i" in the window's header. A game can bring
 the window's own texts for a language itself as well (`Ui(key, text)` in `Lang`, see Schema.md).
 
 ## Contents
@@ -164,7 +164,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 235 of 235 |
-| `lang/en.json` | 72 | 13 | 16 | 0 | 235 |
-| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 235 of 235 |
+| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 239 of 239 |
+| `lang/en.json` | 72 | 13 | 16 | 0 | 239 |
+| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 239 of 239 |
 <!-- generated:end -->

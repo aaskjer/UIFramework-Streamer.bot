@@ -67,7 +67,9 @@ namespace UIFramework.Preview
                     spec.Width = width;
                 // -tour: the window's tour, one shot per stop (tour-01.png, ...), instead of the pages.
                 var request = new WindowCapture { Folder = windowShots, SettleMs = settle > 0 ? settle : 1500, Pick = Screenshots.Pick,
-                    Tour = Array.Exists(args, a => a.Equals("-tour", StringComparison.OrdinalIgnoreCase)) };
+                    Tour = Array.Exists(args, a => a.Equals("-tour", StringComparison.OrdinalIgnoreCase)),
+                    // -problems: the window with its red "i", then with the problems panel open.
+                    Problems = Array.Exists(args, a => a.Equals("-problems", StringComparison.OrdinalIgnoreCase)) };
                 string only = Arg(args, "-pages");
                 if (only != null) request.Only = new HashSet<string>(only.Split(',').Select(p => p.Trim()), StringComparer.Ordinal);
                 string names = Arg(args, "-names");
