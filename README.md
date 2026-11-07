@@ -23,8 +23,15 @@
   <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/releases"><b>Download</b></a> &nbsp;·&nbsp;
   <a href="docs/Getting-Started.md"><b>Getting Started</b></a> &nbsp;·&nbsp;
   <a href="docs/Schema.md"><b>Schema</b></a> &nbsp;·&nbsp;
+  <a href="docs/Conventions.md"><b>Conventions</b></a> &nbsp;·&nbsp;
   <a href="examples/DemoGame"><b>Demo Game</b></a> &nbsp;·&nbsp;
   <a href="CHANGELOG.md"><b>Changelog</b></a>
+</p>
+
+<p align="center">
+  <img src="docs/images/blackjack-table-dark.png" width="32%" alt="Blackjack's Table page, dark">
+  <img src="docs/images/blackjack-messages-dark.png" width="32%" alt="The Messages page with a chat preview">
+  <img src="docs/images/blackjack-log-light.png" width="32%" alt="The Log page in the light theme">
 </p>
 
 ---
@@ -54,6 +61,11 @@ first use, checked against its published SHA-256, and offers new releases when t
 - 🔄 **Updates itself.** The stub fetches the DLL, verifies it and asks before using a newer release;
   `"autoUpdate": false` turns the check off.
 
+<p align="center">
+  <img src="docs/images/customize-dark.png" width="40%" alt="The customise mode">
+  <img src="docs/images/emotes-youtube-dark.png" width="48%" alt="A list of emotes with their pictures">
+</p>
+
 ## 🎮 Built on it
 
 | Game | |
@@ -80,12 +92,13 @@ minutes, [examples/DemoGame](examples/DemoGame) is the result.
 
 [docs/Schema.md](docs/Schema.md) lists every kind of setting and every part of the window declaration,
 [docs/Loader.md](docs/Loader.md) how the stub fetches and updates the DLL, [docs/Customize.md](docs/Customize.md)
-what users can change.
+what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and texts every window knows.
 
 ## 🧩 How it fits together
 
 1. **Conventions** (`conventions/keys.json`, `conventions/lang/*.json`, inside the DLL): known keys, standard
-   pages, translations, theme defaults.
+   pages, translations, theme defaults. [docs/Conventions.md](docs/Conventions.md) lists them and explains how to
+   add a language.
 2. **The game's schema:** its settings and its window, answered on request through its host block.
 3. **The settings action:** the generic stub, the same file in every project.
 4. **`uiframework.layout.json`** next to the settings file: the user's changes. Survives every import.
@@ -114,9 +127,11 @@ hosts/<name>/            schema.json of each game (what it answers, with the win
 conventions/             keys.json, lang/<code>.json and emotes/, embedded into the DLL
 tools/                   update-host-block.ps1 (refresh the block in a game, keeping its table), check-stub.ps1
                          (compile the stub and the demo the Streamer.bot way), build-import.ps1 (keep an export's
-                         code on the files), spec-to-window.ps1 (an old spec.json as a window declaration)
+                         code on the files), spec-to-window.ps1 (an old spec.json as a window declaration),
+                         conventions-doc.ps1 (the tables in docs/Conventions.md)
 lib/v1/latest.json       what the loader reads: version, download url, sha256
-docs/                    Getting-Started, Schema, Loader, Customize, Phase0-Konventionen (German)
+docs/                    Getting-Started, Schema, Conventions, Loader, Customize, Phase0-Konventionen (German);
+                         images/ the screenshots
 ```
 
 ---

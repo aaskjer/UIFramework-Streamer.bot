@@ -111,6 +111,13 @@ That is all. Run the settings action: the first time it asks whether to download
 Help and About, a customise mode (the pen) and export/import. Whenever a newer framework is released, the stub
 offers it on the next open ([docs/Loader.md](Loader.md)).
 
+<p align="center">
+  <img src="images/demo-game-dark.png" width="32%" alt="The demo's Game page, dark">
+  <img src="images/demo-game-light.png" width="32%" alt="The same page in the light theme">
+  <img src="images/demo-messages-dark.png" width="32%" alt="The Messages page with placeholder chips and a chat preview">
+</p>
+<p align="center"><sub>The demo game's window: its own page in both themes, and the Messages page the framework adds.</sub></p>
+
 ## Points
 
 A game that pays out declares `S("pointsVariable", "points")` and `S("pointsName", "Points")` and asks
@@ -129,8 +136,9 @@ settings apply. The demo pays a win into that variable with `CPH.GetTwitchUserVa
 - The customise mode: users rename, move and hide fields and pages, in `uiframework.layout.json` next to the
   settings file, surviving every import of your game ([docs/Customize.md](Customize.md)).
 - Export and import of the settings.
-- A banner and a list on the About page when the table or the window declares something the framework cannot
-  use (an unknown kind, a requirement on a key that is not there), so you see it without reading the log.
+- A banner, and a highlighted list on top of the Log page (on About when there is none), when the table or the
+  window declares something the framework cannot use (an unknown kind, a requirement on a key that is not there),
+  so you see it without reading Streamer.bot's log.
 
 ## Keeping up
 

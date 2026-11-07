@@ -8,6 +8,9 @@ A game can lock its layout with `Lock()` on its window (see [Schema.md](Schema.m
 and the window looks the way the game declares it, whatever the layout file says. Theme and language stay the
 user's.
 
+<p align="center"><img src="images/customize-dark.png" width="420" alt="Blackjack's Table page in the customise mode"></p>
+<p align="center"><sub>The customise mode: a handle on every field, the bar with accent colour, language and the layout buttons.</sub></p>
+
 ## In the mode
 
 - **Fields** have a handle `⋮⋮`. The page shows them where they sit in the window, side by side where the window

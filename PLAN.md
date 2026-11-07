@@ -282,6 +282,35 @@ löschen, Release.
 READMEs der Hosts: Abschnitt "Settings-Fenster wird automatisch geladen, so schaltest du es ab". Konventionen
 und Sprachdateien veröffentlichen. ChatCalendar und die übrigen Nicht-Spiele-Projekte als Kandidaten bewerten.
 
+Stand 07.11.2026: Screenshots aus der Preview in README, Getting-Started, Customize und Schema (`docs/images`).
+Konventionen und Sprachdateien veröffentlicht als `docs/Conventions.md` (Seiten, bekannte Keys, Platzhalter,
+Abdeckung je Sprachdatei, Anleitung für eine neue Sprache), Tabellen aus `tools/conventions-doc.ps1`, CI prüft sie.
+READMEs der Spiele: Abschnitt zum Settings-Fenster (lädt die DLL beim ersten Öffnen, Update-Frage abschaltbar mit
+`"autoUpdate": false`) als PR je Spiel. Bewertung der übrigen Projekte (unten) erledigt. Offen bleibt der
+Live-Test aus Phase 3 in einer frischen Streamer.bot-Instanz.
+
+#### Bewertung der Nicht-Spiel-Projekte (07.11.2026)
+
+| Projekt | Heute | Aufwand | Urteil |
+|---|---|---|---|
+| OBS Notepad | keine GUI, 7 Set Arguments, 1 Action | S | gut geeignet; erprobt die Übernahme von Set Arguments |
+| Suggestions To | keine GUI, 3 Actions mit je 8 bis 12 Set Arguments, Platzhalter `%x%` | S bis M | geeignet mit Lücken (mehrere Actions, Platzhaltersyntax) |
+| FreeGameCheck (inkl. Sales) | eigene WPF-GUI (3.740 Zeilen), ~50 Settings, verschachtelte Datei | M | geeignet mit Lücken (verschachtelte Datei, Secrets in Globals, Sperren je Set Argument) |
+| ChatCalendar | eigene WPF-GUI (3.230 Zeilen), ~29 Keys plus Feiertags- und Geburtstagsdateien | M bis L | geeignet mit Lücken (Optionen aus Daten, editierbare und gefilterte Tabelle) |
+| BetterStreamAnnouncements | eigene WPF-GUI (5.398 Zeilen), 158 Settings, 14 Seiten | L | geeignet mit Lücken (Rail-Gruppen, Dashboard, Streamer.bot-Log) |
+| AutoBotCheck | keine GUI, 3 Actions mit eigenem `botSource` | S | geeignet, bringt wenig |
+| Discord.Bot | eigene GUI (3.409 Zeilen), 237 Felder; ruht seit 27.08. | M bis L | zurückstellen, überschneidet sich mit BsA |
+| TwitchSentry | eigene GUI (23.223 Zeilen), ~800 Properties, eigene Übersetzungen | XL | nicht geeignet |
+| GameSaleCheck, SBRefFix, githubtodiscord | alte Kopie bzw. keine Streamer.bot-Action | – | nicht geeignet |
+
+Lücken im Framework, die eine Umstellung träfe: Werte aus Set Arguments übernehmen; Werte je Action bei mehreren
+Actions; Dropdown-Optionen aus einer Antwort des Hosts; verschachtelte Settings-Dateien; Secrets in Globals statt
+in der Datei; `readOnly` zur Laufzeit; Rail-Gruppen, Tabs und Unterseiten; Dashboards; das Streamer.bot-Log auf der
+Log-Seite; Listen, die das Spiel füllt und der Nutzer bearbeitet, gefiltert nach einem anderen Feld; Platzhalter
+`%x%`; die Doku für Projekte mit mehreren Actions (eine trägt den Host-Block, die anderen lesen die Datei).
+Reihenfolge, falls umgestellt wird: OBS Notepad, Suggestions To, FreeGameCheck, ChatCalendar,
+BetterStreamAnnouncements, AutoBotCheck.
+
 Summe: etwa vier bis fünf Arbeitswochen bis alle sieben Spiele umgestellt sind.
 
 ### Phase 7: Baukasten (etwa zwei Wochen, nach Phase 6)

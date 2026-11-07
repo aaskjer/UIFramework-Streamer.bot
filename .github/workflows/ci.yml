@@ -16,3 +16,6 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet build UIFramework.slnx -nologo
       - run: dotnet test src/UIFramework.Tests/UIFramework.Tests.csproj --no-build -nologo
+      - name: docs/Conventions.md matches the conventions
+        shell: powershell
+        run: ./tools/conventions-doc.ps1 -Check

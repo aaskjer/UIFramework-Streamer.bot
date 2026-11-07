@@ -5,6 +5,13 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- **The coins icon shows.** A page with the conventions' `coins` icon (Points & Bets) showed an empty box: 🪙 is
+  missing from the emoji font WPF draws with, so it is 💰 now.
+- **Docs with pictures, and the conventions published.** Getting-Started, Customize, Schema and the README show
+  the window; [docs/Conventions.md](docs/Conventions.md) lists the standard pages, known keys, placeholders and
+  language files, and explains how to add a language. `tools/conventions-doc.ps1` keeps its tables current, and CI
+  checks them.
+
 - **Settings action (stub 0.2.0):** a game's answer is unset from Streamer.bot's globals as soon as it is read, so
   the Twitch token in the emote sources no longer stays visible in the variables. A DLL saved from a browser loads
   (it was refused as "downloaded from the internet"). When the newest installed DLL cannot be loaded, the next
