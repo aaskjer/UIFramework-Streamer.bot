@@ -73,6 +73,11 @@ namespace UIFramework
 
         private static JToken ValueOf(FieldTag tag, string text) => ValueOf(tag, text, out _);
 
+        /// <summary>A box's text as the value it would be stored as, in invariant text: what a condition on the field
+        /// compares, the same whether the field is shown or read from the file.</summary>
+        public static string StoredText(FieldTag tag, string text) =>
+            tag.Kind == FieldKind.Template || tag.Kind == FieldKind.String ? text ?? "" : Invariant(ValueOf(tag, text));
+
         /// <summary>The stored value of a box's text; <paramref name="clamped"/> says the number was pulled into the
         /// setting's min/max, so the box can show what was really saved.</summary>
         private static JToken ValueOf(FieldTag tag, string text, out bool clamped)
@@ -165,10 +170,24 @@ namespace UIFramework
             if (value == null || value.Type == JTokenType.Null) return false;
             if (value.Type == JTokenType.Integer || value.Type == JTokenType.Float)
             {
-                number = Convert.ToDouble(((JValue)value).Value, CultureInfo.InvariantCulture);
+                if (!ToDouble(((JValue)value).Value, out number)) return false;
                 return !double.IsNaN(number) && !double.IsInfinity(number);
             }
             return value.Type == JTokenType.String && TryParseFinite((string)value, out number);
+        }
+
+        /// <summary>A stored number as a double; a whole number with more digits than a long (Newtonsoft reads it as a
+        /// BigInteger, which converts to nothing) through its text, so a page never breaks on it.</summary>
+        public static bool ToDouble(object value, out double number)
+        {
+            number = 0;
+            if (value is IConvertible)
+            {
+                try { number = Convert.ToDouble(value, CultureInfo.InvariantCulture); return true; }
+                catch (Exception ex) when (ex is InvalidCastException || ex is FormatException || ex is OverflowException) { }
+            }
+            string text = value is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : value?.ToString();
+            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number);
         }
 
         /// <summary>The text a control shows for a stored value.</summary>
@@ -388,6 +407,8 @@ namespace UIFramework
             {
                 if (!(o is TextBox box) || !(FieldTag.Of(box.Tag) is FieldTag tag)) return;
                 if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
+                // Never saved, or hidden by a showWhen or a section's condition: nothing to stop a save for.
+                if (tag.Transient || HiddenOnPage(box, root)) return;
                 string text = box.Text.Trim();
                 bool valid = tag.Kind == FieldKind.Double ? TryParseTyped(text, out _)
                     : tag.Factor != 1.0 ? TryParseTyped(text, out double typed) && (typed >= 0 || AllowsNegative(tag))
@@ -396,6 +417,20 @@ namespace UIFramework
                     invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": " + Text.T("field.empty") : ": '" + text + "'"));
             });
             return invalid;
+        }
+
+        /// <summary>Whether something between the element and its page is collapsed (a showWhen, a section's condition).
+        /// The page itself being collapsed (another page is showing) does not count: its fields are still checked.</summary>
+        private static bool HiddenOnPage(FrameworkElement element, object root)
+        {
+            for (DependencyObject node = element; node != null && !ReferenceEquals(node, root); )
+            {
+                var parent = (node as FrameworkElement)?.Parent ?? (node is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(node) : null);
+                if (node is ScrollViewer || ReferenceEquals(parent, root)) return false;
+                if (node is UIElement ui && ui.Visibility != Visibility.Visible) return true;
+                node = parent;
+            }
+            return false;
         }
 
         public static string FieldLabel(TextBox box)
