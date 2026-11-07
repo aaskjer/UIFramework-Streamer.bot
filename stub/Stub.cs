@@ -63,19 +63,48 @@ public class CPHInline
             var settings = JObject.Parse(settingsJson);
             _owner.RunOnBot(() =>
             {
-                foreach (var cooldown in Window["cooldowns"] as JArray ?? new JArray())
+                // Each command on its own: one that fails (a command deleted since, a value out of range) leaves the
+                // others set, and the game hears of the save whatever happened here.
+                try
                 {
-                    string command = _owner.CommandId((string)cooldown["command"]), global = (string)cooldown["global"], user = (string)cooldown["user"];
-                    if (string.IsNullOrEmpty(command)) continue;
-                    if (!string.IsNullOrEmpty(global)) _owner.CPH.CommandSetGlobalCooldownDuration(command, Math.Max(0, (int?)settings[global] ?? 0));
-                    if (!string.IsNullOrEmpty(user)) _owner.CPH.CommandSetUserCooldownDuration(command, Math.Max(0, (int?)settings[user] ?? 0));
+                    foreach (var cooldown in Window["cooldowns"] as JArray ?? new JArray())
+                    {
+                        try
+                        {
+                            string command = _owner.CommandId((string)cooldown["command"]), global = (string)cooldown["global"], user = (string)cooldown["user"];
+                            if (string.IsNullOrEmpty(command)) continue;
+                            int? seconds;
+                            if (!string.IsNullOrEmpty(global))
+                            {
+                                if ((seconds = Seconds(settings, global)) != null) _owner.CPH.CommandSetGlobalCooldownDuration(command, seconds.Value);
+                                else _owner.CPH.LogWarn(LogPrefix + " The window names '" + global + "' for a cooldown, but the settings have no such number; that cooldown was left as it is.");
+                            }
+                            if (!string.IsNullOrEmpty(user))
+                            {
+                                if ((seconds = Seconds(settings, user)) != null) _owner.CPH.CommandSetUserCooldownDuration(command, seconds.Value);
+                                else _owner.CPH.LogWarn(LogPrefix + " The window names '" + user + "' for a cooldown, but the settings have no such number; that cooldown was left as it is.");
+                            }
+                        }
+                        catch (Exception ex) { _owner.CPH.LogError(LogPrefix + " A cooldown could not be set: " + ex.Message); }
+                    }
                 }
-                _owner.AskGameNow("saved", null, settingsJson);
+                finally { _owner.AskGameNow("saved", null, settingsJson); }
             }, false);
         }
 
+        // A cooldown in whole seconds: a number of the settings, at least 0 and at most a day; null when the key is
+        // missing or not a number, so a misnamed key never zeroes a cooldown.
+        private static int? Seconds(JObject settings, string key)
+        {
+            var token = settings[key];
+            if (token == null || (token.Type != JTokenType.Integer && token.Type != JTokenType.Float)) return null;
+            double value = (double)token;
+            return (int)Math.Max(0, Math.Min(86400, Math.Round(value)));
+        }
+
         public string Test(string name, string settingsJson) => _owner.AskGame("test", name, settingsJson);
-        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson);
+        // No answer is not "no problems": the window gets a marker and asks before saving unchecked.
+        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson, NoAnswer);
         public string ReadTable(string key) => _owner.AskGame("table", key, null);
         public string EmoteSources() => _owner.AskGame("emotes", null, null);
 
@@ -124,14 +153,21 @@ public class CPHInline
     {
         if (Thread.CurrentThread.ManagedThreadId == _botThread) { job(); return; }
         if (!wait) { Enqueue(job); return; }
-        using (var done = new ManualResetEventSlim(false))
+        var done = new ManualResetEventSlim(false);
+        Exception failure = null;
+        int state = 0;   // 0 waiting, 1 running, 2 given up: a request the window stopped waiting for is not run late
+        Enqueue(() =>
         {
-            Exception failure = null;
-            Enqueue(() => { try { job(); } catch (Exception ex) { failure = ex; } finally { done.Set(); } });
-            if (!done.Wait(TimeSpan.FromSeconds(5)))
+            if (Interlocked.CompareExchange(ref state, 1, 0) != 0) return;
+            try { job(); } catch (Exception ex) { failure = ex; } finally { done.Set(); }
+        });
+        if (!done.Wait(TimeSpan.FromSeconds(5)))
+        {
+            if (Interlocked.CompareExchange(ref state, 2, 0) == 0)
                 throw new TimeoutException("the action '" + GameActionName + "' did not answer within five seconds.");
-            if (failure != null) throw failure;
+            done.Wait();   // it started just now: its answer is on the way
         }
+        if (failure != null) throw failure;
     }
 
     // The game answers the window's requests through non-persistent globals. Streamer.bot keeps its globals in
@@ -184,13 +220,22 @@ public class CPHInline
         return string.IsNullOrEmpty(answer) ? null : answer;
     }
 
+    /// <summary>What the window gets when the game did not answer at all (a timeout, a disabled or missing action),
+    /// told apart from an answer that is empty. The window's save asks before saving what nobody checked.</summary>
+    private const string NoAnswer = "\u0001uiframework:no-answer";
+
     /// <summary>The same from any thread (the window's): waits for Streamer.bot's thread to run it; a failure is
-    /// logged and answered with null, so a Try button says "no answer" instead of the window dying.</summary>
-    private string AskGame(string request, string name, string values)
+    /// logged and answered with <paramref name="failed"/> (null by default), so a Try button says "no answer"
+    /// instead of the window dying.</summary>
+    private string AskGame(string request, string name, string values, string failed = null)
     {
         string answer = null;
         try { RunOnBot(() => answer = AskGameNow(request, name, values), true); }
-        catch (Exception ex) { CPH.LogError(LogPrefix + " The game did not answer '" + request + "': " + ex.Message); }
+        catch (Exception ex)
+        {
+            CPH.LogError(LogPrefix + " The game did not answer '" + request + "': " + ex.Message);
+            return failed == null ? null : failed + ": " + ex.Message;
+        }
         return answer;
     }
 
@@ -269,7 +314,7 @@ public class CPHInline
             {
                 CPH.LogError(LogPrefix + " UIFramework.dll could not be downloaded: " + ex.Message);
                 Ask("The download failed:\n\n" + ex.Message + "\n\nGet UIFramework.dll by hand from\n" + FrameworkReleasesUrl +
-                    "\nand put it into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll, then open the settings again.",
+                    "\nand put it into the folder of its version under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, ExampleVersion()) + "\\UIFramework.dll, then open the settings again.",
                     MbOk, MbIconWarning);
                 OpenFolder(LibRoot);
                 return null;
@@ -277,12 +322,19 @@ public class CPHInline
         }
         if (answer == IdNo)
         {
-            Ask("Put UIFramework.dll into a version folder under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, "1.0.0") + "\\UIFramework.dll\n\n" +
+            Ask("Put UIFramework.dll into the folder of its version under\n" + LibRoot + "\nfor example " + Path.Combine(LibRoot, ExampleVersion()) + "\\UIFramework.dll\n\n" +
                 "The folder opens now. Then open the settings again.\nDownloads: " + FrameworkReleasesUrl,
                 MbOk, MbIconInformation);
             OpenFolder(LibRoot);
         }
         return null;
+    }
+
+    /// <summary>The version folder a DLL fetched by hand belongs in: the one latest.json names, or a placeholder.</summary>
+    private static string ExampleVersion()
+    {
+        try { return ((string)FetchLatest()["version"]).TrimStart('v', 'V'); }
+        catch (Exception) { return "<version>"; }
     }
 
     private static void OpenFolder(string folder)
@@ -329,10 +381,18 @@ public class CPHInline
         }
     }
 
+    // The system default (0) lets Windows pick TLS 1.2 or 1.3; OR-ing Tls12 into it would pin the whole process to 1.2.
+    private static void EnsureTls12()
+    {
+        var current = System.Net.ServicePointManager.SecurityProtocol;
+        if ((int)current != 0 && (current & System.Net.SecurityProtocolType.Tls12) == 0)
+            System.Net.ServicePointManager.SecurityProtocol = current | System.Net.SecurityProtocolType.Tls12;
+    }
+
     /// <summary>What lib/v1/latest.json says: version, download url, sha256.</summary>
     private static JObject FetchLatest()
     {
-        System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
+        EnsureTls12();
         string json;
         using (var client = new QuickWebClient())
         {
@@ -357,7 +417,11 @@ public class CPHInline
     {
         using (var mutex = new Mutex(false, @"Global\UIFramework.Loader"))
         {
-            mutex.WaitOne(TimeSpan.FromSeconds(60));
+            bool owned;
+            try { owned = mutex.WaitOne(TimeSpan.FromSeconds(60)); }
+            catch (AbandonedMutexException) { owned = true; }   // a Streamer.bot that died mid-download left it
+            if (!owned)
+                throw new TimeoutException("another download of UIFramework.dll is still running; try again in a minute.");
             try
             {
                 latest = latest ?? FetchLatest();
@@ -367,7 +431,7 @@ public class CPHInline
                     return target;
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
                 string temp = target + ".download";
-                System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
+                EnsureTls12();
                 using (var client = new QuickWebClient { TimeoutMs = 60000 })
                 {
                     client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
@@ -400,10 +464,14 @@ public class CPHInline
 
     private static string LayoutPath => Path.Combine(Path.GetDirectoryName(SettingsPath), "uiframework.layout.json");
 
-    private static JObject ReadLayout()
+    private static JObject ReadLayout() => TryReadLayout() ?? new JObject();
+
+    /// <summary>The layout file, an empty one when there is none, null when it cannot be read (locked, damaged):
+    /// then nothing is written over it.</summary>
+    private static JObject TryReadLayout()
     {
         try { return File.Exists(LayoutPath) ? JObject.Parse(File.ReadAllText(LayoutPath)) : new JObject(); }
-        catch (Exception) { return new JObject(); }
+        catch (Exception) { return null; }
     }
 
     private static bool AutoUpdateEnabled()
@@ -424,10 +492,18 @@ public class CPHInline
     {
         try
         {
-            var layout = ReadLayout();
+            // A file that cannot be read is the user's customisation in a bad moment: it is not written over. A note
+            // that changes nothing is not written either, and a write goes beside the file and is swapped in.
+            var layout = TryReadLayout();
+            if (layout == null) return;
+            var before = layout.ToString(Newtonsoft.Json.Formatting.None);
             change(layout);
+            if (layout.ToString(Newtonsoft.Json.Formatting.None) == before) return;
             Directory.CreateDirectory(Path.GetDirectoryName(LayoutPath));
-            File.WriteAllText(LayoutPath, layout.ToString(Newtonsoft.Json.Formatting.Indented));
+            string temp = LayoutPath + ".tmp";
+            File.WriteAllText(temp, layout.ToString(Newtonsoft.Json.Formatting.Indented));
+            if (File.Exists(LayoutPath)) File.Replace(temp, LayoutPath, null);
+            else File.Move(temp, LayoutPath);
         }
         catch (Exception) { }
     }

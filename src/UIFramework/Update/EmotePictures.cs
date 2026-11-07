@@ -30,6 +30,24 @@ namespace UIFramework
         private static Task<Dictionary<string, (string Url, string Source)>> _twitch;
         private static DateTime _twitchAsked;
         private static string _twitchSources;
+        // The host's answer per window (one IHostHooks each): asking the game costs a trip to Streamer.bot's thread
+        // and up to five seconds when it hangs, so it is asked once, not once per emote cell.
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, SourcesBox> Sources =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, SourcesBox>();
+
+        private sealed class SourcesBox { public string Json; }
+
+        /// <summary>The host's emote sources, asked once per hooks object (per window); null without a host or an answer.</summary>
+        public static string SourcesOf(IHostHooks hooks)
+        {
+            if (hooks == null) return null;
+            return Sources.GetValue(hooks, h =>
+            {
+                string json = null;
+                try { json = h.EmoteSources(); } catch (Exception) { }
+                return new SourcesBox { Json = json };
+            }).Json;
+        }
 
         /// <summary>A Kick emote as chat renders it, <c>[emote:ID:name]</c>, or typed short as <c>ID:name</c>: group 1
         /// is the id, group 2 the name.</summary>
@@ -60,7 +78,7 @@ namespace UIFramework
             string url = null;
             try
             {
-                string sources = hooks?.EmoteSources();
+                string sources = SourcesOf(hooks);
                 if (!string.IsNullOrWhiteSpace(sources) && JObject.Parse(sources)["youtube"] is JObject own)
                     url = (string)own[code];
             }
@@ -191,11 +209,10 @@ namespace UIFramework
         }
 
         /// <summary>Emote name to picture URL (with <c>{theme}</c> for Twitch's own) and the extension it comes from.
-        /// Asked once and kept ten minutes; the host's sources are read each time it is asked anew.</summary>
+        /// Asked once and kept ten minutes, or until a window brings other sources (asked once per window).</summary>
         public static Task<Dictionary<string, (string Url, string Source)>> TwitchLookup(IHostHooks hooks)
         {
-            string sources = null;
-            try { sources = hooks?.EmoteSources(); } catch (Exception) { }
+            string sources = SourcesOf(hooks);
             lock (Gate)
             {
                 if (_twitch == null || DateTime.UtcNow - _twitchAsked > TimeSpan.FromMinutes(10) || _twitchSources != sources)

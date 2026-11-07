@@ -11,13 +11,25 @@ namespace UIFramework
     /// </summary>
     public static class Theme
     {
-        public static bool IsDark;
-        public static bool IsRainbow;
+        // Every window runs on a thread of its own, and two games' windows can be open at once: each thread keeps its
+        // own palette, so one window's theme, accent or rainbow never bleeds into the other. A thread that set nothing
+        // (a page built for the preview or a test on another thread) reads the last values set anywhere.
+        [ThreadStatic] private static bool? _dark, _rainbow;
+        [ThreadStatic] private static Color? _accent;
+        [ThreadStatic] private static bool _accentSet;
+        [ThreadStatic] private static double _rainbowHue;
+        private static volatile bool _sharedDark, _sharedRainbow;
+        private static Color? _sharedAccent;
+
+        public static bool IsDark { get => _dark ?? _sharedDark; set { _dark = value; _sharedDark = value; } }
+        public static bool IsRainbow { get => _rainbow ?? _sharedRainbow; set { _rainbow = value; _sharedRainbow = value; } }
 
         /// <summary>An accent the user picked, or null for the default blue.</summary>
-        public static Color? AccentOverride;
-
-        private static double _rainbowHue;
+        public static Color? AccentOverride
+        {
+            get => _accentSet ? _accent : _sharedAccent;
+            set { _accent = value; _accentSet = true; _sharedAccent = value; }
+        }
 
         public static Color ContentBg => IsDark ? Color.FromRgb(36, 36, 36) : Colors.White;
         public static Color Surface => IsDark ? Color.FromRgb(52, 52, 52) : Color.FromRgb(243, 243, 243);
