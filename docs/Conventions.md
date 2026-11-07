@@ -153,4 +153,5 @@ is read and written back under the key.
 |---|---|---|---|---|---|
 | `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 201 of 201 |
 | `lang/en.json` | 72 | 13 | 16 | 0 | 201 |
+| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 120 | 201 of 201 |
 <!-- generated:end -->
