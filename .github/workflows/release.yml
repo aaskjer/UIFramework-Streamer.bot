@@ -10,14 +10,27 @@ on:
 permissions:
   contents: write
 
+# Two tags pushed close together write latest.json one after the other, never at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: windows-latest
     steps:
+      # The tag's own commit is built, not main's tip: a commit that landed on main after the tag never ships under
+      # the tag's version. latest.json is written to main afterwards, in a step of its own.
       - uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
+
+      - name: The tag is on main
+        shell: pwsh
+        run: |
+          git fetch origin main --quiet
+          git merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE -ne 0) { Write-Error "${{ github.ref_name }} is not on main; tag a commit of main." }
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -77,17 +90,34 @@ jobs:
       - name: Write lib/v1/latest.json
         shell: pwsh
         run: |
-          $latest = [ordered]@{
-            version     = '${{ steps.v.outputs.version }}'
-            url         = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/UIFramework.dll'
-            sha256      = '${{ steps.h.outputs.sha }}'
-            minHostStub = '0.1.0'
-            note        = 'Read by the loader in every host''s settings action. Written by .github/workflows/release.yml on a tag vX.Y.Z.'
-          }
-          $json = ($latest | ConvertTo-Json) + "`n"
-          [IO.File]::WriteAllText('lib/v1/latest.json', $json, (New-Object Text.UTF8Encoding $false))
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add lib/v1/latest.json
-          git commit -m "latest.json: ${{ github.ref_name }}"
-          git push origin HEAD:main
+          $version = '${{ steps.v.outputs.version }}'
+          for ($try = 1; $try -le 3; $try++) {
+            git fetch origin main --quiet
+            git checkout -B main origin/main --quiet
+            # minHostStub is kept from main's latest.json (raise it there when a release needs a newer stub), and an
+            # older tag released late never takes latest.json back below what is out already.
+            $current = Get-Content lib/v1/latest.json -Raw | ConvertFrom-Json
+            if ([version]$current.version -gt [version]$version) {
+              Write-Host "latest.json names $($current.version), newer than $version; left as it is."
+              exit 0
+            }
+            $latest = [ordered]@{
+              version     = $version
+              url         = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/UIFramework.dll'
+              sha256      = '${{ steps.h.outputs.sha }}'
+              minHostStub = $(if ($current.minHostStub) { $current.minHostStub } else { '0.1.0' })
+              note        = 'Read by the loader in every host''s settings action. Written by .github/workflows/release.yml on a tag vX.Y.Z.'
+            }
+            $json = ($latest | ConvertTo-Json) + "`n"
+            [IO.File]::WriteAllText('lib/v1/latest.json', $json, (New-Object Text.UTF8Encoding $false))
+            git add lib/v1/latest.json
+            git diff --cached --quiet
+            if ($LASTEXITCODE -eq 0) { Write-Host 'latest.json already says this.'; exit 0 }
+            git commit -m "latest.json: ${{ github.ref_name }}" --quiet
+            git push origin HEAD:main
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "main moved meanwhile; trying again ($try)."
+          }
+          Write-Error 'latest.json could not be pushed to main.'

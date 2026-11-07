@@ -29,7 +29,9 @@ calls per hour and IP); when that fails, through raw.githubusercontent.com, whos
 minutes old. Every check writes a line into Streamer.bot's log: the installed version, what `latest.json` says,
 whether it asked, skipped or is turned off.
 
-**Safety:** HTTPS, SHA-256 from `latest.json`, a global mutex so that several hosts do not download at once. The
+**Safety:** HTTPS (TLS 1.2 is added only where the process pinned older protocols; Windows' own choice stays otherwise),
+SHA-256 from `latest.json`, a global mutex so that several hosts do not download at once (one still waiting after
+a minute gives up with a message instead of downloading beside it). The
 major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host. The hash is kept beside the
 DLL (`UIFramework.dll.sha256`) and checked on every load, so a file damaged or swapped since is not used. A release
 whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.2.0 now) is not offered to
@@ -39,9 +41,24 @@ that stub; the game has to ship the newer settings action first.
 read it, so an answer that carries a secret (the emote sources hold the Twitch token) is not left readable by
 other actions or visible in Streamer.bot's variables.
 
+**When the game does not answer:** each request to the game action waits five seconds. One the window stopped
+waiting for is skipped when Streamer.bot's thread gets to it, not run late. A check before saving that got no
+answer (a timeout, a disabled action) is not taken for "no problems": the window asks whether to save unchecked.
+A window whose request hangs can be closed and opened again.
+
+**Cooldowns:** on save, each command's cooldowns are set on their own; a key the window names for a cooldown
+that the settings do not hold as a number leaves that cooldown as it is (with a warning in the log) instead of
+setting it to 0, and the game hears of the save whatever happened.
+
+**The layout file** (`uiframework.layout.json`): the stub's notes in it (`skipVersion`, `frameworkAvailable`)
+are written only when they change, through a file beside it that is swapped in, and never over a file it could
+not read. The DLL keeps a layout file it cannot read as `uiframework.layout.json.broken` and logs why.
+
 **References:** none to add. The dialogs are Win32 message boxes (`user32.dll` through P/Invoke), the download
 runs through `System.Net.WebClient` from `System.dll`; both come with the references every action has.
 
 **Release:** a tag `vX.Y.Z` (the `<Version>` in `UIFramework.csproj` must match) makes
-`.github/workflows/release.yml` build, test, create the release with `UIFramework.dll` and write
-`lib/v1/latest.json` on `main`.
+`.github/workflows/release.yml` build the tag's own commit (which must be on `main`), test, create the release with
+`UIFramework.dll` and write `lib/v1/latest.json` on `main`. `minHostStub` is carried over from main's
+`latest.json` (raise it there when a release needs a newer stub), and an older tag released late never takes
+`latest.json` back.
