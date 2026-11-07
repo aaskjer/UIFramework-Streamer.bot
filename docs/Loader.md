@@ -49,10 +49,12 @@ pending only logs that.
 read it, so an answer that carries a secret (the emote sources hold the Twitch token) is not left readable by
 other actions or visible in Streamer.bot's variables.
 
-**When the game does not answer:** each request to the game action waits five seconds. One the window stopped
-waiting for is skipped when Streamer.bot's thread gets to it, not run late. A check before saving that got no
-answer (a timeout, a disabled action) is not taken for "no problems": the window asks whether to save unchecked.
-A window whose request hangs can be closed and opened again.
+**When the game does not answer:** each request to the game action waits five seconds to start. One the window
+stopped waiting for is skipped when Streamer.bot's thread gets to it, not run late. One that has started gets 30
+seconds more; a handler that runs longer goes on, but the window stops waiting and carries on as with no answer,
+so it never freezes. A check before saving that got no answer (a timeout, a disabled action) is not taken for "no
+problems": the window asks whether to save unchecked. A window whose request hangs can be closed and opened again,
+and when the game has not sent its schema for a minute, the next run opens the window instead of waiting for it.
 
 **Actions a game runs from its handlers see the request:** the stub hands each request to the game as arguments
 (`uiframework.request`, `uiframework.name`, `uiframework.values` with the settings as JSON, `uiframework.var`), and

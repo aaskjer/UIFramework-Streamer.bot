@@ -129,7 +129,9 @@ namespace UIFramework
             spec.Senders.NumberSeparator = Present(spec.Senders.NumberSeparator);
             var senderKeys = new HashSet<string>(new[] { spec.Senders.UseBot, spec.Senders.SendAction, spec.Senders.CooldownUseBot, spec.Senders.CooldownSendAction, spec.Senders.NumberSeparator }.Where(k => k != null), StringComparer.Ordinal);
 
-            // 4. Templates on the messages page become the picker's entries.
+            // 4. Templates on the messages page become the picker's entries. Their groups are in the window's language,
+            // so the cooldown group is looked for in that language too.
+            spec.Senders.CooldownGroupShown = lang.Translates ? lang.Text(spec.Senders.CooldownGroup) : null;
             spec.Messages.Clear();
             foreach (var setting in settings.Where(s => s.Kind == "template" && s.Page == "messages" && !s.Hidden).OrderBy(s => s.Order))
                 spec.Messages.Add(new MessageDef(setting.Group ?? lang.Page("messages") ?? "Messages", setting.Key, setting.Label, setting.Help ?? "", (setting.Placeholders ?? new List<string>()).ToArray()));

@@ -11,6 +11,13 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   the window; [docs/Conventions.md](docs/Conventions.md) lists the standard pages, known keys, placeholders and
   language files, and explains how to add a language. `tools/conventions-doc.ps1` keeps its tables current, and CI
   checks them.
+- **German windows show the cooldown senders again.** The Messages page's "send as bot" and "send as action"
+  switches for the cooldown messages were missing in German: the message groups are translated ("Abklingzeit"),
+  the cooldown group was looked for in English. It is found in the window's language now.
+- **A game handler that hangs no longer freezes the window** (stub 0.2.0). A request that has started gets 30
+  seconds, then the window carries on without its answer; before, it waited for good and could not be closed. A
+  game that has not sent its schema for a minute no longer locks its settings until Streamer.bot restarts: the
+  next run opens the window.
 
 - **Settings action (stub 0.2.0):** a game's answer is unset from Streamer.bot's globals as soon as it is read, so
   the Twitch token in the emote sources no longer stays visible in the variables. A DLL saved from a browser loads

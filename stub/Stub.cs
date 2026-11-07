@@ -148,7 +148,9 @@ public class CPHInline
     }
 
     /// <summary>Runs a job on Streamer.bot's thread: at once when this is that thread, else through the queue.
-    /// With <paramref name="wait"/> the call blocks until the job ran (five seconds at most) and rethrows what it threw.</summary>
+    /// With <paramref name="wait"/> the call blocks until the job ran and rethrows what it threw: five seconds for it to
+    /// start, thirty more once it has started. A job that runs longer keeps running, but the window stops waiting for it
+    /// and goes on as with no answer, so a game handler that hangs never freezes the window.</summary>
     private void RunOnBot(Action job, bool wait)
     {
         if (Thread.CurrentThread.ManagedThreadId == _botThread) { job(); return; }
@@ -165,7 +167,9 @@ public class CPHInline
         {
             if (Interlocked.CompareExchange(ref state, 2, 0) == 0)
                 throw new TimeoutException("the action '" + GameActionName + "' did not answer within five seconds.");
-            done.Wait();   // it started just now: its answer is on the way
+            // It has started: its answer is on the way, unless the game's handler hangs.
+            if (!done.Wait(TimeSpan.FromSeconds(30)))
+                throw new TimeoutException("the action '" + GameActionName + "' started but did not finish within 30 seconds; its answer is not used.");
         }
         if (failure != null) throw failure;
     }
@@ -657,17 +661,41 @@ public class CPHInline
     private static int _opening;
     // The schema of the window that run shows; null while it is still asking the game or a dialog is up.
     private static string _shownSchema;
+    // Which run holds _opening (only that one hands it back), whether it is still waiting for the game's schema, and
+    // since when (ticks).
+    private static int _openingRun, _askingGame;
+    private static long _askingSince;
 
     public bool Execute()
     {
-        if (Interlocked.CompareExchange(ref _opening, 1, 0) != 0)
+        if (Interlocked.CompareExchange(ref _opening, 1, 0) != 0 && !TakeOver())
             return BringToFront();
+        int run = Interlocked.Increment(ref _openingRun);
         try { return Open(); }
         finally
         {
-            Volatile.Write(ref _shownSchema, null);
-            Volatile.Write(ref _opening, 0);
+            // A run whose window was taken over by a later one leaves the flags to that one.
+            if (Volatile.Read(ref _openingRun) == run)
+            {
+                Volatile.Write(ref _shownSchema, null);
+                Volatile.Write(ref _opening, 0);
+            }
         }
+    }
+
+    /// <summary>Whether this run opens the window although another holds it: only when that one has waited a minute
+    /// for the game's schema (the game action hangs), so one hung answer does not lock the settings until Streamer.bot
+    /// restarts. Not while a dialog is up: a user may take their time over that.</summary>
+    private bool TakeOver()
+    {
+        long since = Interlocked.Read(ref _askingSince);
+        if (Volatile.Read(ref _askingGame) == 0 || DateTime.UtcNow.Ticks - since < TimeSpan.FromSeconds(60).Ticks)
+            return false;
+        // One later run takes over, not every one that comes at once.
+        if (Interlocked.CompareExchange(ref _askingSince, DateTime.UtcNow.Ticks, since) != since)
+            return false;
+        CPH.LogWarn(LogPrefix + " The action '" + GameActionName + "' has not answered for a minute; this run opens the settings window instead.");
+        return true;
     }
 
     /// <summary>A run while another one has the window: the DLL brings that window to the front and returns at once.
@@ -698,6 +726,8 @@ public class CPHInline
         _botThread = Thread.CurrentThread.ManagedThreadId;
         // The game first: without its answer there is nothing to show, and the settings file is named in it.
         string schema;
+        Interlocked.Exchange(ref _askingSince, DateTime.UtcNow.Ticks);
+        Volatile.Write(ref _askingGame, 1);
         try
         {
             schema = AskSchema();
@@ -709,6 +739,7 @@ public class CPHInline
             Ask("The settings window cannot open.\n\n" + ex.Message, MbOk, MbIconWarning);
             return false;
         }
+        finally { Volatile.Write(ref _askingGame, 0); }
         string dll;
         try { dll = EnsureFramework(); }
         catch (Exception ex)

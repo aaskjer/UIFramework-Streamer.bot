@@ -86,7 +86,8 @@ save, `saved` runs after one, `table` and `emotes` fill special fields. All are 
 settings passes none.
 
 **The window waits five seconds for an answer.** The settings action runs your game action with
-`CPH.RunAction(..., true)` and waits; a request it has given up on is skipped, not run late. So inside `test`,
+`CPH.RunAction(..., true)` and waits; a request it has given up on is skipped, not run late. One that has started
+gets 30 seconds more, then the window stops waiting and goes on without its answer. So inside `test`,
 `validate`, `saved`, `table` and `emotes`:
 
 - Do not call `CPH.RunAction(other, true)` on an action that sits in the same **blocking** action queue as the
