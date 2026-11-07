@@ -1,7 +1,10 @@
 # Loader
 
 Every settings action (the stub) carries the loader. It looks for `UIFramework.dll` under
-`<Streamer.bot>\UIFramework\lib\<version>\` and takes the highest version.
+`<Streamer.bot>\UIFramework\lib\<version>\` and takes the highest version. When that one cannot be loaded (a
+damaged file, a build the stub does not fit), it tries the next older one, and only then gives up with a dialog;
+the log names every DLL it tried and why it failed. A DLL saved from a browser, which Windows marks as downloaded
+from the internet, loads like any other.
 
 **First open without a DLL:** a dialog asks
 - **Yes**: read `lib/v1/latest.json` from this repository (version, URL, SHA-256), download the DLL from the
@@ -27,7 +30,14 @@ minutes old. Every check writes a line into Streamer.bot's log: the installed ve
 whether it asked, skipped or is turned off.
 
 **Safety:** HTTPS, SHA-256 from `latest.json`, a global mutex so that several hosts do not download at once. The
-major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host.
+major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host. The hash is kept beside the
+DLL (`UIFramework.dll.sha256`) and checked on every load, so a file damaged or swapped since is not used. A release
+whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.2.0 now) is not offered to
+that stub; the game has to ship the newer settings action first.
+
+**Answers do not linger:** the global variable a game's answer comes back in is unset as soon as the stub has
+read it, so an answer that carries a secret (the emote sources hold the Twitch token) is not left readable by
+other actions or visible in Streamer.bot's variables.
 
 **References:** none to add. The dialogs are Win32 message boxes (`user32.dll` through P/Invoke), the download
 runs through `System.Net.WebClient` from `System.dll`; both come with the references every action has.
