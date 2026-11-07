@@ -285,8 +285,8 @@ und Sprachdateien veröffentlichen. ChatCalendar und die übrigen Nicht-Spiele-P
 Stand 07.11.2026: Screenshots aus der Preview in README, Getting-Started, Customize und Schema (`docs/images`).
 Konventionen und Sprachdateien veröffentlicht als `docs/Conventions.md` (Seiten, bekannte Keys, Platzhalter,
 Abdeckung je Sprachdatei, Anleitung für eine neue Sprache), Tabellen aus `tools/conventions-doc.ps1`, CI prüft sie.
-READMEs der Spiele: Abschnitt zum Settings-Fenster (lädt die DLL beim ersten Öffnen, Update-Frage abschaltbar mit
-`"autoUpdate": false`) als PR je Spiel. Bewertung der übrigen Projekte (unten) erledigt. Offen bleibt der
+Der Hinweis für Nutzer (DLL beim ersten Öffnen, Update-Frage abschaltbar mit `"autoUpdate": false`, Spiel läuft
+ohne Fenster) steht in Getting-Started statt in den Spiel-READMEs; die bekommen stattdessen ein bis zwei Bilder. Bewertung der übrigen Projekte (unten) erledigt. Offen bleibt der
 Live-Test aus Phase 3 in einer frischen Streamer.bot-Instanz.
 
 #### Bewertung der Nicht-Spiel-Projekte (07.11.2026)
