@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Controls;
+using Newtonsoft.Json.Linq;
 
 namespace UIFramework
 {
@@ -23,6 +24,8 @@ namespace UIFramework
         {
             public string Key, Op;
             public string[] Values = new string[0];
+            /// <summary>"!key": a switch that is off, a field that is empty.</summary>
+            public bool Not;
         }
 
         /// <summary>The comparisons of a condition, in order; an empty or null condition has none.</summary>
@@ -34,16 +37,28 @@ namespace UIFramework
                 string text = raw.Trim();
                 if (text.Length == 0) continue;
                 var part = new Part { Key = text };
+                // The operator that comes first in the text, the longer one on a tie ("<=" before "<"), so a value
+                // that contains an operator ("op=<=") does not split the key.
+                int best = -1; string op = null;
                 foreach (var candidate in Operators)
                 {
                     int at = text.IndexOf(candidate, StringComparison.Ordinal);
-                    if (at > 0)
+                    if (at > 0 && (best < 0 || at < best || (at == best && candidate.Length > op.Length)))
                     {
-                        part.Op = candidate;
-                        part.Key = text.Substring(0, at).Trim();
-                        part.Values = text.Substring(at + candidate.Length).Split('|').Select(v => v.Trim()).ToArray();
-                        break;
+                        best = at;
+                        op = candidate;
                     }
+                }
+                if (op != null)
+                {
+                    part.Op = op;
+                    part.Key = text.Substring(0, best).Trim();
+                    part.Values = text.Substring(best + op.Length).Split('|').Select(v => v.Trim()).ToArray();
+                }
+                else if (text.StartsWith("!", StringComparison.Ordinal))
+                {
+                    part.Not = true;
+                    part.Key = text.Substring(1).Trim();
                 }
                 parts.Add(part);
             }
@@ -56,7 +71,6 @@ namespace UIFramework
             var comparisons = Parse(condition);
             if (comparisons.Count == 0) return;
             void Apply() => apply(comparisons.All(c => Holds(f, parts, c)));
-            bool any = false;
             foreach (var c in comparisons)
             {
                 if (parts.Switches.TryGetValue(c.Key, out var toggle))
@@ -70,28 +84,29 @@ namespace UIFramework
                     box.TextChanged += (sender, e) => Apply();
                 else if (parts.Sliders.TryGetValue(c.Key, out var slider))
                     slider.ValueChanged += (sender, e) => Apply();
-                else
-                    continue;
-                any = true;
             }
-            if (any) Apply();
+            // Also when no gate is on the window: a hidden gate's saved value decides.
+            Apply();
         }
 
-        /// <summary>Whether one comparison holds for the live value of its gate. A gate the window lacks holds.</summary>
+        /// <summary>Whether one comparison holds for the live value of its gate. A gate the window does not show (hidden
+        /// in the customise mode, on no page) is read from the saved value; one the settings do not know at all holds.</summary>
         public static bool Holds(Fields f, WindowParts parts, Part c)
         {
             bool present = parts.Switches.ContainsKey(c.Key) || parts.Combos.ContainsKey(c.Key) || parts.Boxes.ContainsKey(c.Key) || parts.Sliders.ContainsKey(c.Key);
-            if (!present) return true;
-            if (parts.Switches.ContainsKey(c.Key))
+            var saved = present ? null : f.Token(c.Key);
+            if (!present && (saved == null || saved.Type == JTokenType.Null)) return true;
+            bool isSwitch = present ? parts.Switches.ContainsKey(c.Key) : saved.Type == JTokenType.Boolean;
+            if (isSwitch)
             {
-                bool on = f.LiveSwitch(c.Key);
-                if (c.Op == null) return on;
+                bool on = present ? f.LiveSwitch(c.Key) : (bool)saved;
+                if (c.Op == null) return c.Not ? !on : on;
                 bool want = c.Values.Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) || v == "1");
                 return c.Op == "!=" ? on != want : on == want;
             }
-            string text = f.LiveText(c.Key, "").Trim();
+            string text = (present ? f.LiveText(c.Key, "") : FieldBinding.Invariant(saved)).Trim();
             if (c.Op == null)
-                return text.Length > 0;
+                return c.Not ? text.Length == 0 : text.Length > 0;
             bool Same(string wanted) =>
                 FieldBinding.TryParseInvariantDouble(text, out double a) && FieldBinding.TryParseInvariantDouble(wanted, out double b)
                     ? Math.Abs(a - b) < 1e-9

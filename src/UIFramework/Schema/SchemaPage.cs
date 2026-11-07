@@ -102,7 +102,10 @@ namespace UIFramework
                                 && stack.Children[1] is Border box && Equals(box.Tag, AnswerBox))
                             {
                                 stack.Children.Remove(box);
-                                answers.Add(box);
+                                // Under the row, the answer still follows its action: hidden while the action is.
+                                var holder = new Border { Child = box };
+                                holder.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding("Visibility") { Source = stack });
+                                answers.Add(holder);
                             }
                             if (cells[i] is Button || (cells[i] is StackPanel only && only.Children.Count == 1 && only.Children[0] is Button))
                                 weights[i] = 0;
@@ -202,12 +205,15 @@ namespace UIFramework
                     element = s.Options != null && s.Options.Count > 0
                         ? f.IntCombo(label, s.Key, s.Options.Select(o => (int.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) ? v : 0, o.Label)).ToArray(), help)
                         : f.IntField(label, s.Key, help, s.UnlimitedAtZero);
+                    SetRange(ctx, s);
                     break;
                 case "long":
                     element = f.LongField(label, s.Key, help, s.UnlimitedAtZero);
+                    SetRange(ctx, s);
                     break;
                 case "duration":
                     element = f.IntField(label + " (" + (s.Unit ?? "s") + ")", s.Key, help, s.UnlimitedAtZero);
+                    SetRange(ctx, s);
                     break;
                 case "double":
                     if (s.Options != null && s.Options.Count > 0)

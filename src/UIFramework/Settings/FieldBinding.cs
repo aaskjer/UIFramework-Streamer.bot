@@ -42,7 +42,12 @@ namespace UIFramework
                 if (node is CheckBox chk && FieldTag.Of(chk.Tag) is FieldTag ct && (transientToo || !ct.Transient))
                     settings[ct.Key] = chk.IsChecked ?? false;
                 else if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt && (transientToo || !tt.Transient))
-                    settings[tt.Key] = ValueOf(tt, txt.Text);
+                {
+                    settings[tt.Key] = ValueOf(tt, txt.Text, out bool clamped);
+                    // A number pulled into its min/max shows what was saved, so the box and the file never differ.
+                    if (clamped && !transientToo)
+                        txt.Text = Display(tt, settings[tt.Key]);
+                }
                 else if (node is ComboBox cmb && FieldTag.Of(cmb.Tag) is FieldTag mt && (transientToo || !mt.Transient) && cmb.SelectedItem is ComboBoxItem selected)
                     settings[mt.Key] = ComboValue(mt, selected.Tag);
                 else if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt && (transientToo || !lt.Transient))
@@ -66,23 +71,41 @@ namespace UIFramework
             });
         }
 
-        private static JToken ValueOf(FieldTag tag, string text)
+        private static JToken ValueOf(FieldTag tag, string text) => ValueOf(tag, text, out _);
+
+        /// <summary>The stored value of a box's text; <paramref name="clamped"/> says the number was pulled into the
+        /// setting's min/max, so the box can show what was really saved.</summary>
+        private static JToken ValueOf(FieldTag tag, string text, out bool clamped)
         {
+            clamped = false;
             string trimmed = (text ?? "").Trim();
             switch (tag.Kind)
             {
                 case FieldKind.Int:
-                    if (int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out int i))
-                        return tag.UnlimitedAtZero && i == 0 ? int.MaxValue : i;
-                    return IsDigits(trimmed) ? int.MaxValue : 0;
+                {
+                    if (!long.TryParse(trimmed, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long whole))
+                        whole = IsDigits(trimmed) ? int.MaxValue : 0;          // more digits than an int holds
+                    if (tag.UnlimitedAtZero && whole == 0) return int.MaxValue;
+                    long kept = ClampWhole(tag, whole, int.MinValue, int.MaxValue);
+                    clamped = kept != whole;
+                    return (int)kept;
+                }
                 case FieldKind.Long:
-                    if (long.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out long l))
-                        return tag.UnlimitedAtZero && l == 0 ? long.MaxValue : l;
-                    return IsDigits(trimmed) ? long.MaxValue : 0L;
+                {
+                    if (!long.TryParse(trimmed, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long whole))
+                        whole = IsDigits(trimmed) ? long.MaxValue : 0L;
+                    if (tag.UnlimitedAtZero && whole == 0) return long.MaxValue;
+                    long kept = ClampWhole(tag, whole, long.MinValue, long.MaxValue);
+                    clamped = kept != whole;
+                    return kept;
+                }
                 case FieldKind.Double:
-                    double parsed = TryParseFinite(text, out double d) ? d : 0.0;
-                    parsed = Math.Max(tag.Min, Math.Min(tag.Max, parsed)) * tag.Factor;
-                    return parsed;
+                {
+                    double parsed = TryParseTyped(text, out double d) ? d : 0.0;
+                    double kept = Math.Max(tag.Min, Math.Min(tag.Max, parsed));
+                    clamped = kept != parsed;
+                    return kept * tag.Factor;
+                }
                 case FieldKind.Bool:
                     return string.Equals(trimmed, "true", StringComparison.OrdinalIgnoreCase);
                 case FieldKind.Template:
@@ -90,6 +113,14 @@ namespace UIFramework
                 default:
                     return trimmed;
             }
+        }
+
+        private static long ClampWhole(FieldTag tag, long value, long typeMin, long typeMax)
+        {
+            double min = Math.Max(tag.Min, typeMin), max = Math.Min(tag.Max, typeMax);
+            if (value < min) return min <= typeMin ? typeMin : (long)Math.Ceiling(min);
+            if (value > max) return max >= typeMax ? typeMax : (long)Math.Floor(max);
+            return value;
         }
 
         private static JToken ComboValue(FieldTag tag, object itemTag)
@@ -100,8 +131,33 @@ namespace UIFramework
                 case FieldKind.Long: return itemTag is long ll ? ll : itemTag is int il ? il : 0L;
                 case FieldKind.Double: return itemTag is double dd ? dd : 0.0;
                 case FieldKind.Bool: return itemTag is bool bb && bb;
-                default: return itemTag?.ToString() ?? "";
+                default: return itemTag is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : itemTag?.ToString() ?? "";
             }
+        }
+
+        /// <summary>A value as text the same on every Windows: numbers with a point, never "0,5" on a German system.</summary>
+        public static string Invariant(JToken value)
+        {
+            if (value == null || value.Type == JTokenType.Null) return "";
+            if (value.Type == JTokenType.String) return (string)value;
+            if (value is JValue v && v.Value is IFormattable f)
+                return v.Type == JTokenType.Float ? Convert.ToDouble(v.Value, CultureInfo.InvariantCulture).ToString("R", CultureInfo.InvariantCulture) : f.ToString(null, CultureInfo.InvariantCulture);
+            if (value is JValue b && b.Type == JTokenType.Boolean) return (bool)b ? "true" : "false";
+            return value.ToString(Newtonsoft.Json.Formatting.None);
+        }
+
+        /// <summary>A stored value as a number whatever form it came in: a number, a string "0.5" or "0,5" (one from a
+        /// German system), false for anything else ("", "abc", an array), so a page never breaks on a bad value.</summary>
+        public static bool TryNumber(JToken value, out double number)
+        {
+            number = 0;
+            if (value == null || value.Type == JTokenType.Null) return false;
+            if (value.Type == JTokenType.Integer || value.Type == JTokenType.Float)
+            {
+                number = Convert.ToDouble(((JValue)value).Value, CultureInfo.InvariantCulture);
+                return !double.IsNaN(number) && !double.IsInfinity(number);
+            }
+            return value.Type == JTokenType.String && TryParseFinite((string)value, out number);
         }
 
         /// <summary>The text a control shows for a stored value.</summary>
@@ -110,19 +166,29 @@ namespace UIFramework
             switch (tag.Kind)
             {
                 case FieldKind.Double:
-                    double d = value == null || value.Type == JTokenType.Null ? 0.0 : Convert.ToDouble(((JValue)value).Value, CultureInfo.InvariantCulture);
+                {
+                    // A value that is no number ("", "abc", an array) shows empty instead of breaking the page; the
+                    // check before saving then names the field.
+                    if (!TryNumber(value, out double d)) return value == null || value.Type == JTokenType.Null ? "0" : "";
                     double factor = tag.Factor != 0 ? tag.Factor : 1.0;
                     // Up to ten decimals: a stored 0.005 shows (and saves back) as 0.005, not 0.01; float noise like
                     // 10.000000000000002 still reads 10.
                     return (d / factor).ToString("0.##########", CultureInfo.InvariantCulture);
+                }
                 case FieldKind.Long:
-                    long l = value == null || value.Type == JTokenType.Null ? 0L : Convert.ToInt64(((JValue)value).Value, CultureInfo.InvariantCulture);
-                    return (tag.UnlimitedAtZero && l == long.MaxValue ? 0L : l).ToString(CultureInfo.InvariantCulture);
                 case FieldKind.Int:
-                    long i = value == null || value.Type == JTokenType.Null ? 0L : Convert.ToInt64(((JValue)value).Value, CultureInfo.InvariantCulture);
-                    return (tag.UnlimitedAtZero && i == int.MaxValue ? 0L : i).ToString(CultureInfo.InvariantCulture);
+                {
+                    if (!TryNumber(value, out double d)) return value == null || value.Type == JTokenType.Null ? "0" : "";
+                    double ceiling = tag.Kind == FieldKind.Int ? int.MaxValue : long.MaxValue;
+                    if (tag.UnlimitedAtZero && d >= ceiling) return "0";
+                    // A fraction in a whole-number field is shown as it is, not cut: the check before saving names it.
+                    if (d != Math.Floor(d)) return d.ToString("0.##########", CultureInfo.InvariantCulture);
+                    if (d >= long.MaxValue) return long.MaxValue.ToString(CultureInfo.InvariantCulture);
+                    if (d <= long.MinValue) return long.MinValue.ToString(CultureInfo.InvariantCulture);
+                    return ((long)d).ToString(CultureInfo.InvariantCulture);
+                }
                 default:
-                    return value == null || value.Type == JTokenType.Null ? "" : value.Type == JTokenType.String ? (string)value : value.ToString();
+                    return Invariant(value);
             }
         }
 
@@ -177,12 +243,13 @@ namespace UIFramework
                     {
                         if (!(raw is ComboBoxItem item) || item.Tag == null) continue;
                         bool hit;
+                        // A value that is no number matches no entry instead of breaking the reset.
                         if (mt.Kind == FieldKind.Double)
-                            hit = item.Tag is double dd && want != null && Math.Abs(dd - Convert.ToDouble(((JValue)want).Value, CultureInfo.InvariantCulture)) < 0.001;
+                            hit = item.Tag is double dd && TryNumber(want, out double wd) && Math.Abs(dd - wd) < 0.001;
                         else if (mt.Kind == FieldKind.Int || mt.Kind == FieldKind.Long)
-                            hit = want != null && Convert.ToInt64(item.Tag, CultureInfo.InvariantCulture) == Convert.ToInt64(((JValue)want).Value, CultureInfo.InvariantCulture);
+                            hit = TryNumber(want, out double wl) && Convert.ToDouble(item.Tag, CultureInfo.InvariantCulture) == wl;
                         else
-                            hit = string.Equals(item.Tag.ToString(), want == null ? "" : want.ToString(), StringComparison.OrdinalIgnoreCase);
+                            hit = string.Equals(item.Tag is IFormattable tf ? tf.ToString(null, CultureInfo.InvariantCulture) : item.Tag.ToString(), Invariant(want), StringComparison.OrdinalIgnoreCase);
                         if (hit) { cmb.SelectedItem = item; break; }
                     }
                 }
@@ -198,7 +265,7 @@ namespace UIFramework
             if (node is TextBox txt && txt.Tag is FieldTag tt)
                 return tt.Transient ? null : txt.Text ?? "";
             if (node is ComboBox cmb && cmb.Tag is FieldTag mt)
-                return mt.Transient ? null : cmb.SelectedItem is ComboBoxItem item && item.Tag != null ? item.Tag.ToString() : "";
+                return mt.Transient ? null : cmb.SelectedItem is ComboBoxItem item && item.Tag != null ? (item.Tag is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : item.Tag.ToString()) : "";
             if (node is ListEditor list && list.Tag is FieldTag lt)
                 return lt.Transient ? null : list.Serialized;
             if (node is OptionSlider slider && slider.Tag is FieldTag st)
@@ -275,7 +342,7 @@ namespace UIFramework
                 if (!(o is TextBox box) || !(FieldTag.Of(box.Tag) is FieldTag tag)) return;
                 if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
                 string text = box.Text.Trim();
-                bool valid = tag.Kind == FieldKind.Double ? TryParseFinite(text, out _) : IsDigits(text);
+                bool valid = tag.Kind == FieldKind.Double ? TryParseTyped(text, out _) : IsWhole(text, AllowsNegative(tag));
                 if (!valid)
                     invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": " + Text.T("field.empty") : ": '" + text + "'"));
             });
@@ -289,6 +356,29 @@ namespace UIFramework
         }
 
         public static bool IsDigits(string text) => !string.IsNullOrEmpty(text) && text.All(c => c >= '0' && c <= '9');
+
+        /// <summary>A whole-number field takes a minus only when its setting declares a min below 0.</summary>
+        public static bool AllowsNegative(FieldTag tag) => tag != null && tag.Min < 0 && tag.Min > double.MinValue;
+
+        /// <summary>Digits, with a leading minus where the setting allows negatives.</summary>
+        public static bool IsWhole(string text, bool negative) =>
+            IsDigits(text) || (negative && text != null && text.Length > 1 && text[0] == '-' && IsDigits(text.Substring(1)));
+
+        /// <summary>A number as the user typed it: a point or a comma as the decimal mark, but "1,000" (a comma before
+        /// exactly three digits) or a text with both marks is ambiguous and not taken for 1.</summary>
+        public static bool TryParseTyped(string text, out double value)
+        {
+            value = 0;
+            string t = (text ?? "").Trim().TrimEnd('%').Trim();
+            if (t.Contains(",") && t.Contains(".")) return false;
+            int comma = t.LastIndexOf(',');
+            if (comma > 0 && t.Length - comma - 1 == 3 && t.Substring(comma + 1).All(char.IsDigit))
+            {
+                string before = t.Substring(0, comma).TrimStart('-');
+                if (before.Length > 0 && before.All(char.IsDigit) && before.TrimStart('0').Length > 0) return false;
+            }
+            return TryParseFinite(t, out value);
+        }
 
         public static bool TryParseInvariantDouble(string text, out double value)
         {

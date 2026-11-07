@@ -22,6 +22,29 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
   shows, and saves back, as 0.01, nor 0.001 as 0.
 - **The language switch asks first.** In a locked window, picking another language with unsaved changes asks to
   save them, as the theme button does, instead of dropping them.
+- **Numbers the same on every Windows.** Option values, dropdowns, sliders, text fields and the host block's
+  `UiSettings.String`/`Double`/`Long` read and write numbers with a point, so a German system no longer turns 0.5
+  into "0,5"; `Long` no longer overflows on a huge stored value.
+- **A bad stored value no longer breaks a page.** A number field whose value is no number shows its default, a
+  number stored as text ("0,5" too) is read, and a fraction in a whole-number field is shown instead of cut.
+- **`min`/`max` hold for `int`, `long` and `duration`.** A value outside is saved as the nearest limit, and the
+  field shows what was saved; a `min` below 0 lets the field take a minus.
+- **A big default makes a `long` field.** A whole-number default beyond an int (also where the conventions say
+  `int`) is no longer cut to 2147483647 on save.
+- **Dropdowns and stop sliders keep an unknown value.** A stored value none of the options has stays as an extra
+  entry, selected, and is saved back unchanged instead of the first option.
+- **Number columns take numbers.** A table cell of an `int`, `long` or `double` column takes digits (and a minus,
+  a decimal mark) only, and a cell that is no number goes back to what it held instead of saving 0.
+- **`readOnly` in both spellings; more for the host block.** `readOnly` and `readonly` are read on a setting and a
+  column. `S()` takes `readOnly`, `step` and `group`. A column flag right after the kind (`"wins|int|readonly"`,
+  `"face|emote|twitch"`) is a flag, not the label.
+- **`null` hides any sender switch.** An explicit `null` in `senders` hides `useBot`, `sendAction`,
+  `cooldownUseBot`, `cooldownSendAction` and `cooldownGroup`, as documented; before only `numberSeparator` obeyed.
+- **Conditions.** `!key` holds while a switch is off or a field is empty. A gate the window does not show is read
+  from its saved value instead of counting as met. A field the user's layout moves to another section takes that
+  section's condition. An answer box that moves under its row hides with its button.
+- **Typed decimals are not guessed.** "1,000" or "1.000,5" in a decimal field is refused as ambiguous instead of
+  read as 1.
 
 ## [0.9.12] - 2026-11-07
 

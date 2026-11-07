@@ -39,10 +39,10 @@ namespace UIFramework
 
         public long Long(string key)
         {
-            var t = Token(key);
-            if (t == null || t.Type == JTokenType.Null) return 0;
-            if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) return Convert.ToInt64(((JValue)t).Value, CultureInfo.InvariantCulture);
-            return long.TryParse(t.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0;
+            if (!FieldBinding.TryNumber(Token(key), out double d)) return 0;
+            if (d >= long.MaxValue) return long.MaxValue;
+            if (d <= long.MinValue) return long.MinValue;
+            return (long)Math.Round(d);
         }
 
         public int Int(string key)
@@ -51,26 +51,26 @@ namespace UIFramework
             return l > int.MaxValue ? int.MaxValue : l < int.MinValue ? int.MinValue : (int)l;
         }
 
-        public double Double(string key)
+        public double Double(string key) => FieldBinding.TryNumber(Token(key), out double d) ? d : 0;
+
+        /// <summary>The value a number box starts from: the stored one, or the default when the file holds something
+        /// that is no number ("", "abc", an array), so the page builds and the bad value is not saved back.</summary>
+        private JToken NumberToken(string key)
         {
             var t = Token(key);
-            if (t == null || t.Type == JTokenType.Null) return 0;
-            if (t.Type == JTokenType.Integer || t.Type == JTokenType.Float) return Convert.ToDouble(((JValue)t).Value, CultureInfo.InvariantCulture);
-            return FieldBinding.TryParseInvariantDouble(t.ToString(), out double d) ? d : 0;
+            if (t == null || t.Type == JTokenType.Null || FieldBinding.TryNumber(t, out _)) return t;
+            return _defaults[key];
         }
 
-        public string String(string key)
-        {
-            var t = Token(key);
-            return t == null || t.Type == JTokenType.Null ? "" : t.Type == JTokenType.String ? (string)t : t.ToString();
-        }
+        public string String(string key) => FieldBinding.Invariant(Token(key));
 
         // ---- Boxes ---------------------------------------------------------------------------------------
 
         public TextBox SettingBox(string label, string key, string tooltip, FieldKind kind = FieldKind.String)
         {
             var tag = new FieldTag(key, kind);
-            var box = new TextBox { Text = FieldBinding.Display(tag, Token(key)), Tag = tag, ToolTip = tooltip };
+            var token = kind == FieldKind.Int || kind == FieldKind.Long || kind == FieldKind.Double ? NumberToken(key) : Token(key);
+            var box = new TextBox { Text = FieldBinding.Display(tag, token), Tag = tag, ToolTip = tooltip };
             Ui.StyleInput(box);
             AutomationProperties.SetName(box, label);
             _parts.Boxes[key] = box;
@@ -81,9 +81,9 @@ namespace UIFramework
         {
             var box = SettingBox(label, key, tooltip, FieldKind.Int);
             ((FieldTag)box.Tag).UnlimitedAtZero = unlimitedAtZero;
-            box.Text = FieldBinding.Display((FieldTag)box.Tag, Token(key));
-            box.MaxLength = 9;
-            Ui.DigitsOnly(box);
+            box.Text = FieldBinding.Display((FieldTag)box.Tag, NumberToken(key));
+            box.MaxLength = 11;
+            WholeOnly(box);
             return box;
         }
 
@@ -93,9 +93,9 @@ namespace UIFramework
         {
             var box = SettingBox(label, key, tooltip, FieldKind.Long);
             ((FieldTag)box.Tag).UnlimitedAtZero = unlimitedAtZero;
-            box.Text = FieldBinding.Display((FieldTag)box.Tag, Token(key));
-            box.MaxLength = 18;
-            Ui.DigitsOnly(box);
+            box.Text = FieldBinding.Display((FieldTag)box.Tag, NumberToken(key));
+            box.MaxLength = 20;
+            WholeOnly(box);
             return box;
         }
 
@@ -105,6 +105,31 @@ namespace UIFramework
             box.MaxLength = 12;
             Ui.DecimalsOnly(box);
             return box;
+        }
+
+        /// <summary>Digits only, and a leading minus once the setting allows negatives (its tag's Min, set after the
+        /// box is built, is read when typing).</summary>
+        private static void WholeOnly(TextBox box)
+        {
+            bool Allowed(string text, int at)
+            {
+                bool negative = FieldBinding.AllowsNegative(FieldTag.Of(box.Tag));
+                for (int k = 0; k < text.Length; k++)
+                {
+                    char c = text[k];
+                    if (c >= '0' && c <= '9') continue;
+                    if (c == '-' && negative && at + k == 0) continue;
+                    return false;
+                }
+                return true;
+            }
+            box.PreviewTextInput += (s, e) => e.Handled = !Allowed(e.Text, box.SelectionStart);
+            box.PreviewKeyDown += (s, e) => { if (e.Key == Key.Space) e.Handled = true; };
+            DataObject.AddPastingHandler(box, (s, e) =>
+            {
+                if (!e.DataObject.GetDataPresent(DataFormats.Text) || !Allowed(((string)e.DataObject.GetData(DataFormats.Text)).Trim(), box.SelectionStart))
+                    e.CancelCommand();
+            });
         }
 
         public FrameworkElement IntField(string label, string key, string tooltip, bool unlimitedAtZero = false) =>
@@ -221,10 +246,21 @@ namespace UIFramework
                 combo.Items.Add(new ComboBoxItem { Content = option.Label, Tag = option.Value });
             combo.SelectedItem = combo.Items.OfType<ComboBoxItem>()
                 .FirstOrDefault(i => string.Equals(i.Tag as string, current ?? "", StringComparison.OrdinalIgnoreCase))
+                ?? Kept(combo, current, current)
                 ?? combo.Items.OfType<ComboBoxItem>().FirstOrDefault();
             AutomationProperties.SetName(combo, label);
             _parts.Combos[key] = combo;
             return combo;
+        }
+
+        /// <summary>A stored value the options do not offer (an older version's, one typed into the file) is kept as an
+        /// extra entry and selected, so a save that does not touch the dropdown writes it back unchanged.</summary>
+        private static ComboBoxItem Kept(ComboBox combo, object value, string shown)
+        {
+            if (value == null || (value is string s && s.Length == 0)) return null;
+            var item = new ComboBoxItem { Content = shown, Tag = value };
+            combo.Items.Add(item);
+            return item;
         }
 
         public FrameworkElement StringComboField(string label, string key, (string Value, string Label)[] options, string tooltip) =>
@@ -237,6 +273,7 @@ namespace UIFramework
             foreach (var option in options)
                 combo.Items.Add(new ComboBoxItem { Content = option.Label, Tag = option.Value });
             combo.SelectedItem = combo.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == value)
+                ?? (FieldBinding.TryNumber(Token(key), out _) ? Kept(combo, value, value.ToString(CultureInfo.InvariantCulture)) : null)
                 ?? combo.Items.OfType<ComboBoxItem>().FirstOrDefault();
             AutomationProperties.SetName(combo, label);
             _parts.Combos[key] = combo;
@@ -250,6 +287,7 @@ namespace UIFramework
             foreach (var option in options)
                 combo.Items.Add(new ComboBoxItem { Content = option.Label, Tag = option.Value });
             combo.SelectedItem = combo.Items.OfType<ComboBoxItem>().FirstOrDefault(i => Math.Abs((double)i.Tag - value) < 0.001)
+                ?? (FieldBinding.TryNumber(Token(key), out _) ? Kept(combo, value, value.ToString("0.##########", CultureInfo.InvariantCulture)) : null)
                 ?? combo.Items.OfType<ComboBoxItem>().FirstOrDefault();
             AutomationProperties.SetName(combo, label);
             _parts.Combos[key] = combo;
@@ -278,7 +316,13 @@ namespace UIFramework
                 Margin = new Thickness(0, 4, 0, 0)
             };
             if (!slider.Put(Token(key)))
+            {
                 slider.Value = slider.Minimum;
+                // A stored value the stops do not offer stays what is saved until the slider is moved.
+                var stored = Token(key);
+                if (stops && stored != null && stored.Type != JTokenType.Null && FieldBinding.Invariant(stored).Length > 0)
+                    slider.Keep(stored);
+            }
             AutomationProperties.SetName(slider, label);
             _parts.Sliders[key] = slider;
 
@@ -296,7 +340,7 @@ namespace UIFramework
                 {
                     var caption = new TextBlock { Text = options[i].Label, FontSize = 11, Foreground = Theme.SubFg, Cursor = Cursors.Hand };
                     int stop = i;
-                    caption.MouseLeftButtonDown += (sender, e) => slider.Value = stop;
+                    caption.MouseLeftButtonDown += (sender, e) => { slider.LetGo(); slider.Value = stop; Paint(); };
                     captions.Children.Add(caption);
                     labels.Add(caption);
                 }
@@ -315,7 +359,9 @@ namespace UIFramework
                 }
                 void Paint()
                 {
-                    int at = slider.Index;
+                    // A kept value the stops do not offer: named beside the label, no stop lit until one is chosen.
+                    head.Text = slider.IsKept ? label + "  ·  " + slider.StoredText : label;
+                    int at = slider.IsKept ? -1 : slider.Index;
                     for (int i = 0; i < labels.Count; i++)
                     {
                         labels[i].Foreground = i == at ? new SolidColorBrush(Theme.AccentText) : Theme.SubFg;
@@ -325,6 +371,8 @@ namespace UIFramework
                 }
                 captions.SizeChanged += (sender, e) => Place();
                 slider.ValueChanged += (sender, e) => Paint();
+                // A click on the stop the slider already sits on chooses it too.
+                slider.PreviewMouseLeftButtonUp += (sender, e) => { if (slider.IsKept) { slider.LetGo(); Paint(); } };
                 Paint();
                 panel.Children.Add(captions);
             }
@@ -541,7 +589,7 @@ namespace UIFramework
             if (_parts.Boxes.TryGetValue(key, out var box))
                 return box.Text;
             if (_parts.Combos.TryGetValue(key, out var combo) && combo.SelectedItem is ComboBoxItem item)
-                return item.Tag?.ToString() ?? fallback;
+                return item.Tag is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : item.Tag?.ToString() ?? fallback;
             if (_parts.Sliders.TryGetValue(key, out var slider))
                 return slider.StoredText;
             return fallback;
