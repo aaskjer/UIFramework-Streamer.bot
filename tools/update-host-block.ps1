@@ -40,6 +40,11 @@ function Split-Block([string[]] $lines) {
 
 $templateText = [IO.File]::ReadAllText($Template, [Text.Encoding]::UTF8).Replace("`r`n", "`n").TrimEnd("`n")
 $templateLines = $templateText.Split("`n")
+# Only what stands between the template's two markers is the block; the note above them stays in the template.
+$tFirst = [Array]::FindIndex($templateLines, [Predicate[string]] { param($l) $l -match '^\s*// --- UIFramework host block' })
+$tLast = [Array]::FindIndex($templateLines, [Predicate[string]] { param($l) $l -match '^\s*// --- end UIFramework host block ---' })
+if ($tFirst -lt 0 -or $tLast -le $tFirst) { throw "No UIFramework host block (its two markers) in the template $Template" }
+$templateLines = $templateLines[$tFirst..$tLast]
 $fileText = [IO.File]::ReadAllText($File, [Text.Encoding]::UTF8)
 $crlf = $fileText.Contains("`r`n")
 $fileLines = $fileText.Replace("`r`n", "`n").Split("`n")
