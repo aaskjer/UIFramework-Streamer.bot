@@ -203,7 +203,7 @@ window shows it whenever the user wants. A window without a tour has no **?**.
 | null | nothing: a note in the middle | none; give a title or a text |
 
 A stop the window cannot show is left out: a page the user hid, a field hidden by the layout, `customise` in a locked
-window. A target that is neither a setting, a page nor a part is listed on the Log page like any other mistake in the
+window. A target that is neither a setting, a page nor a part is listed under the red "i" like any other mistake in the
 declaration. The game's own titles and texts translate through `Lang(code, Tx(declared, translation))` like every
 declared text. In the schema: `window.tour: [ "start", { "target": "sides", "title": "…", "text": "…" } ]`; a stop as
 a plain string is the target alone.
@@ -220,7 +220,7 @@ section its settings declare and give the condition, the same as a field's `show
 In the schema: `window.sections: [ { "name": "IGDB access", "showWhen": "questionSource=igdb" } ]`. A field's own
 `showWhen` and its section's both have to hold. A field the user's layout moves to another section takes that
 section's condition, not the one it was declared in. When the window opens, every condition is checked: a key that is
-not a setting, or a value a dropdown has no option for (`questionSource=IGBD`), is listed on the Log page.
+not a setting, or a value a dropdown has no option for (`questionSource=IGBD`), is listed under the red "i" in the header.
 
 ### Languages
 
@@ -267,9 +267,14 @@ What the game declares is checked when the window opens: an unknown kind, a requ
 setting, a page naming a pattern no setting matches, a minimum above a maximum, a section condition for a section
 no setting is in, an old key (`aliases`) that is another setting's key, a known key of the conventions declared as
 another kind of value (`maxBet` as `options`: it would still take their limits, old keys and translations), a
-section split by another on its page (its heading would show twice), an icon name the framework does not know. The window shows a banner and
-lists the findings on top of the Log page (on the About page in a window without one), so the game's author
-sees them without reading Streamer.bot's log.
+section split by another on its page (its heading would show twice), an icon name the framework does not know. A red **i** appears in the
+window's header; a click opens a panel with every finding (and whatever failed while the window was open: a page
+that could not be built, a failed save, an unreadable layout file), with *Copy* for a bug report. The pages show
+none of it, and every line is in Streamer.bot's log as well.
+
+<p align="center">
+  <img src="images/problems-dark.png" width="48%" alt="The red i in the header, its panel open: four mistakes in the declaration, one failure while the window was open">
+</p>
 
 A settings action that carries a spec of its own (the JSON with the same parts as the builder, see the git
 history of `docs/Spec.md` and `stub/Stub.spec.cs`) wins over the window in the schema.

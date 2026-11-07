@@ -5,6 +5,14 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- **Problems behind a red "i".** What the game declares that does not fit, and what fails while the window is
+  open (a page that cannot be built, a handler that throws, a failed save, an unreadable layout file), no longer
+  show as a banner and a list on the Log or About page. A red **i** appears in the header instead; a click opens a
+  panel that lists them in two groups, the failures with their time, and *Copy* puts the whole list on the
+  clipboard for a bug report. Esc, the close button or a click beside it closes it. Every line still goes to
+  Streamer.bot's log. The status line's "Something went wrong" points at the **i**. Preview:
+  `-windowshots <folder> -problems` photographs the window with the **i**, then with its panel open.
+
 ## [0.10.0] - 2026-11-07
 
 A tour of the window on its first open.

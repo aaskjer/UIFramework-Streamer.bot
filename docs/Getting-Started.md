@@ -212,9 +212,9 @@ settings apply. The demo pays a win into that variable with `CPH.GetTwitchUserVa
 - The customise mode: users rename, move and hide fields and pages, in `uiframework.layout.json` next to the
   settings file, surviving every import of your game ([Customize.md](Customize.md)).
 - Export and import of the settings.
-- A banner, and a highlighted list on top of the Log page (on About when there is none), when the table or the
-  window declares something the framework cannot use (an unknown kind, a requirement on a key that is not there),
-  so you see it without reading Streamer.bot's log.
+- A red **i** in the header when the table or the window declares something the framework cannot use (an unknown
+  kind, a requirement on a key that is not there) or something fails while the window is open: a click lists it
+  all, with a *Copy* button for a bug report, so you see it without reading Streamer.bot's log. The pages stay clean.
 
 ### What your users get on their machine
 

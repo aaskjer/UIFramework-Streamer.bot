@@ -33,6 +33,8 @@ namespace UIFramework
 
         private Window _window;
         private volatile bool _shuttingDown;
+        // What went wrong, for the red "i" in the header: the schema's problems and what failed while the window was open.
+        private readonly ProblemList _problems;
         // The status line of the window that is up, for an error a handler did not catch.
         private Action<string> _onError;
 
@@ -49,6 +51,14 @@ namespace UIFramework
                 throw new ArgumentException("WindowSpec.SettingsPath is required.");
             _store = new SettingsStore(spec.SettingsPath, spec.Defaults).WithAliases(spec.Aliases, spec.AliasFactors, spec.AliasesShared);
             _gateKey = Path.GetFullPath(spec.SettingsPath);
+            _problems = new ProblemList(() => _spec.Problems);
+        }
+
+        /// <summary>A failure while the window is open: into Streamer.bot's log as an error, and under the red "i".</summary>
+        private void Failed(string message)
+        {
+            _log.Error(_spec.LogPrefix + " " + message);
+            _problems.Add(message);
         }
 
         /// <summary>
@@ -175,7 +185,7 @@ namespace UIFramework
             // A mistake in one handler (a click, a timer) is logged and the window stays, with what the user typed.
             Dispatcher.CurrentDispatcher.UnhandledException += (s, e) =>
             {
-                _log.Error(_spec.LogPrefix + " " + e.Exception.GetType().Name + " in the window: " + e.Exception.Message);
+                Failed(e.Exception.GetType().Name + " in the window: " + e.Exception.Message);
                 try { _onError?.Invoke(e.Exception.Message); } catch (Exception) { }
                 e.Handled = true;
             };
@@ -202,7 +212,10 @@ namespace UIFramework
             var layout = _spec.Layout ?? LayoutFile.Load(_spec.SettingsPath);
             _spec.Layout = layout;
             if (layout.Problem != null)
+            {
                 _log.Warn(_spec.LogPrefix + " " + LayoutFile.FileName + ": " + layout.Problem);
+                _problems.Add(LayoutFile.FileName + ": " + layout.Problem);
+            }
             if (layout.AdoptFromHost(settings, "darkMode", "DarkMode"))
             {
                 // Split with nothing changed: a list still in the settings file whose own file is not there yet moves
@@ -246,6 +259,9 @@ namespace UIFramework
             // The tour, while it is up; the shell's shortcuts wait for it. StartTour is set by every build.
             Tour tour = null;
             Action startTour = null;
+            // The red "i": its panel, and the listener that shows the button when something new goes wrong.
+            Action openProblems = null;
+            Action problemsChanged = null;
 
             void Rebuild(string pageId)
             {
@@ -301,18 +317,18 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
-                    _log.Error(_spec.LogPrefix + " Page '" + pageSpec.Id + "' could not be built: " + ex.Message);
+                    Failed("Page '" + pageSpec.Id + "' could not be built: " + ex.Message);
                     page = Ui.Scroll(Ui.Note(Text.T("page.failed", ex.Message)));
                 }
                 if (page != null)
                     pages.Add((pageSpec, page));
             }
             if (pages.Count == 0)
-                pages.Add((new PageSpec("empty", Text.T("page.none.title"), "⚙️", null), Ui.Scroll(Ui.Note(Text.T("page.none.text")))));
+                pages.Add((new PageSpec("empty", Text.T("page.none.title"), "âš™ï¸", null), Ui.Scroll(Ui.Note(Text.T("page.none.text")))));
             foreach (var wire in ctx.AfterBuild)
             {
                 try { wire(); }
-                catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Page wiring failed: " + ex.Message); }
+                catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Page wiring failed: " + ex.Message); _problems.Add("Page wiring failed: " + ex.Message); }
             }
 
             var pageHost = new Grid();
@@ -349,7 +365,7 @@ namespace UIFramework
             for (int i = 0; i < pages.Count; i++)
             {
                 int index = i;
-                var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "•", () => ShowPage(index));
+                var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "â€¢", () => ShowPage(index));
                 item.ToolTip = i < 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, i + 1) : i == 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, 0) : pages[i].Spec.Title;
                 if (customizing)
                     Customize.AttachRail(ctx, pages[i].Spec, item, () => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList());
@@ -442,6 +458,18 @@ namespace UIFramework
                 DockPanel.SetDock(btnTour, Dock.Right);
                 header.Children.Add(btnTour);
             }
+            // The red "i" beside it, while something went wrong: the schema's problems and the window's failures.
+            var layers = new Grid();
+            var btnProblems = ProblemsView.Button();
+            btnProblems.Margin = new Thickness(8, -4, 0, -4);
+            openProblems = () => ProblemsView.Open(window, layers, btnProblems, _problems);
+            btnProblems.Click += (s, e) => openProblems();
+            DockPanel.SetDock(btnProblems, Dock.Right);
+            header.Children.Add(btnProblems);
+            if (problemsChanged != null) _problems.Changed -= problemsChanged;
+            problemsChanged = () => window.Dispatcher.BeginInvoke(new Action(() => ProblemsView.Update(btnProblems, _problems)));
+            _problems.Changed += problemsChanged;
+            ProblemsView.Update(btnProblems, _problems);
             DockPanel.SetDock(pills, Dock.Right);
             header.Children.Add(pills);
             header.Children.Add(pageTitle);
@@ -480,7 +508,7 @@ namespace UIFramework
                 status.ToolTip = why ?? text;
             }
             ctx.SetStatus = (text, colour, why) => SetStatus(text, colour, why);
-            _onError = message => SetStatus(Text.Or("status.error", "Something went wrong (see the log)", "Etwas ist schiefgegangen (siehe Log)"), Theme.DangerText, message);
+            _onError = message => SetStatus(Text.T("status.error"), Theme.DangerText, message);
 
             var baseline = new Dictionary<object, string>();
             FieldBinding.Snapshot(pageHost, baseline);
@@ -513,7 +541,7 @@ namespace UIFramework
             };
 
             var btnTheme = layout.Rainbow
-                ? Ui.IconButton("🌈", null, Text.T("tip.theme"))
+                ? Ui.IconButton("ðŸŒˆ", null, Text.T("tip.theme"))
                 : Ui.IconButton(Theme.IsDark ? Icons.Sun : Icons.Moon, Icons.Font, Text.T("tip.theme.rainbow"));
             var btnReset = Ui.IconButton(Icons.Reset, Icons.Font, Text.T("tip.resetAll"));
             btnReset.Margin = new Thickness(6, 0, 0, 0);
@@ -842,20 +870,13 @@ namespace UIFramework
                 root.Children.Add(bar);
                 window.Title = _spec.Title + Text.T("title.settings") + Text.T("title.customise");
             }
-            if (_spec.Problems.Count > 0)
-            {
-                // The host's author sees what the schema got wrong without opening Streamer.bot's log.
-                string where = LogPage.Shows(_spec) ? ".log" : "";
-                var banner = Ui.Banner(_spec.Problems.Count == 1 ? Text.T("banner.problems.one" + where) : Text.T("banner.problems.many" + where, _spec.Problems.Count), PillStyle.Warning);
-                DockPanel.SetDock(banner, Dock.Top);
-                root.Children.Add(banner);
-                foreach (var problem in _spec.Problems)
-                    _log.Warn(_spec.LogPrefix + " Schema: " + problem);
-            }
+            // What the schema got wrong: in Streamer.bot's log, and under the red "i" in the header (no banner, no
+            // list on a page: the pages stay the user's).
+            foreach (var problem in _spec.Problems)
+                _log.Warn(_spec.LogPrefix + " Schema: " + problem);
             root.Children.Add(footer);
             root.Children.Add(body);
-            // The window's content, and over it, while it is up, the tour.
-            var layers = new Grid();
+            // The window's content, and over it, while it is up, the tour or the problems panel.
             layers.Children.Add(root);
             window.Content = layers;
 
@@ -956,6 +977,24 @@ namespace UIFramework
                     // Text drawn on a transparent bitmap loses its ClearType and comes out faint: the shot gets the
                     // window's background under everything.
                     if (root.Background == null) root.Background = window.Background;
+                    if (request.Problems)
+                    {
+                        // The window with the red "i" (problems-closed.png), then with its panel open (problems.png).
+                        window.UpdateLayout();
+                        WindowCapture.Settle(Math.Max(300, request.SettleMs / 3));
+                        string closed = Path.Combine(request.Folder, "problems-closed.png");
+                        WindowCapture.Save(layers, closed, layers.ActualWidth, layers.ActualHeight);
+                        request.Written.Add(closed);
+                        openProblems?.Invoke();
+                        window.UpdateLayout();
+                        WindowCapture.Settle(Math.Max(300, request.SettleMs / 3));
+                        string opened = Path.Combine(request.Folder, "problems.png");
+                        WindowCapture.Save(layers, opened, layers.ActualWidth, layers.ActualHeight);
+                        request.Written.Add(opened);
+                        closeConfirmed = true;
+                        window.Close();
+                        return;
+                    }
                     if (request.Tour)
                     {
                         // The tour, stop by stop, as the user sees it: tour-01.png, tour-02.png, ...
@@ -1096,8 +1135,8 @@ namespace UIFramework
                     var unchecked_ = MessageBox.Show(
                         Text.Or("dialog.unchecked.text",
                             "The game did not check these settings ({0}).\n\nSave them unchecked anyway?",
-                            "Das Spiel hat diese Einstellungen nicht geprüft ({0}).\n\nTrotzdem ungeprüft speichern?", why.Length > 0 ? why : "-"),
-                        Text.Or("dialog.unchecked.title", "Not checked", "Nicht geprüft"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                            "Das Spiel hat diese Einstellungen nicht geprÃ¼ft ({0}).\n\nTrotzdem ungeprÃ¼ft speichern?", why.Length > 0 ? why : "-"),
+                        Text.Or("dialog.unchecked.title", "Not checked", "Nicht geprÃ¼ft"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (unchecked_ != MessageBoxResult.Yes)
                         return false;
                     fromHost = null;
@@ -1106,7 +1145,7 @@ namespace UIFramework
                     warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
                 if (warnings.Count > 0)
                 {
-                    var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  â€¢ ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (proceed != MessageBoxResult.Yes)
                         return false;
                 }
@@ -1142,7 +1181,7 @@ namespace UIFramework
             }
             catch (Exception ex)
             {
-                _log.Error(_spec.LogPrefix + " Save error: " + ex.Message);
+                Failed("Save error: " + ex.Message);
                 MessageBox.Show(Text.T("dialog.saveFailed.text", ex.Message), Text.T("dialog.saveFailed.title"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
@@ -1159,7 +1198,7 @@ namespace UIFramework
         private void SafeHook(Action hook)
         {
             try { hook(); }
-            catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Host hook failed: " + ex.Message); }
+            catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Host hook failed: " + ex.Message); _problems.Add("The game's handler failed: " + ex.Message); }
         }
 
         private sealed class NullLog : IHostLog
@@ -1183,6 +1222,8 @@ namespace UIFramework
         public double MaxHeight = 2400;
         /// <summary>Photograph the window's tour, one shot per stop, instead of the pages.</summary>
         public bool Tour;
+        /// <summary>Photograph the window with its red "i", then with the problems panel open, instead of the pages.</summary>
+        public bool Problems;
         public readonly List<string> Written = new List<string>();
 
         public static void Save(FrameworkElement element, string file) => Save(element, file, element.ActualWidth, element.ActualHeight);

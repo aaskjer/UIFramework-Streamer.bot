@@ -61,15 +61,6 @@ namespace UIFramework
             foreach (var section in spec.About.Sections)
                 AddSection(page, section, ctx, false);
 
-            if (spec.Problems.Count > 0 && !LogPage.Shows(spec))
-            {
-                // Without a log page the About page is where the problems are listed.
-                page.Children.Add(Ui.Section(Text.T("about.problems")));
-                page.Children.Add(Ui.Note(Text.T("about.problems.note")));
-                foreach (var problem in spec.Problems)
-                    page.Children.Add(new TextBlock { Text = "•  " + problem, FontSize = 12, Foreground = new SolidColorBrush(Theme.WarningText), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
-            }
-
             page.Children.Add(Ui.Section(Text.T("about.links")));
             // Every address once: a game that lists its repository or releases among its own links (as the
             // framework already does from `releases`) does not get them twice.
