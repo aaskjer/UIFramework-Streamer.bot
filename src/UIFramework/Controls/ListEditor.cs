@@ -257,7 +257,7 @@ namespace UIFramework
 
         private Control Cell(SettingColumn column, JToken value)
         {
-            string text = value == null || value.Type == JTokenType.Null ? "" : value.Type == JTokenType.String ? (string)value : value.ToString();
+            string text = FieldBinding.Invariant(value);
             switch (column.Kind)
             {
                 case "bool":
@@ -284,7 +284,19 @@ namespace UIFramework
                     Ui.StyleInput(box);
                     if (column.ReadOnly) MakeReadOnly(box);
                     if (column.Kind == "int" || column.Kind == "long") Ui.DigitsOnly(box);
-                    else if (column.Kind == "double") Ui.DecimalsOnly(box);
+                    else if (column.Kind == "double")
+                    {
+                        Ui.DecimalsOnly(box);
+                        // Text that is no clear number ("1,000": a thousand or one?) is refused when the cell is left,
+                        // as the table refuses it: the cell goes back to the last number it held.
+                        string accepted = text;
+                        box.LostFocus += (sender, e) =>
+                        {
+                            string typed = box.Text.Trim();
+                            if (typed.Length > 0 && !FieldBinding.TryParseTyped(typed, out _)) box.Text = accepted;
+                            else accepted = box.Text;
+                        };
+                    }
                     AutomationProperties.SetName(box, column.Label ?? column.Key);
                     box.TextChanged += (sender, e) => Notify();
                     return box;
@@ -312,7 +324,7 @@ namespace UIFramework
                 case "long":
                     return long.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? l : 0L;
                 case "double":
-                    return FieldBinding.TryParseFinite(text, out double d) ? d : 0.0;
+                    return FieldBinding.TryParseTyped(text, out double d) ? d : 0.0;
                 case "text":
                     return text.Trim();
                 default:

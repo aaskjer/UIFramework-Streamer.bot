@@ -55,7 +55,7 @@ namespace UIFramework
             };
             var tag = new TextBlock
             {
-                Text = setting.Hidden ? "hidden" : "",
+                Text = setting.Hidden ? Text.T("cust.hidden") : "",
                 FontSize = 11,
                 Foreground = Theme.MutedFg,
                 Margin = new Thickness(8, 0, 0, 0),
@@ -291,7 +291,7 @@ namespace UIFramework
             if (beside)
             {
                 string row = targetSetting.Row;
-                if (string.IsNullOrEmpty(row) || row.StartsWith("~", StringComparison.Ordinal))
+                if (!SharesRow(row))
                 {
                     row = "row-" + target;
                     ctx.Layout.SetField(target, "row", row);
@@ -303,13 +303,25 @@ namespace UIFramework
             var onPage = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
             onPage.Remove(dragged);
             int at = onPage.IndexOf(target);
-            onPage.Insert(at < 0 ? onPage.Count : before ? at : at + 1, dragged);
+            int first = at, last = at;
+            if (!beside && at >= 0 && SharesRow(targetSetting.Row))
+            {
+                // Above or below a field that shares a line with others: above or below that whole line, so the row
+                // stays together.
+                string RowOf(string key) => ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == key)?.Row;
+                while (first > 0 && RowOf(onPage[first - 1]) == targetSetting.Row) first--;
+                while (last < onPage.Count - 1 && RowOf(onPage[last + 1]) == targetSetting.Row) last++;
+            }
+            onPage.Insert(at < 0 ? onPage.Count : before ? first : last + 1, dragged);
             if (draggedSetting.Page != pageId)
                 ctx.Layout.SetField(dragged, "page", pageId);
             for (int i = 0; i < onPage.Count; i++)
                 ctx.Layout.SetField(onPage[i], "order", i * 10);
             Commit(ctx, pageId);
         }
+
+        /// <summary>A row others can share: named, not the "~key" a field on a line of its own carries.</summary>
+        private static bool SharesRow(string row) => !string.IsNullOrEmpty(row) && !row.StartsWith("~", StringComparison.Ordinal);
 
         /// <summary>Puts the dragged field in front of the target (null: at the end) and writes an order for every
         /// field on the page. Nothing is written when that leaves the page as it is.</summary>
