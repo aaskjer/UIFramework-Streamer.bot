@@ -90,6 +90,8 @@ minutes, [examples/DemoGame](examples/DemoGame) is the result.
 3. Make a second action from `stub/Stub.cs`, put your game action's name into `GameActionName`, give it a
    trigger. The window opens with pages, validation, a customise mode, export/import and self-updates.
 
+[docs/Getting-Started.md](docs/Getting-Started.md#what-your-users-get-on-their-machine) also says what your users
+get on their machine: the first download, the update question and how to turn it off.
 [docs/Schema.md](docs/Schema.md) lists every kind of setting and every part of the window declaration,
 [docs/Loader.md](docs/Loader.md) how the stub fetches and updates the DLL, [docs/Customize.md](docs/Customize.md)
 what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and texts every window knows.
