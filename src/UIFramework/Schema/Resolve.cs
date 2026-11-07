@@ -137,8 +137,9 @@ namespace UIFramework
                 spec.Messages.Add(new MessageDef(setting.Group ?? lang.Page("messages") ?? "Messages", setting.Key, setting.Label, setting.Help ?? "", (setting.Placeholders ?? new List<string>()).ToArray()));
             if (spec.SampleValues == null)
                 spec.SampleValues = ctx => SampleValues(ctx, settings);
-            if (spec.TokenHelp == null)
-                spec.TokenHelp = (key, token) => lang.Placeholder(token);
+            // Set again on every resolve, so a language switch reaches the placeholder chips' tooltips too.
+            if (spec.TokenHelp == null || ReferenceEquals(spec.TokenHelp, spec.TokenHelpFromConventions))
+                spec.TokenHelp = spec.TokenHelpFromConventions = (key, token) => lang.Placeholder(token);
 
             // 5. Pages: the spec's order first, then whatever the settings still need, standard pages last.
             var claimed = new HashSet<string>(StringComparer.Ordinal);
@@ -155,6 +156,14 @@ namespace UIFramework
                         spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which no setting matches.");
                     foreach (var setting in Match(pattern, settings).Where(s => !claimed.Contains(s.Key)))
                     {
+                        // The Messages page builds the sender switches and the Log page its switch whatever a page
+                        // claims: a second field for the key would have the last word on save. They stay there.
+                        if (senderKeys.Contains(setting.Key) || setting.Key == spec.Log.WriteLogKey)
+                        {
+                            if (pattern == setting.Key)
+                                spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the " + (senderKeys.Contains(setting.Key) ? "Messages" : "Log") + " page shows; it stays there.");
+                            continue;
+                        }
                         // The user's layout has the last word: a field the user moved to another page stays there.
                         string moved = layout?.Field(setting.Key)?.Page;
                         if (moved != null && moved != page.Id)
@@ -302,6 +311,30 @@ namespace UIFramework
                     foreach (var value in part.Values)
                         if (!gate.Options.Any(o => string.Equals(o.Value, value, StringComparison.OrdinalIgnoreCase)))
                             spec.Problems.Add(owner + " " + what + " '" + key + "=" + value + "', but '" + key + "' has no option '" + value + "'.");
+                // <, <=, >, >= compare numbers: against text, or on a field that holds none, they never hold.
+                if (part.Op != null && part.Op != "=" && part.Op != "!=")
+                {
+                    string wanted = part.Values.FirstOrDefault() ?? "";
+                    if (!FieldBinding.TryParseInvariantDouble(wanted, out _))
+                        spec.Problems.Add(owner + " " + what + " '" + key + part.Op + wanted + "', but '" + wanted + "' is no number; such a comparison never holds.");
+                    else if (!HoldsNumber(gate))
+                        spec.Problems.Add(owner + " " + what + " '" + key + part.Op + wanted + "', but '" + key + "' holds no number; such a comparison never holds.");
+                }
+            }
+        }
+
+        /// <summary>Whether a setting holds a number a condition can compare with &lt; or &gt;: a number kind, a slider on a
+        /// scale, or options whose values are all numbers.</summary>
+        private static bool HoldsNumber(Setting s)
+        {
+            switch (s.Kind)
+            {
+                case "int": case "long": case "double": case "duration": case "percent":
+                    return true;
+                case "slider": case "options":
+                    return s.Options == null || s.Options.Count == 0 ? s.Kind == "slider" : s.Options.All(o => FieldBinding.TryParseInvariantDouble(o.Value, out _));
+                default:
+                    return false;
             }
         }
 
@@ -321,7 +354,7 @@ namespace UIFramework
             {
                 if (s.Kind != null && !Kinds.Contains(s.Kind))
                     spec.Problems.Add("'" + s.Key + "' has the kind '" + s.Kind + "', which the framework does not know; it is shown as text.");
-                if ((s.Kind == "options" || s.Kind == "slider") && (s.Options == null || s.Options.Count == 0))
+                if ((s.Kind == "options" || (s.Kind == "slider" && !(s.Min.HasValue && s.Max.HasValue))) && (s.Options == null || s.Options.Count == 0))
                     spec.Problems.Add("'" + s.Key + "' is " + (s.Kind == "slider" ? "a slider" : "an options field") + " without options.");
                 if (s.Kind == "list" && (s.Columns == null || s.Columns.Count == 0))
                     spec.Problems.Add("'" + s.Key + "' is a list without columns.");

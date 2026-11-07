@@ -90,7 +90,10 @@ namespace UIFramework
         }
 
         /// <summary>Whether one comparison holds for the live value of its gate. A gate the window does not show (hidden
-        /// in the customise mode, on no page) is read from the saved value; one the settings do not know at all holds.</summary>
+        /// in the customise mode, on no page) is read from the saved value; one the settings do not know at all holds.
+        /// Either way the value compared is the one that would be stored: a percent as its fraction, a duration in
+        /// seconds, an "unlimited" 0 as the large number it is saved as, so a gate compares the same shown or hidden.
+        /// An empty list counts as empty.</summary>
         public static bool Holds(Fields f, WindowParts parts, Part c)
         {
             bool present = parts.Switches.ContainsKey(c.Key) || parts.Combos.ContainsKey(c.Key) || parts.Boxes.ContainsKey(c.Key) || parts.Sliders.ContainsKey(c.Key);
@@ -104,11 +107,14 @@ namespace UIFramework
                 bool want = c.Values.Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) || v == "1");
                 return c.Op == "!=" ? on != want : on == want;
             }
-            string text = (present ? f.LiveText(c.Key, "") : FieldBinding.Invariant(saved)).Trim();
-            // A duration typed in minutes or hours compares in seconds, as it is stored and as its hidden value would.
-            if (present && parts.Boxes.TryGetValue(c.Key, out var box) && FieldTag.Of(box.Tag) is FieldTag tag
-                && tag.Kind == FieldKind.Int && tag.Factor != 1.0 && FieldBinding.TryParseTyped(text, out double typed))
-                text = Math.Round(typed * tag.Factor, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
+            string text;
+            if (present && parts.Boxes.TryGetValue(c.Key, out var box) && FieldTag.Of(box.Tag) is FieldTag tag)
+                text = FieldBinding.StoredText(tag, box.Text);
+            else if (present)
+                text = f.LiveText(c.Key, "");
+            else
+                text = saved is JContainer container && !container.HasValues ? "" : FieldBinding.Invariant(saved);
+            text = text.Trim();
             if (c.Op == null)
                 return c.Not ? text.Length == 0 : text.Length > 0;
             bool Same(string wanted) =>
