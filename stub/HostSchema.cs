@@ -185,6 +185,11 @@ public static class UiSchema
     public static UiText K(string key, string label, string help = null) => new UiText("keys", key, help == null ? (JToken)label : new JObject { ["label"] = label, ["help"] = help });
     public static UiText Pg(string id, string title) => new UiText("pages", id, title);
     public static UiText Tx(string declared, string translation) => new UiText("texts", declared, translation);
+    /// <summary>One of the window's own texts by its key in conventions/lang/en.json's ui section ("btn.save"), for a
+    /// language the framework has no file for yet.</summary>
+    public static UiText Ui(string key, string text) => new UiText("ui", key, text);
+    /// <summary>The help of a placeholder chip ({user}, {amount} …) in the game's language.</summary>
+    public static UiText Ph(string placeholder, string help) => new UiText("placeholders", placeholder, help);
 
     /// <summary>The global the stub reads the schema from: the action's name, with the characters Streamer.bot's
     /// store refuses (brackets, a trailing space) replaced. Must match the stub's SchemaVar.</summary>
@@ -241,7 +246,8 @@ public sealed class UiWindow
 
     /// <summary>The game's own texts in another language, laid over the conventions' when the window is in it:
     /// UiSchema.K (a key's label and help), Pg (a page's title by id), Tx (a declared text by its English wording:
-    /// a section, a pill text, a page title, an option label, a message group). Several calls add up.</summary>
+    /// a section, a pill text, a page title, an option label, a message group), Ui (one of the window's own texts by
+    /// its key) and Ph (a placeholder's help). Several calls add up.</summary>
     public UiWindow Lang(string code, params UiText[] texts)
     {
         var lang = LangMap[code] as JObject;

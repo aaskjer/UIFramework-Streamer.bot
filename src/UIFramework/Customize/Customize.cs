@@ -599,20 +599,35 @@ namespace UIFramework
         /// <summary>The languages the window offers, or null when there is only English to pick.</summary>
         public static ComboBox LanguagePicker(WindowSpec spec, LayoutFile layout, Action changed)
         {
-            if (spec.Languages == null || spec.Languages.Count < 2)
+            // A game that names its window's language has no picker: what the user picked would not apply.
+            if (spec.Languages == null || spec.Languages.Count < 2 || !string.IsNullOrEmpty(spec.Language))
                 return null;
-            var language = Ui.PlainCombo(Text.T("cust.language"), spec.Languages.ToArray());
+            var codes = spec.Languages.ToArray();
+            var language = Ui.PlainCombo(Text.T("cust.language"), codes.Select(LanguageName).ToArray());
             string current = layout.Language;
-            language.SelectedItem = current != null && spec.Languages.Contains(current) ? current : "en";
-            language.Width = 70;
+            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, current != null && codes.Contains(current) ? current : "en"));
+            language.Width = 110;
             language.SelectionChanged += (s, e) =>
             {
-                string code = language.SelectedItem as string ?? "en";
+                string code = language.SelectedIndex >= 0 ? codes[language.SelectedIndex] : "en";
                 if (code == (layout.Language ?? "en")) return;
                 layout.Language = code == "en" ? null : code;
                 changed();
             };
             return language;
+        }
+
+        /// <summary>A language by its own name ("Deutsch", "Español"); the code where Windows does not know it.</summary>
+        public static string LanguageName(string code)
+        {
+            try
+            {
+                var culture = System.Globalization.CultureInfo.GetCultureInfo(code);
+                string name = culture.NativeName;
+                bool unknown = string.IsNullOrEmpty(name) || culture.ThreeLetterISOLanguageName == "ivl" || culture.EnglishName.StartsWith("Unknown", StringComparison.OrdinalIgnoreCase);
+                return unknown ? code : culture.TextInfo.ToTitleCase(name);
+            }
+            catch (Exception) { return code; }
         }
 
         private static void Commit(PageContext ctx, string pageId)

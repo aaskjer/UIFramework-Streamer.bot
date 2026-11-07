@@ -74,7 +74,8 @@ setting it to 0, and the game hears of the save whatever happened.
 
 **The layout file** (`uiframework.layout.json`): the stub's notes in it (`skipVersion`, `frameworkAvailable`)
 are written only when they change, through a file beside it that is swapped in, and never over a file it could
-not read. The DLL keeps a layout file it cannot read as `uiframework.layout.json.broken` and logs why.
+not read. The DLL keeps a layout file that is no JSON as `uiframework.layout.json.broken` and logs why; one another
+program holds is read again a few times and otherwise left as it is (the window starts from the defaults once).
 
 **References:** none to add. The dialogs are Win32 message boxes (`user32.dll` through P/Invoke), the download
 runs through `System.Net.WebClient` from `System.dll`; both come with the references every action has.

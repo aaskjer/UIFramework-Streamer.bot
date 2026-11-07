@@ -139,7 +139,7 @@ namespace UIFramework.Tests
         }
 
         [Fact]
-        public void A_game_without_German_stays_English_whatever_the_layout_file_asks()
+        public void Every_language_with_texts_is_offered_and_a_game_without_its_own_keeps_its_wording()
         {
             string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "noGerman-" + System.Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(folder);
@@ -150,18 +150,21 @@ namespace UIFramework.Tests
             var schema = Schema.Parse(withoutLang.ToString());
             try
             {
+                // A game with no texts of its own: German is offered from the conventions, and what they translate is
+                // German; the game's own wording without a translation of its own stays as declared.
                 var spec = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
                 Entry.Prepare(spec, schema);
-                Assert.Equal(new[] { "en" }, spec.Languages);                                       // nothing else to offer
-                Assert.Equal("Everyone", spec.ResolvedSettings.First(s => s.Key == "globalCooldown").Label);
-                Assert.Equal("Game", spec.Pages.First(p => p.Id == "game").Title);
+                Assert.Equal(new[] { "en", "de", "es" }, spec.Languages);
+                Assert.Equal("Abklingzeit pro Nutzer", spec.ResolvedSettings.First(s => s.Key == "userCooldown").Label);
+                Assert.Equal("Spiel", spec.Pages.First(p => p.Id == "game").Title);
+                Assert.Equal("Decks", spec.ResolvedSettings.First(s => s.Key == "numDecks").Label);
 
-                // The same game with Lang("de"), even an empty one, offers German and is shown in it.
+                // With Lang("de") the game's own texts come on top.
                 var withLang = Schema.Parse(DeclaredSchema);
                 var german = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
                 Entry.Prepare(german, withLang);
-                Assert.Equal(new[] { "en", "de" }, german.Languages);
-                Assert.Equal("Abklingzeit pro Nutzer", german.ResolvedSettings.First(s => s.Key == "userCooldown").Label);
+                Assert.Equal(new[] { "en", "de", "es" }, german.Languages);
+                Assert.Equal("Decks im Schuh", german.ResolvedSettings.First(s => s.Key == "numDecks").Label);
             }
             finally { Text.Use(Conventions.Default.Lang); }
         }

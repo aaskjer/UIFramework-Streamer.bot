@@ -64,9 +64,9 @@ namespace UIFramework
         public static void Prepare(WindowSpec spec, Schema schema)
         {
             var layout = !string.IsNullOrEmpty(spec.SettingsPath) ? LayoutFile.Load(spec.SettingsPath) : new LayoutFile("layout");
-            // English always; another language only when the game brings texts for it, so a game that offers no
-            // German never shows a window half in German, whatever an old layout file asks for.
-            spec.Languages = new List<string> { "en" };
+            // Every language there are texts for: the conventions' (in the DLL or beside Streamer.bot) and the game's
+            // own. Where the game brought none, its own wording stays English and the rest is translated.
+            spec.Languages = Conventions.Available();
             if (schema.Lang != null)
                 foreach (var code in schema.Lang.Properties().Select(p => p.Name))
                     if (!spec.Languages.Contains(code)) spec.Languages.Add(code);
@@ -86,6 +86,8 @@ namespace UIFramework
             spec.Layout = layout;
             Text.Use(conventions.Lang);
             Resolve.Apply(spec, schema, conventions, spec.Locked ? null : layout);
+            if (conventions.LoadProblem != null)
+                spec.Problems.Add(conventions.LoadProblem);
         }
 
         /// <summary>Closes the window for a settings file without asking, for the host's Dispose.</summary>

@@ -2,14 +2,14 @@
 
 <p align="center">
   <b>One settings window for every Streamer.bot extension.</b><br>
-  Declare your settings once, get pages, validation, two languages and a customise mode for free.
+  Declare your settings once, get pages, validation, three languages and a customise mode for free.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/tool-streamer.bot-0b73ff" alt="Streamer.bot">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt=".NET Framework 4.8">
   <img src="https://img.shields.io/badge/UI-WPF-5C2D91" alt="WPF">
-  <img src="https://img.shields.io/badge/languages-English%20%7C%20Deutsch-2ea44f" alt="English and German">
+  <img src="https://img.shields.io/badge/languages-English%20%7C%20Deutsch%20%7C%20Espa%C3%B1ol-2ea44f" alt="English, German and Spanish">
   <br>
   <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/releases"><img src="https://img.shields.io/github/v/release/aaskjer/UIFramework-Streamer.bot?include_prereleases&label=release" alt="Release"></a>
   <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/releases"><img src="https://img.shields.io/github/release-date-pre/aaskjer/UIFramework-Streamer.bot?label=released" alt="Release date"></a>
@@ -51,8 +51,9 @@ first use, checked against its published SHA-256, and offers new releases when t
   spreadsheet. Fields can follow a dropdown, grey out or hide on a condition.
 - 🔘 **Buttons your game answers.** A test round, a preset, an OBS setup or a source check runs in your own code
   and answers with lines, a panel, emote pictures or values for other fields.
-- 🌍 **English, German if you want it.** A game offers German with `Lang("de")`: common settings, pages and
-  texts come translated, the game adds its own words. Without it the window stays English.
+- 🌍 **English, German, Spanish, and more.** Common settings, pages and the window's own texts come translated in
+  every language the framework has a file for; the game adds its own words with `Lang`. A new language is one JSON
+  file, in the DLL or in `UIFramework\lang\` beside Streamer.bot.
 - 🎨 **A customise mode.** Users rename, reorder, hide and move pages and fields by drag and drop, and pick the
   theme and accent colour. All of it lives in `uiframework.layout.json` and survives every import of the game;
   `Lock()` turns the mode off for a game that wants its window exactly as declared.

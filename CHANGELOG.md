@@ -5,6 +5,31 @@ its section here before the tag is pushed. Everything before 1.0.0 is published 
 
 ## [Unreleased]
 
+- **Spanish.** `conventions/lang/es.json` translates every known key, page, placeholder and window text, and the
+  short wordings German translates.
+- **Every language is offered.** The language picker lists every language there are texts for, by its own name
+  (English, Deutsch, Español): the DLL's files, a file in `UIFramework\lang\` beside Streamer.bot (a new language
+  or corrections, without a release), and the languages a game brings texts for. A game without texts of its own
+  gets what the conventions translate. A game that names its window's language has no picker.
+- **A game can translate the window itself** for a language the framework lacks: `Ui(key, text)` and
+  `Ph(placeholder, help)` in `Lang`.
+- **A relabelled known key keeps the game's wording** where the conventions do not translate it; before, a language
+  without a conventions file showed the conventions' English label over the game's own.
+- **Neutral credits.** The framework names no author: a game without credits shows none, and every About page ends
+  with the links `conventions/keys.json` lists (`about.links`): the UIFramework page on aaskjer.github.io,
+  Streamer.bot and *Report something that looks wrong* (the game's issues when it names its repository, else the
+  framework's). `About(defaultLinks: false)` leaves them out; `authorLink` does nothing any more.
+- **More said to a game's author:** a known key declared as another kind of value (it would still take the
+  conventions' limits, old keys and translations), a section split by another on its page (its heading would show
+  twice), an icon name the framework does not know (it shows a dot instead of the word).
+- **Fixes to the fixes:** a request hung in the game action no longer blocks the next ones (taking over a window and
+  reopening one work again); a list moving into its own file survives the open-time theme move and Reset all, and
+  Reset all leaves lists in their own files; whole numbers stay exact past 2^53; the next save also writes a
+  switch, dropdown or slider shown other than stored; a hidden number box without a number keeps its value; a list
+  file unreadable at save keeps the window's copy of its untouched lists; `UiSettings.Load` survives a bad path; an
+  older DLL gets "no answer" as before instead of the stub's marker; the sample thousands separator follows the
+  window's language.
+
 - **Twitch emotes show without a Twitch login.** A fresh Streamer.bot has no Twitch token, so the window could not
   ask the Twitch API and Kappa, LUL and the other global emotes stayed without a picture. Their ids now ship in
   `conventions/emotes/twitch.json`; with a login the window still asks Twitch itself, for the channel's emotes too.
