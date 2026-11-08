@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -86,8 +87,8 @@ namespace UIFramework
                 {
                     client.DefaultRequestHeaders.Add("User-Agent", "StreamerbotVersionChecker/1.0");
                     client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-                    string json = client.GetStringAsync("https://api.github.com/repos/" + gitHubRepo + "/releases/latest").GetAwaiter().GetResult();
-                    string latestTag = JObject.Parse(json)["tag_name"]?.ToString();
+                    string json = client.GetStringAsync(ReleasesUrl(gitHubRepo)).GetAwaiter().GetResult();
+                    string latestTag = NewestTag(json);
                     if (!IsNewerVersion(latestTag, currentVersion))
                         return null;
                     log?.Info(prefix + " Update available " + latestTag);
@@ -103,6 +104,30 @@ namespace UIFramework
 
         /// <summary>Whether the release is newer than the game's version. A version that is no number ("", "dev") is never
         /// behind: .NET Framework's Version comparison throws on null.</summary>
+        /// <summary>A repository's recent releases, pre-releases included: only a round X.0.0 is a stable release, so
+        /// GitHub's "latest release" would miss every version between them.</summary>
+        public static string ReleasesUrl(string gitHubRepo) => "https://api.github.com/repos/" + gitHubRepo.Trim() + "/releases?per_page=20";
+
+        /// <summary>The highest version among the published releases of a <see cref="ReleasesUrl"/> answer, pre-releases
+        /// included, drafts left out; null when there is none.</summary>
+        public static string NewestTag(string releasesJson)
+        {
+            string best = null;
+            Version bestVersion = null;
+            foreach (var release in JArray.Parse(releasesJson).OfType<JObject>())
+            {
+                if ((bool?)release["draft"] == true) continue;
+                string tag = (string)release["tag_name"];
+                var version = ParseVersion(tag);
+                if (version != null && (bestVersion == null || version > bestVersion))
+                {
+                    best = tag;
+                    bestVersion = version;
+                }
+            }
+            return best;
+        }
+
         public static bool IsNewerVersion(string latestTag, string currentTag)
         {
             var latest = ParseVersion(latestTag);

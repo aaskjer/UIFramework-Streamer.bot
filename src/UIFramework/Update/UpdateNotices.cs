@@ -114,7 +114,7 @@ namespace UIFramework
                         if (tag != null && Web.IsNewerVersion(tag, running))
                         {
                             items.Add(new KeyValuePair<JObject, string>(game, name + " " + tag));
-                            log.Add(name + " " + tag + " is out (this Streamer.bot runs " + running + "): https://github.com/" + repo + "/releases/latest");
+                            log.Add(name + " " + tag + " is out (this Streamer.bot runs " + running + "): https://github.com/" + repo + "/releases/tag/" + tag);
                         }
                         var stub = Web.ParseVersion((string)Obj(state, "stubs")[(string)game["host"] ?? ""]);
                         if (latest != null && needs != null && stub != null && needs > stub)
@@ -363,8 +363,9 @@ namespace UIFramework
 
         private static JObject CheckGame(string releases)
         {
-            var release = JObject.Parse(Fetch("https://api.github.com/repos/" + releases.Trim() + "/releases/latest"));
-            return new JObject { ["tag"] = (string)release["tag_name"] };
+            string tag = Web.NewestTag(Fetch(Web.ReleasesUrl(releases)));
+            if (tag == null) throw new InvalidOperationException(releases + " has no published release.");
+            return new JObject { ["tag"] = tag };
         }
 
         private static string FetchFromWeb(string url)
