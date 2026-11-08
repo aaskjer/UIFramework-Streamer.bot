@@ -180,6 +180,10 @@ namespace UIFramework
             var f = ctx.Fields;
             string label = s.Label ?? Conventions.Humanize(s.Key);
             string help = s.Help ?? "";
+            // The user may have the help as a line under each field instead of in its tooltip (the customise bar). A
+            // note and a list show their help as text anyway.
+            bool helpLine = ctx.Layout?.HelpLines == true && !string.IsNullOrWhiteSpace(help) && s.Kind != "note" && s.Kind != "list";
+            string tip = helpLine ? null : help;
             if (s.ReadOnly)
             {
                 var value = new TextBlock { Text = f.String(s.Key), FontSize = 13, Foreground = Theme.LabelFg, Margin = new Thickness(0, 4, 0, 4) };
@@ -191,62 +195,62 @@ namespace UIFramework
             {
                 case "bool":
                 {
-                    var toggle = f.Toggle(label, s.Key, help);
+                    var toggle = f.Toggle(label, s.Key, tip);
                     if (s.TwitchOnly) Fields.TwitchOnly(toggle);
                     element = toggle;
                     break;
                 }
                 case "int":
                     element = s.Options != null && s.Options.Count > 0
-                        ? f.IntCombo(label, s.Key, s.Options.Select(o => (int.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) ? v : 0, o.Label)).ToArray(), help)
-                        : f.IntField(label, s.Key, help, s.UnlimitedAtZero);
+                        ? f.IntCombo(label, s.Key, s.Options.Select(o => (int.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) ? v : 0, o.Label)).ToArray(), tip)
+                        : f.IntField(label, s.Key, tip, s.UnlimitedAtZero);
                     SetRange(ctx, s);
                     break;
                 case "long":
-                    element = f.LongField(label, s.Key, help, s.UnlimitedAtZero);
+                    element = f.LongField(label, s.Key, tip, s.UnlimitedAtZero);
                     SetRange(ctx, s);
                     break;
                 case "duration":
-                    element = f.DurationField(label, s.Key, help, s.Unit, s.UnlimitedAtZero);
+                    element = f.DurationField(label, s.Key, tip, s.Unit, s.UnlimitedAtZero);
                     SetRange(ctx, s);
                     break;
                 case "double":
                     if (s.Options != null && s.Options.Count > 0)
-                        element = f.DoubleCombo(label, s.Key, s.Options.Select(o => (double.TryParse(o.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : 0.0, o.Label)).ToArray(), help);
+                        element = f.DoubleCombo(label, s.Key, s.Options.Select(o => (double.TryParse(o.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : 0.0, o.Label)).ToArray(), tip);
                     else
                     {
-                        element = f.DoubleField(label + (s.Unit != null ? " (" + s.Unit + ")" : ""), s.Key, help);
+                        element = f.DoubleField(label + (s.Unit != null ? " (" + s.Unit + ")" : ""), s.Key, tip);
                         SetRange(ctx, s);
                     }
                     break;
                 case "percent":
-                    element = f.PercentField(label, s.Key, s.Factor ?? 1.0, help, s.Min ?? 0, s.Max ?? 100);
+                    element = f.PercentField(label, s.Key, s.Factor ?? 1.0, tip, s.Min ?? 0, s.Max ?? 100);
                     break;
                 case "options":
                     var options = (s.Options ?? new List<SettingOption>()).Select(o => (o.Value, o.Label)).ToArray();
-                    element = options.Length == 0 ? (s.Masked ? f.MaskedField(label, s.Key, help) : f.TextField(label, s.Key, help)) : f.StringComboField(label, s.Key, options, help);
+                    element = options.Length == 0 ? (s.Masked ? f.MaskedField(label, s.Key, tip) : f.TextField(label, s.Key, tip)) : f.StringComboField(label, s.Key, options, tip);
                     break;
                 case "namelist":
-                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.namelist.hint"), help));
+                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.namelist.hint"), tip));
                     break;
                 case "grouplist":
-                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), help));
+                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip));
                     break;
                 case "colour":
                 case "color":
-                    element = f.ColourField(label, s.Key, help);
+                    element = f.ColourField(label, s.Key, tip);
                     break;
                 case "path":
-                    element = PathField(ctx, s, label, help);
+                    element = PathField(ctx, s, label, tip);
                     break;
                 case "emote":
-                    element = EmoteField(ctx, s, label, help);
+                    element = EmoteField(ctx, s, label, tip);
                     break;
                 case "slider":
                 {
                     bool stops = s.Options != null && s.Options.Count > 0;
                     bool whole = s.Default == null || s.Default.Type != JTokenType.Float;
-                    element = f.SliderField(label, s.Key, help, s.Options, s.Min ?? 0, s.Max ?? (stops ? s.Options.Count - 1 : 100), s.Step ?? (whole ? 1 : 0.1), whole, s.Unit);
+                    element = f.SliderField(label, s.Key, tip, s.Options, s.Min ?? 0, s.Max ?? (stops ? s.Options.Count - 1 : 100), s.Step ?? (whole ? 1 : 0.1), whole, s.Unit);
                     break;
                 }
                 case "note":
@@ -259,14 +263,14 @@ namespace UIFramework
                 case "text":
                 case "template":
                     var box = f.TemplateBox(label, s.Key);
-                    box.ToolTip = help;
+                    box.ToolTip = tip;
                     element = Ui.Labeled(label, box);
                     break;
                 case "action":
-                    element = ActionButton(ctx, s, label, help);
+                    element = ActionButton(ctx, s, label, tip);
                     break;
                 case "table":
-                    element = Table(ctx, s, label, help);
+                    element = Table(ctx, s, label, tip);
                     break;
                 case "list":
                 {
@@ -277,7 +281,7 @@ namespace UIFramework
                     break;
                 }
                 default:
-                    element = s.Masked ? f.MaskedField(label, s.Key, help) : f.TextField(label, s.Key, help);
+                    element = s.Masked ? f.MaskedField(label, s.Key, tip) : f.TextField(label, s.Key, tip);
                     break;
             }
             if (s.Transient)
@@ -288,6 +292,10 @@ namespace UIFramework
                 var source = element;
                 ctx.AfterBuild.Add(() => FieldBinding.HookChangeTracking(source, () => Ask(ctx, s, label, null)));
             }
+
+            // The help line goes with the field: greyed and hidden with it.
+            if (helpLine)
+                element = WithHelpLine(ctx, element, help);
 
             // Greyed out while `requires` does not hold; hidden while `showWhen`, the section's condition or a
             // `requires` with "hide:" in front does not. All of the hiding conditions must hold to show the field.
@@ -313,6 +321,19 @@ namespace UIFramework
             }
             return element;
         }
+
+        /// <summary>A field with its help as a small line underneath, links in it clickable.</summary>
+        private static FrameworkElement WithHelpLine(PageContext ctx, FrameworkElement field, string help)
+        {
+            var line = Ui.NoteWithLinks(help, ctx.OpenUrl);
+            line.FontSize = 11;
+            line.Margin = new Thickness(0, 3, 0, 0);
+            line.Tag = HelpLineTag;
+            return Stack(field, line);
+        }
+
+        /// <summary>The Tag of a help line under a field, for tests and the tour.</summary>
+        public const string HelpLineTag = "uiframework.helpLine";
 
         /// <summary>Greys a field out, or back in. Disabled alone looks the same as enabled on some kinds (a list, a
         /// slider, a label above a box), so the whole field is also dimmed.</summary>
@@ -369,7 +390,7 @@ namespace UIFramework
 
         private static FrameworkElement PathField(PageContext ctx, Setting s, string label, string help)
         {
-            var box = ctx.Fields.SettingBox(label, s.Key, help + "\n" + Text.T("field.path.tip"));
+            var box = ctx.Fields.SettingBox(label, s.Key, (string.IsNullOrEmpty(help) ? "" : help + "\n") + Text.T("field.path.tip"));
             var open = Ui.IconButton(Icons.Folder, Icons.Font, Text.T("field.path.open"));
             open.Margin = new Thickness(6, 0, 0, 0);
             open.Click += (sender, e) =>
@@ -485,7 +506,7 @@ namespace UIFramework
 
         private static FrameworkElement Table(PageContext ctx, Setting s, string label, string help)
         {
-            var columns = s.Columns ?? new List<SettingColumn>();
+            var columns = Translated(ctx, s.Columns) ?? new List<SettingColumn>();
             var grid = new DataGrid
             {
                 AutoGenerateColumns = false,
