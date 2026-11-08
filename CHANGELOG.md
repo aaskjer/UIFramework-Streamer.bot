@@ -6,6 +6,16 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-08
+
+### Changed
+
+- **Only round versions are stable releases** (2.0.0, 3.0.0); every other version is published as a pre-release, this
+  one included. The release workflow decides it from the tag.
+- **Update checks count pre-releases.** The update notice and the window's new-version check take a game's newest
+  published release, pre-release or not (drafts never), since nearly every version between two round ones is a
+  pre-release now. The log's link goes to that release.
+
 ## [1.4.0] - 2026-11-08
 
 ### Changed

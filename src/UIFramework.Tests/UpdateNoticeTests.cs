@@ -34,8 +34,9 @@ namespace UIFramework.Tests
             {
                 _fetched.Add(url);
                 if (url == UpdateNotices.FrameworkLatestUrl) return "{ \"version\": \"1.3.0\", \"minHostStub\": \"" + _minHostStub + "\" }";
-                if (url.Contains("aaskjer/Hangman-Game")) return "{ \"tag_name\": \"v13.2.0\" }";
-                if (url.Contains("aaskjer/Trivia-Game")) return "{ \"tag_name\": \"v9.1.0\" }";
+                // The newest published release counts, pre-release or not; a draft does not.
+                if (url.Contains("aaskjer/Hangman-Game")) return "[ { \"tag_name\": \"v14.0.0\", \"draft\": true }, { \"tag_name\": \"v13.2.0\", \"prerelease\": true }, { \"tag_name\": \"v13.0.0\" } ]";
+                if (url.Contains("aaskjer/Trivia-Game")) return "[ { \"tag_name\": \"v9.1.0\" } ]";
                 throw new InvalidOperationException("offline");
             };
         }
@@ -74,7 +75,7 @@ namespace UIFramework.Tests
             _now = _now.AddSeconds(20);
             var notice = Trivia();
             Assert.Equal(new[] { "🔔 Updates are out: Hangman Game v13.2.0, UIFramework v1.3.0. Details are in Streamer.bot's log." }, Chat(notice));
-            Assert.Contains(notice["log"], l => ((string)l).Contains("https://github.com/aaskjer/Hangman-Game/releases/latest"));
+            Assert.Contains(notice["log"], l => ((string)l).Contains("https://github.com/aaskjer/Hangman-Game/releases/tag/v13.2.0"));
             var toast = (JObject)notice["toast"].Single();
             Assert.Equal("Updates for Streamer.bot", (string)toast["title"]);
             Assert.Equal("Hangman Game v13.2.0, UIFramework v1.3.0. Details are in Streamer.bot's log.", (string)toast["text"]);
@@ -153,7 +154,7 @@ namespace UIFramework.Tests
             Assert.Empty(Hangman());
             _now = _now.AddMinutes(10);
             Assert.Empty(Hangman());                       // no good answer yet: the notice waits
-            UpdateNotices.Fetch = url => url == UpdateNotices.FrameworkLatestUrl ? "{ \"version\": \"1.3.0\" }" : "{ \"tag_name\": \"v13.2.0\" }";
+            UpdateNotices.Fetch = url => url == UpdateNotices.FrameworkLatestUrl ? "{ \"version\": \"1.3.0\" }" : "[ { \"tag_name\": \"v13.2.0\" } ]";
             _now = _now.AddMinutes(50);                    // an hour after the failure it is asked again
             Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", Chat(Hangman())[0]);
         }
@@ -165,7 +166,7 @@ namespace UIFramework.Tests
             _now = _now.AddSeconds(30);
             var lines = UpdateNotices.Due("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman"));
             Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", lines[0]);
-            Assert.Contains(lines, l => l.Contains("releases/latest"));
+            Assert.Contains(lines, l => l.Contains("releases/tag/v13.2.0"));
         }
 
         private static FakeCph Started(FakeCph cph, string settings)

@@ -1,5 +1,5 @@
 # On a tag vX.Y.Z: build the DLL, run the tests, publish the tag's release with UIFramework.dll and the version's
-# section of CHANGELOG.md as its notes (a pre-release before 1.0.0), and write lib/v1/latest.json (version, url,
+# section of CHANGELOG.md as its notes (stable only for a round X.0.0; every other version is a pre-release), and write lib/v1/latest.json (version, url,
 # sha256) back to main, which is what every host's loader reads.
 name: Release
 
@@ -51,7 +51,8 @@ jobs:
           if ($xml -notmatch "<Version>$([regex]::Escape($version))</Version>") {
             Write-Error "The tag says $version but UIFramework.csproj says $([regex]::Match($xml, '<Version>([^<]+)</Version>').Groups[1].Value); bump the csproj first."
           }
-          "prerelease=$(if ($version -like '0.*') { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+          # Stable releases are round versions only (2.0.0, 3.0.0); everything else is a pre-release (2026-11-08).
+          "prerelease=$(if ($version -notmatch '^[1-9][0-9]*\.0\.0$') { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
 
       - name: Release notes from CHANGELOG.md
         shell: pwsh
