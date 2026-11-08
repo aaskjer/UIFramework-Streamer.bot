@@ -64,9 +64,10 @@ and when the game has not sent its schema for a minute, the next run opens the w
 (`uiframework.request`, `uiframework.name`, `uiframework.values` with the settings as JSON, `uiframework.var`), and
 Streamer.bot passes a running action's arguments on to the actions it runs. An action the game runs with
 `CPH.RunAction` from `test`, `validate` or `saved` therefore sees them too: the settings are readable there, and
-when that action is a UIFramework game itself, its `UiHost.Handle` takes them for a request to it and the action
-does nothing else. Clear the request first: `CPH.SetArgument("uiframework.request", "");` before the
-`CPH.RunAction`.
+when that action is a UIFramework game itself, its `UiHost.Handle` took them for a request to it and the action
+did nothing else. Since UIFramework 1.2.0 the host block clears them (`CPH.SetArgument(key, "")`) once it has read
+them, before it calls the game's handler. With an older host block, clear the request yourself before the
+`CPH.RunAction`: `CPH.SetArgument("uiframework.request", "");`.
 
 **Cooldowns:** on save, each command's cooldowns are set on their own; a key the window names for a cooldown
 that the settings do not hold as a number leaves that cooldown as it is (with a warning in the log) instead of

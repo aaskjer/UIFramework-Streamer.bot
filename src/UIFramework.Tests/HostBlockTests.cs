@@ -162,7 +162,8 @@ namespace UIFramework.Tests
             Assert.Equal("By someone", spec.About.Credits);
             Assert.False(spec.About.ShowDefaultLinks);
             Assert.Equal("Discord", spec.About.Links[0].Text);
-            Assert.Empty(spec.Problems);
+            // The bare template's table declares nothing, so the cooldown reads no setting: that is the one problem.
+            Assert.Single(spec.Problems, p => p.Contains("'globalCooldown', which is not a setting"));
 
             // A spec the stub carries wins over the window in the schema; a window without a title is called after the host.
             Assert.Equal("Other", Entry.SpecFor(@"{ ""title"": ""Other"" }", schema, TempSettings("builder")).Title);
@@ -174,11 +175,11 @@ namespace UIFramework.Tests
         public void TheBlockAnswersTheStubsRequests()
         {
             var cph = new FakeCph();
-            string tested = null; int testedSides = 0; bool savedRan = false;
+            string tested = null; int testedSides = 0; bool savedRan = false; string requestWhileSaved = null;
             bool Handle(Dictionary<string, object> args) => UiHost.Handle(args, cph, "Demo Game", "demo", "v1.0.0", "Demo/settings.json",
                 test: (name, s) => { tested = name; testedSides = s.Int("sides"); return name == "tryRoll" ? "rolled" : null; },
                 validate: s => s.Int("sides") < 2 ? "Too few sides." : null,
-                saved: s => savedRan = true,
+                saved: s => { savedRan = true; requestWhileSaved = cph.Arguments.TryGetValue("uiframework.request", out var r) ? r as string : null; },
                 table: key => "[{\"a\":1}]");
 
             Assert.False(Handle(new Dictionary<string, object> { ["user"] = "alice" }));
@@ -205,6 +206,9 @@ namespace UIFramework.Tests
 
             Assert.True(Handle(new Dictionary<string, object> { ["uiframework.request"] = "saved", ["uiframework.values"] = "{\"sides\": 6}" }));
             Assert.True(savedRan);
+            // The handler runs with the window's arguments cleared, so an action it runs is not taken for a window request.
+            Assert.Equal("", requestWhileSaved);
+            Assert.Equal("", cph.Arguments["uiframework.values"]);
 
             Assert.True(Handle(new Dictionary<string, object> { ["uiframework.request"] = "table", ["uiframework.name"] = "stats" }));
             Assert.Equal("[{\"a\":1}]", cph.Globals[UiHost.AnswerVar("Demo Game")]);

@@ -72,7 +72,6 @@
   ],
   "window": {
     "title": "Demo Game",
-    "releases": "aaskjer/UIFramework-Streamer.bot",
     "pages": [
       {
         "id": "game",

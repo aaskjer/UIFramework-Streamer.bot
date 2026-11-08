@@ -6,11 +6,40 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-08
+
+Fixes from an audit of the whole framework, and the logo on the About page.
+
 ### Added
 
 - **The UIFramework logo on the About page.** Faint in the bottom right corner, like a watermark, so the window shows
   it is the original framework: brighter under the mouse, its tooltip names the framework's version, a click opens
   its page. It sits under the content, never over a link, in the dark or the light version for the theme.
+
+### Fixed
+
+- **Help under fields in named rows.** A button or switch beside other fields lines up with them again, a button's
+  help line goes under the row instead of stretching its column, and every help line keeps a gap to the next field.
+- **List files are never written over by mistake.** A list kept in a file of its own that the game holds open stops
+  the save with the reason, instead of counting as damaged and being written from the window. A list that could not
+  be read when the window opened shows its defaults, says so behind the red **i**, and is not written from that
+  window.
+- **Reset page** leaves lists in files of their own, transient and read-only settings alone, as *Reset all* does.
+  Both dialogs say what they do: *Reset all* saves at once and keeps the file as it was as `.bak`.
+- A game setting called `darkMode`, `DarkMode`, `egg`, `Egg` or `rainbow` is no longer taken for the window's theme
+  and removed from the game's file.
+- A condition such as `!mode=free` always held. The red **i** now names it, with the way to write it (`mode!=free`).
+- A cooldown that reads a key no setting has is named behind the red **i**; before, only a line in the log said so
+  on every save.
+- The version check no longer fails ("Value cannot be null") for a game whose version is no number.
+- *Add row* in a list with a search typed clears the search, so the new row shows.
+- Host block: `UiHost.Handle` clears the window's arguments before it calls the game's handler, so an action the
+  handler runs is not taken for a window request. Games get this with their next host-block update.
+- The demo game no longer names the framework's repository as its `releases`, which showed an update pill in every
+  demo window after each framework release.
+- Docs: Getting-Started's snippet for an existing game declares its three constants and reads its settings; the
+  table snippet has the `userCooldown` its cooldown reads; the DLL goes into `lib\<version>\`; what `ActionName` is
+  for. Customize: *How to play*, *Log* and *About* sit at the foot of the page list; help and about lines translate.
 
 ## [1.1.0] - 2026-11-08
 

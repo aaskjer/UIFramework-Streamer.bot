@@ -163,11 +163,16 @@ namespace UIFramework
 
         /// <summary>Takes the theme from a host's settings file when the layout has none yet (the first open after
         /// the host moved to the framework). Returns true when the host settings changed and should be saved.</summary>
-        public bool AdoptFromHost(JObject hostSettings, params string[] darkKeys)
+        public bool AdoptFromHost(JObject hostSettings, params string[] darkKeys) => AdoptFromHost(hostSettings, null, darkKeys);
+
+        /// <summary>As above, leaving alone a key the game declares as a setting of its own (<paramref name="declared"/>):
+        /// a game may have a switch called darkMode or egg, and it is not the window's theme.</summary>
+        public bool AdoptFromHost(JObject hostSettings, ISet<string> declared, params string[] darkKeys)
         {
             bool changed = false;
             foreach (var key in darkKeys)
             {
+                if (declared != null && declared.Contains(key)) continue;
                 if (hostSettings[key]?.Type != JTokenType.Boolean) continue;
                 if (!Dark.HasValue)
                     Dark = (bool)hostSettings[key];
@@ -176,6 +181,7 @@ namespace UIFramework
             }
             foreach (var key in new[] { "Egg", "egg", "rainbow" })
             {
+                if (declared != null && declared.Contains(key)) continue;
                 if (hostSettings[key]?.Type != JTokenType.Boolean) continue;
                 hostSettings.Remove(key);
                 changed = true;

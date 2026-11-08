@@ -21,7 +21,7 @@ user's.
   *Reset this field*. Values are not editable in the mode.
 - **Pages** in the rail: dragging sorts the top group; right-click: *Rename*, *Change icon* (an emoji or a
   conventions name like `gear`, `dice`, `coins`), *Hide* / *Show*, *Reset this page*. `About` cannot be hidden;
-  `Help` and `About` stay at the bottom.
+  *How to play*, *Log* and *About* stay at the foot of the page list.
 - **Hidden things** are shown half-transparent with the note `hidden` in the mode, so they can be shown again.
   A hidden field keeps its value in the settings file.
 - **The bar at the top**, one row: the accent colour (blue buttons, switches that are on, the active page in
@@ -64,7 +64,7 @@ the window itself stays where it is.
 | `theme.dark`                   | dark (`true`) or light; missing: dark                                        |
 | `theme.rainbow`                | rainbow mode, for one open only                                              |
 | `theme.accent`                 | the accent colour `#rrggbb`; empty: the default blue                         |
-| `language`                     | `en`, `de`, `es` or a language from `UIFramework\lang\`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome), the labels and help of the conventions' keys, and the declared sections, page titles, pills, option labels and message groups the conventions or the game translate (docs/Schema.md, *Languages*); missing: `en`. What nothing translates, and the help and about pages, stay as declared |
+| `language`                     | `en`, `de`, `es` or a language from `UIFramework\lang\`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome), the labels and help of the conventions' keys, and the declared sections, page titles, pills, option labels and message groups the conventions or the game translate (docs/Schema.md, *Languages*); missing: `en`. What nothing translates stays as declared; the lines of the help and about pages translate through the game's `Tx` |
 | `autoUpdate`                   | `false`: the loader no longer asks about new versions                        |
 | `helpLines`                    | `true`: each field's help is a line under it instead of its tooltip (*Help under fields* in the bar); missing: tooltips |
 | `skipVersion`                  | set by the update dialog's *Cancel*: this version is not offered again       |
