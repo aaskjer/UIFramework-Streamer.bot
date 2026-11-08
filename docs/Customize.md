@@ -26,15 +26,18 @@ user's.
   A hidden field keeps its value in the settings file.
 - **The bar at the top**, one row: the accent colour (blue buttons, switches that are on, the active page in
   the rail, links, the bar itself; for every UIFramework window of this Streamer.bot; taken once the picker
-  closes or the typing pauses), the language (by its name: English, Deutsch, Español …), *Help under fields* (each
-  field's help as a small line under it instead of in its tooltip), then four icon buttons named by their tooltips: *Reset
+  closes or the typing pauses), the language (by its name: English, Deutsch, Español …), then four icon buttons named by their tooltips: *Reset
   layout* (everything but the theme), *Export* and *Import* of the settings (see docs/Schema.md), *Open file*
-  (the layout file); then *Done*. The hint with the count of changes is the line under them.
+  (the layout file); then *Done*. Under them: the switch *Help under fields* (each field's help as a small line
+  under it instead of in its tooltip, for every UIFramework window of this game) and the hint with the count of
+  changes.
 - **Messages:** the templates can be sorted, renamed and hidden on their page; they cannot be dragged to
   another page.
 
 After every change the window's content is rebuilt in place, on the same page and at the same scroll position;
 the window itself stays where it is.
+
+<p align="center"><img src="images/help-lines-dark.png" width="420" alt="The demo's Game page with the help as a line under each field"></p>
 
 ## The file
 
