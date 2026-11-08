@@ -6,6 +6,20 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-08
+
+### Changed
+
+- **The update notice comes as Streamer.bot starts, in every chat, or as a Windows notification.** A game calls
+  `UiUpdateNotice.Startup(...)` from its `Init()` with *Precompile on Application Start* ticked, so the notice no
+  longer waits for the first use of a game. About 20 seconds after the first game starts it goes to every chat whose
+  broadcaster account is connected (Twitch, YouTube, Kick); while none is, it is a Windows notification. Still once
+  per Streamer.bot start, one notice for all games.
+- **Games choose how they tell it:** `UiWindow.Updates(chat, chatText, toast, toastAlways, toastTitle, toastText)`,
+  with `{updates}` and `{count}` in the texts; in the schema `window.updates`. Games with the same texts share one
+  line. The About page's switch reads *Tell me about updates*.
+- The host block of 1.3.0, which asked on ordinary runs of the game, is still answered.
+
 ## [1.3.0] - 2026-11-08
 
 ### Added

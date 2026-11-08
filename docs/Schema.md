@@ -324,29 +324,48 @@ anyway (`RT-wordbank.json`) stays the only copy. A save writes the file only whe
 game added to while the window was open keeps those entries; a value an older version kept in the settings file
 moves into the file with the first save.
 
-## Update notice in chat
+## Update notice
 
-Streamers who do not open the settings every day still hear of updates: once per Streamer.bot start, one line in
-chat names what is new, for example *🔔 Updates are out: Hangman Game v13.2.0, UIFramework v1.3.0. Details are in
+Streamers who do not open the settings every day still hear of updates: once per Streamer.bot start, one notice
+names what is new, for example *🔔 Updates are out: Hangman Game v13.2.0, UIFramework v1.4.0. Details are in
 Streamer.bot's log.* The log has one line per update with its link.
 
-- **What is in it:** each game used in this Streamer.bot run whose newest GitHub release (`releases` of its
-  window) is newer than the version it runs; UIFramework when its newest release is newer than the newest
-  `UIFramework.dll` under `lib\`; and *import it again* for a game whose settings action is older than that
-  release needs (`minHostStub`; the window notes the settings action's version when it opens).
-- **When:** a few minutes after the first UIFramework game of the run is used, so the games used at the start of
-  a stream are in it, and once GitHub's answers are there. Then nothing more until Streamer.bot starts again.
-  Nothing new: no line.
-- **Where:** the chat the game was used in (Twitch, YouTube or Kick), as the bot when the game's `useBot` is on;
-  from a timer or a deck, every chat Streamer.bot is connected to. In the language of that game's window.
-- **How:** the host block asks `UIFramework.dll` on an ordinary run of the game action, at most every two minutes,
-  and never waits for the network. The DLL asks GitHub in the background, at most twice a day, and keeps the
-  answers in `<Streamer.bot>\UIFramework\updates.json`, shared by every game. Without the DLL (the settings never
-  opened) there is no notice.
-- **Turning it off:** the switch *Tell chat about updates* on a game's About page (`"updateNotices": false` in
-  its `uiframework.layout.json`) leaves that game out; it does not post the notice either.
+- **Start it from `Init()`.** Call `UiUpdateNotice.Startup(CPH, ActionName, "mygame", CurrentVersion, SettingsFile)`
+  in the game action's `Init()` and tick *Precompile on Application Start* on its Execute Code sub-action:
+  Streamer.bot then runs `Init()` as it starts. The notice runs in the background and never holds the action up.
+- **What is in it:** each game that started this way (or whose settings were opened) whose newest GitHub release
+  (`releases` of its window) is newer than the version it runs; UIFramework when its newest release is newer than
+  the newest `UIFramework.dll` under `lib\`; and *import it again* for a game whose settings action is older than
+  that release needs (`minHostStub`; the window notes the settings action's version when it opens).
+- **When:** about 20 seconds after the first game starts, so every game that starts with Streamer.bot is in it,
+  and once GitHub's answers are there (asked in the background at most twice a day, kept in
+  `<Streamer.bot>\UIFramework\updates.json` for every game). Then nothing more until Streamer.bot starts again.
+  Nothing new: no notice. Without the DLL (the settings never opened) there is none.
+- **Where:** a line in every chat whose broadcaster account is connected (Twitch, YouTube, Kick; it waits up to a
+  minute for the first one), as the bot when the game's `useBot` is on. While no broadcaster account is connected,
+  a Windows notification instead.
+- **How a game wants it,** in its window:
 
-A game gets this with the host block of UIFramework 1.3.0 or newer (`tools/update-host-block.ps1`).
+  ```csharp
+  .Updates(chat: true, chatText: "🎲 {updates} - grab them on GitHub!", toast: true, toastAlways: false,
+           toastTitle: "My Game", toastText: "New: {updates}")
+  ```
+
+  | Option        | Default | Meaning |
+  |---------------|---------|---------|
+  | `chat`        | `true`  | the line in every connected chat |
+  | `chatText`    | the framework's, in the window's language | the line; `{updates}` is the list, `{count}` how many |
+  | `toast`       | `true`  | a Windows notification |
+  | `toastAlways` | `false` | `false`: only while no broadcaster account is connected; `true`: always |
+  | `toastTitle`, `toastText` | the framework's | the notification's title and text, with the same placeholders |
+
+  One game delivers the whole notice: games with the same texts share one line, a game with texts of its own gets
+  its own; UIFramework goes with the game that delivers. In the schema: `window.updates`.
+- **Turning it off as a streamer:** the switch *Tell me about updates* on a game's About page
+  (`"updateNotices": false` in its `uiframework.layout.json`) leaves that game out.
+
+A game gets this with the host block of UIFramework 1.4.0 or newer (`tools/update-host-block.ps1`). The host block of
+1.3.0 asked on ordinary runs of the game instead; the DLL still answers it.
 
 ## Export and import
 

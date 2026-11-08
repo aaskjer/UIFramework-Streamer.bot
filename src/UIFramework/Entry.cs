@@ -39,7 +39,8 @@ namespace UIFramework
             try
             {
                 var stub = host?.GetType().DeclaringType?.GetField("StubVersion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-                UpdateNotices.Register(schema.Host, spec.Title, schema.Version, (string)schema.Window?["releases"], settingsPath, stub?.GetRawConstantValue() as string ?? stub?.GetValue(null) as string);
+                UpdateNotices.Register(schema.Host, spec.Title, schema.Version, (string)schema.Window?["releases"], settingsPath, stub?.GetRawConstantValue() as string ?? stub?.GetValue(null) as string,
+                    schema.Window?["updates"]?.ToString(Newtonsoft.Json.Formatting.None));
             }
             catch (Exception) { }
             return Show(spec, schema, bridge, bridge, pump);

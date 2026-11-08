@@ -3,7 +3,7 @@
 Stand 08.11.2026.
 
 **Erledigt:** Die Phasen 0 bis 7 des Umbauplans vom 31.10. sind abgeschlossen.
-- Das Framework ist stabil: 1.0.0 vom 07.11., 1.1.0 bis 1.3.0 vom 08.11. (1.3.0: ein Update-Hinweis im Chat pro Start von Streamer.bot).
+- Das Framework ist stabil: 1.0.0 vom 07.11., 1.1.0 bis 1.4.0 vom 08.11. (1.4.0: ein Update-Hinweis pro Start von Streamer.bot, im Chat oder als Windows-Benachrichtigung).
 - Alle acht Spiele laufen auf dem generischen Stub: Battleship v2.2.0, Blackjack v17.3.0, Classic Chat Gamble v25.1.0, Hangman v13.1.1, High-Low v2.2.0, RhymeTime v2.3.0, Slot Machine v16.3.0, Trivia v9.1.0.
 - Der Praxistest in einer frischen Streamer.bot-Instanz ist mehrfach bestanden: DLL beim ersten Öffnen, Update, Start ohne Netz.
 
@@ -286,7 +286,7 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
 
 ### 8.7 Framework-Features
 
-**1.4.0 (4½ Tage)**
+**1.5.0 (4½ Tage)**
 - **F1 Set-Argument-Brücke.**
   - Im Host-Block `UiSettings.With(args)`: Ein nicht-leeres Argument, dessen Name ein Key oder Alias der Tabelle ist, gewinnt und wird nach Kind gewandelt. Im HostReader geht das mit einer Key-Liste.
   - `UiHost.Handle(…, arguments: true)` liefert im Describe `arguments: ["dryRun", …]` mit. Das Fenster zeigt diese Felder gesperrt mit der Pille "Set Argument" und einem Hinweis, wo es steht.
@@ -308,7 +308,7 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
   - Ein neues Kapitel in Getting-Started: "A project with several actions" (Host-Action, Leser, keine Umbenennung, Langläufer).
   - Projekte: SuTo, ChatCalendar, BsA.
 
-**1.5.0 (4½ Tage)**
+**1.6.0 (4½ Tage)**
 - **F5 Secrets in Globals.**
   - `S("freeBotToken", "", masked: true, global: "FreeGameCheck_botToken")`.
   - Der Stub liest die persistente Globale vor dem Öffnen und schreibt sie nach dem Speichern über die Job-Queue. Nie in Datei, Export oder Log; "Reset" lässt sie stehen.
@@ -328,10 +328,10 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
   - `action` mit `saveFirst: true`.
   - Projekte: GameCheck, ChatCalendar, AutoBotCheck, BsA.
 - **F9 Mindestversion.**
-  - `UiWindow(…, requires: "1.5.0")`. Ein Stub ab 1.5 vergleicht mit der geladenen DLL und bietet das Update an, statt das Fenster zu öffnen.
-  - Schützt F5 vor einer DLL ≤ 1.4.
+  - `UiWindow(…, requires: "1.6.0")`. Ein Stub ab 1.6 vergleicht mit der geladenen DLL und bietet das Update an, statt das Fenster zu öffnen.
+  - Schützt F5 vor einer DLL ≤ 1.5.
 
-**1.6.0 (3½ Tage)**
+**1.7.0 (3½ Tage)**
 - **F10 Optionen vom Spiel.**
   - `S("region", "", kind: "options", optionsFrom: "countryCode")`, ein neuer Request `options` und der Delegat `options: (key, s) => new[] { "DE-BY|Bayern" }`.
   - Gefragt wird beim Öffnen und wenn sich ein genanntes Feld ändert. `optionsFrom: "groups"` liefert die Streamer.bot-Gruppen.
@@ -347,7 +347,7 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
   - `HH:mm` als Text.
   - Projekt: ChatCalendar.
 
-**1.7.0 (3½ Tage)**
+**1.8.0 (3½ Tage)**
 - **F13 Rail-Gruppen.**
   - `.Group("broadcaster", "Broadcaster", "baOnline", "baOffline", …)`. Nicht über `P(…)`, weil `fields` dort `params` ist.
   - Die Überschriften sind einklappbar; der Anpassen-Modus verschiebt Seiten zwischen Gruppen (`pages.<id>.group`).
@@ -374,15 +374,15 @@ Zu beachten:
 
 | Meilenstein | Release                          | Aufwand |
 |-------------|----------------------------------|---------|
-| M1          | UIFramework 1.4.0 (F1–F4)        | 4½ T    |
+| M1          | UIFramework 1.5.0 (F1–F4)        | 4½ T    |
 |             | OBS Notes v2.0.0                 | 2 T     |
 |             | Suggestions To v2.0.0            | 3 T     |
-| M2          | UIFramework 1.5.0 (F5–F9)        | 4½ T    |
+| M2          | UIFramework 1.6.0 (F5–F9)        | 4½ T    |
 |             | GameCheck v2.0.0                 | 5 T     |
-| M3          | UIFramework 1.6.0 (F10–F12)      | 3½ T    |
+| M3          | UIFramework 1.7.0 (F10–F12)      | 3½ T    |
 |             | ChatCalendar v2.0.0              | 6 T     |
 |             | AutoBotCheck v2.0.0              | 2 T     |
-| M4          | UIFramework 1.7.0 (F13–F15)      | 3½ T    |
+| M4          | UIFramework 1.8.0 (F13–F15)      | 3½ T    |
 |             | BetterStreamAnnouncements v3.0.0 | 9 T     |
 
 Summe: etwa 16 Tage Framework und 27 Tage Projekte, rund achteinhalb Wochen.

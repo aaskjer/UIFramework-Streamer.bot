@@ -11,7 +11,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>UIFramework</RootNamespace>
     <AssemblyName>UIFramework</AssemblyName>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Authors>aaskjer</Authors>
     <Product>UIFramework for streamer.bot</Product>
     <Description>Settings-window framework for Streamer.bot extensions.</Description>
