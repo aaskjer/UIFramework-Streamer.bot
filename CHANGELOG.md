@@ -6,6 +6,16 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-08
+
+### Fixed
+
+- **A field moved in the customise mode no longer splits a section.** Dropped among the fields of another section,
+  it joins that section (kept in the layout file by the name the game declared, so it holds in every language);
+  before, it kept its own and both headings showed twice.
+- **The red i no longer blames the game for the user's layout.** "The section ... is split by another section"
+  looks at the order the game declared; where the user moved fields is not the game author's to fix.
+
 ## [1.4.1] - 2026-11-08
 
 ### Changed

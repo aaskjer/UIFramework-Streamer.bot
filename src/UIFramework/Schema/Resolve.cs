@@ -29,6 +29,8 @@ namespace UIFramework
             // 1. Complete every setting and lay the spec's overrides on top.
             var settings = new List<Setting>();
             var declaredSections = new HashSet<string>(StringComparer.Ordinal);
+            // Where the game put each field, before the user's layout moves it: what the check of split sections reads.
+            var asDeclared = new List<(string Page, int Order, string Section, bool Hidden)>();
             foreach (var declared in schema.Settings)
             {
                 // A known key declared as another kind of value is most likely the game's own idea under a taken name:
@@ -75,13 +77,16 @@ namespace UIFramework
                         foreach (var option in setting.Options)
                             option.Label = lang.Text(option.Label);
                 }
-                // The user's layout has the last word on where a field sits and what it is called.
+                asDeclared.Add((setting.Page, setting.Order, setting.Section, setting.Hidden));
+                // The user's layout has the last word on where a field sits and what it is called. A section it names
+                // by a name the game declared reads in the window's language, as the game's own sections do.
                 var mine = layout?.Field(setting.Key);
+                setting.SectionId = mine?.Section ?? declaredSection;
                 if (mine != null)
                 {
                     setting.Page = mine.Page ?? setting.Page;
                     setting.Label = mine.Label ?? setting.Label;
-                    setting.Section = mine.Section ?? setting.Section;
+                    setting.Section = mine.Section != null ? lang.Text(mine.Section) : setting.Section;
                     if (mine.Hidden.HasValue) setting.Hidden = mine.Hidden.Value;
                     if (mine.Order.HasValue) setting.Order = mine.Order.Value;
                     // "" is a line of its own: a row nobody else names.
@@ -98,7 +103,7 @@ namespace UIFramework
             Shows(spec, settings);
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
-            Check(spec, settings, declaredSections);
+            Check(spec, settings, declaredSections, asDeclared);
             CheckCooldowns(spec, schema, settings);
             foreach (var pill in spec.HeaderPills)
                 pill.Tooltip = lang.Text(pill.Declared);
@@ -396,7 +401,7 @@ namespace UIFramework
                 }
         }
 
-        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections)
+        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections, List<(string Page, int Order, string Section, bool Hidden)> asDeclared)
         {
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
             var byKey = settings.GroupBy(s => s.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
@@ -406,8 +411,9 @@ namespace UIFramework
                 if (!declaredSections.Contains(section.Key))
                     spec.Problems.Add("The section '" + section.Key + "' has a condition, but no setting is in a section of that name.");
             }
-            // A section whose fields are not one after the other gets its heading twice: said, so the game can order them.
-            foreach (var page in settings.Where(s => !s.Hidden).GroupBy(s => s.Page ?? "game"))
+            // A section whose fields are not one after the other gets its heading twice: said, so the game can order
+            // them. As the game declared them: where the user's layout moved a field is not the game author's to fix.
+            foreach (var page in asDeclared.Where(s => !s.Hidden).GroupBy(s => s.Page ?? "game"))
             {
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 var told = new HashSet<string>(StringComparer.Ordinal);

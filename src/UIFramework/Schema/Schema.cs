@@ -163,6 +163,9 @@ namespace UIFramework
         public List<string> Aliases = new List<string>();
         public Dictionary<string, double> AliasFactors = new Dictionary<string, double>(StringComparer.Ordinal);
         public int Order;
+        /// <summary>The section the field sits in, by the name the game declared it (or the user's layout gave it),
+        /// untranslated; filled in by Resolve. <see cref="Section"/> is what the window shows.</summary>
+        public string SectionId;
 
         /// <summary>The kind a default value suggests when nothing says otherwise.</summary>
         public static string KindOf(JToken value)

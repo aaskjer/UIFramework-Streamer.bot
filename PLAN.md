@@ -432,7 +432,6 @@ Offen:
 
 - **Import ungeprüft:** Ein Import schreibt Werte ohne min/max, Typprüfung, `Validate` und den `readOnly`-Filter und gibt sie gleich ans Spiel. Er soll über denselben Weg wie *Speichern* laufen.
 - **Werte außerhalb der Grenzen:** Das Fenster zeigt sie, wie sie in der Datei stehen; erst ein späteres Speichern korrigiert sie, ohne Hinweis. Als ungespeicherte Änderung zählen oder in der Fußzeile nennen.
-- **"Abschnitt geteilt"** wird nach dem Layout geprüft und gibt dem Spiel die Schuld, wenn der Nutzer ein Feld verschoben hat. Die Prüfung soll die deklarierte Reihenfolge ansehen; ein Ablegen übernimmt den Abschnitt des Ziels.
 - **Bedingung auf eine Liste:** `Requirement` kennt `Parts.Lists` nicht und folgt der laufenden Liste nie.
 - **Die Spielseite kennt die Konventionen nicht:** `UiSettings` im Spiel kennt die Aliase und Defaults aus `keys.json` nicht. Dokumentieren oder mitgeben.
 - **Fenster:**
