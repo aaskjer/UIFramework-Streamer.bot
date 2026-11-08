@@ -6,6 +6,15 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-11-08
+
+### Fixed
+
+- **A table's columns end at its edge.** A list shown as a table (Trivia's own questions) left an empty column after
+  its last one: the columns were sized as if the vertical scrollbar always showed, and the whole pixels lost a few
+  more. They now share the width the rows really have, with the scrollbar only while it shows, and follow it as rows
+  are added or removed; what is left over goes to the widest column.
+
 ## [1.4.2] - 2026-11-08
 
 ### Fixed
