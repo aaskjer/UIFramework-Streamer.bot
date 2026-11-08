@@ -1,6 +1,6 @@
 {
   "host": "battleship",
-  "version": "v2.2.0",
+  "version": "v2.3.0",
   "settingsFile": "Chat Games/Battleship Game/BSG-Settings.json",
   "settings": [
     {

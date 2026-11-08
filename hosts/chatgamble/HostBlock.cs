@@ -411,7 +411,7 @@ public static class UiSchema
 
 /// <summary>How the window is called and laid out, declared beside the table: what the framework's docs call the
 /// spec (docs/Schema.md, "The window"). Every part is optional; a page a setting names but the window does not is
-/// made up on the way, help and about always sit at the bottom.</summary>
+/// made up on the way; how to play, log and about sit at the foot of the page list.</summary>
 public sealed class UiWindow
 {
     public string Title, Releases, Logo, LogPrefix, Language;
@@ -420,6 +420,8 @@ public sealed class UiWindow
     public readonly System.Collections.Generic.List<object> PageList = new System.Collections.Generic.List<object>();
     public readonly Newtonsoft.Json.Linq.JObject SampleMap = new Newtonsoft.Json.Linq.JObject(), AnswerMap = new Newtonsoft.Json.Linq.JObject(), OverrideMap = new Newtonsoft.Json.Linq.JObject();
     public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap;
+    /// <summary>What Updates(...) declared; null: the framework's defaults.</summary>
+    public Newtonsoft.Json.Linq.JObject UpdateOptions;
     public readonly Newtonsoft.Json.Linq.JArray PillList = new Newtonsoft.Json.Linq.JArray(), CooldownList = new Newtonsoft.Json.Linq.JArray(), HelpList = new Newtonsoft.Json.Linq.JArray(), SectionList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
     public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
@@ -555,6 +557,20 @@ public sealed class UiWindow
 
     /// <summary>A tour of the window, stop by stop (UiSchema.Tip): it starts by itself on the window's first open and
     /// again from the ? in the header. Its texts translate through Lang's Tx like every declared text.</summary>
+    /// <summary>How the update notice once per Streamer.bot start tells of this game (docs/Schema.md, "Update notice"):
+    /// <paramref name="chat"/> a line in every connected chat, with <paramref name="chatText"/> (null: the framework's,
+    /// in the window's language); <paramref name="toast"/> a Windows toast, <paramref name="toastAlways"/> or only while no
+    /// broadcaster account is connected, with <paramref name="toastTitle"/> and <paramref name="toastText"/>. In the texts
+    /// {updates} is the list of what is new ("Hangman Game v13.2.0, UIFramework v1.4.0"), {count} how many.</summary>
+    public UiWindow Updates(bool chat = true, string chatText = null, bool toast = true, bool toastAlways = false, string toastTitle = null, string toastText = null)
+    {
+        UpdateOptions = new Newtonsoft.Json.Linq.JObject { ["chat"] = chat, ["toast"] = toast, ["toastAlways"] = toastAlways };
+        if (chatText != null) UpdateOptions["chatText"] = chatText;
+        if (toastTitle != null) UpdateOptions["toastTitle"] = toastTitle;
+        if (toastText != null) UpdateOptions["toastText"] = toastText;
+        return this;
+    }
+
     public UiWindow Tour(params UiLine[] tips)
     {
         foreach (var tip in tips) TourList.Add(tip.Json);
@@ -600,6 +616,7 @@ public sealed class UiWindow
         if (PillList.Count > 0) root["headerPills"] = PillList;
         if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
+        if (UpdateOptions != null) root["updates"] = UpdateOptions;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
         if (AboutMap != null) root["about"] = AboutMap;
@@ -674,7 +691,7 @@ public static class UiHost
         System.Func<string, string> table = null, System.Func<string> emotes = null)
     {
         string request = Arg(args, "uiframework.request");
-        if (request == null && args.ContainsKey("uiframework.describe")) request = "describe";
+        if (request == null && args != null && args.ContainsKey("uiframework.describe")) request = "describe";
         if (string.IsNullOrEmpty(request))
             return false;
         // The settings action names the global it will read; without that (an older stub) the name is built here.
@@ -688,6 +705,10 @@ public static class UiHost
         }
         string name = Arg(args, "uiframework.name") ?? "";
         var values = UiSettings.Parse(Arg(args, "uiframework.values"));
+        // Read, so cleared: an action the game's handler runs (CPH.RunAction) inherits this action's arguments, and one
+        // with a host block of its own would otherwise take the run for a window request and do nothing else.
+        foreach (var key in new[] { "uiframework.request", "uiframework.describe", "uiframework.name", "uiframework.values", "uiframework.var" })
+            if (args != null && args.ContainsKey(key)) CPH.SetArgument(key, "");
         string answer = null;
         try
         {
@@ -711,6 +732,132 @@ public static class UiHost
     }
 
     private static string Arg(System.Collections.Generic.IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
+}
+
+/// <summary>The update notice, once per Streamer.bot start (docs/Schema.md, "Update notice"). Call
+/// <c>UiUpdateNotice.Startup(CPH, ...)</c> from the game action's <c>Init()</c> and tick "Precompile on Application Start"
+/// on its Execute Code sub-action: Streamer.bot then runs it as it starts. In the background it asks UIFramework.dll (the
+/// newest under &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings loaded) every few seconds until the notice
+/// is due, waits up to a minute for a broadcaster account to connect, then sends the chat line to Twitch, YouTube and
+/// Kick, whichever is connected, and shows a Windows toast when no broadcaster account is (or always, as the window's
+/// <c>Updates</c> says). Every game asks; one of them gets the whole notice. Without the DLL (the settings never opened)
+/// nothing happens.</summary>
+public static class UiUpdateNotice
+{
+    private static readonly object Gate = new object();
+    private static bool _started;
+    // How often (five seconds apart) it looks for a connected broadcaster account before it decides there is none.
+    private static int _connectTries = 12;
+
+    public static void Startup(IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile)
+    {
+        lock (Gate)
+        {
+            if (_started) return;
+            _started = true;
+        }
+        System.Threading.Tasks.Task.Run(() => Deliver(CPH, actionName, host, version, settingsFile));
+    }
+
+    private static void Deliver(IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile)
+    {
+        try
+        {
+            var notices = FrameworkType();
+            var due = notices == null ? null : notices.GetMethod("DueJson", new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(string) });
+            if (due == null) return;
+            var window = UiSchema.Window;
+            string title = window != null && window.Title != null ? window.Title : actionName;
+            string options = window != null && window.UpdateOptions != null ? window.UpdateOptions.ToString(Newtonsoft.Json.Formatting.None) : null;
+            string answer = "";
+            for (int i = 0; i < 120 && answer == ""; i++)   // every five seconds, ten minutes at most
+            {
+                if (i > 0) System.Threading.Thread.Sleep(5000);
+                answer = due.Invoke(null, new object[] { host, title, version, window != null ? window.Releases : null, settingsFile, options }) as string;
+                if (answer == null) return;
+            }
+            if (string.IsNullOrEmpty(answer)) return;
+            var notice = Newtonsoft.Json.Linq.JObject.Parse(answer);
+            foreach (var line in notice["log"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+                CPH.LogInfo("[" + actionName + "] Update: " + (string)line);
+
+            // Streamer.bot connects its accounts while it starts: up to a minute for the first one.
+            bool twitch = false, youtube = false, kick = false;
+            for (int i = 0; i < _connectTries; i++)
+            {
+                try { twitch = CPH.TwitchGetBroadcaster() != null; } catch (System.Exception) { twitch = false; }
+                try { youtube = CPH.YouTubeGetBroadcaster() != null; } catch (System.Exception) { youtube = false; }
+                try { kick = CPH.KickGetBroadcaster() != null; } catch (System.Exception) { kick = false; }
+                if (twitch || youtube || kick || i + 1 >= _connectTries) break;
+                System.Threading.Thread.Sleep(5000);
+            }
+            bool connected = twitch || youtube || kick;
+            var settings = UiSettings.Load(settingsFile);
+            bool bot = settings.Token("useBot") == null || settings.Bool("useBot");
+            foreach (var line in notice["chat"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+            {
+                string text = (string)line;
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                if (twitch) try { Send(CPH, "twitch", text, bot); } catch (System.Exception) { }
+                if (youtube) try { Send(CPH, "youtube", text, bot); } catch (System.Exception) { }
+                if (kick) try { Send(CPH, "kick", text, bot); } catch (System.Exception) { }
+            }
+            foreach (var item in notice["toast"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+                if (item is Newtonsoft.Json.Linq.JObject toast && ((bool?)toast["always"] == true || !connected))
+                    CPH.ShowToastNotification((string)toast["title"] ?? "UIFramework", (string)toast["text"] ?? "", "UIFramework", "");
+        }
+        catch (System.Exception ex)
+        {
+            CPH.LogWarn("[" + actionName + "] The update notice failed: " + (ex.InnerException ?? ex).Message);
+        }
+    }
+
+    private static void Send(IInlineInvokeProxy CPH, string platform, string text, bool bot)
+    {
+        if (platform == "youtube") CPH.SendYouTubeMessageToLatestMonitored(text, bot, true);
+        else if (platform == "kick") CPH.SendKickMessage(text, bot, true);
+        else CPH.SendMessage(text, bot, true);
+    }
+
+    /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
+    private static System.Type FrameworkType()
+    {
+        System.Type loaded = null;
+        System.Version loadedVersion = null;
+        foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var name = assembly.GetName();
+            if (name.Name != "UIFramework") continue;
+            var type = assembly.GetType("UIFramework.UpdateNotices", false);
+            if (type != null && (loadedVersion == null || Full(name.Version) > loadedVersion)) { loaded = type; loadedVersion = Full(name.Version); }
+        }
+        string lib = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
+        string newestFile = null;
+        System.Version newest = null;
+        if (System.IO.Directory.Exists(lib))
+            foreach (var dir in System.IO.Directory.GetDirectories(lib))
+            {
+                System.Version version;
+                string file = System.IO.Path.Combine(dir, "UIFramework.dll");
+                if (System.Version.TryParse(System.IO.Path.GetFileName(dir), out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
+                {
+                    newest = Full(version);
+                    newestFile = file;
+                }
+            }
+        if (newestFile != null && (loadedVersion == null || newest > loadedVersion))
+        {
+            try
+            {
+                var type = System.Reflection.Assembly.LoadFrom(newestFile).GetType("UIFramework.UpdateNotices", false);
+                if (type != null) return type;
+            }
+            catch (System.Exception) { }
+        }
+        return loaded;
+    }
+
+    private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
 }
 
 /// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and
