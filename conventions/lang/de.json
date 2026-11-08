@@ -393,6 +393,7 @@
     "about.releases": "Releases",
     "about.report": "Etwas melden, das falsch aussieht",
     "about.framework": "UIFramework für streamer.bot",
+    "about.watermark": "Das Original: UIFramework for streamer.bot {0}",
     "messages.message": "Nachricht",
     "messages.numbers": "Zahlen",
     "messages.numbers.tip": "Das Tausendertrennzeichen in jedem Betrag, der gepostet wird.",

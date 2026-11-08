@@ -393,6 +393,7 @@
     "about.releases": "Versiones",
     "about.report": "Informar de algo que parece incorrecto",
     "about.framework": "UIFramework para streamer.bot",
+    "about.watermark": "El original: UIFramework for streamer.bot {0}",
     "messages.message": "Mensaje",
     "messages.numbers": "Números",
     "messages.numbers.tip": "El separador de miles que se usa en cada cantidad que se publica.",
