@@ -5,7 +5,10 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Run = System.Windows.Documents.Run;
 
 namespace UIFramework
@@ -91,7 +94,82 @@ namespace UIFramework
                 }
             }
 
-            return Ui.Scroll(page);
+            // The framework's logo, faint like a watermark, in the bottom right corner: this window is the original
+            // UIFramework. Under the content, never over it: the page is at least as tall as the view, the logo in
+            // its last row, so a short page has it in the corner and a long one at its end.
+            var mark = Watermark(ctx);
+            if (mark == null)
+                return Ui.Scroll(page);
+            var body = new Grid();
+            body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            body.Children.Add(page);
+            Grid.SetRow(mark, 1);
+            body.Children.Add(mark);
+            var scroll = Ui.Scroll(body);
+            body.SetBinding(FrameworkElement.MinHeightProperty, new Binding("ViewportHeight") { Source = scroll });
+            return scroll;
+        }
+
+        /// <summary>The name of the watermark on the About page, for tests and screen readers.</summary>
+        public const string WatermarkName = "UIFramework watermark";
+
+        private static readonly object LogoLock = new object();
+        private static ImageSource _logoDark, _logoLight;
+
+        /// <summary>The framework's logo (mark and wordmark) for a dark or a light ground, from the DLL; null when it is
+        /// missing. Frozen, so any window's thread can show it.</summary>
+        public static ImageSource FrameworkLogo(bool dark)
+        {
+            lock (LogoLock)
+            {
+                var cached = dark ? _logoDark : _logoLight;
+                if (cached != null) return cached;
+                try
+                {
+                    using (var stream = typeof(StandardPages).Assembly.GetManifestResourceStream("UIFramework.assets.uiframework-logo-" + (dark ? "dark" : "light") + ".png"))
+                    {
+                        if (stream == null) return null;
+                        var image = new BitmapImage();
+                        image.BeginInit();
+                        image.CacheOption = BitmapCacheOption.OnLoad;
+                        image.StreamSource = stream;
+                        image.EndInit();
+                        image.Freeze();
+                        if (dark) _logoDark = image; else _logoLight = image;
+                        return image;
+                    }
+                }
+                catch (Exception) { return null; }
+            }
+        }
+
+        private static FrameworkElement Watermark(PageContext ctx)
+        {
+            var source = FrameworkLogo(Theme.IsDark);
+            if (source == null) return null;
+            var conventions = ctx.Spec?.Conventions ?? Conventions.Default;
+            string url = conventions.AboutLinks.FirstOrDefault(l => l.Text == "about.framework")?.Url ?? "https://github.com/aaskjer/UIFramework-Streamer.bot";
+            const double faint = 0.35;
+            var logo = new Image
+            {
+                Source = source,
+                Width = 150,
+                Stretch = Stretch.Uniform,
+                Opacity = faint,
+                Cursor = Cursors.Hand,
+                ToolTip = Text.T("about.watermark", Entry.FrameworkVersion),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 8, 16, 12)
+            };
+            RenderOptions.SetBitmapScalingMode(logo, BitmapScalingMode.HighQuality);
+            AutomationProperties.SetName(logo, WatermarkName);
+            AutomationProperties.SetHelpText(logo, Text.T("about.watermark", Entry.FrameworkVersion));
+            logo.MouseEnter += (s, e) => logo.Opacity = 0.9;
+            logo.MouseLeave += (s, e) => logo.Opacity = faint;
+            logo.MouseLeftButtonUp += (s, e) => ctx.OpenUrl(url);
+            return logo;
         }
 
         // ---- Help -----------------------------------------------------------------------------------------

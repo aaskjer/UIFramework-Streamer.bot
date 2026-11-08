@@ -6,6 +6,12 @@ stable releases.
 
 ## [Unreleased]
 
+### Added
+
+- **The UIFramework logo on the About page.** Faint in the bottom right corner, like a watermark, so the window shows
+  it is the original framework: brighter under the mouse, its tooltip names the framework's version, a click opens
+  its page. It sits under the content, never over a link, in the dark or the light version for the theme.
+
 ## [1.1.0] - 2026-11-08
 
 ### Added

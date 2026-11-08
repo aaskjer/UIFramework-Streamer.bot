@@ -251,6 +251,7 @@
     "about.releases": "Releases",
     "about.report": "Report something that looks wrong",
     "about.framework": "UIFramework for streamer.bot",
+    "about.watermark": "The original: UIFramework for streamer.bot {0}",
     "messages.message": "Message",
     "messages.numbers": "Numbers",
     "messages.numbers.tip": "The thousands separator used in every amount that is posted.",

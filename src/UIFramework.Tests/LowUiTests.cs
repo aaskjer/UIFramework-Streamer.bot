@@ -216,5 +216,27 @@ namespace UIFramework.Tests
                 }
             }
         });
+
+        [Fact]
+        public void The_About_page_carries_the_framework_logo_in_its_corner() => Sta(() =>
+        {
+            Assert.NotNull(StandardPages.FrameworkLogo(true));
+            Assert.NotNull(StandardPages.FrameworkLogo(false));
+            var spec = new WindowSpec { Title = "Demo", Layout = new LayoutFile(Path.Combine(Folder(), "settings.json")) };
+            var parts = new WindowParts();
+            var ctx = new PageContext();
+            typeof(PageContext).GetProperty("Spec").SetValue(ctx, spec);
+            typeof(PageContext).GetProperty("Parts").SetValue(ctx, parts);
+            typeof(PageContext).GetProperty("Fields").SetValue(ctx, new Fields(parts, new JObject(), new JObject(), url => { }));
+            var page = StandardPages.BuildAbout(ctx);
+            Assert.IsType<ScrollViewer>(page);   // the shell keeps the scroll position of a page that is one
+            var all = new List<object>();
+            void Walk(object node) { all.Add(node); if (node is DependencyObject d) foreach (var child in LogicalTreeHelper.GetChildren(d)) Walk(child); }
+            Walk(page);
+            var logo = all.OfType<Image>().Single(i => System.Windows.Automation.AutomationProperties.GetName(i) == StandardPages.WatermarkName);
+            Assert.Equal(HorizontalAlignment.Right, logo.HorizontalAlignment);
+            Assert.Contains("UIFramework", logo.ToolTip as string);
+            Assert.True(logo.Opacity < 0.5);
+        });
     }
 }
