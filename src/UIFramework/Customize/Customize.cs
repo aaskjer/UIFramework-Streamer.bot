@@ -315,6 +315,7 @@ namespace UIFramework
             onPage.Insert(at < 0 ? onPage.Count : before ? first : last + 1, dragged);
             if (draggedSetting.Page != pageId)
                 ctx.Layout.SetField(dragged, "page", pageId);
+            TakeSection(ctx, pageId, draggedSetting, targetSetting);
             for (int i = 0; i < onPage.Count; i++)
                 ctx.Layout.SetField(onPage[i], "order", i * 10);
             Commit(ctx, pageId);
@@ -342,9 +343,24 @@ namespace UIFramework
             if (draggedSetting.Page == pageId && wanted.SequenceEqual(onPage)) return;
             if (draggedSetting.Page != pageId)
                 ctx.Layout.SetField(dragged, "page", pageId);
+            // Dropped in front of a field, it joins that field's section; at the end, the last one's.
+            int next = wanted.IndexOf(dragged) + 1;
+            var neighbour = next < wanted.Count ? wanted[next] : wanted.Count > 1 ? wanted[wanted.Count - 2] : null;
+            TakeSection(ctx, pageId, draggedSetting, ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == neighbour));
             for (int i = 0; i < wanted.Count; i++)
                 ctx.Layout.SetField(wanted[i], "order", i * 10);
             Commit(ctx, pageId);
+        }
+
+        /// <summary>A field dropped among the fields of another section joins it, so no section is split in two and its
+        /// heading does not show twice. The section goes into the layout by the name the game declared, so it holds in
+        /// every language; "Reset this field" brings the field's own back.</summary>
+        private static void TakeSection(PageContext ctx, string pageId, Setting dragged, Setting neighbour)
+        {
+            if (pageId == "messages" || neighbour == null || neighbour.Key == dragged.Key) return;
+            string section = neighbour.SectionId;
+            if (section == null || section == dragged.SectionId) return;
+            ctx.Layout.SetField(dragged.Key, "section", section);
         }
 
         /// <summary>The Messages page in the customise mode: one line per template, in groups, each draggable and

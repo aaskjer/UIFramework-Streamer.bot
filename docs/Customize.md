@@ -17,6 +17,7 @@ user's.
   puts them so. Dropping a field at the left or right edge of another puts it beside that one, on the same line
   (an accent edge shows which side); at its top or bottom half, above or below it on a line of its own. Over a
   heading or a gap it lands between, under the last field at the end; at the edge the page scrolls along slowly.
+  A field dropped among the fields of another section joins that section, so no heading shows twice.
   Dropping on a page in the rail moves it there. Right-click: *Rename*, *Hide* / *Show*, *Move to page*,
   *Reset this field*. Values are not editable in the mode.
 - **Pages** in the rail: dragging sorts the top group; right-click: *Rename*, *Change icon* (an emoji or a

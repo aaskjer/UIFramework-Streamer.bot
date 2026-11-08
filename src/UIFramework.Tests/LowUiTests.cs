@@ -238,5 +238,43 @@ namespace UIFramework.Tests
             Assert.Contains("UIFramework", logo.ToolTip as string);
             Assert.True(logo.Opacity < 0.5);
         });
+
+        private static WindowSpec Sections(string folder)
+        {
+            var root = JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [
+                { ""key"": ""a"", ""default"": 1, ""page"": ""game"", ""section"": ""Bets"" },
+                { ""key"": ""b"", ""default"": 1, ""page"": ""game"", ""section"": ""Bets"" },
+                { ""key"": ""c"", ""default"": 1, ""page"": ""game"", ""section"": ""Payout"" },
+                { ""key"": ""d"", ""default"": 1, ""page"": ""game"", ""section"": ""Payout"" }
+            ], ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ] } }");
+            var schema = Schema.Parse(root);
+            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            spec.Layout = LayoutFile.Load(Path.Combine(folder, "settings.json"));
+            Entry.Prepare(spec, schema);
+            return spec;
+        }
+
+        [Fact]
+        public void A_field_the_user_moved_is_not_a_split_section_the_game_must_fix()
+        {
+            string folder = Folder();
+            File.WriteAllText(Path.Combine(folder, LayoutFile.FileName), @"{ ""fields"": { ""a"": { ""order"": 25 } } }");   // a between c and d
+            Assert.DoesNotContain(Sections(folder).Problems, p => p.Contains("is split by another section"));
+        }
+
+        [Fact]
+        public void A_field_dropped_among_another_sections_fields_joins_that_section() => Sta(() =>
+        {
+            string folder = Folder();
+            var spec = Sections(folder);
+            var ctx = new PageContext();
+            typeof(PageContext).GetProperty("Spec").SetValue(ctx, spec);
+            var place = typeof(Customize).GetMethod("PlaceField", BindingFlags.NonPublic | BindingFlags.Static);
+            place.Invoke(null, new object[] { ctx, "game", "a", "d", true, false });   // a of Bets above d of Payout
+            Assert.Equal("Payout", spec.Layout.Field("a").Section);
+            var again = Sections(folder);                                           // the window as it opens next
+            var order = again.ResolvedSettings.Where(s => s.Page == "game").OrderBy(s => s.Order).Select(s => s.Section).ToList();
+            Assert.Equal(new[] { "Bets", "Payout", "Payout", "Payout" }, order);
+        });
     }
 }
