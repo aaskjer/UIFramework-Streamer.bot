@@ -417,6 +417,7 @@ Offen:
 - **Fenster friert ein:** Test, Prüfen und Tabellen warten auf dem Fensterthread bis zu 35 s auf das Spiel; Windows meldet "Keine Rückmeldung". Loader.md sagt das Gegenteil. Hooks asynchron oder ein kurzes Budget für alles außer `saved`.
 - **Keine Antwort wird zu "erledigt":** Bei Zeitüberschreitung gibt `Host.Test` null zurück, das Fenster zeigt das grün als erledigt. Eine Fehlerantwort (oder die Marke `\u0001uiframework:no-answer`) und im Fenster die Fehlerfarbe.
 - **Update-Dialog:** *Abbrechen*, auch X und Esc, überspringt die Version für immer. Überspringen als eigene Wahl; X und Esc heißt "später fragen".
+- **Download mit Wiederholung:** Ein 5xx oder Timeout von GitHub beim Laden der DLL bricht sofort ab und zeigt die rohe Meldung (am 08.11. ein 504 für das frische Asset von 1.4.1; Sekunden später lud es mit dem richtigen Hash). Zwei- bis dreimal mit ein paar Sekunden Pause wiederholen; danach "GitHub hat nicht geantwortet, versuch es gleich noch einmal" statt der Ausnahme.
 - **Antwortvariable je Anfrage:** Nach 35 s wird das Tor ersetzt, und eine hängende und eine neue Anfrage teilen sich `AnswerVar`. Je Anfrage eine eigene Variable mit Guid, im `finally` geleert.
 - **Loader-Einstellungen je Spiel:** `autoUpdate`, `skipVersion` und `frameworkAvailable` liegen in der Layout-Datei jedes Spiels, gelten aber für die eine DLL. Eine gemeinsame Datei unter `UIFramework\lib` oder klar dokumentieren.
 - **Kleinere Punkte:**
