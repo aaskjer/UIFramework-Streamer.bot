@@ -122,7 +122,7 @@ what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and t
 every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),
 `-settle 3000` waits that long for emote pictures, `-pick 1` picks the first row of every grid.
 A tag `vX.Y.Z` with its section in [CHANGELOG.md](CHANGELOG.md) publishes the DLL and updates `lib/v1/latest.json`,
-which every stub reads. [PLAN.md](PLAN.md) (German) holds the architecture and phases,
+which every stub reads. [PLAN.md](PLAN.md) (German) holds what is still open and the plan for the projects that are not games,
 [docs/Phase0-Konventionen.md](docs/Phase0-Konventionen.md) (German) the conventions drawn from the game windows
 this replaces.
 
