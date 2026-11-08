@@ -334,7 +334,7 @@
     "tour.theme.title": "Light or dark",
     "tour.theme.text": "Switches between the light and the dark theme.",
     "tour.customise.title": "Customise",
-    "tour.customise.text": "Rename, move and hide fields and pages to your liking, and pick an accent colour. Export and import of the settings live there too. Your layout survives every update of the game.",
+    "tour.customise.text": "Rename, move and hide fields and pages to your liking, pick an accent colour, and show the help under each field instead of in its tooltip. Export and import of the settings live there too. Your layout survives every update of the game.",
     "tour.tour.title": "This tour",
     "tour.tour.text": "The ? shows this tour again whenever you want it.",
     "tour.page.text": "One of the window's pages; click it in the rail to open it.",

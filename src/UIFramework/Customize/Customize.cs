@@ -537,7 +537,20 @@ namespace UIFramework
             var language = LanguagePicker(ctx.Spec, ctx.Layout, () => Commit(ctx, null));
 
             // The help of every field as a line under it instead of in its tooltip; the window is built again with it.
-            var helpLines = new CheckBox { IsChecked = ctx.Layout.HelpLines, VerticalAlignment = VerticalAlignment.Center, ToolTip = Text.T("cust.helpLines.tip") };
+            // A switch of its own on the hint's line: the top row is full with the colour, the language and the buttons.
+            var helpLines = new CheckBox
+            {
+                Content = Text.T("cust.helpLines"),
+                IsChecked = ctx.Layout.HelpLines,
+                ToolTip = Text.T("cust.helpLines.tip"),
+                Template = Ui.SwitchTemplate(),
+                Foreground = Theme.LabelFg,
+                FontSize = 11,
+                Cursor = Cursors.Hand,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 16, 0)
+            };
+            System.Windows.Automation.AutomationProperties.SetName(helpLines, Text.T("cust.helpLines"));
             helpLines.Click += (s, e) =>
             {
                 ctx.Layout.HelpLines = helpLines.IsChecked == true;
@@ -570,7 +583,6 @@ namespace UIFramework
             choices.Children.Add(Beside(Text.T("cust.accent"), accent, 0));
             if (language != null)
                 choices.Children.Add(Beside(Text.T("cust.language"), language, 12));
-            choices.Children.Add(Beside(Text.T("cust.helpLines"), helpLines, 12));
             var controls = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
             foreach (var button in new[] { reset, export, import, open })
             {
@@ -589,9 +601,16 @@ namespace UIFramework
             Grid.SetColumn(controls, 1);
             top.Children.Add(choices);
             top.Children.Add(controls);
+            // Under the row: the help switch, then the hint with the count of changes, wrapping beside it.
+            var second = new DockPanel { Margin = new Thickness(0, 8, 0, 0), LastChildFill = true };
+            DockPanel.SetDock(helpLines, Dock.Left);
+            second.Children.Add(helpLines);
+            text.Margin = new Thickness(0);
+            text.VerticalAlignment = VerticalAlignment.Center;
+            second.Children.Add(text);
             var panel = new StackPanel();
             panel.Children.Add(top);
-            panel.Children.Add(text);
+            panel.Children.Add(second);
 
             return new Border
             {
