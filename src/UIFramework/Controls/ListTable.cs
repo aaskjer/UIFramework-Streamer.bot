@@ -194,15 +194,26 @@ namespace UIFramework
                 shares.Add((gridColumn, column.Kind == "text" ? 3.0 : column.Kind == "bool" ? 0.45 : column.Kind == "int" || column.Kind == "long" || column.Kind == "double" ? 0.7 : 1.0));
             }
             // Shares of the width in pixels once the grid knows its width: star columns collapse when a page measures
-            // them without one.
-            _grid.SizeChanged += (s, e) =>
+            // them without one. The width is the rows' viewport, so the vertical scrollbar counts only while it shows,
+            // and it follows the grid's size and the scrollbar coming and going as rows are added or removed. What the
+            // whole pixels leave over goes to the widest column, so the last one ends at the grid's edge and no empty
+            // filler column shows after it.
+            _grid.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((s, e) =>
             {
-                double room = e.NewSize.Width - 30 - 2 - SystemParameters.VerticalScrollBarWidth - 2;
+                if (e.ViewportWidthChange == 0 || !(e.OriginalSource is ScrollViewer viewer) || viewer.TemplatedParent != _grid) return;
+                double room = Math.Floor(e.ViewportWidth) - 30;
                 if (room <= 0) return;
                 double total = shares.Sum(x => x.Share);
-                foreach (var (column, share) in shares)
-                    column.Width = new DataGridLength(Math.Max(30, Math.Floor(room * share / total)));
-            };
+                var widths = shares.Select(x => Math.Max(30, Math.Floor(room * x.Share / total))).ToList();
+                double left = room - widths.Sum();
+                if (left > 0)
+                {
+                    int widest = widths.IndexOf(widths.Max());
+                    widths[widest] += left;
+                }
+                for (int i = 0; i < shares.Count; i++)
+                    shares[i].Column.Width = new DataGridLength(widths[i]);
+            }));
             _grid.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Delete && !IsEditing())
