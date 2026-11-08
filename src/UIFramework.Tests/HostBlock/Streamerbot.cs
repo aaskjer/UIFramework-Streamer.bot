@@ -18,6 +18,8 @@ namespace Streamer.bot.Plugin.Interface
         object TwitchGetBroadcaster();
         object YouTubeGetLatestMonitoredBroadcast();
         object KickGetBroadcaster();
+        object YouTubeGetBroadcaster();
+        void ShowToastNotification(string title, string message, string attribution = "", string iconPath = "");
     }
 }
 
@@ -42,5 +44,8 @@ namespace UIFramework.Tests
         public object TwitchGetBroadcaster() => Twitch;
         public object YouTubeGetLatestMonitoredBroadcast() => YouTube;
         public object KickGetBroadcaster() => Kick;
+        public object YouTubeGetBroadcaster() => YouTube;
+        public readonly List<string> Toasts = new List<string>();
+        public void ShowToastNotification(string title, string message, string attribution = "", string iconPath = "") => Toasts.Add(title + " | " + message);
     }
 }

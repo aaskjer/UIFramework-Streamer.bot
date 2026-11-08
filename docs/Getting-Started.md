@@ -136,7 +136,8 @@ The demo becomes your game in `DemoGame.cs` (save it under your game's name) and
    ```
 
    `releases` is your GitHub repository: it gives the About page its links, the window its "new version of
-   the game" check, and your game a place in the update notice in chat once per Streamer.bot start. `Cooldowns` is how the cooldown settings reach the command: after every save the settings
+   the game" check, and your game a place in the update notice once per Streamer.bot start (`Init()`, see
+   [Schema.md](Schema.md#update-notice)). `Cooldowns` is how the cooldown settings reach the command: after every save the settings
    action sets its global and per-user cooldown from those two keys; without it they are just numbers in the
    file. Name the command by its text (`"!roll"`), its name, or its id (right-click the command in Streamer.bot
    to copy it). For a game you ship, the id is the safer one: an export and import keep it, and it still holds
@@ -171,7 +172,17 @@ The demo becomes your game in `DemoGame.cs` (save it under your game's name) and
    }
    ```
 
-4. The settings action as in [step 3](#step-3-the-settings-action-demo-game-settings), with your game action's
+4. For the update notice once per Streamer.bot start ([Schema.md](Schema.md#update-notice)), in `CPHInline`:
+
+   ```csharp
+   public void Init()
+   {
+       UiUpdateNotice.Startup(CPH, ActionName, "mygame", CurrentVersion, SettingsFile);
+   }
+   ```
+
+   and tick *Precompile on Application Start* on the game action's Execute Code sub-action (right-click it).
+5. The settings action as in [step 3](#step-3-the-settings-action-demo-game-settings), with your game action's
    name in `GameActionName`.
 
 ## Good to know

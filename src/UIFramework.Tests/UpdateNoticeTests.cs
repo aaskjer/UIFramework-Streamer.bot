@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>One update notice in chat per Streamer.bot start: due a few minutes after the first game of the run,
-    /// once GitHub's answers are fresh, naming the games used so far and UIFramework; then nothing until the next start.</summary>
+    /// <summary>One update notice per Streamer.bot start: due shortly after the first game starts, once GitHub's
+    /// answers are fresh, naming the games of the run and UIFramework; each game's texts and ways (chat, toast) as its
+    /// window declares them; then nothing until the next start.</summary>
     public class UpdateNoticeTests : IDisposable
     {
         private readonly string _folder;
@@ -25,6 +27,7 @@ namespace UIFramework.Tests
             File.WriteAllText(Path.Combine(_folder, "lib", "1.2.0", "UIFramework.dll"), "");
             UpdateNotices.Folder = _folder;
             UpdateNotices.InBackground = false;
+            UpdateNotices.Delay = TimeSpan.FromSeconds(20);
             UpdateNotices.Now = () => _now;
             UpdateNotices.Session = () => _session;
             UpdateNotices.Fetch = url =>
@@ -41,41 +44,62 @@ namespace UIFramework.Tests
         {
             UpdateNotices.Folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework");
             UpdateNotices.InBackground = true;
+            UpdateNotices.Delay = TimeSpan.FromSeconds(20);
             UpdateNotices.Now = () => DateTime.UtcNow;
             UpdateNotices.Session = () => "tests";
         }
 
-        private string Settings(string game, bool notices = true)
+        private string Settings(string game, string layout = null)
         {
             string dir = Path.Combine(_folder, game);
             Directory.CreateDirectory(dir);
-            if (!notices) File.WriteAllText(Path.Combine(dir, LayoutFile.FileName), "{ \"updateNotices\": false }");
+            if (layout != null) File.WriteAllText(Path.Combine(dir, LayoutFile.FileName), layout);
             return Path.Combine(dir, "settings.json");
         }
 
-        private string[] Hangman() => UpdateNotices.Due("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman"));
-        private string[] Trivia() => UpdateNotices.Due("trivia", "Trivia Game", "v9.1.0", "aaskjer/Trivia-Game", Settings("trivia"));
+        private JObject Hangman(string options = null) => Answer(UpdateNotices.DueJson("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman"), options));
+        private JObject Trivia(string options = null) => Answer(UpdateNotices.DueJson("trivia", "Trivia Game", "v9.1.0", "aaskjer/Trivia-Game", Settings("trivia"), options));
+
+        // Null: stop asking; an empty object: not yet; else the notice.
+        private static JObject Answer(string json) => json == null ? null : json.Length == 0 ? new JObject() : JObject.Parse(json);
+        private static List<string> Chat(JObject notice) => ((JArray)notice["chat"]).Select(l => (string)l).ToList();
 
         [Fact]
-        public void One_line_a_few_minutes_into_the_run_then_nothing_until_the_next_start()
+        public void One_notice_shortly_after_the_start_then_nothing_until_the_next_start()
         {
-            Assert.Empty(Hangman());                       // the first game of the run: the notice waits
+            Assert.Empty(Hangman());                       // the first game of the run: the notice waits for the others
             Assert.Contains(UpdateNotices.FrameworkLatestUrl, _fetched);
-            _now = _now.AddMinutes(1);
-            Assert.Empty(Trivia());                        // a second game joins the run; still waiting
-            _now = _now.AddMinutes(3);
-            var lines = Trivia();
-            Assert.Equal("🔔 Updates are out: Hangman Game v13.2.0, UIFramework v1.3.0. Details are in Streamer.bot's log.", lines[0]);
-            Assert.Contains(lines, l => l.Contains("https://github.com/aaskjer/Hangman-Game/releases/latest"));
-            Assert.DoesNotContain(lines, l => l.Contains("Trivia Game v"));   // Trivia runs its newest release
+            _now = _now.AddSeconds(5);
+            Assert.Empty(Trivia());                        // a second game starts with Streamer.bot; still waiting
+            _now = _now.AddSeconds(20);
+            var notice = Trivia();
+            Assert.Equal(new[] { "🔔 Updates are out: Hangman Game v13.2.0, UIFramework v1.3.0. Details are in Streamer.bot's log." }, Chat(notice));
+            Assert.Contains(notice["log"], l => ((string)l).Contains("https://github.com/aaskjer/Hangman-Game/releases/latest"));
+            var toast = (JObject)notice["toast"].Single();
+            Assert.Equal("Updates for Streamer.bot", (string)toast["title"]);
+            Assert.Equal("Hangman Game v13.2.0, UIFramework v1.3.0. Details are in Streamer.bot's log.", (string)toast["text"]);
+            Assert.False((bool)toast["always"]);           // by default only while no broadcaster account is connected
             Assert.Null(Hangman());                        // said: nothing more in this run
             Assert.Null(Trivia());
 
             _session = "run-2";                            // Streamer.bot started again
             Assert.Empty(Hangman());
-            _now = _now.AddMinutes(4);
-            Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", Hangman()[0]);
-            Assert.Null(Hangman());
+            _now = _now.AddSeconds(30);
+            Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", Chat(Hangman())[0]);
+        }
+
+        [Fact]
+        public void Each_game_says_it_its_own_way_and_games_with_the_same_texts_share_a_message()
+        {
+            Hangman("{ \"chat\": true, \"chatText\": \"Hangman news: {updates} ({count})\", \"toast\": true, \"toastAlways\": true, \"toastTitle\": \"Hangman\", \"toastText\": \"{updates}\" }");
+            _now = _now.AddSeconds(30);
+            var notice = Trivia("{ \"chat\": false, \"toast\": false }");
+            // Trivia delivers: UIFramework goes with its texts, which say no chat and no toast; Hangman's own update its way.
+            Assert.Equal(new[] { "Hangman news: Hangman Game v13.2.0 (1)" }, Chat(notice));
+            var toast = (JObject)notice["toast"].Single();
+            Assert.Equal("Hangman", (string)toast["title"]);
+            Assert.Equal("Hangman Game v13.2.0", (string)toast["text"]);
+            Assert.True((bool)toast["always"]);
         }
 
         [Fact]
@@ -93,13 +117,12 @@ namespace UIFramework.Tests
         }
 
         [Fact]
-        public void A_game_with_notices_off_is_left_out_and_does_not_post_them()
+        public void A_game_with_notices_off_is_left_out_and_does_not_deliver_them()
         {
-            Assert.Null(UpdateNotices.Due("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman", notices: false)));
+            Assert.Null(Answer(UpdateNotices.DueJson("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman", "{ \"updateNotices\": false }"), null)));
             Assert.Empty(Trivia());
-            _now = _now.AddMinutes(4);
-            var lines = Trivia();
-            Assert.Equal("🔔 Updates are out: UIFramework v1.3.0. Details are in Streamer.bot's log.", lines[0]);
+            _now = _now.AddSeconds(30);
+            Assert.Equal(new[] { "🔔 Updates are out: UIFramework v1.3.0. Details are in Streamer.bot's log." }, Chat(Trivia()));
         }
 
         [Fact]
@@ -108,7 +131,7 @@ namespace UIFramework.Tests
             Directory.CreateDirectory(Path.Combine(_folder, "lib", "1.3.0"));
             File.WriteAllText(Path.Combine(_folder, "lib", "1.3.0", "UIFramework.dll"), "");
             Assert.Empty(Trivia());
-            _now = _now.AddMinutes(4);
+            _now = _now.AddSeconds(30);
             Assert.Null(Trivia());
         }
 
@@ -116,11 +139,11 @@ namespace UIFramework.Tests
         public void A_settings_action_too_old_for_the_newest_release_is_named_in_the_game_language()
         {
             _minHostStub = "0.3.0";
-            File.WriteAllText(Path.Combine(Path.GetDirectoryName(Settings("trivia")), LayoutFile.FileName), "{ \"language\": \"de\" }");
+            Settings("trivia", "{ \"language\": \"de\" }");
             UpdateNotices.Register("trivia", "Trivia Game", "v9.1.0", "aaskjer/Trivia-Game", Settings("trivia"), "0.2.0");
             Assert.Empty(Trivia());
-            _now = _now.AddMinutes(4);
-            Assert.Equal("🔔 Updates verfügbar: Trivia Game (neu importieren), UIFramework v1.3.0. Details stehen im Log von Streamer.bot.", Trivia()[0]);
+            _now = _now.AddSeconds(30);
+            Assert.Equal(new[] { "🔔 Updates verfügbar: Trivia Game (neu importieren), UIFramework v1.3.0. Details stehen im Log von Streamer.bot." }, Chat(Trivia()));
         }
 
         [Fact]
@@ -132,31 +155,47 @@ namespace UIFramework.Tests
             Assert.Empty(Hangman());                       // no good answer yet: the notice waits
             UpdateNotices.Fetch = url => url == UpdateNotices.FrameworkLatestUrl ? "{ \"version\": \"1.3.0\" }" : "{ \"tag_name\": \"v13.2.0\" }";
             _now = _now.AddMinutes(50);                    // an hour after the failure it is asked again
-            Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", Hangman()[0]);
+            Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", Chat(Hangman())[0]);
         }
 
         [Fact]
-        public void The_host_block_sends_the_line_to_the_chat_it_was_used_in_once()
+        public void The_1_3_0_host_block_still_gets_its_lines()
         {
-            var cph = new FakeCph();
-            var reset = typeof(UiUpdateNotice).GetField("_next", BindingFlags.NonPublic | BindingFlags.Static);
-            var done = typeof(UiUpdateNotice).GetField("_done", BindingFlags.NonPublic | BindingFlags.Static);
-            done.SetValue(null, false);
-            string settings = Settings("demo");
-            void Run(string platform)
-            {
-                reset.SetValue(null, DateTime.MinValue);
-                UiHost.Handle(new Dictionary<string, object> { ["commandSource"] = platform, ["user"] = "alice" }, cph, "Demo Game", "demo", "v1.0.0", settings);
-            }
-            Run("kick");
-            Assert.Empty(cph.Sent);                       // the notice waits a few minutes into the run
-            _now = _now.AddMinutes(4);
-            Run("kick");
-            Assert.Single(cph.Sent);
-            Assert.StartsWith("kick 🔔 Updates are out: UIFramework v1.3.0", cph.Sent[0]);
+            Assert.Empty(UpdateNotices.Due("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman")));
+            _now = _now.AddSeconds(30);
+            var lines = UpdateNotices.Due("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman"));
+            Assert.StartsWith("🔔 Updates are out: Hangman Game v13.2.0", lines[0]);
+            Assert.Contains(lines, l => l.Contains("releases/latest"));
+        }
+
+        private static FakeCph Started(FakeCph cph, string settings)
+        {
+            typeof(UiUpdateNotice).GetField("_started", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, false);
+            typeof(UiUpdateNotice).GetField("_connectTries", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, 1);
+            UiUpdateNotice.Startup(cph, "Demo Game", "demo", "v1.0.0", settings);
+            for (int i = 0; i < 100 && cph.Sent.Count == 0 && cph.Toasts.Count == 0; i++)
+                Thread.Sleep(50);
+            Thread.Sleep(100);
+            return cph;
+        }
+
+        [Fact]
+        public void From_Init_the_host_block_sends_the_line_to_every_connected_chat()
+        {
+            UpdateNotices.Delay = TimeSpan.Zero;
+            var cph = Started(new FakeCph { Twitch = new object(), Kick = new object() }, Settings("demo"));
+            Assert.Equal(new[] { "twitch 🔔 Updates are out: UIFramework v1.3.0. Details are in Streamer.bot's log.", "kick 🔔 Updates are out: UIFramework v1.3.0. Details are in Streamer.bot's log." }, cph.Sent);
+            Assert.Empty(cph.Toasts);                      // a broadcaster account is connected: no toast
             Assert.Contains(cph.Log, l => l.Contains("Update: UIFramework v1.3.0 is out"));
-            Run("twitch");
-            Assert.Single(cph.Sent);                      // once per Streamer.bot start
+        }
+
+        [Fact]
+        public void Without_a_broadcaster_account_the_notice_is_a_Windows_toast()
+        {
+            UpdateNotices.Delay = TimeSpan.Zero;
+            var cph = Started(new FakeCph(), Settings("demo"));
+            Assert.Empty(cph.Sent);
+            Assert.Equal(new[] { "Updates for Streamer.bot | UIFramework v1.3.0. Details are in Streamer.bot's log." }, cph.Toasts);
         }
     }
 }

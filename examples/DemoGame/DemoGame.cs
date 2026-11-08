@@ -300,6 +300,8 @@ public sealed class UiWindow
     public readonly System.Collections.Generic.List<object> PageList = new System.Collections.Generic.List<object>();
     public readonly Newtonsoft.Json.Linq.JObject SampleMap = new Newtonsoft.Json.Linq.JObject(), AnswerMap = new Newtonsoft.Json.Linq.JObject(), OverrideMap = new Newtonsoft.Json.Linq.JObject();
     public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap;
+    /// <summary>What Updates(...) declared; null: the framework's defaults.</summary>
+    public Newtonsoft.Json.Linq.JObject UpdateOptions;
     public readonly Newtonsoft.Json.Linq.JArray PillList = new Newtonsoft.Json.Linq.JArray(), CooldownList = new Newtonsoft.Json.Linq.JArray(), HelpList = new Newtonsoft.Json.Linq.JArray(), SectionList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
     public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
@@ -435,6 +437,20 @@ public sealed class UiWindow
 
     /// <summary>A tour of the window, stop by stop (UiSchema.Tip): it starts by itself on the window's first open and
     /// again from the ? in the header. Its texts translate through Lang's Tx like every declared text.</summary>
+    /// <summary>How the update notice once per Streamer.bot start tells of this game (docs/Schema.md, "Update notice"):
+    /// <paramref name="chat"/> a line in every connected chat, with <paramref name="chatText"/> (null: the framework's,
+    /// in the window's language); <paramref name="toast"/> a Windows toast, <paramref name="toastAlways"/> or only while no
+    /// broadcaster account is connected, with <paramref name="toastTitle"/> and <paramref name="toastText"/>. In the texts
+    /// {updates} is the list of what is new ("Hangman Game v13.2.0, UIFramework v1.4.0"), {count} how many.</summary>
+    public UiWindow Updates(bool chat = true, string chatText = null, bool toast = true, bool toastAlways = false, string toastTitle = null, string toastText = null)
+    {
+        UpdateOptions = new Newtonsoft.Json.Linq.JObject { ["chat"] = chat, ["toast"] = toast, ["toastAlways"] = toastAlways };
+        if (chatText != null) UpdateOptions["chatText"] = chatText;
+        if (toastTitle != null) UpdateOptions["toastTitle"] = toastTitle;
+        if (toastText != null) UpdateOptions["toastText"] = toastText;
+        return this;
+    }
+
     public UiWindow Tour(params UiLine[] tips)
     {
         foreach (var tip in tips) TourList.Add(tip.Json);
@@ -480,6 +496,7 @@ public sealed class UiWindow
         if (PillList.Count > 0) root["headerPills"] = PillList;
         if (SectionList.Count > 0) root["sections"] = SectionList;
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
+        if (UpdateOptions != null) root["updates"] = UpdateOptions;
         if (LogMap != null) root["log"] = LogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
         if (AboutMap != null) root["about"] = AboutMap;
@@ -556,10 +573,7 @@ public static class UiHost
         string request = Arg(args, "uiframework.request");
         if (request == null && args != null && args.ContainsKey("uiframework.describe")) request = "describe";
         if (string.IsNullOrEmpty(request))
-        {
-            UiUpdateNotice.Run(args, CPH, actionName, host, version, settingsFile);
             return false;
-        }
         // The settings action names the global it will read; without that (an older stub) the name is built here.
         string var = Arg(args, "uiframework.var");
         if (request == "describe")
@@ -600,52 +614,80 @@ public static class UiHost
     private static string Arg(System.Collections.Generic.IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
 }
 
-/// <summary>The update notice in chat, once per Streamer.bot start (docs/Schema.md, "Update notice"). On an ordinary
-/// run of the game action, at most every two minutes, it asks UIFramework.dll (the newest one under
-/// &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings already loaded) whether the notice is due, and sends
-/// its line to the chat the action was used in, or to every connected one. It never waits for the network: the DLL
-/// answers from its file and asks GitHub in the background. Without the DLL (the settings never opened) nothing happens.</summary>
+/// <summary>The update notice, once per Streamer.bot start (docs/Schema.md, "Update notice"). Call
+/// <c>UiUpdateNotice.Startup(CPH, ...)</c> from the game action's <c>Init()</c> and tick "Precompile on Application Start"
+/// on its Execute Code sub-action: Streamer.bot then runs it as it starts. In the background it asks UIFramework.dll (the
+/// newest under &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings loaded) every few seconds until the notice
+/// is due, waits up to a minute for a broadcaster account to connect, then sends the chat line to Twitch, YouTube and
+/// Kick, whichever is connected, and shows a Windows toast when no broadcaster account is (or always, as the window's
+/// <c>Updates</c> says). Every game asks; one of them gets the whole notice. Without the DLL (the settings never opened)
+/// nothing happens.</summary>
 public static class UiUpdateNotice
 {
     private static readonly object Gate = new object();
-    private static System.DateTime _next = System.DateTime.MinValue;
-    private static bool _done;
+    private static bool _started;
+    // How often (five seconds apart) it looks for a connected broadcaster account before it decides there is none.
+    private static int _connectTries = 12;
 
-    public static void Run(System.Collections.Generic.IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile)
+    public static void Startup(IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile)
     {
         lock (Gate)
         {
-            if (_done || System.DateTime.UtcNow < _next) return;
-            _next = System.DateTime.UtcNow.AddMinutes(2);
+            if (_started) return;
+            _started = true;
         }
+        System.Threading.Tasks.Task.Run(() => Deliver(CPH, actionName, host, version, settingsFile));
+    }
+
+    private static void Deliver(IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile)
+    {
         try
         {
             var notices = FrameworkType();
-            var due = notices == null ? null : notices.GetMethod("Due", new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string) });
-            if (due == null) { _done = true; return; }
+            var due = notices == null ? null : notices.GetMethod("DueJson", new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(string) });
+            if (due == null) return;
             var window = UiSchema.Window;
-            var lines = due.Invoke(null, new object[] { host, window != null && window.Title != null ? window.Title : actionName, version, window != null ? window.Releases : null, settingsFile }) as string[];
-            if (lines == null) { _done = true; return; }
-            if (lines.Length == 0) return;
-            _done = true;
-            for (int i = 1; i < lines.Length; i++)
-                CPH.LogInfo("[" + actionName + "] Update: " + lines[i]);
+            string title = window != null && window.Title != null ? window.Title : actionName;
+            string options = window != null && window.UpdateOptions != null ? window.UpdateOptions.ToString(Newtonsoft.Json.Formatting.None) : null;
+            string answer = "";
+            for (int i = 0; i < 120 && answer == ""; i++)   // every five seconds, ten minutes at most
+            {
+                if (i > 0) System.Threading.Thread.Sleep(5000);
+                answer = due.Invoke(null, new object[] { host, title, version, window != null ? window.Releases : null, settingsFile, options }) as string;
+                if (answer == null) return;
+            }
+            if (string.IsNullOrEmpty(answer)) return;
+            var notice = Newtonsoft.Json.Linq.JObject.Parse(answer);
+            foreach (var line in notice["log"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+                CPH.LogInfo("[" + actionName + "] Update: " + (string)line);
+
+            // Streamer.bot connects its accounts while it starts: up to a minute for the first one.
+            bool twitch = false, youtube = false, kick = false;
+            for (int i = 0; i < _connectTries; i++)
+            {
+                try { twitch = CPH.TwitchGetBroadcaster() != null; } catch (System.Exception) { twitch = false; }
+                try { youtube = CPH.YouTubeGetBroadcaster() != null; } catch (System.Exception) { youtube = false; }
+                try { kick = CPH.KickGetBroadcaster() != null; } catch (System.Exception) { kick = false; }
+                if (twitch || youtube || kick || i + 1 >= _connectTries) break;
+                System.Threading.Thread.Sleep(5000);
+            }
+            bool connected = twitch || youtube || kick;
             var settings = UiSettings.Load(settingsFile);
             bool bot = settings.Token("useBot") == null || settings.Bool("useBot");
-            string platform = Platform(args);
-            if (platform != null)
-                Send(CPH, platform, lines[0], bot);
-            else
+            foreach (var line in notice["chat"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
             {
-                // Not from a chat (a timer, a deck): every chat Streamer.bot is connected to.
-                try { if (CPH.TwitchGetBroadcaster() != null) Send(CPH, "twitch", lines[0], bot); } catch (System.Exception) { }
-                try { if (CPH.YouTubeGetLatestMonitoredBroadcast() != null) Send(CPH, "youtube", lines[0], bot); } catch (System.Exception) { }
-                try { if (CPH.KickGetBroadcaster() != null) Send(CPH, "kick", lines[0], bot); } catch (System.Exception) { }
+                string text = (string)line;
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                if (twitch) try { Send(CPH, "twitch", text, bot); } catch (System.Exception) { }
+                if (youtube) try { Send(CPH, "youtube", text, bot); } catch (System.Exception) { }
+                if (kick) try { Send(CPH, "kick", text, bot); } catch (System.Exception) { }
             }
+            foreach (var item in notice["toast"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+                if (item is Newtonsoft.Json.Linq.JObject toast && ((bool?)toast["always"] == true || !connected))
+                    CPH.ShowToastNotification((string)toast["title"] ?? "UIFramework", (string)toast["text"] ?? "", "UIFramework", "");
         }
         catch (System.Exception ex)
         {
-            _done = true;
             CPH.LogWarn("[" + actionName + "] The update notice failed: " + (ex.InnerException ?? ex).Message);
         }
     }
@@ -655,21 +697,6 @@ public static class UiUpdateNotice
         if (platform == "youtube") CPH.SendYouTubeMessageToLatestMonitored(text, bot, true);
         else if (platform == "kick") CPH.SendKickMessage(text, bot, true);
         else CPH.SendMessage(text, bot, true);
-    }
-
-    /// <summary>The chat the action was used in, from the arguments Streamer.bot gives a command or a chat message.</summary>
-    private static string Platform(System.Collections.Generic.IDictionary<string, object> args)
-    {
-        foreach (var key in new[] { "commandSource", "userType", "eventSource", "platform" })
-        {
-            object value;
-            if (args == null || !args.TryGetValue(key, out value) || value == null) continue;
-            string text = value.ToString().ToLowerInvariant();
-            if (text.Contains("youtube")) return "youtube";
-            if (text.Contains("twitch")) return "twitch";
-            if (text.Contains("kick")) return "kick";
-        }
-        return null;
     }
 
     /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
@@ -916,6 +943,13 @@ public class CPHInline
     private const string SettingsFile = "Demo Game/DemoGame-Settings.json"; // relative to the Streamer.bot folder
 
     private static readonly Random Dice = new Random();
+
+    // Streamer.bot runs Init when it compiles this action: as it starts, with "Precompile on Application Start" ticked on
+    // the Execute Code sub-action. The update notice starts from here, once per start, in the background.
+    public void Init()
+    {
+        UiUpdateNotice.Startup(CPH, ActionName, "demo", CurrentVersion, SettingsFile);
+    }
 
     public bool Execute()
     {
