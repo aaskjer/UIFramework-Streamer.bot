@@ -250,8 +250,8 @@ public static class UiSchema
         return null;
     }
 
-    // ---- The window: title, pages, help, about, log. Null: the settings action carries a spec of its own. ----
-    public static readonly UiWindow Window = new UiWindow("Demo Game", releases: "aaskjer/UIFramework-Streamer.bot")
+    // ---- The window: title, pages, help, about, log. Null: a window named after the host, its pages the settings name. ----
+    public static readonly UiWindow Window = new UiWindow("Demo Game")
         .Pages(P("game", "Game", "dice"), "messages", "help", "about")
         .Samples("user", "alice", "roll", "6", "sides", "6", "result", "a win, 10 points")
         .Answer("tryRoll", "@alice rolls a 6 on a d6: a win, 10 points.")
@@ -291,7 +291,7 @@ public static class UiSchema
 
 /// <summary>How the window is called and laid out, declared beside the table: what the framework's docs call the
 /// spec (docs/Schema.md, "The window"). Every part is optional; a page a setting names but the window does not is
-/// made up on the way, help and about always sit at the bottom.</summary>
+/// made up on the way; how to play, log and about sit at the foot of the page list.</summary>
 public sealed class UiWindow
 {
     public string Title, Releases, Logo, LogPrefix, Language;
@@ -568,6 +568,10 @@ public static class UiHost
         }
         string name = Arg(args, "uiframework.name") ?? "";
         var values = UiSettings.Parse(Arg(args, "uiframework.values"));
+        // Read, so cleared: an action the game's handler runs (CPH.RunAction) inherits this action's arguments, and one
+        // with a host block of its own would otherwise take the run for a window request and do nothing else.
+        foreach (var key in new[] { "uiframework.request", "uiframework.describe", "uiframework.name", "uiframework.values", "uiframework.var" })
+            if (args != null && args.ContainsKey(key)) CPH.SetArgument(key, "");
         string answer = null;
         try
         {

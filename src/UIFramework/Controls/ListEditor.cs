@@ -95,6 +95,8 @@ namespace UIFramework
             AutomationProperties.SetName(add, Text.T("list.addTo", label));
             add.Click += (sender, e) =>
             {
+                // A search would hide the new, empty row and the box that gets the focus: it goes first, as in the table.
+                if (_search.Text.Length > 0) _search.Text = "";
                 var row = AddRow(new JObject());
                 Renumber();
                 Notify();

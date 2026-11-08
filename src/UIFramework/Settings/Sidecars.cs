@@ -72,13 +72,21 @@ namespace UIFramework
         /// one of its keys is in it (what the user changed), so a list the game filled meanwhile is not overwritten; a
         /// file that is not there yet is written anyway when the settings hold more than the default for it, so a list
         /// moving out of the settings file into its own lands there. A file that cannot be read is kept as .broken
-        /// before it is written over.</summary>
-        public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath, ISet<string> only = null)
+        /// before it is written over; one that is held open by another program (the game writing it) stops the write
+        /// with an IOException instead. A file of a key in <paramref name="skip"/> (a list the window could not read when
+        /// it opened, so it shows defaults) is never written.</summary>
+        public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath, ISet<string> only = null, ISet<string> skip = null)
         {
             var main = (JObject)settings.DeepClone();
             foreach (var group in Of(schema).GroupBy(s => PathOf(s, settingsPath), StringComparer.OrdinalIgnoreCase))
             {
                 string path = group.Key;
+                if (skip != null && group.Any(s => skip.Contains(s.Key)))
+                {
+                    foreach (var setting in group)
+                        main.Remove(setting.Key);
+                    continue;
+                }
                 bool moving = !File.Exists(path) && group.Any(s => settings[s.Key] is JToken v && v.Type != JTokenType.Null && !(v is JContainer c && !c.HasValues) && !JToken.DeepEquals(v, s.Default));
                 if (only != null && !moving && !group.Any(s => only.Contains(s.Key)))
                 {
@@ -90,6 +98,7 @@ namespace UIFramework
                 if (File.Exists(path))
                 {
                     try { root = Read(path); }
+                    catch (IOException) { throw; }   // held open, not damaged: written over it would lose what the game wrote
                     catch (Exception)
                     {
                         // Damaged: written over from what the window holds, but a copy of it stays beside it.

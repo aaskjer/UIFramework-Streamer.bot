@@ -11,6 +11,7 @@ namespace Streamer.bot.Plugin.Interface
         void LogInfo(string message);
         void LogWarn(string message);
         void LogError(string message);
+        void SetArgument(string variableName, object value);
     }
 }
 
@@ -25,5 +26,7 @@ namespace UIFramework.Tests
         public void LogInfo(string message) => Log.Add("info " + message);
         public void LogWarn(string message) => Log.Add("warn " + message);
         public void LogError(string message) => Log.Add("error " + message);
+        public readonly Dictionary<string, object> Arguments = new Dictionary<string, object>();
+        public void SetArgument(string variableName, object value) => Arguments[variableName] = value;
     }
 }

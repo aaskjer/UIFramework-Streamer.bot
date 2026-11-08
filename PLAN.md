@@ -3,7 +3,7 @@
 Stand 08.11.2026.
 
 **Erledigt:** Die Phasen 0 bis 7 des Umbauplans vom 31.10. sind abgeschlossen.
-- Das Framework ist stabil: 1.0.0 vom 07.11., 1.1.0 vom 08.11.
+- Das Framework ist stabil: 1.0.0 vom 07.11., 1.1.0 und 1.2.0 vom 08.11.
 - Alle acht Spiele laufen auf dem generischen Stub: Battleship v2.2.0, Blackjack v17.3.0, Classic Chat Gamble v25.1.0, Hangman v13.1.1, High-Low v2.2.0, RhymeTime v2.3.0, Slot Machine v16.3.0, Trivia v9.1.0.
 - Der Praxistest in einer frischen Streamer.bot-Instanz ist mehrfach bestanden: DLL beim ersten Öffnen, Update, Start ohne Netz.
 
@@ -42,7 +42,7 @@ Die Konventionen aus Phase 0 stehen in [docs/Phase0-Konventionen.md](docs/Phase0
    - `LogPage.DefaultStyle` rät deshalb nach Stichwörtern. Ein Hangman-`MISS-LTTR` oder `GAME-OVER` erscheint in der Akzentfarbe statt gedämpft.
    - Vorschlag: `.Log(…, styles: new[] { "GAME-OVER|muted", "WIN-*|success" }, outcome: new[] { "DUEL WIN|WIN" })`, im Schema `log.styles` und `log.outcome`.
 3. **Engine-Tests für Hangman.** `tools\run-engine-tests.ps1` überspringt sich, weil `Hangman-Game.cs` keine `ENGINE START`-/`ENGINE END`-Marker hat. Die Rundenlogik ist nur über Kompilieren und den Fenstertest abgedeckt.
-4. **Befunde des Audits vom 08.11.** Was nach der Prüfung offen bleibt, steht unter [Audit](#audit-vom-08112026).
+4. **Befunde des Audits vom 08.11.** 1.2.0 behebt die klaren Fehler; was offen ist, steht unter [Audit](#audit-vom-08112026).
 
 ## Phase 8: Nicht-Spiel-Projekte
 
@@ -286,7 +286,7 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
 
 ### 8.7 Framework-Features
 
-**1.2.0 (4½ Tage)**
+**1.3.0 (4½ Tage)**
 - **F1 Set-Argument-Brücke.**
   - Im Host-Block `UiSettings.With(args)`: Ein nicht-leeres Argument, dessen Name ein Key oder Alias der Tabelle ist, gewinnt und wird nach Kind gewandelt. Im HostReader geht das mit einer Key-Liste.
   - `UiHost.Handle(…, arguments: true)` liefert im Describe `arguments: ["dryRun", …]` mit. Das Fenster zeigt diese Felder gesperrt mit der Pille "Set Argument" und einem Hinweis, wo es steht.
@@ -308,7 +308,7 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
   - Ein neues Kapitel in Getting-Started: "A project with several actions" (Host-Action, Leser, keine Umbenennung, Langläufer).
   - Projekte: SuTo, ChatCalendar, BsA.
 
-**1.3.0 (4½ Tage)**
+**1.4.0 (4½ Tage)**
 - **F5 Secrets in Globals.**
   - `S("freeBotToken", "", masked: true, global: "FreeGameCheck_botToken")`.
   - Der Stub liest die persistente Globale vor dem Öffnen und schreibt sie nach dem Speichern über die Job-Queue. Nie in Datei, Export oder Log; "Reset" lässt sie stehen.
@@ -328,10 +328,10 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
   - `action` mit `saveFirst: true`.
   - Projekte: GameCheck, ChatCalendar, AutoBotCheck, BsA.
 - **F9 Mindestversion.**
-  - `UiWindow(…, requires: "1.3.0")`. Ein Stub ab 1.3 vergleicht mit der geladenen DLL und bietet das Update an, statt das Fenster zu öffnen.
-  - Schützt F5 vor einer DLL ≤ 1.2.
+  - `UiWindow(…, requires: "1.4.0")`. Ein Stub ab 1.4 vergleicht mit der geladenen DLL und bietet das Update an, statt das Fenster zu öffnen.
+  - Schützt F5 vor einer DLL ≤ 1.3.
 
-**1.4.0 (3½ Tage)**
+**1.5.0 (3½ Tage)**
 - **F10 Optionen vom Spiel.**
   - `S("region", "", kind: "options", optionsFrom: "countryCode")`, ein neuer Request `options` und der Delegat `options: (key, s) => new[] { "DE-BY|Bayern" }`.
   - Gefragt wird beim Öffnen und wenn sich ein genanntes Feld ändert. `optionsFrom: "groups"` liefert die Streamer.bot-Gruppen.
@@ -347,7 +347,7 @@ Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
   - `HH:mm` als Text.
   - Projekt: ChatCalendar.
 
-**1.5.0 (3½ Tage)**
+**1.6.0 (3½ Tage)**
 - **F13 Rail-Gruppen.**
   - `.Group("broadcaster", "Broadcaster", "baOnline", "baOffline", …)`. Nicht über `P(…)`, weil `fields` dort `params` ist.
   - Die Überschriften sind einklappbar; der Anpassen-Modus verschiebt Seiten zwischen Gruppen (`pages.<id>.group`).
@@ -374,15 +374,15 @@ Zu beachten:
 
 | Meilenstein | Release                          | Aufwand |
 |-------------|----------------------------------|---------|
-| M1          | UIFramework 1.2.0 (F1–F4)        | 4½ T    |
+| M1          | UIFramework 1.3.0 (F1–F4)        | 4½ T    |
 |             | OBS Notes v2.0.0                 | 2 T     |
 |             | Suggestions To v2.0.0            | 3 T     |
-| M2          | UIFramework 1.3.0 (F5–F9)        | 4½ T    |
+| M2          | UIFramework 1.4.0 (F5–F9)        | 4½ T    |
 |             | GameCheck v2.0.0                 | 5 T     |
-| M3          | UIFramework 1.4.0 (F10–F12)      | 3½ T    |
+| M3          | UIFramework 1.5.0 (F10–F12)      | 3½ T    |
 |             | ChatCalendar v2.0.0              | 6 T     |
 |             | AutoBotCheck v2.0.0              | 2 T     |
-| M4          | UIFramework 1.5.0 (F13–F15)      | 3½ T    |
+| M4          | UIFramework 1.6.0 (F13–F15)      | 3½ T    |
 |             | BetterStreamAnnouncements v3.0.0 | 9 T     |
 
 Summe: etwa 16 Tage Framework und 27 Tage Projekte, rund achteinhalb Wochen.
@@ -397,4 +397,85 @@ Fertig je Projekt, wenn:
 
 ## Audit vom 08.11.2026
 
-Läuft; die geprüften Befunde, die nicht sofort behoben werden, kommen hierher.
+Vier Durchgänge: Stub und Loader, Daten und Schema, Fenster, Doku und API. 47 Befunde. Behoben in 1.2.0:
+- die Hilfezeile in benannten Zeilen,
+- Listendateien, die überschrieben werden konnten,
+- *Seite zurücksetzen*,
+- Theme-Keys eines Spiels,
+- `!key=wert`,
+- Cooldown-Keys,
+- die Versionsprüfung,
+- *Zeile hinzufügen* bei Suche,
+- die Argumente in `UiHost.Handle`,
+- das Update-Zeichen der Demo,
+- die Doku-Fehler.
+
+Offen:
+
+### Stub 0.3.0 (danach jedes Spiel neu importieren)
+
+- **Fenster friert ein:** Test, Prüfen und Tabellen warten auf dem Fensterthread bis zu 35 s auf das Spiel; Windows meldet "Keine Rückmeldung". Loader.md sagt das Gegenteil. Hooks asynchron oder ein kurzes Budget für alles außer `saved`.
+- **Keine Antwort wird zu "erledigt":** Bei Zeitüberschreitung gibt `Host.Test` null zurück, das Fenster zeigt das grün als erledigt. Eine Fehlerantwort (oder die Marke `\u0001uiframework:no-answer`) und im Fenster die Fehlerfarbe.
+- **Update-Dialog:** *Abbrechen*, auch X und Esc, überspringt die Version für immer. Überspringen als eigene Wahl; X und Esc heißt "später fragen".
+- **Antwortvariable je Anfrage:** Nach 35 s wird das Tor ersetzt, und eine hängende und eine neue Anfrage teilen sich `AnswerVar`. Je Anfrage eine eigene Variable mit Guid, im `finally` geleert.
+- **Loader-Einstellungen je Spiel:** `autoUpdate`, `skipVersion` und `frameworkAvailable` liegen in der Layout-Datei jedes Spiels, gelten aber für die eine DLL. Eine gemeinsame Datei unter `UIFramework\lib` oder klar dokumentieren.
+- **Kleinere Punkte:**
+  - `ExamplePath()` lädt `latest.json` im Zweig "Nein" erneut (offline 5–15 s Stillstand, falscher Beispielordner bei `minHostStub`).
+  - Der Log-Leser öffnet ohne `FileShare.ReadWrite`, also fehlen die Zeilen von heute, während das Spiel schreibt.
+  - Versionsvergleich ohne `Full()` ("1.1" gilt als älter als "1.1.0").
+  - Der Fehlerdialog sagt, der Host-Block stehe "am Ende".
+  - Drei Log-Präfixe für ein Spiel.
+- **Einfacher:** Sieben statische Flags und eine eigene Fenster-Sperre neben `Shell.Claim`. Für `Stub.cs` gibt es keinen Unit-Test; `check-stub.ps1` braucht ein lokales Streamer.bot.
+
+### Framework
+
+- **Import ungeprüft:** Ein Import schreibt Werte ohne min/max, Typprüfung, `Validate` und den `readOnly`-Filter und gibt sie gleich ans Spiel. Er soll über denselben Weg wie *Speichern* laufen.
+- **Werte außerhalb der Grenzen:** Das Fenster zeigt sie, wie sie in der Datei stehen; erst ein späteres Speichern korrigiert sie, ohne Hinweis. Als ungespeicherte Änderung zählen oder in der Fußzeile nennen.
+- **"Abschnitt geteilt"** wird nach dem Layout geprüft und gibt dem Spiel die Schuld, wenn der Nutzer ein Feld verschoben hat. Die Prüfung soll die deklarierte Reihenfolge ansehen; ein Ablegen übernimmt den Abschnitt des Ziels.
+- **Bedingung auf eine Liste:** `Requirement` kennt `Parts.Lists` nicht und folgt der laufenden Liste nie.
+- **Die Spielseite kennt die Konventionen nicht:** `UiSettings` im Spiel kennt die Aliase und Defaults aus `keys.json` nicht. Dokumentieren oder mitgeben.
+- **Fenster:**
+  - Auf Deutsch und Spanisch werden bei minimaler Breite Schalterlabels ohne "…" abgeschnitten, die Fußzeile zeigt "Ke…".
+  - Die Seitenleiste und der Anpassen-Modus gehen nur mit der Maus.
+  - *Hilfe unter den Feldern* erreicht die Felder des Frameworks nicht (Nachrichten-Seite, Log-Schalter), und ein gesperrtes Fenster kann sie nicht einschalten.
+  - Eine `readOnly`-Einstellung ignoriert `showWhen`/`requires`, die Bedingung ihres Abschnitts und ihre Hilfe.
+  - Der Hinweis im Anpassen-Modus zählt den Hilfe-Schalter nicht; *Layout zurücksetzen* tut bei 0 Änderungen nichts.
+  - Ein leerer Akzent zeigt ein schwarzes Feld, und der Picker öffnet auf Gelb.
+  - Die beiden Zurücksetzen-Knöpfe sehen gleich aus, mit gespiegelten Pfeilen; derselbe Pfeil heißt auf Log und Tabellen "neu lesen".
+  - Ordner öffnen hat zwei verschiedene Icons.
+- **Texte:**
+  - Dialogtitel in gemischter Schreibweise.
+  - Die Tour nennt Strg+0 nicht.
+  - `cust.iconHelp` ohne "gift"; ein unbekanntes Icon wird stumm zum Punkt.
+  - `cust.page.tip` ohne "Icon ändern".
+  - Import sagt "ersetzen", mischt aber.
+- **Verdacht:** Der Akzent wird bei `LostFocus` übernommen und baut das Fenster mitten im Klick neu; der Klick auf *Fertig* oder *Export* geht womöglich verloren.
+
+### API und Einfachheit
+
+- **Bedingungen:** Fünf Wege, ein Feld bedingt zu machen: `requires`, `requires: "hide:"`, `showWhen`, `shows`, Abschnittsbedingung. `hide:` ist dasselbe wie `showWhen`. Dokumentieren: `requires` graut aus, `showWhen` blendet aus. `hide:` weiter lesen, aber nicht mehr empfehlen; Trivia umstellen.
+- **`auto`** folgt nur mit `live` den getippten Werten und braucht `panel`, obwohl es selbst eine Box hat. `auto` soll `live` und `panel` mitbringen. `live` auf einem Nicht-Knopf bekommt einen eigenen Namen.
+- **Altlasten:**
+  - die Spec-Schicht (`overrides`, `UiWindow.Override`, von keinem Spiel genutzt),
+  - `hosts/rhymetime/spec.json` und `host-section.cs`,
+  - eine `custom`-Seite, die mit dem generischen Stub stumm samt ihren Feldern verschwindet,
+  - `About(authorLink:)` ohne Wirkung,
+  - der Key `advanced` ohne Nutzen,
+  - `.Answer(...)` (nur für die Vorschau) im Demo-Spiel.
+- **Toter Code:** `Sidecars.Strip`, `Requirement.Holds(op)`, `SettingsStore.LoadOrDefaults`, `Conventions.Aliases()`/`FrameworkKeys`, `LayoutFile.OverriddenPages`/`Fields`, `Text.Or`. Dazu `Schema.Defaults()`/`Aliases()`: Die Tests nutzen sie statt des Wegs, den das Fenster geht.
+- **Das rote i übersieht einiges:**
+  - `panel`/`auto`/`confirm` auf einem Nicht-Knopf,
+  - `twitchOnly` auf einem Nicht-Schalter,
+  - `placeholders` auf einer Nicht-Vorlage,
+  - eine falsche `platform`,
+  - `{x}` im Default, das in `placeholders` fehlt,
+  - Tippfehler in Seiten-Ids (`"mesages"` wird eine leere Seite).
+
+  Die Meldung zum unbekannten Kind nennt die gültigen nicht; "The spec overrides" ist Innensprache.
+- **Builder und JSON:**
+  - Schema.md gibt Builder-Schreibweisen als JSON aus: `"a|Label"`, Spalten als Text, `aliasFactor`. `Setting.Parse` liest sie nicht.
+  - Seiten-`bottom` und Fenster-`language` hat nur JSON.
+  - `Log(writeLogLabel:)` ist nicht dokumentiert.
+  - `colour`/`color` wird nur bei `kind` angenommen.
+  - `Tip`, `Cmd`, `Link` und `Note` teilen sich einen Typ, also kompiliert Falsches und fällt stumm weg.
+- **Namen:** Sieben Namen in zwei Dateien. `ActionName` ist nur noch ein Log-Label: aus Streamer.bots `actionName` ableiten, in der Doku eine Tabelle.

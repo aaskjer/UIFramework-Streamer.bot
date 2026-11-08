@@ -99,6 +99,7 @@ namespace UIFramework
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
             Check(spec, settings, declaredSections);
+            CheckCooldowns(spec, schema, settings);
             foreach (var pill in spec.HeaderPills)
                 pill.Tooltip = lang.Text(pill.Declared);
             Currency(spec, schema, settings);
@@ -317,6 +318,14 @@ namespace UIFramework
             if (text.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)) text = text.Substring(5);
             foreach (var part in Requirement.Parse(text))
             {
+                if (part.Op != null && part.Key.StartsWith("!", StringComparison.Ordinal))
+                {
+                    // "!mode=free" reads as a key "!mode", which no field has, so it would always hold.
+                    string bare = part.Key.TrimStart('!').Trim();
+                    spec.Problems.Add(owner + " " + what + " '" + part.Key + part.Op + string.Join("|", part.Values) + "': a '!' goes only in front of a key on its own; write '"
+                        + bare + (part.Op == "=" ? "!=" : part.Op == "!=" ? "=" : part.Op) + string.Join("|", part.Values) + "'" + (part.Op == "=" || part.Op == "!=" ? "" : " the other way round") + ".");
+                    continue;
+                }
                 string key = part.Key.TrimStart('!').Trim();
                 if (!byKey.TryGetValue(key, out var gate))
                 {
@@ -371,6 +380,22 @@ namespace UIFramework
 
         /// <summary>What a host's author got wrong, in words: an unknown kind, a requirement on a key that is not
         /// there, a page or pill naming a setting that does not exist.</summary>
+        /// <summary>The cooldowns the window declares read settings: a key that is none would set nothing, and only the
+        /// settings action's log line on every save would say so.</summary>
+        private static void CheckCooldowns(WindowSpec spec, Schema schema, List<Setting> settings)
+        {
+            if (!(schema?.Window?["cooldowns"] is Newtonsoft.Json.Linq.JArray list)) return;
+            var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
+            foreach (var item in list.OfType<Newtonsoft.Json.Linq.JObject>())
+                foreach (var part in new[] { "global", "user" })
+                {
+                    string key = item[part]?.Type == Newtonsoft.Json.Linq.JTokenType.String ? (string)item[part] : null;
+                    if (!string.IsNullOrWhiteSpace(key) && !keys.Contains(key))
+                        spec.Problems.Add("The cooldown of '" + (string)item["command"] + "' reads '" + key + "', which is not a setting: declare it (S(\"" + key
+                            + "\", 0)) or put null in its place.");
+                }
+        }
+
         private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections)
         {
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);

@@ -35,6 +35,9 @@ namespace UIFramework
         private volatile bool _shuttingDown;
         // What went wrong, for the red "i" in the header: the schema's problems and what failed while the window was open.
         private readonly ProblemList _problems;
+        // Lists in files of their own that could not be read when the window opened: they show their defaults, so they
+        // are never written from this window.
+        private readonly HashSet<string> _unreadableLists = new HashSet<string>(StringComparer.Ordinal);
         // The status line of the window that is up, for an error a handler did not catch.
         private Action<string> _onError;
 
@@ -216,7 +219,7 @@ namespace UIFramework
                 _log.Warn(_spec.LogPrefix + " " + LayoutFile.FileName + ": " + layout.Problem);
                 _problems.Add(LayoutFile.FileName + ": " + layout.Problem);
             }
-            if (layout.AdoptFromHost(settings, "darkMode", "DarkMode"))
+            if (layout.AdoptFromHost(settings, new HashSet<string>(_spec.ResolvedSettings.Select(s => s.Key), StringComparer.Ordinal), "darkMode", "DarkMode"))
             {
                 // Split with nothing changed: a list still in the settings file whose own file is not there yet moves
                 // there now, instead of being dropped with the theme key's write.
@@ -226,7 +229,13 @@ namespace UIFramework
             layout.ApplyTheme();
             if (_spec.Locked) Theme.AccentOverride = null;   // a locked window keeps the game's look
             // Values kept in files of their own (a word bank, a question list) come in after the settings file.
-            Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
+            Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix, _unreadableLists);
+            foreach (var key in _unreadableLists)
+            {
+                var list = _spec.ResolvedSettings.FirstOrDefault(s => s.Key == key);
+                _problems.Add("'" + (list?.Label ?? key) + "' could not be read from " + (list != null ? System.IO.Path.GetFileName(Sidecars.PathOf(list, _spec.SettingsPath)) : "its file")
+                    + ", so it shows its defaults and this window will not write it. Close the window and open it again once the file is free or repaired.");
+            }
 
             var window = new Window
             {
@@ -694,7 +703,7 @@ namespace UIFramework
                     foreach (var property in known.Properties())
                         merged[property.Name] = property.Value?.DeepClone();
                     _spec.Clamp?.Invoke(merged);
-                    _store.Save(Sidecars.Split(merged, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>(known.Properties().Select(p => p.Name), StringComparer.Ordinal)));
+                    _store.Save(Sidecars.Split(merged, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>(known.Properties().Select(p => p.Name), StringComparer.Ordinal), _unreadableLists));
                 }
                 catch (Exception ex)
                 {
@@ -728,7 +737,12 @@ namespace UIFramework
                 var confirm = MessageBox.Show(Text.T("dialog.resetPage.text", pages[current].Spec.Title), Text.T("dialog.resetPage.title"), MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (confirm != MessageBoxResult.Yes)
                     return;
-                FieldBinding.ResetToDefaults(pages[current].Page, defaults);
+                // As Reset all: a list in a file of its own (its own Restore defaults button resets it), a transient
+                // and a read-only setting keep what they show.
+                var resettable = new JObject(defaults.Properties()
+                    .Where(p => _spec.ResolvedSettings.FirstOrDefault(x => x.Key == p.Name) is var st && (st == null || (string.IsNullOrWhiteSpace(st.File) && !st.Transient && !st.ReadOnly)))
+                    .Select(p => new JProperty(p.Name, p.Value?.DeepClone())));
+                FieldBinding.Apply(pages[current].Page, resettable, true);
                 parts.Refresh(pages[current].Spec.Id);
                 ShowChanges();
             };
@@ -742,7 +756,7 @@ namespace UIFramework
                 SettingsLoad now = null;
                 try { now = _store.Load(); } catch (Exception) { now = null; }
                 var fresh = SettingsStore.ResetShown(now != null && now.Damaged == null ? now.Settings : settings, defaults, _spec.ResolvedSettings, FieldBinding.ShownKeys(pageHost));
-                try { _store.Save(Sidecars.Split(fresh, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>())); }
+                try { _store.Save(Sidecars.Split(fresh, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>(), _unreadableLists)); }
                 catch (Exception ex)
                 {
                     SetStatus(Text.T("status.notReset"), Theme.DangerText, ex.Message);
@@ -1171,7 +1185,7 @@ namespace UIFramework
                     }
                     only = changed;
                 }
-                _store.Save(Sidecars.Split(target, _spec.ResolvedSettings, _spec.SettingsPath, only));
+                _store.Save(Sidecars.Split(target, _spec.ResolvedSettings, _spec.SettingsPath, only, _unreadableLists));
                 // The window's copy is now what was written, so the next save and a rebuild start from there.
                 foreach (var property in target.Properties().ToList())
                     settings[property.Name] = property.Value.DeepClone();

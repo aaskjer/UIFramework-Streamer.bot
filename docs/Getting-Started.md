@@ -63,7 +63,7 @@ File: [`stub/Stub.cs`](../stub/Stub.cs) ·
 Fire the trigger from step 3. Without a hotkey or a deck at hand: right-click the trigger under *Triggers*,
 *Test Trigger*.
 
-- **The first time** a question comes up: download `UIFramework.dll` into `<Streamer.bot>\UIFramework\lib\`?
+- **The first time** a question comes up: download `UIFramework.dll` into `<Streamer.bot>\UIFramework\lib\<version>\`?
   *Yes*. The file is checked against its published SHA-256 before it is used.
 - **The window opens with a tour** that rings one part after the other and says what it does: the pages, a
   setting, the *Roll* button that tries a roll without sending anything to chat, the *Messages* page with its
@@ -103,7 +103,7 @@ user variable `points`).
 
 The demo becomes your game in `DemoGame.cs` (save it under your game's name) and one line of `Stub.cs`:
 
-1. **Names.** In `CPHInline`: `ActionName` (your game action's exact name), `SettingsFile` (where the settings
+1. **Names.** In `CPHInline`: `ActionName` (your game action's name: the log lines carry it), `SettingsFile` (where the settings
    go, relative to the Streamer.bot folder), `CurrentVersion`, and the short host id `"demo"` in the
    `UiHost.Handle` call. In the settings action: `GameActionName`, the same name as `ActionName`.
 2. **Settings,** in the `Table` near the top of the host block: one line per setting your game reads.
@@ -113,6 +113,7 @@ The demo becomes your game in `DemoGame.cs` (save it under your game's name) and
    {
        S("useBot", true),
        S("globalCooldown", 10),
+       S("userCooldown", 30),
        S("sides", 6, page: "game", label: "Sides of the die", help: "The highest one wins.", section: "The die", min: 2, max: 100),
        S("tryRoll", null, page: "game", label: "Roll", kind: "action", section: "Try a roll", live: true, panel: true),
        Msg("Rolls", "msgRoll", "@{user} rolls a {roll}: {result}.", "Roll", "What chat gets.", new[] { "user", "roll", "result" }),
@@ -154,11 +155,20 @@ The demo becomes your game in `DemoGame.cs` (save it under your game's name) and
    end, or inside the `CPHInline` class). It is not an action of its own: pasted alone into an Execute Code it
    does nothing.
 2. Fill in its `Window` (`// __WINDOW__`) and `Table` (`// __TABLE__`) as above.
-3. First thing in `Execute()`:
+3. Three constants in `CPHInline`, then first thing in `Execute()` the call that answers the window:
 
    ```csharp
-   if (UiHost.Handle(args, CPH, ActionName, "mygame", CurrentVersion, SettingsFile))
-       return true;
+   private const string ActionName = "My Game";                          // your game action's name
+   private const string SettingsFile = "Chat Games/My Game/settings.json"; // relative to the Streamer.bot folder
+   private const string CurrentVersion = "v1.0.0";
+
+   public bool Execute()
+   {
+       if (UiHost.Handle(args, CPH, ActionName, "mygame", CurrentVersion, SettingsFile))
+           return true;
+       var s = UiSettings.Load(SettingsFile, CPH.LogWarn);
+       // ... the game, reading s.Int("..."), s.Bool("..."), s.String("...")
+   }
    ```
 
 4. The settings action as in [step 3](#step-3-the-settings-action-demo-game-settings), with your game action's
@@ -193,6 +203,9 @@ gets 30 seconds more, then the window stops waiting and goes on without its answ
   `CPH.RunAction(other, false)`, or keep the game action and the settings action out of blocking queues.
 - Keep it short: no `CPH.Wait`, no web requests. Work that takes long goes into `saved` with `RunAction(..., false)`
   or into the game's own run.
+- An action you run from there runs as usual: the host block clears the window's arguments (`uiframework.request`
+  and the others) before your handler runs. A host block older than UIFramework 1.2.0 does not; see
+  [Loader.md](Loader.md) for the line to add then.
 
 ### Points
 
@@ -221,8 +234,9 @@ settings apply. The demo pays a win into that variable with `CPH.GetTwitchUserVa
 This is what to tell a streamer who imports your game, or link them here:
 
 - **First open:** the settings action asks whether to download `UIFramework.dll` from this repository's
-  release into `<Streamer.bot>\UIFramework\lib\`. The file is checked against its published SHA-256 before it
-  is used. *No* opens that folder so they can put the DLL there themselves; *Cancel* leaves everything as it is.
+  release into `<Streamer.bot>\UIFramework\lib\<version>\` (for example `lib\1.2.0\UIFramework.dll`). The file is
+  checked against its published SHA-256 before it is used. *No* opens the `lib` folder so they can put the DLL there
+  themselves, in a folder named after its version; *Cancel* leaves everything as it is.
 - **Updates:** when a newer framework release is out, the window asks before it downloads anything. *Cancel*
   skips that version for good, *No* shows it as a pill in the window's header until it is taken.
 - **Turning the update check off:** `"autoUpdate": false` in `uiframework.layout.json`, the file next to your

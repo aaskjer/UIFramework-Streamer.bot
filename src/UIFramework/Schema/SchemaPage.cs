@@ -94,11 +94,14 @@ namespace UIFramework
                         cells.Add(new TextBlock());
                     // In a named row a button takes the room it needs, and an answer box goes under the whole row.
                     var answers = new List<FrameworkElement>();
+                    var lines = new List<FrameworkElement>();
                     var weights = cells.Select(c => 1.0).ToArray();
                     if (rowKind != null && rowKind.StartsWith("row ", StringComparison.Ordinal))
                         for (int i = 0; i < cells.Count; i++)
                         {
-                            if (cells[i] is StackPanel stack && stack.Children.Count == 2 && stack.Children[0] is Button
+                            // A field with its help line under it is looked at through that wrapper.
+                            var cell = Core(cells[i]);
+                            if (cell is StackPanel stack && stack.Children.Count == 2 && stack.Children[0] is Button
                                 && stack.Children[1] is Border box && Equals(box.Tag, AnswerBox))
                             {
                                 stack.Children.Remove(box);
@@ -107,10 +110,23 @@ namespace UIFramework
                                 holder.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding("Visibility") { Source = stack });
                                 answers.Add(holder);
                             }
-                            if (cells[i] is Button || (cells[i] is StackPanel only && only.Children.Count == 1 && only.Children[0] is Button))
+                            if (cell is Button || (cell is StackPanel only && only.Children.Count == 1 && only.Children[0] is Button))
+                            {
                                 weights[i] = 0;
+                                // A button's column is only as wide as the button, so its help line goes under the row,
+                                // where it can wrap; it hides with the button.
+                                if (!ReferenceEquals(cell, cells[i]) && cells[i] is StackPanel wrapper && wrapper.Children.Count == 2 && wrapper.Children[1] is FrameworkElement line)
+                                {
+                                    wrapper.Children.Remove(line);
+                                    var under = new Border { Child = line };
+                                    under.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding("Visibility") { Source = wrapper });
+                                    lines.Add(under);
+                                }
+                            }
                         }
                     page.Children.Add(Ui.Row(weights, cells.ToArray()));
+                    foreach (var line in lines)
+                        page.Children.Add(line);
                     foreach (var box in answers)
                         page.Children.Add(box);
                 }
@@ -166,14 +182,28 @@ namespace UIFramework
             WatchSection();
         }
 
-        /// <summary>A button or a switch beside labelled fields sits on their baseline.</summary>
+        /// <summary>A button or a switch beside labelled fields sits on their baseline. With a help line under it, the
+        /// line hangs below the field, so the field is lined up from the top like a switch.</summary>
         private static void InRow(FrameworkElement element)
         {
-            if (element is Button button)
-                button.VerticalAlignment = VerticalAlignment.Bottom;
-            else if (element is CheckBox toggle)
+            var core = Core(element);
+            if (core is Button button)
+            {
+                if (ReferenceEquals(core, element))
+                    button.VerticalAlignment = VerticalAlignment.Bottom;
+                else
+                    Ui.Held(button);
+            }
+            else if (core is CheckBox toggle)
                 Ui.Held(toggle);
         }
+
+        /// <summary>The field inside a help-line wrapper, or the element itself.</summary>
+        private static FrameworkElement Core(FrameworkElement element) =>
+            element is StackPanel wrapper && Equals(wrapper.Tag, HelpWrapTag) && wrapper.Children.Count == 2 && wrapper.Children[0] is FrameworkElement field
+                ? field : element;
+
+        private const string HelpWrapTag = "uiframework.helpWrap";
 
         public static FrameworkElement Render(PageContext ctx, Setting s)
         {
@@ -327,9 +357,12 @@ namespace UIFramework
         {
             var line = Ui.NoteWithLinks(help, ctx.OpenUrl);
             line.FontSize = 11;
-            line.Margin = new Thickness(0, 3, 0, 0);
+            line.Margin = new Thickness(0, 3, 0, 6);   // apart from the next field's label
             line.Tag = HelpLineTag;
-            return Stack(field, line);
+            var wrapper = new StackPanel { Tag = HelpWrapTag };
+            wrapper.Children.Add(field);
+            wrapper.Children.Add(line);
+            return wrapper;
         }
 
         /// <summary>The Tag of a help line under a field, for tests and the tour.</summary>

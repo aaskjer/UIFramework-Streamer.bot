@@ -101,10 +101,13 @@ namespace UIFramework
             }
         }
 
+        /// <summary>Whether the release is newer than the game's version. A version that is no number ("", "dev") is never
+        /// behind: .NET Framework's Version comparison throws on null.</summary>
         public static bool IsNewerVersion(string latestTag, string currentTag)
         {
             var latest = ParseVersion(latestTag);
-            return latest != null && latest > ParseVersion(currentTag);
+            var current = ParseVersion(currentTag);
+            return latest != null && current != null && latest > current;
         }
 
         public static Version ParseVersion(string tag)
