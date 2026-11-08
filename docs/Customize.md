@@ -66,6 +66,7 @@ the window itself stays where it is.
 | `theme.accent`                 | the accent colour `#rrggbb`; empty: the default blue                         |
 | `language`                     | `en`, `de`, `es` or a language from `UIFramework\lang\`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome), the labels and help of the conventions' keys, and the declared sections, page titles, pills, option labels and message groups the conventions or the game translate (docs/Schema.md, *Languages*); missing: `en`. What nothing translates stays as declared; the lines of the help and about pages translate through the game's `Tx` |
 | `autoUpdate`                   | `false`: the loader no longer asks about new versions                        |
+| `updateNotices`                | `false`: this game is left out of the update notice in chat once per Streamer.bot start (the switch on its About page; docs/Schema.md, *Update notice in chat*); missing: on |
 | `helpLines`                    | `true`: each field's help is a line under it instead of its tooltip (*Help under fields* in the bar); missing: tooltips |
 | `skipVersion`                  | set by the update dialog's *Cancel*: this version is not offered again       |
 | `frameworkAvailable`           | set by the update dialog's *No*: the window shows this version as a pill in the header until it is taken or skipped |

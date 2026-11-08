@@ -135,8 +135,8 @@ The demo becomes your game in `DemoGame.cs` (save it under your game's name) and
        .About(credits: "By you.");
    ```
 
-   `releases` is your GitHub repository: it gives the About page its links and the window its "new version of
-   the game" check. `Cooldowns` is how the cooldown settings reach the command: after every save the settings
+   `releases` is your GitHub repository: it gives the About page its links, the window its "new version of
+   the game" check, and your game a place in the update notice in chat once per Streamer.bot start. `Cooldowns` is how the cooldown settings reach the command: after every save the settings
    action sets its global and per-user cooldown from those two keys; without it they are just numbers in the
    file. Name the command by its text (`"!roll"`), its name, or its id (right-click the command in Streamer.bot
    to copy it). For a game you ship, the id is the safer one: an export and import keep it, and it still holds

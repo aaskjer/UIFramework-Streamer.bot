@@ -46,6 +46,29 @@ namespace UIFramework
                 Foreground = Theme.SubFg,
                 Margin = new Thickness(0, 2, 0, 0)
             });
+            // Whether this game takes part in the one update notice in chat per Streamer.bot start.
+            if (ctx.Layout != null)
+            {
+                var notices = new CheckBox
+                {
+                    Content = Text.T("about.updateNotices"),
+                    IsChecked = ctx.Layout.UpdateNotices,
+                    ToolTip = Text.T("about.updateNotices.tip"),
+                    Template = Ui.SwitchTemplate(),
+                    Foreground = Theme.SubFg,
+                    FontSize = 12,
+                    Cursor = Cursors.Hand,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(0, 6, 0, 0)
+                };
+                AutomationProperties.SetName(notices, Text.T("about.updateNotices"));
+                notices.Click += (s, e) =>
+                {
+                    ctx.Layout.UpdateNotices = notices.IsChecked == true;
+                    try { ctx.Layout.Save(); } catch (Exception ex) { ctx.Log?.Warn(spec.LogPrefix + " " + LayoutFile.FileName + ": " + ex.Message); }
+                };
+                names.Children.Add(notices);
+            }
             if (!string.IsNullOrWhiteSpace(spec.About.Credits))
                 names.Children.Add(new TextBlock
                 {

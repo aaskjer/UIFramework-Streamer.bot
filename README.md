@@ -66,6 +66,9 @@ first use, checked against its published SHA-256, and offers new releases when t
   `Lock()` turns the mode off for a game that wants its window exactly as declared.
 - 📜 **Log, help and about pages.** A filterable log reader for the game's log files, a help page from your
   notes and commands, an about page with your links. Mistakes in the schema sit behind a red **i** in the header.
+- 🔔 **Tells chat about updates.** Once per Streamer.bot start, one line in chat names new releases of the games
+  in use and of UIFramework, for streamers who do not open the settings every day; a switch on the About page
+  turns it off.
 - 🔄 **Updates itself.** The stub fetches the DLL, verifies it and asks before using a newer release;
   `"autoUpdate": false` turns the check off.
 
@@ -116,7 +119,7 @@ what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and t
 
 ## 🛠️ Development
 
-`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 186 tests.
+`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 193 tests.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
 `-schema hosts/<game>/schema.json` the window a game declares. `-theme dark` or `light`, `-shots <folder>` renders
 every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),
