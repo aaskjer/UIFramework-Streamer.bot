@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/UI-WPF-5C2D91" alt="WPF">
   <img src="https://img.shields.io/badge/languages-English%20%7C%20Deutsch%20%7C%20Espa%C3%B1ol-2ea44f" alt="English, German and Spanish">
   <br>
-  <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/releases"><img src="https://img.shields.io/github/v/release/aaskjer/UIFramework-Streamer.bot?include_prereleases&label=release" alt="Release"></a>
+  <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/releases"><img src="https://img.shields.io/github/v/release/aaskjer/UIFramework-Streamer.bot" alt="Release"></a>
   <img src="https://img.shields.io/github/v/release/aaskjer/UIFramework-Streamer.bot?include_prereleases&label=pre-release" alt="Latest pre-release">
   <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/releases"><img src="https://img.shields.io/github/downloads/aaskjer/UIFramework-Streamer.bot/total?label=downloads" alt="Total downloads"></a>
   <a href="https://github.com/aaskjer/UIFramework-Streamer.bot/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aaskjer/UIFramework-Streamer.bot/ci.yml?branch=main&label=build" alt="Build"></a>
