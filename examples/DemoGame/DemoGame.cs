@@ -554,9 +554,12 @@ public static class UiHost
         System.Func<string, string> table = null, System.Func<string> emotes = null)
     {
         string request = Arg(args, "uiframework.request");
-        if (request == null && args.ContainsKey("uiframework.describe")) request = "describe";
+        if (request == null && args != null && args.ContainsKey("uiframework.describe")) request = "describe";
         if (string.IsNullOrEmpty(request))
+        {
+            UiUpdateNotice.Run(args, CPH, actionName, host, version, settingsFile);
             return false;
+        }
         // The settings action names the global it will read; without that (an older stub) the name is built here.
         string var = Arg(args, "uiframework.var");
         if (request == "describe")
@@ -595,6 +598,119 @@ public static class UiHost
     }
 
     private static string Arg(System.Collections.Generic.IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
+}
+
+/// <summary>The update notice in chat, once per Streamer.bot start (docs/Schema.md, "Update notice"). On an ordinary
+/// run of the game action, at most every two minutes, it asks UIFramework.dll (the newest one under
+/// &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings already loaded) whether the notice is due, and sends
+/// its line to the chat the action was used in, or to every connected one. It never waits for the network: the DLL
+/// answers from its file and asks GitHub in the background. Without the DLL (the settings never opened) nothing happens.</summary>
+public static class UiUpdateNotice
+{
+    private static readonly object Gate = new object();
+    private static System.DateTime _next = System.DateTime.MinValue;
+    private static bool _done;
+
+    public static void Run(System.Collections.Generic.IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile)
+    {
+        lock (Gate)
+        {
+            if (_done || System.DateTime.UtcNow < _next) return;
+            _next = System.DateTime.UtcNow.AddMinutes(2);
+        }
+        try
+        {
+            var notices = FrameworkType();
+            var due = notices == null ? null : notices.GetMethod("Due", new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string) });
+            if (due == null) { _done = true; return; }
+            var window = UiSchema.Window;
+            var lines = due.Invoke(null, new object[] { host, window != null && window.Title != null ? window.Title : actionName, version, window != null ? window.Releases : null, settingsFile }) as string[];
+            if (lines == null) { _done = true; return; }
+            if (lines.Length == 0) return;
+            _done = true;
+            for (int i = 1; i < lines.Length; i++)
+                CPH.LogInfo("[" + actionName + "] Update: " + lines[i]);
+            var settings = UiSettings.Load(settingsFile);
+            bool bot = settings.Token("useBot") == null || settings.Bool("useBot");
+            string platform = Platform(args);
+            if (platform != null)
+                Send(CPH, platform, lines[0], bot);
+            else
+            {
+                // Not from a chat (a timer, a deck): every chat Streamer.bot is connected to.
+                try { if (CPH.TwitchGetBroadcaster() != null) Send(CPH, "twitch", lines[0], bot); } catch (System.Exception) { }
+                try { if (CPH.YouTubeGetLatestMonitoredBroadcast() != null) Send(CPH, "youtube", lines[0], bot); } catch (System.Exception) { }
+                try { if (CPH.KickGetBroadcaster() != null) Send(CPH, "kick", lines[0], bot); } catch (System.Exception) { }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            _done = true;
+            CPH.LogWarn("[" + actionName + "] The update notice failed: " + (ex.InnerException ?? ex).Message);
+        }
+    }
+
+    private static void Send(IInlineInvokeProxy CPH, string platform, string text, bool bot)
+    {
+        if (platform == "youtube") CPH.SendYouTubeMessageToLatestMonitored(text, bot, true);
+        else if (platform == "kick") CPH.SendKickMessage(text, bot, true);
+        else CPH.SendMessage(text, bot, true);
+    }
+
+    /// <summary>The chat the action was used in, from the arguments Streamer.bot gives a command or a chat message.</summary>
+    private static string Platform(System.Collections.Generic.IDictionary<string, object> args)
+    {
+        foreach (var key in new[] { "commandSource", "userType", "eventSource", "platform" })
+        {
+            object value;
+            if (args == null || !args.TryGetValue(key, out value) || value == null) continue;
+            string text = value.ToString().ToLowerInvariant();
+            if (text.Contains("youtube")) return "youtube";
+            if (text.Contains("twitch")) return "twitch";
+            if (text.Contains("kick")) return "kick";
+        }
+        return null;
+    }
+
+    /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
+    private static System.Type FrameworkType()
+    {
+        System.Type loaded = null;
+        System.Version loadedVersion = null;
+        foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var name = assembly.GetName();
+            if (name.Name != "UIFramework") continue;
+            var type = assembly.GetType("UIFramework.UpdateNotices", false);
+            if (type != null && (loadedVersion == null || Full(name.Version) > loadedVersion)) { loaded = type; loadedVersion = Full(name.Version); }
+        }
+        string lib = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
+        string newestFile = null;
+        System.Version newest = null;
+        if (System.IO.Directory.Exists(lib))
+            foreach (var dir in System.IO.Directory.GetDirectories(lib))
+            {
+                System.Version version;
+                string file = System.IO.Path.Combine(dir, "UIFramework.dll");
+                if (System.Version.TryParse(System.IO.Path.GetFileName(dir), out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
+                {
+                    newest = Full(version);
+                    newestFile = file;
+                }
+            }
+        if (newestFile != null && (loadedVersion == null || newest > loadedVersion))
+        {
+            try
+            {
+                var type = System.Reflection.Assembly.LoadFrom(newestFile).GetType("UIFramework.UpdateNotices", false);
+                if (type != null) return type;
+            }
+            catch (System.Exception) { }
+        }
+        return loaded;
+    }
+
+    private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
 }
 
 /// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and

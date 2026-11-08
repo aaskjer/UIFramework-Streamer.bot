@@ -6,6 +6,18 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-08
+
+### Added
+
+- **An update notice in chat, once per Streamer.bot start.** A few minutes after the first game of a Streamer.bot
+  run is used, one line in that chat names what is new: the games used so far whose newest release is newer than
+  the version they run, UIFramework when a newer release is out, and a game whose settings action is too old for
+  it. Then nothing more until Streamer.bot starts again; the links are in Streamer.bot's log. The DLL asks GitHub
+  in the background at most twice a day and keeps the answers in `UIFramework\updates.json`; the game action never
+  waits for it. *Tell chat about updates* on the About page leaves a game out (`"updateNotices": false`). Games get
+  it with the host block of this version.
+
 ## [1.2.0] - 2026-11-08
 
 Fixes from an audit of the whole framework, and the logo on the About page.

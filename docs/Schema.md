@@ -324,6 +324,30 @@ anyway (`RT-wordbank.json`) stays the only copy. A save writes the file only whe
 game added to while the window was open keeps those entries; a value an older version kept in the settings file
 moves into the file with the first save.
 
+## Update notice in chat
+
+Streamers who do not open the settings every day still hear of updates: once per Streamer.bot start, one line in
+chat names what is new, for example *🔔 Updates are out: Hangman Game v13.2.0, UIFramework v1.3.0. Details are in
+Streamer.bot's log.* The log has one line per update with its link.
+
+- **What is in it:** each game used in this Streamer.bot run whose newest GitHub release (`releases` of its
+  window) is newer than the version it runs; UIFramework when its newest release is newer than the newest
+  `UIFramework.dll` under `lib\`; and *import it again* for a game whose settings action is older than that
+  release needs (`minHostStub`; the window notes the settings action's version when it opens).
+- **When:** a few minutes after the first UIFramework game of the run is used, so the games used at the start of
+  a stream are in it, and once GitHub's answers are there. Then nothing more until Streamer.bot starts again.
+  Nothing new: no line.
+- **Where:** the chat the game was used in (Twitch, YouTube or Kick), as the bot when the game's `useBot` is on;
+  from a timer or a deck, every chat Streamer.bot is connected to. In the language of that game's window.
+- **How:** the host block asks `UIFramework.dll` on an ordinary run of the game action, at most every two minutes,
+  and never waits for the network. The DLL asks GitHub in the background, at most twice a day, and keeps the
+  answers in `<Streamer.bot>\UIFramework\updates.json`, shared by every game. Without the DLL (the settings never
+  opened) there is no notice.
+- **Turning it off:** the switch *Tell chat about updates* on a game's About page (`"updateNotices": false` in
+  its `uiframework.layout.json`) leaves that game out; it does not post the notice either.
+
+A game gets this with the host block of UIFramework 1.3.0 or newer (`tools/update-host-block.ps1`).
+
 ## Export and import
 
 The customise mode's bar (the pen, bottom left) has *Export* and *Import*: Export writes the saved settings

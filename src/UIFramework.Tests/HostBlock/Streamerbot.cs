@@ -12,6 +12,12 @@ namespace Streamer.bot.Plugin.Interface
         void LogWarn(string message);
         void LogError(string message);
         void SetArgument(string variableName, object value);
+        void SendMessage(string message, bool bot = true, bool fallback = true);
+        void SendYouTubeMessageToLatestMonitored(string message, bool useBot = true, bool fallback = true);
+        void SendKickMessage(string message, bool useBot = true, bool fallback = true);
+        object TwitchGetBroadcaster();
+        object YouTubeGetLatestMonitoredBroadcast();
+        object KickGetBroadcaster();
     }
 }
 
@@ -28,5 +34,13 @@ namespace UIFramework.Tests
         public void LogError(string message) => Log.Add("error " + message);
         public readonly Dictionary<string, object> Arguments = new Dictionary<string, object>();
         public void SetArgument(string variableName, object value) => Arguments[variableName] = value;
+        public readonly List<string> Sent = new List<string>();
+        public void SendMessage(string message, bool bot = true, bool fallback = true) => Sent.Add("twitch " + message);
+        public void SendYouTubeMessageToLatestMonitored(string message, bool useBot = true, bool fallback = true) => Sent.Add("youtube " + message);
+        public void SendKickMessage(string message, bool useBot = true, bool fallback = true) => Sent.Add("kick " + message);
+        public object Twitch, YouTube, Kick;
+        public object TwitchGetBroadcaster() => Twitch;
+        public object YouTubeGetLatestMonitoredBroadcast() => YouTube;
+        public object KickGetBroadcaster() => Kick;
     }
 }

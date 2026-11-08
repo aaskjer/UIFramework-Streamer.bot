@@ -131,6 +131,14 @@ namespace UIFramework
             set => Root["autoUpdate"] = value;
         }
 
+        /// <summary>Whether this game takes part in the update notice in chat once per Streamer.bot start
+        /// (<see cref="UpdateNotices"/>). On by default; false is kept.</summary>
+        public bool UpdateNotices
+        {
+            get => !(Root["updateNotices"]?.Type == JTokenType.Boolean) || (bool)Root["updateNotices"];
+            set { if (value) Root.Remove("updateNotices"); else Root["updateNotices"] = false; }
+        }
+
         /// <summary>Each field's help as a line under it instead of in its tooltip. Off (and missing): the tooltip.</summary>
         public bool HelpLines
         {

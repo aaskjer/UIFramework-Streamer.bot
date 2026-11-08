@@ -35,6 +35,13 @@ namespace UIFramework
             var bridge = new ReflectionHost(host);
             var schema = Schema.Parse(schemaJson);
             var spec = SpecFor(specJson, schema, settingsPath);
+            // For the update notice in chat: this game and its version are in use, and so is its settings action.
+            try
+            {
+                var stub = host?.GetType().DeclaringType?.GetField("StubVersion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                UpdateNotices.Register(schema.Host, spec.Title, schema.Version, (string)schema.Window?["releases"], settingsPath, stub?.GetRawConstantValue() as string ?? stub?.GetValue(null) as string);
+            }
+            catch (Exception) { }
             return Show(spec, schema, bridge, bridge, pump);
         }
 
