@@ -170,6 +170,52 @@ namespace UIFramework.Tests
             Assert.False(ListTable.Suits(new List<SettingColumn> { new SettingColumn { Key = "Code", Kind = "emote" }, new SettingColumn { Key = "Weight", Kind = "int" } }));
         });
 
+        [Fact]
+        public void A_table_s_columns_end_at_its_edge_with_and_without_a_scrollbar() => Sta(() =>
+        {
+            // Trivia's own questions: no empty filler column after "Suggested by", whether the rows fit or not.
+            var columns = new List<SettingColumn>
+            {
+                new SettingColumn { Key = "Enabled", Kind = "bool", Label = "On" },
+                new SettingColumn { Key = "Question", Kind = "text", Label = "Question" },
+                new SettingColumn { Key = "Answer", Kind = "string", Label = "Correct answer" },
+                new SettingColumn { Key = "Wrong", Kind = "string", Label = "Wrong answers" },
+                new SettingColumn { Key = "Category", Kind = "string", Label = "Category" },
+                new SettingColumn { Key = "Difficulty", Kind = "string", Label = "Difficulty" },
+                new SettingColumn { Key = "SuggestedBy", Kind = "string", Label = "Suggested by", ReadOnly = true }
+            };
+            JArray Rows(int count) => new JArray(Enumerable.Range(1, count).Select(i => new JObject { ["Enabled"] = true, ["Question"] = "Q" + i, ["Answer"] = "A" + i }));
+            var table = new ListTable("Questions", columns, null, () => { });
+            var window = new Window { Width = 761, Height = 700, Content = table.Element, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
+            window.Show();
+            try
+            {
+                var grid = Walk(table.Element).OfType<DataGrid>().Single();
+                grid.UpdateLayout();
+                var viewer = (ScrollViewer)grid.Template.FindName("DG_ScrollViewer", grid);
+
+                void Fits(int rows, Visibility scrollbar)
+                {
+                    table.Set(Rows(rows));
+                    for (int i = 0; i < 4; i++)
+                    {
+                        grid.UpdateLayout();
+                        var frame = new System.Windows.Threading.DispatcherFrame();
+                        grid.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new System.Action(() => frame.Continue = false));
+                        System.Windows.Threading.Dispatcher.PushFrame(frame);
+                    }
+                    Assert.Equal(scrollbar, viewer.ComputedVerticalScrollBarVisibility);
+                    double gap = viewer.ViewportWidth - grid.Columns.Sum(c => c.ActualWidth);
+                    Assert.InRange(gap, 0, 0.999);
+                }
+
+                Fits(3, Visibility.Collapsed);
+                Fits(40, Visibility.Visible);     // the list grows past the grid's height while it is open
+                Fits(2, Visibility.Collapsed);    // and shrinks again
+            }
+            finally { window.Close(); }
+        });
+
         /// <summary>Every element under a root, through the logical tree (nothing here is rendered).</summary>
         private static IEnumerable<DependencyObject> Walk(DependencyObject root)
         {
