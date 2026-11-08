@@ -132,6 +132,17 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void The_games_column_headers_read_in_German_and_Spanish()
+        {
+            var german = Conventions.Load("de").Lang;
+            var spanish = Conventions.Load("es").Lang;
+            Assert.Equal("Einsatz", german.Text("Bet"));
+            Assert.Equal("Reime / Antworten", german.Text("Rhymes / answers"));
+            Assert.Equal("Apuesta", spanish.Text("Bet"));
+            Assert.Equal("Palabra o verso", spanish.Text("Word or line"));
+        }
+
+        [Fact]
         public void A_wide_list_is_a_table_edited_in_place_that_keeps_what_no_column_shows() => Sta(() =>
         {
             var columns = new List<SettingColumn>

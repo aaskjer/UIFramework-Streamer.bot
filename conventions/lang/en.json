@@ -295,6 +295,8 @@
     "cust.accent": "Accent colour",
     "cust.accent.tip": "The highlight colour of this and every other UIFramework window: the blue buttons, switches that are on, the active page in the rail, links and this bar. Empty: the default blue.",
     "cust.language": "Language",
+    "cust.helpLines": "Help under fields",
+    "cust.helpLines.tip": "Shows each field's help as a line under it instead of in its tooltip.",
     "cust.resetLayout": "Reset layout",
     "cust.resetLayout.confirm": "Forget every renamed, moved and hidden page and field? The theme stays.",
     "cust.openFile": "Open file",

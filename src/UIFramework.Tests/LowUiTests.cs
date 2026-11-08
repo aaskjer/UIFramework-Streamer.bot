@@ -176,5 +176,45 @@ namespace UIFramework.Tests
                 Assert.True(german.Ui.ContainsKey(key), key);
             }
         }
+
+        [Fact]
+        public void Help_lines_are_kept_in_the_layout_file_and_off_by_default()
+        {
+            string settingsPath = Path.Combine(Folder(), "settings.json");
+            var layout = LayoutFile.Load(settingsPath);
+            Assert.False(layout.HelpLines);
+            layout.HelpLines = true;
+            layout.Save();
+            Assert.True(LayoutFile.Load(settingsPath).HelpLines);
+            layout.HelpLines = false;
+            Assert.Null(layout.Root["helpLines"]);   // off is the default, so the key goes
+        }
+
+        [Fact]
+        public void With_help_lines_the_help_is_a_line_under_the_field_and_no_tooltip() => Sta(() =>
+        {
+            foreach (bool lines in new[] { false, true })
+            {
+                var spec = new WindowSpec { Layout = new LayoutFile(Path.Combine(Folder(), "settings.json")) };
+                spec.Layout.HelpLines = lines;
+                var parts = new WindowParts();
+                var ctx = new PageContext();
+                typeof(PageContext).GetProperty("Spec").SetValue(ctx, spec);
+                typeof(PageContext).GetProperty("Parts").SetValue(ctx, parts);
+                typeof(PageContext).GetProperty("Fields").SetValue(ctx, new Fields(parts, new JObject { ["rounds"] = 3, ["on"] = true }, new JObject(), url => { }));
+                foreach (var setting in new[] { new Setting { Key = "rounds", Kind = "int", Label = "Rounds", Help = "How many rounds." },
+                                                new Setting { Key = "on", Kind = "bool", Label = "On", Help = "Turns it on." } })
+                {
+                    var element = SchemaPage.Render(ctx, setting);
+                    var all = new List<object>();
+                    void Walk(object node) { all.Add(node); if (node is DependencyObject d) foreach (var child in LogicalTreeHelper.GetChildren(d)) Walk(child); }
+                    Walk(element);
+                    bool line = all.OfType<TextBlock>().Any(b => b.Tag as string == SchemaPage.HelpLineTag && string.Concat(b.Inlines.OfType<System.Windows.Documents.Run>().Select(r => r.Text)) == setting.Help);
+                    bool tooltip = all.OfType<FrameworkElement>().Any(e => e.ToolTip as string == setting.Help);
+                    Assert.True(lines == line, setting.Key + ": help line " + line + " with lines " + lines);
+                    Assert.True(lines != tooltip, setting.Key + ": tooltip " + tooltip + " with lines " + lines);
+                }
+            }
+        });
     }
 }

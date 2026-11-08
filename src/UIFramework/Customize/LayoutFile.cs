@@ -131,6 +131,13 @@ namespace UIFramework
             set => Root["autoUpdate"] = value;
         }
 
+        /// <summary>Each field's help as a line under it instead of in its tooltip. Off (and missing): the tooltip.</summary>
+        public bool HelpLines
+        {
+            get => Root["helpLines"]?.Type == JTokenType.Boolean && (bool)Root["helpLines"];
+            set { if (value) Root["helpLines"] = true; else Root.Remove("helpLines"); }
+        }
+
         /// <summary>The window's tour has been shown here once: it no longer starts by itself (the ? button still
         /// shows it). Set to false, or removed, it starts again on the next open.</summary>
         public bool TourSeen

@@ -536,6 +536,14 @@ namespace UIFramework
 
             var language = LanguagePicker(ctx.Spec, ctx.Layout, () => Commit(ctx, null));
 
+            // The help of every field as a line under it instead of in its tooltip; the window is built again with it.
+            var helpLines = new CheckBox { IsChecked = ctx.Layout.HelpLines, VerticalAlignment = VerticalAlignment.Center, ToolTip = Text.T("cust.helpLines.tip") };
+            helpLines.Click += (s, e) =>
+            {
+                ctx.Layout.HelpLines = helpLines.IsChecked == true;
+                Commit(ctx, null);
+            };
+
             // Icon buttons like the footer's: the texts are their tooltips, so the bar stays one row wide.
             var reset = Ui.IconButton(Icons.Undo, Icons.Font, Text.T("cust.resetLayout"));
             reset.Click += (s, e) =>
@@ -562,6 +570,7 @@ namespace UIFramework
             choices.Children.Add(Beside(Text.T("cust.accent"), accent, 0));
             if (language != null)
                 choices.Children.Add(Beside(Text.T("cust.language"), language, 12));
+            choices.Children.Add(Beside(Text.T("cust.helpLines"), helpLines, 12));
             var controls = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
             foreach (var button in new[] { reset, export, import, open })
             {

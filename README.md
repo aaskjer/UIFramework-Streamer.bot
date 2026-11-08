@@ -62,7 +62,7 @@ first use, checked against its published SHA-256, and offers new releases when t
   every language the framework has a file for; the game adds its own words with `Lang`. A new language is one JSON
   file, in the DLL or in `UIFramework\lang\` beside Streamer.bot.
 - 🎨 **A customise mode.** Users rename, reorder, hide and move pages and fields by drag and drop, and pick the
-  theme and accent colour. All of it lives in `uiframework.layout.json` and survives every import of the game;
+  theme and accent colour, and choose help as a line under each field instead of a tooltip. All of it lives in `uiframework.layout.json` and survives every import of the game;
   `Lock()` turns the mode off for a game that wants its window exactly as declared.
 - 📜 **Log, help and about pages.** A filterable log reader for the game's log files, a help page from your
   notes and commands, an about page with your links. Mistakes in the schema sit behind a red **i** in the header.
@@ -116,7 +116,7 @@ what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and t
 
 ## 🛠️ Development
 
-`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 142 tests.
+`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 179 tests.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
 `-schema hosts/<game>/schema.json` the window a game declares. `-theme dark` or `light`, `-shots <folder>` renders
 every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),

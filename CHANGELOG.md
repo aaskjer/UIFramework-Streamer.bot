@@ -6,6 +6,22 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-08
+
+### Added
+
+- **Help under fields.** A switch in the customise bar puts each field's help as a small line under it instead of
+  in its tooltip; links in it can be clicked. It is kept in `uiframework.layout.json` as `"helpLines": true` and
+  is off by default. Notes and lists show their help as text as before.
+
+### Changed
+
+- **Column headers in German and Spanish.** The read-only tables (leaderboards, statistics) translate their column
+  headers like the lists and the Log page do. The words the games use for them (*Player*, *Bet*, *Change*, *After*,
+  *Platform*, *Trigger*, *Guess*, *Lives*, *Answer*, *Source* and more) are in the framework's German and Spanish
+  texts, so every game's Log page and lists read in the window's language without a new game release.
+- `hosts/`: Hangman v13.1.1.
+
 ## [1.0.0] - 2026-11-07
 
 The first stable release: the settings window every chat game of aaskjer's runs on (Blackjack, Battleship, Classic

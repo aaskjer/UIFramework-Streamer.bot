@@ -26,7 +26,8 @@ user's.
   A hidden field keeps its value in the settings file.
 - **The bar at the top**, one row: the accent colour (blue buttons, switches that are on, the active page in
   the rail, links, the bar itself; for every UIFramework window of this Streamer.bot; taken once the picker
-  closes or the typing pauses), the language (by its name: English, Deutsch, Español …), then four icon buttons named by their tooltips: *Reset
+  closes or the typing pauses), the language (by its name: English, Deutsch, Español …), *Help under fields* (each
+  field's help as a small line under it instead of in its tooltip), then four icon buttons named by their tooltips: *Reset
   layout* (everything but the theme), *Export* and *Import* of the settings (see docs/Schema.md), *Open file*
   (the layout file); then *Done*. The hint with the count of changes is the line under them.
 - **Messages:** the templates can be sorted, renamed and hidden on their page; they cannot be dragged to
@@ -42,6 +43,7 @@ the window itself stays where it is.
   "theme": { "dark": true, "rainbow": false, "accent": "#7C3AED" },
   "language": "de",
   "autoUpdate": true,
+  "helpLines": true,
   "pages": {
     "table": { "title": "Tisch", "icon": "cards", "order": 10 },
     "duel":  { "hidden": true }
@@ -61,6 +63,7 @@ the window itself stays where it is.
 | `theme.accent`                 | the accent colour `#rrggbb`; empty: the default blue                         |
 | `language`                     | `en`, `de`, `es` or a language from `UIFramework\lang\`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome), the labels and help of the conventions' keys, and the declared sections, page titles, pills, option labels and message groups the conventions or the game translate (docs/Schema.md, *Languages*); missing: `en`. What nothing translates, and the help and about pages, stay as declared |
 | `autoUpdate`                   | `false`: the loader no longer asks about new versions                        |
+| `helpLines`                    | `true`: each field's help is a line under it instead of its tooltip (*Help under fields* in the bar); missing: tooltips |
 | `skipVersion`                  | set by the update dialog's *Cancel*: this version is not offered again       |
 | `frameworkAvailable`           | set by the update dialog's *No*: the window shows this version as a pill in the header until it is taken or skipped |
 | `pages.<id>.title`, `.icon`    | how the page is shown                                                        |

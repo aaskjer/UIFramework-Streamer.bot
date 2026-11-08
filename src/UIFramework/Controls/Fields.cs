@@ -221,7 +221,7 @@ namespace UIFramework
                 Text = FieldBinding.Display(tag, NumberToken(key)),
                 Tag = tag,
                 MaxLength = 6,
-                ToolTip = tooltip + Text.T("field.percentRange", min.ToString("0.##", CultureInfo.InvariantCulture), max.ToString("0.##", CultureInfo.InvariantCulture))
+                ToolTip = (tooltip ?? "") + Text.T("field.percentRange", min.ToString("0.##", CultureInfo.InvariantCulture), max.ToString("0.##", CultureInfo.InvariantCulture)).TrimStart(string.IsNullOrEmpty(tooltip) ? new[] { '\n' } : new char[0])
             };
             Ui.StyleInput(box);
             AutomationProperties.SetName(box, label);
@@ -568,7 +568,7 @@ namespace UIFramework
         /// <param name="labelled">false: the row alone (box, swatch, picker), for a caller that labels it inline.</param>
         public FrameworkElement ColourField(string label, string key, string tooltip, bool labelled = true)
         {
-            var box = SettingBox(label, key, tooltip + "\n" + Text.T("field.colour.tip"));
+            var box = SettingBox(label, key, (string.IsNullOrEmpty(tooltip) ? "" : tooltip + "\n") + Text.T("field.colour.tip"));
             box.Width = 92;
             box.HorizontalAlignment = HorizontalAlignment.Left;
 
