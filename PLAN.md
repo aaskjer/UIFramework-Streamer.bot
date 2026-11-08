@@ -1,487 +1,400 @@
-# UIFramework for streamer.bot: Umbauplan
-
-Stand: 2026-10-31. Ausgangslage: sieben Streamer.bot-Projekte mit je eigener WPF-Settings-GUI
-(Blackjack, Slot Machine, Battleship, Hangman, Classic Chat Gamble, Trivia, RhymeTime), 3 600 bis 6 800
-Zeilen pro Datei, 85 gleiche Hilfsmethoden, sieben auseinandergelaufene `Theme`-Kopien.
-
-## 1. Ziel
-
-Ein Fenster-Framework, das
-
-- in einer DLL liegt, die sich selbst aus GitHub holt und aktualisiert (kein manueller Ordner-Schritt),
-- bei allen Projekten gleich aussieht, weil Theme, Rahmen und Bausteine nur einmal existieren,
-- seine Seiten aus Daten baut, die das jeweilige Projekt liefert (Schema), nicht aus projekteigenem WPF-Code,
-- Nutzern erlaubt, Seiten umzubenennen, Felder zu verschieben oder auszublenden, per "Anpassen"-Modus im
-  Fenster oder per Hand in einer JSON-Datei, ohne Code und ohne Verlust beim nächsten Import,
-- nicht an Spiele gebunden ist: jedes Projekt mit einer Settings-Datei kann es nutzen.
-
-Nicht Ziel: Spiellogik, Overlays, Chat-Ausgabe. Die bleiben in den Projekten.
-
-## 2. Begriffe
-
-| Begriff   | Bedeutung                                                                                     |
-|-----------|-----------------------------------------------------------------------------------------------|
-| Framework | Die DLL `UIFramework.dll`: Shell, Theme, Controls, Schema-Renderer, Anpassen-Modus, Loader-Gegenstück |
-| Host      | Ein Projekt, das das Framework nutzt (Blackjack, Trivia, …)                                   |
-| Schema    | Was der Host an Settings kennt: Key, Default, Typ, Hinweise. Kommt vom Host, auf Anfrage      |
-| Spec      | Wie der Host ausgeliefert aussieht: Seiten, Reihenfolge, Zuordnung der Keys. Liegt im Stub    |
-| Layout    | Nutzeranpassungen: `uiframework.layout.json` neben der Settings-Datei. Höchste Priorität     |
-| Stub      | Die Settings-Aktion des Hosts in Streamer.bot: Loader + Spec + Hooks, 200 bis 400 Zeilen      |
-| Hooks     | Callbacks des Hosts, die das Framework ruft: Anwenden, Testen, Sonderseite bauen              |
-
-Schichten, von unten nach oben, jede überschreibt die darunter:
-
-1. Framework-Konventionen (bekannte Keys, Standardseiten, Theme-Defaults)
-2. Schema des Hosts
-3. Spec im Stub
-4. Layout des Nutzers
-
-## 3. Repository `aaskjer/UIFramework`
-
-```
-UIFramework/
-  src/UIFramework/
-    UIFramework.csproj         .NET Framework 4.8, x64, Referenzen: Streamer.bot.Plugin.Interface, Newtonsoft.Json,
-                               PresentationFramework/Core, WindowsBase, System.Xaml (GAC)
-    Entry.cs                   public static bool Show(IInlineInvokeProxy cph, string specJson, IHostHooks hooks)
-    Shell/Window.cs            Fenster, Rail (Sidebar), PageStack, Titelzeile, Statuszeile, Ungespeichert-Zähler
-    Shell/Claim.cs             ClaimWindow/ReleaseWindow: ein Fenster pro Host, STA-Thread, Application-Instanz
-    Shell/Theme.cs             Farben hell/dunkel, Rainbow, Akzentfarbe aus Settings, Colour-Picker
-    Shell/Icons.cs             Glyphen, Logo-Laden (URL, Cache)
-    Controls/*.cs              Row, Labeled, Note, Pill, NameChip, NameList, IntField, DoubleField, TextField,
-                               Toggle, Combo, ColourField, EmoteField, DurationField, PathField, ListEditor, Table
-    Schema/Schema.cs           Modell: Setting { Key, Default, Kind, Page, Label, Help, Min, Max, Unit, Options }
-    Schema/Conventions.cs      Wörterbuch bekannter Keys -> Seite, Kind, Label, Help
-    Schema/Resolve.cs          Konventionen + Schema + Spec + Layout -> fertige Seitenliste
-    Pages/General.cs           Bot-Konto, Plattformen, Sprache (aus Konventionen)
-    Pages/Access.cs            Erlaubte/gesperrte Nutzer und Gruppen
-    Pages/Messages.cs          Textvorlagen mit Platzhaltern und Chat-Vorschau
-    Pages/Log.cs               Aktionslog des Hosts
-    Pages/Help.cs              Markdown-ähnliche Hilfe aus der Spec
-    Pages/About.cs             Version Host + Framework, Update-Check, Links
-    Customize/Mode.cs          Anpassen-Modus: Umbenennen, Verschieben, Ausblenden, Zurücksetzen
-    Customize/Layout.cs        uiframework.layout.json lesen/schreiben (atomar, .bak)
-    Settings/Store.cs          Settings-Datei lesen/schreiben, Migration alter Keys, KeepDamagedCopy
-    Update/Check.cs            Release-Check des Hosts (GitHub Releases) und des Frameworks
-  src/UIFramework.Tests/       xUnit: Resolve, Layout-Merge, Store, Schema-Parsing, Conventions
-  src/UIFramework.Preview/     kleine EXE: öffnet das Fenster mit einem Beispiel-Schema ohne Streamer.bot
-  stub/
-    Stub.cs                    Vorlage für die Settings-Aktion eines Hosts (Loader + Spec + Hooks)
-    Loader.cs                  Der Loader-Block, wird in Stub.cs eingebettet
-  conventions/
-    keys.json                  bekannte Keys (Quelle für Conventions.cs, zur Build-Zeit eingebettet)
-    lang/en.json, de.json      Labels/Hilfetexte der Konventionen
-  lib/v1/latest.json           { "version", "url", "sha256", "minHostStub" }
-  docs/
-    Schema.md, Spec.md, Layout.md, Hooks.md, Customize.md
-  .github/workflows/
-    ci.yml                     build + tests bei jedem Push
-    release.yml                bei Tag vX.Y.Z: build, test, DLL als Release-Asset, lib/v1/latest.json aktualisieren
-```
-
-Der Release-Workflow ist der Ort für die eingangs empfohlene Actions-Struktur: `setup`, `build`, `test`, `publish` als
-Composite Actions unter `.github/actions/`, die `ci.yml` und `release.yml` teilen.
-
-## 4. Datenformate
-
-### 4.1 Schema (vom Host, auf Anfrage)
-
-Der Host hält eine Tabelle, aus der er selbst seine Settings liest. Auf Anfrage gibt er sie als JSON aus.
-
-```json
-{
-  "host": "blackjack", "version": "2.3.0",
-  "settingsFile": "Blackjack Game/BJG-Settings.json",
-  "settings": [
-    { "key": "useBot",          "default": true },
-    { "key": "numDecks",        "default": 6,    "min": 1, "max": 8 },
-    { "key": "blackjackPayout", "default": 1.5,  "kind": "double", "min": 1, "max": 3, "step": 0.5,
-      "label": "Blackjack payout", "help": "Multiplier on the bet for a natural blackjack." },
-    { "key": "overlayFolder",   "default": "",   "kind": "path" },
-    { "key": "cardDisplayMode", "default": "unicode", "options": ["unicode", "text", "emotes"] },
-    { "key": "blockedUsers",    "default": "",   "kind": "namelist" }
-  ]
-}
-```
-
-Regeln: `kind` ist optional und wird sonst aus dem Default abgeleitet (bool, int, double, string). `useBot`
-und `blockedUsers` brauchen nichts weiter, sie stehen in den Konventionen. Werte liefert das Schema nie.
-
-Abfrage aus dem Stub, synchron:
-
-```csharp
-CPH.SetArgument("uiframework.describe", "1");
-CPH.RunAction("Blackjack Game", true);
-string schema = CPH.GetGlobalVar<string>("uiframework.schema.blackjack", false);
-```
-
-Im Host, erste Zeilen von `Execute()`:
-
-```csharp
-if (args.ContainsKey("uiframework.describe")) { CPH.SetGlobalVar("uiframework.schema.blackjack", Schema.ToJson(), false); return true; }
-```
-
-### 4.2 Spec (im Stub, Auslieferungszustand)
-
-```json
-{
-  "title": "Blackjack",
-  "logo": "https://raw.githubusercontent.com/aaskjer/Blackjack/main/Assets/logo.png",
-  "releases": "aaskjer/Blackjack",
-  "pages": [
-    { "id": "general" },
-    { "id": "table",   "title": "Table",   "icon": "cards",
-      "fields": ["numDecks", "dealerStandsOn", "reshuffleThreshold", "blackjackPayout"] },
-    { "id": "rules",   "title": "Rules",   "icon": "list",
-      "fields": ["allowDoubleDown", "allowSplit", "allowResplit", "maxSplitHands", "allowInsurance", "allowSurrender"] },
-    { "id": "overlay", "title": "Overlay", "icon": "monitor", "fields": ["overlay*"] },
-    { "id": "stats",   "title": "Stats",   "icon": "chart",   "custom": "stats" },
-    { "id": "access" }, { "id": "messages" }, { "id": "log" }, { "id": "help" }, { "id": "about" }
-  ],
-  "help": "…",
-  "overrides": { "useBot": { "page": "table" } }
-}
-```
-
-Standardseiten (`general`, `access`, `messages`, `log`, `help`, `about`) brauchen nur ihre id. `fields` erlaubt
-Wildcards. Keys des Schemas, die keine Seite nennt, landen auf `game` (wird bei Bedarf angelegt). `custom` ruft
-`hooks.BuildPage("stats")`.
-
-### 4.3 Layout (vom Nutzer, `uiframework.layout.json` neben der Settings-Datei)
-
-```json
-{
-  "pages": {
-    "table":  { "title": "Tisch", "order": 1 },
-    "rules":  { "hidden": true },
-    "general": { "icon": "gear" }
-  },
-  "fields": {
-    "useBot":    { "page": "table", "order": 0 },
-    "egg":       { "hidden": true },
-    "numDecks":  { "label": "Anzahl Decks" }
-  },
-  "theme": { "accent": "#7c3aed", "dark": true }
-}
-```
-
-Nur Präsentation. Ein ausgeblendetes Feld behält seinen Wert. Ein Key, den das Schema nicht mehr kennt, wird
-ignoriert und beim nächsten Speichern entfernt. Ein `Zurücksetzen` im Anpassen-Modus löscht die Datei.
-
-## 5. Anpassen-Modus
-
-Umschalter in der Titelzeile (Stift-Icon). Im Modus:
-
-- Seiten in der Rail: Rechtsklick -> Umbenennen, Icon wählen, Ausblenden; Drag zum Sortieren.
-- Felder: Griff links, Drag innerhalb der Seite oder auf eine andere Seite in der Rail; Rechtsklick ->
-  Umbenennen, Ausblenden, Auf Standard.
-- Standardseiten lassen sich umbenennen und verschieben, `about` nicht ausblenden.
-- Jede Änderung schreibt sofort `uiframework.layout.json` (atomar). Kein eigener Speichern-Schritt.
-- Statuszeile zeigt "Angepasst (n Änderungen)" mit Link `Zurücksetzen` und `Datei öffnen`.
-- Verlassen des Modus: Fenster rendert neu aus Schichten 1 bis 4.
-
-Nicht im Modus: Felder erzeugen, Typen ändern, Werte anfassen. Das wäre Schema, nicht Layout.
-
-## 6. Hooks (Host-Seite, im Stub)
-
-```csharp
-public interface IHostHooks
-{
-    void OnApply(JObject settings);                 // nach Speichern: Cooldowns setzen, Timer, OBS, Websocket
-    string Test(string name, JObject settings);     // "Test"-Buttons, Rückgabe = Statuszeile
-    FrameworkElement BuildPage(string id, IPageTools tools);   // Sonderseiten; tools gibt Theme + Controls
-    IEnumerable<LogEntry> ReadLog();                // Log-Seite; null = Seite aus
-}
-```
-
-`IPageTools` stellt den Sonderseiten dieselben Controls und Farben zur Verfügung wie dem Framework, damit eine
-Sonderseite nicht anders aussieht. Hooks werden über eine Schnittstelle aus `Streamer.bot.Plugin.Interface`-
-freien Typen gereicht; der Stub implementiert sie als innere Klasse.
-
-## 7. Loader (im Stub)
-
-- Ordner: `<Streamer.bot>\UIFramework\lib\<version>\UIFramework.dll`; Fallback `%LOCALAPPDATA%\UIFramework\lib`.
-- `Init()`: asynchron `lib/v1/latest.json` lesen (Timeout 3 s). Neue Version -> Download nach `.tmp`, SHA-256
-  prüfen, in Versionsordner verschieben. Alte Ordner, die nicht geladen sind, löschen.
-- `Execute()`: neueste lokal vorhandene Version per `Assembly.LoadFrom`, Delegate auf `Entry.Show` einmal
-  erzeugen und statisch cachen. Fehlt jede Version: Toast, Log, `return true`. Settings bleiben per Datei nutzbar.
-- Named Mutex `Global\UIFramework.Loader` um Download und Erstladen, damit mehrere Hosts beim Start nicht
-  parallel laden.
-- Major-Version gepinnt (`v1`). `minHostStub` in `latest.json`: ist der Stub älter, zeigt das Framework im
-  About einen Hinweis, dass der Host einen neuen Import braucht, und läuft im Kompatibilitätsmodus weiter.
-- Setting `uiframework.autoUpdate` (Default an) in `uiframework.layout.json`; aus = nur lokal vorhandene DLL.
-- Alle Stubs tragen denselben Loader-Block; `stub/Loader.cs` ist die Quelle, ein Drift-Check im Host-Projekt
-  vergleicht dagegen (dasselbe Muster wie der ChatCalendar-Sync).
-
-## 8. Phasen
-
-Stand 31.10.2026: Phase 0 und 1 fertig, Phase 2 auf Framework-Seite fertig (Schema, Konventionen eingebettet,
-Resolve, Spec-JSON, Reflection-Host, Alias-Migration, Blackjack-Schema und -Spec aus der alten GUI erzeugt und
-in der Preview geprüft, Stub und Host-Block kompilieren als Streamer.bot-Aktion). Blackjack ist umgestellt
-(31.10.): `UiSchema.Table` mit 262 Settings im Spiel und in der Stats-Aktion, `Settings`-Fassade über `UiSettings`
-mit den alten Clamps, `uiframework.describe`, die Settings-Aktion ist der Stub mit Blackjack-Host-Sektion
-(Cooldowns, Leaderboard-Reset, OBS-Setup als Jobs auf Streamer.bots Thread). Die alte GUI (4.800 Zeilen WPF) und
-ihre Harnesse sind weg; `run-window-tests.ps1` öffnet das echte Fenster über den Stub und schreibt
-`hosts/blackjack/schema.json`. Phase 3 (01.11.): Loader mit Erststart-Dialog, Download über `lib/v1/latest.json` mit SHA-256,
-Hintergrund-Update in `Init`, Release-Workflow; v0.1.0 und v0.1.1 sind veröffentlicht. Phase 4 (01.11.):
-Layout-Datei als vierte Schicht (Seiten: Titel, Icon, Reihenfolge, ausblenden; Felder: Seite, Reihenfolge, Label,
-Abschnitt, ausblenden), Anpassen-Modus im Fenster mit Griff, Drag auf Felder und Seiten, Kontextmenüs, Dialogen,
-Akzentfarbe, Sprache, Reset; `docs/Customize.md`. Offen aus Phase 4: Screenshots für die Docs. Update-Dialog
-statt stillem Download (v0.2.0). Phase 5 (01.11.): `list`-Kind mit Zeilen-Editor und Ablage in eigener Datei
-(`file`/`field`, `Sidecars`) für Wortbank und Fragenlisten (v0.3.0); Blackjack v17.0.0 als erster Host
-veröffentlicht; RhymeTime v2.0.0 umgestellt (Host-Block in Game und Battle, Wortbank als drei `list`-Settings in
-`RT-wordbank.json`, Overlay-Seite im Game-Script, Stub aus `hosts/rhymetime`); Release v2.0.0 als PR und
-Draft-Release vorbereitet (03.11.). Nach dem ersten Praxistest (01./02.11., v0.3.1 bis v0.3.4): Pille im Kopf nur
-nach "Nein" im Update-Dialog, Anpassen-Modus baut das Fenster an Ort und Stelle neu (kein Schließen/Öffnen mehr),
-Nachrichten-Seite anpassbar, nachsichtiges Drag&Drop, Akzentfarbe wird beim Picker-Schließen übernommen; Releases
-tragen den CHANGELOG-Abschnitt als Notes und sind bis 1.0.0 Pre-Releases. Slot Machine v16.0.0 umgestellt (03.11.,
-v0.4.0): `action` mit `live`/`panel`/`auto` und `transient`-Felder für Quoten und Probe-Spin aus der Spiel-Engine
-(gemeinsamer `SlotEngine`-Block in Spiel und Stub), Emotes als drei `list`-Settings mit Punkt-Alias aus
-`PlatformEmotes`, Log-Seite aus der Spec; nachgerüstet v0.4.1 bis v0.6.0: Emote-Bilder (Spalte und Feld),
-`requires` mit Bedingung, `Validate` vor dem Speichern, Balken-Panels, `note`-Kind, Aktionen, die Felder setzen.
-Battleship v2.0.0 umgestellt (03.11., v0.6.0): Presets über `set`, Flotten- und Uhr-Zusammenfassung als
-`auto`-Panels, Heat-Marker und OBS-Setup als Jobs, Scoreboard mit demselben Host-Block. Classic Chat Gamble v25.0.0 umgestellt (03.11.): Nachrichten bleiben als
-Sidecar-Felder in `messages.json`, Fairness-Presets als Buttons, das Spiel schreibt Free-Game-Zustand und
-Addicted-Liste unter den neuen Keys zurück. Phase 5 ist abgeschlossen: Hangman (v13.0.0, Wortliste und Import als `list` und Aktionen) und Trivia (v9.0.0, Fragen-Editor als `list` über die Fragendatei, Quellen als Optionen mit Prüf-Aktion) laufen seit dem 6. November 2026 auf dem generischen Stub. Screenshots für alle Docs bleiben für
-den Abschluss (Phase 6).
-
-### Phase 0: Entscheidungen festhalten (½ Tag)
-- Projektname und Namespace `UIFramework`, Repo anlegen, Lizenz wie die Spiele.
-- Schema-Kinds festlegen: bool, int, double, string, text (mehrzeilig), options, namelist, path, colour, emote,
-  duration, list (Editor), table (nur Anzeige).
-- Konventionsliste aus den sieben GUIs ziehen: alle Keys, die in mindestens drei Projekten vorkommen.
-
-### Phase 1: Framework-Kern aus Blackjack + RhymeTime (1 Woche)
-Beide teilen heute dasselbe `Theme`. Aus ihren GUIs entstehen Shell, Theme, Icons, Controls, Pages (General,
-Access, Messages, Log, Help, About), Store, Update-Check. Noch ohne Schema: `Entry.Show` nimmt vorerst eine
-hart codierte Seitenliste. Preview-EXE läuft. Tests für Store und Theme.
-Fertig, wenn: Blackjack-Fenster aus der DLL sieht aus wie heute, Preview-EXE zeigt es ohne Streamer.bot.
-
-### Phase 2: Schema und Spec (3 Tage)
-Schema-Modell, Conventions, Resolve, Spec-Parser. Blackjack-Host bekommt die Settings-Tabelle und
-`uiframework.describe`. Stub für Blackjack: Loader lokal (DLL aus Build-Ordner, kein Download), Spec, Hooks
-für Cooldowns und OBS. Stats-Seite als erste `custom`-Seite.
-Fertig, wenn: Blackjack läuft vollständig über Stub + DLL, `check-settings.ps1` wird nicht mehr gebraucht.
-
-### Phase 3: Loader und Release (2 Tage)
-`release.yml`, `latest.json`, Hash, Loader mit Download, Mutex, Versionsordner, `minHostStub`, Auto-Update-Schalter.
-Test: frische Streamer.bot-Instanz, Blackjack importieren, Fenster öffnen, DLL kommt an. Zweite Version taggen,
-Neustart, Update greift. Netz trennen, Fenster öffnet aus Cache.
-
-### Phase 4: Anpassen-Modus und Layout (4 Tage)
-Layout-Datei, Merge in Resolve, Modus-UI (Umbenennen, Drag, Ausblenden, Zurücksetzen), Theme-Overrides.
-Tests für Merge und Dateiformat. `docs/Customize.md` mit Screenshots.
-
-### Phase 5: Weitere Hosts (1 bis 2 Tage je Host)
-Reihenfolge nach Sonderseiten, leichteste zuerst: RhymeTime, Slot Machine (Emotes-Editor -> `list`), Battleship,
-Classic Chat Gamble, Hangman (Wortliste -> `list`, Evil -> custom), Trivia (Fragenquelle, Fragen-Editor,
-Vorschläge -> teils `list`, teils custom). Bei jedem Host: Settings-Tabelle in den Host, Stub, Spec, alte GUI-Datei
-löschen, Release.
-
-### Phase 6: Abschluss (1 Tag)
-READMEs der Hosts: Abschnitt "Settings-Fenster wird automatisch geladen, so schaltest du es ab". Konventionen
-und Sprachdateien veröffentlichen. ChatCalendar und die übrigen Nicht-Spiele-Projekte als Kandidaten bewerten.
-
-Stand 07.11.2026: Screenshots aus der Preview in README, Getting-Started, Customize und Schema (`docs/images`).
-Konventionen und Sprachdateien veröffentlicht als `docs/Conventions.md` (Seiten, bekannte Keys, Platzhalter,
-Abdeckung je Sprachdatei, Anleitung für eine neue Sprache), Tabellen aus `tools/conventions-doc.ps1`, CI prüft sie.
-Der Hinweis für Nutzer (DLL beim ersten Öffnen, Update-Frage abschaltbar mit `"autoUpdate": false`, Spiel läuft
-ohne Fenster) steht in Getting-Started statt in den Spiel-READMEs; die bekommen stattdessen ein bis zwei Bilder. Bewertung der übrigen Projekte (unten) erledigt. Offen bleibt der
-Live-Test aus Phase 3 in einer frischen Streamer.bot-Instanz.
-
-#### Bewertung der Nicht-Spiel-Projekte (07.11.2026)
-
-| Projekt | Heute | Aufwand | Urteil |
-|---|---|---|---|
-| OBS Notepad | keine GUI, 7 Set Arguments, 1 Action | S | gut geeignet; erprobt die Übernahme von Set Arguments |
-| Suggestions To | keine GUI, 3 Actions mit je 8 bis 12 Set Arguments, Platzhalter `%x%` | S bis M | geeignet mit Lücken (mehrere Actions, Platzhaltersyntax) |
-| FreeGameCheck (inkl. Sales) | eigene WPF-GUI (3.740 Zeilen), ~50 Settings, verschachtelte Datei | M | geeignet mit Lücken (verschachtelte Datei, Secrets in Globals, Sperren je Set Argument) |
-| ChatCalendar | eigene WPF-GUI (3.230 Zeilen), ~29 Keys plus Feiertags- und Geburtstagsdateien | M bis L | geeignet mit Lücken (Optionen aus Daten, editierbare und gefilterte Tabelle) |
-| BetterStreamAnnouncements | eigene WPF-GUI (5.398 Zeilen), 158 Settings, 14 Seiten | L | geeignet mit Lücken (Rail-Gruppen, Dashboard, Streamer.bot-Log) |
-| AutoBotCheck | keine GUI, 3 Actions mit eigenem `botSource` | S | geeignet, bringt wenig |
-| Discord.Bot | eigene GUI (3.409 Zeilen), 237 Felder; ruht seit 27.08. | M bis L | zurückstellen, überschneidet sich mit BsA |
-| TwitchSentry | eigene GUI (23.223 Zeilen), ~800 Properties, eigene Übersetzungen | XL | nicht geeignet |
-| GameSaleCheck, SBRefFix, githubtodiscord | alte Kopie bzw. keine Streamer.bot-Action | – | nicht geeignet |
-
-Lücken im Framework, die eine Umstellung träfe: Werte aus Set Arguments übernehmen; Werte je Action bei mehreren
-Actions; Dropdown-Optionen aus einer Antwort des Hosts; verschachtelte Settings-Dateien; Secrets in Globals statt
-in der Datei; `readOnly` zur Laufzeit; Rail-Gruppen, Tabs und Unterseiten; Dashboards; das Streamer.bot-Log auf der
-Log-Seite; Listen, die das Spiel füllt und der Nutzer bearbeitet, gefiltert nach einem anderen Feld; Platzhalter
-`%x%`; die Doku für Projekte mit mehreren Actions (eine trägt den Host-Block, die anderen lesen die Datei).
-Reihenfolge, falls umgestellt wird: OBS Notepad, Suggestions To, FreeGameCheck, ChatCalendar,
-BetterStreamAnnouncements, AutoBotCheck.
-
-Summe: etwa vier bis fünf Arbeitswochen bis alle sieben Spiele umgestellt sind.
-
-### Phase 7: Baukasten (etwa zwei Wochen, nach Phase 6)
-
-Ziel: Ein fremdes Projekt bindet das Framework mit zwei Dateien an, ohne dieses Repository zu klonen und ohne
-PowerShell: den Host-Block in die eigene Action, den generischen Stub unverändert als Settings-Action, dann die
-Tabelle ausfüllen. Stand heute braucht ein Host dazu `hosts/<host>/spec.json`, einen handgeschriebenen
-`host-section.cs` (Settings-Pfad, Log-Ordner, Cooldown-Zuordnung, `Host`-Klasse mit `OnSaved`/`Test`/
-`Validate`/`ReadLogLines`, bei Slot Machine 400 Zeilen Engine-Kopie) und `tools/embed-spec.ps1`, das beides in
-`stub/Stub.cs` spleißt; die Doku ist deutsch.
-
-#### 7.1 Das Fenster wird im Spiel deklariert (DLL 0.9.0)
-
-Die Describe-Antwort trägt neben `host`, `version`, `settingsFile`, `settings` ein `window`-Objekt mit dem
-Inhalt der heutigen Spec (`title`, `releases`, `logo`, `logPrefix`, `pages`, `senders`, `samples`, `answers`,
-`headerPills`, `log`, `help`, `about`, `width`, `height`). Der Host-Block bekommt dafür kleine Builder, damit
-die Deklaration im C# lesbar bleibt und der Compiler Tippfehler findet:
-
-```csharp
-public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases: "aaskjer/Blackjack-Game", logo: "https://…")
-    .Pages(P("table", "Table", "🃏"), P("duel", "Duel", "⚔️"), P("stats", "Stats", "🏆", "leaderboard*", "statsTable", "resetLeaderboard"), "log", P("help", "How to play"), "about")
-    .Log(folder: "Chat Games/Logs", files: "BJG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Bet" }, results: new[] { "Win", "Loss", "Push" })
-    .Cooldowns(C("dc2d4f17-…", "globalCooldown", "userCooldown"))
-    .Pill("freeGame", "Free game on", "Free game off", tooltip: "…")
-    .Help(H("Playing a hand", Cmd("!blackjack <bet>", "Deals in."), Note("…"), Link("Guide", "https://…")))
-    .About(credits: "Responsible: aaskjer", links: new[] { Link("Discord", "https://…") });
-```
-
-Neu gegenüber der Spec: `log.files` (das Dateimuster, heute in `ReadLogLines` fest verdrahtet) und
-`cooldowns` (Command-Id plus die Keys des globalen und des Nutzer-Cooldowns, heute die Tabelle im
-Host-Abschnitt). `Entry.Show(specJson, …)` bleibt: ist `specJson` leer, nimmt die DLL `window` aus dem Schema;
-eine mitgegebene Spec gewinnt weiterhin (die fünf bestehenden Stubs laufen unverändert weiter, der Umstieg ist je
-Host möglich). `docs/Spec.md` geht in `docs/Schema.md` auf.
-
-#### 7.2 Der generische Stub
-
-`stub/Stub.cs` verliert die HOST-Marker und die `Spec`-Konstante. Am Kopf steht eine Zeile, die ein fremdes
-Projekt anpasst: `GameActionName`. `SettingsPath` kommt aus `settingsFile` des Schemas (relativ zum
-Streamer.bot-Ordner). Die `Host`-Klasse wird generisch, weil alles, was das Spiel weiß, über denselben Weg wie
-`uiframework.describe` zurück in die Spiel-Action läuft; die hat ohnehin den Code und die Settings:
-
-| Stub-Hook                  | Argument an die Spiel-Action                          | Antwort (nicht-persistente Globale `UiSchema.Var(...)`) |
-|----------------------------|-------------------------------------------------------|---------------------------------------------------------|
-| `OnSaved(settings)`        | `uiframework.saved` = Settings-JSON                   | keine; der Stub setzt vorher die `cooldowns` selbst      |
-| `Test(name, settings)`     | `uiframework.test` = name, `uiframework.values` = JSON | Text oder JSON wie heute                                |
-| `Validate(settings)`       | `uiframework.validate` = JSON                         | Liste der Probleme                                       |
-| `ReadTable(key)`           | `uiframework.table` = key                             | JSON-Array                                               |
-| `EmoteSources()`           | `uiframework.emotes` = 1                              | JSON                                                     |
-| `ReadLogLines()`           | keins; der Stub liest `log.folder` + `log.files`      | Zeilen                                                   |
-
-Der Host-Block bekommt dazu einen Verteiler, den die Spiel-Action als erstes aufruft:
-
-```csharp
-if (UiHost.Handle(args, CPH, ActionName, CurrentVersion, SettingsFile,
-        test: (name, s) => name == "tryHand" ? TryHand(s) : null,
-        validate: s => Problems(s),
-        saved: s => SetupOverlay(s)))
-    return true;
-```
-
-Jeder Delegat ist optional; ein Spiel ohne Test-Buttons gibt nur die drei Konstanten. Die Zweige müssen rein
-bleiben (keine Chat-Ausgabe, keine Zustandsänderung), wie Describe heute. Laufzeit: das Fenster läuft auf einem
-eigenen Thread, `RunAction` braucht Streamer.bots Thread, also stellt der Stub den Aufruf in die Job-Queue, die
-`Pump` alle 100 ms leert, und wartet mit Timeout (5 s) auf die Globale. Für Buttons unmerklich; für `auto`- und
-`live`-Actions (Odds bei Classic Chat Gamble, der Fairness-Slider) sind 100 ms Verzug in Ordnung. Ein Spiel, das
-mehr braucht als den Verteiler, schreibt seinen Code in die Spiel-Action; die Settings-Action bleibt überall
-dieselbe Datei. `tools/check-stub.ps1` prüft dann nur noch die eine Datei, `tools/embed-spec.ps1` entfällt.
-
-Gewinn nebenbei: der Test-Spin der Slot Machine läuft mit der echten Engine statt mit ihrer Kopie, und bei jedem
-Spiel verschwindet die zweite Stelle, die den Settings-Pfad, die Log-Dateien und die Command-Ids kennt.
-
-#### 7.3 Fehler im Fenster statt nur im Log
-
-Heute landet ein unbekanntes `kind`, ein doppelter Key, eine Option ohne `|`, ein `requires` auf einen fremden
-Key oder eine Seite ohne Settings als `LogWarn` in Streamer.bot. `Entry.Prepare` sammelt diese Befunde und das
-Fenster zeigt sie als gelbes Banner über der ersten Seite ("3 problems in the schema, see About"), die
-About-Seite listet sie. Antwortet die Spiel-Action nicht auf Describe, zeigt der Stub einen Dialog mit Ursache
-und Abhilfe (falscher Action-Name, alte Spielversion) statt einer Logzeile.
-
-#### 7.4 Englische Doku, Beispielspiel, Quickstart
-
-- `docs/Schema.md` (mit dem Inhalt von `Spec.md`), `Loader.md`, `Customize.md` auf Englisch; `PLAN.md` und
-  `Phase0-Konventionen.md` bleiben deutsch (interne Planung).
-- `docs/Getting-Started.md`: in zehn Minuten von null zum Fenster, mit Screenshots aus der Preview-EXE.
-- `examples/DemoGame/`: `DemoGame.sb` (eine Spiel-Action mit drei Settings und einer Nachricht, die
-  Settings-Action ist der generische Stub) plus README; die Beispiel-Action ist zugleich der Testfall für den
-  Stub ohne Host-Code. `tools/check-stub.ps1` kompiliert beide.
-- README: Abschnitt "Use it in your own project" mit den drei Schritten, Link auf Getting-Started.
-
-#### 7.5 Umstellung der bestehenden Hosts
-
-Ein Einmal-Werkzeug `tools/spec-to-window.ps1` schreibt aus `hosts/<host>/spec.json` den `Window`-Block als C#,
-damit die Hilfe- und About-Texte nicht abgetippt werden. Je Host: `Window` in den Host-Block, die Logik der
-`Host`-Klasse in die `uiframework.*`-Zweige der Spiel-Action, die GUI-Action durch den generischen Stub
-ersetzen, Harness auf die neuen Argumente, Release. Reihenfolge nach Umfang des Host-Abschnitts: High-Low,
-RhymeTime, Classic Chat Gamble, Slot Machine, Blackjack, Battleship. `hosts/<host>/schema.json` bleibt für
-Preview und Tests (es trägt nun `window`); `spec.json` und `host-section.cs` werden gelöscht, zuletzt
-`embed-spec.ps1`.
-
-#### Reihenfolge und Aufwand
-
-| Schritt                                           | Aufwand |
-|---------------------------------------------------|---------|
-| 7.1 Window im Schema, Builder, Tests              | 1 Tag   |
-| 7.2 generischer Stub, `UiHost.Handle`, Demo-Spiel | 1½ Tage |
-| 7.3 Banner und Describe-Dialog                    | ½ Tag   |
-| Release 0.9.0 (beide Stub-Arten laufen)           |         |
-| 7.4 Doku und Quickstart                           | 2 Tage  |
-| 7.5 sechs Hosts umstellen, je Release             | 5 Tage  |
-
-Entschieden (04.11.2026): (a) Fenster-Deklaration als C#-Builder im Host-Block; (b) keine Escape-Luke, der Stub
-ist eine Datei für alle Projekte, jede Logik läuft über `uiframework.*` in der Spiel-Action; (c) der
-Log-Auto-Refresh (FileSystemWatcher auf `log.folder`, der Button bleibt als Fallback) geht mit in 0.9.0.
-
-Stand 04.11.2026: 7.1 bis 7.4 mit Release 0.9.0 erledigt (Window-Builder, generischer `stub/Stub.cs`,
-`UiHost.Handle`, Banner und Dialog, Log-Watcher, englische Doku, `examples/DemoGame`, `tools/update-host-block.ps1`);
-das Demo-`.sb` liegt bei (`tools/build-import.ps1` hält es aktuell). 7.5 begonnen: `tools/spec-to-window.ps1`
-schreibt den Window-Block aus der Spec; High-Low ist umgestellt (Host-Block mit Window in `hosts/highlow/HostBlock.cs`,
-Spiel-Action mit `UiHost.Handle` und `UiCurrency`, GUI-Action = `stub/Stub.cs`, `spec.json` und `host-section.cs`
-gelöscht, `schema.json` schreibt der Testlauf des Spiels). Stand 05.11.2026: Classic Chat Gamble ebenso (v25.1.0,
-mit `.Lang("de", …)`; die Antworten des alten Stubs sitzen als `WindowAnswers` neben dem Block im Spiel, der Test-
-Harness spielt das Spiel über `RunAction`). RhymeTime ebenso (v2.1.0; die Overlay-Buttons laufen jetzt im Spiel
-auf Streamer.bots Thread, die URL geht per `clipboard` in der Antwort über das Fenster in die Zwischenablage).
-Slot Machine ebenso (v16.1.0; der Test-Spin kommt aus der Engine im Spiel, die Emote-Quellen über `emotes:` von
-`UiHost.Handle`; dazu Custom Trigger und Statistik-Variablen je Zuschauer wie bei den anderen Spielen). Dabei
-gesehen, noch offen im Framework: Spaltenköpfe einer `list` und die Platzhalter der Tag-Felder ("Add a Streamer.bot
-group") bleiben englisch. Blackjack ebenso (v17.1.0; 215 Keys im Block übersetzt, Bestenlisten-Reset und OBS-
-Einrichtung laufen im Spiel und antworten mit dem Ergebnis, drei Befehle in `.Cooldowns`; dazu Custom Trigger für
-jede abgerechnete Hand). Battleship ebenso (v2.1.0; 162 Keys im Block übersetzt, Zusammenfassungen, Vorlagen,
-Broadcaster-Suche, Bestenlisten-Reset, OBS-Einrichtung und Heat-Marker antworten aus dem Spiel, `saved:` schreibt die
-Heat-Konfiguration für ein laufendes Overlay; dazu Custom Trigger für jede beendete Schlacht). Damit ist 7.5 abgeschlossen: `embed-spec.ps1` und `Stub.spec.cs` sind
-gelöscht, `check-stub.ps1` prüft nur noch den einen Stub und das Demo-Spiel. Dabei gesehen, noch offen im Framework:
-die Spaltenköpfe der Protokollseite und ihr Schalter "Write a log file per day" bleiben englisch.
-
-## 9. Tests und Werkzeuge
-
-- Framework: xUnit-Projekt, läuft in `ci.yml`. Resolve (alle vier Schichten), Layout-Merge, Store-Migration,
-  Schema aus JSON, Conventions vollständig gegen `keys.json`.
-- Preview-EXE: Fenster mit Beispiel-Schema öffnen, Screenshots pro Seite in hell/dunkel für die Docs; ersetzt
-  `gui-shots.ps1` der einzelnen Spiele.
-- Host-Projekte: ihr bestehendes `check-all.ps1` behält Import-Prüfung und Verhaltenstests; `check-settings.ps1`
-  entfällt; neu: Stub-Drift-Check gegen `stub/Loader.cs` und Schema-Roundtrip (Describe liefert jeden Key, den
-  das Spiel liest).
-
-## 10. Risiken
-
-| Risiko | Umgang |
-|---|---|
-| Nutzer misstrauen Selbst-Update | README, Versionsanzeige im About, Schalter, Hash über HTTPS, Quellcode offen |
-| GitHub nicht erreichbar | Cache, kurzer Timeout, Fenster öffnet immer |
-| Streamer.bot unter Program Files, kein Schreibrecht | Fallback `%LOCALAPPDATA%` |
-| Zwei Hosts öffnen gleichzeitig ein Fenster | Claim in der DLL, eine Application-Instanz, ein Fenster pro Host |
-| Sonderseiten sehen anders aus | `IPageTools` liefert dieselben Controls; Review beim Umstellen |
-| Schema und Spec nennen verschiedene Keys | Resolve loggt Keys ohne Seite und Spec-Felder ohne Schema; Statuszeile zeigt es |
-| Breaking Change im Framework | Major-Version pinnen, `minHostStub`, alte v1-Linie bleibt stehen |
-| Layout-Datei zeigt auf gelöschte Seite | ignorieren, beim Speichern bereinigen |
-
-## 11. Entscheidungen (31.10.2026)
-
-1. **Sprache:** englisch als Basis, Sprachdateien wie bei TwitchSentry (`conventions/lang/<code>.json`, Fallback
-   `en.json`). Die Sprache ist eine Framework-Einstellung in der Layout-Datei, nicht je Host.
-2. **Textvorlagen:** Schema-Kind `template` mit `placeholders: [...]`. Das Framework zeigt die Platzhalter als
-   Chips unter dem Textfeld, Klick fügt `{name}` an der Cursorposition ein. Bekannte Platzhalter (`user`,
-   `pointsName`, `amount`, …) bekommen Hilfetexte aus den Konventionen.
-3. **Reihenfolge:** innerhalb einer Seite die Deklarationsreihenfolge des Schemas; die Spec überschreibt per
-   `fields`, das Layout per `order`.
-4. **Keys vereinheitlichen:** ein kanonischer, camelCase-Name je Bedeutung, an Streamer.bots eigenen Namen
-   orientiert (`useBot`, `sendAction`, `globalCooldown`, `userCooldown`, `userName`-Stil). Alte Namen stehen als
-   `aliases` in `conventions/keys.json`; der Store liest Aliase beim Laden und schreibt kanonisch zurück, so
-   wandert jede Settings-Datei beim ersten Speichern ohne Nutzerzutun. Ergebnis von Phase 0:
-   `docs/Phase0-Konventionen.md`.
-5. **Framework-Einstellungen wandern aus den Hosts heraus:** `darkMode`, `egg` (Rainbow) und `language` sind
-   Aussehen des Fensters, nicht Spiel. Sie liegen künftig in `uiframework.layout.json` und gelten für alle Hosts.
-   Der Store übernimmt den Wert aus der ersten Host-Datei, die ihn noch trägt, und entfernt ihn dort.
+# UIFramework for streamer.bot: was noch offen ist
+
+Stand 08.11.2026.
+
+**Erledigt:** Die Phasen 0 bis 7 des Umbauplans vom 31.10. sind abgeschlossen.
+- Das Framework ist stabil: 1.0.0 vom 07.11., 1.1.0 vom 08.11.
+- Alle acht Spiele laufen auf dem generischen Stub: Battleship v2.2.0, Blackjack v17.3.0, Classic Chat Gamble v25.1.0, Hangman v13.1.1, High-Low v2.2.0, RhymeTime v2.3.0, Slot Machine v16.3.0, Trivia v9.1.0.
+- Der Praxistest in einer frischen Streamer.bot-Instanz ist mehrfach bestanden: DLL beim ersten Öffnen, Update, Start ohne Netz.
+
+Wie das Framework gebaut ist und benutzt wird, steht nicht mehr hier, sondern in der Doku:
+- [docs/Getting-Started.md](docs/Getting-Started.md)
+- [docs/Schema.md](docs/Schema.md)
+- [docs/Loader.md](docs/Loader.md)
+- [docs/Customize.md](docs/Customize.md)
+- [docs/Conventions.md](docs/Conventions.md)
+
+Die Konventionen aus Phase 0 stehen in [docs/Phase0-Konventionen.md](docs/Phase0-Konventionen.md).
+
+## Grundsätze, die weiter gelten
+
+1. **Eine Datei als Settings-Action** (`stub/Stub.cs`) für alle Projekte. Was ein Projekt kann, läuft über `UiHost.Handle` in seiner eigenen Action.
+2. **Englisch als Basis.** Die Sprachdateien (`conventions/lang/<code>.json`) und `Lang` je Spiel übersetzen. Die Sprache ist eine Einstellung der Layout-Datei.
+3. **Kanonische Keys in camelCase**, alte Namen als `aliases`. Der Store liest die alten Namen und schreibt die kanonischen zurück. Ausnahme: Projekte, deren Datei mehrere Actions lesen (siehe 8.0).
+4. **Was der Nutzer am Fenster ändert, liegt in `uiframework.layout.json`** und übersteht jeden Import.
+5. **Kein Breaking Change für die Spiele.** Neue Optionen sind optional. Eine ältere DLL zeigt Unbekanntes als Problem hinter dem roten **i**, statt abzustürzen.
+
+## Offen im Framework und in den Spielen
+
+1. **Spanisch für die Spiele.** Die eigenen Texte des Frameworks sind vollständig spanisch (`es.json`: alle Einträge von `en`/`de`). Die Spaltenköpfe der Listen und Log-Seiten sind es seit 1.1.0. Die Spiele selbst haben aber nur `.Lang("de", …)`. Im spanischen Fenster bleiben daher Labels, Hilfen, Seiten- und Abschnittsnamen englisch, soweit sie nicht in den Konventionen stehen.
+   - Umfang je Spiel als `K` / `Pg` / `Tx`:
+     - Battleship 166 / 3 / 26
+     - Blackjack 220 / 3 / 30
+     - Classic Chat Gamble 48 / 0 / 16
+     - Hangman 155 / 2 / 61
+     - High-Low 30 / 0 / 14
+     - RhymeTime 56 / 0 / 23
+     - Slot Machine 62 / 1 / 14
+     - Trivia 207 / 3 / 68
+   - Vorgehen: je Spiel ein `.Lang("es", …)` mit denselben Einträgen wie `de`, aus der deutschen Liste per Skript als Gerüst erzeugt und dann übersetzt. Je Spiel ein Patch-Release.
+2. **Ergebnisfarben der Log-Seite deklarierbar machen.**
+   - `WindowSpec.ResultStyle` und `Outcome` sind C#-Delegaten. Aus dem Schema eines Spiels sind sie nicht erreichbar.
+   - `LogPage.DefaultStyle` rät deshalb nach Stichwörtern. Ein Hangman-`MISS-LTTR` oder `GAME-OVER` erscheint in der Akzentfarbe statt gedämpft.
+   - Vorschlag: `.Log(…, styles: new[] { "GAME-OVER|muted", "WIN-*|success" }, outcome: new[] { "DUEL WIN|WIN" })`, im Schema `log.styles` und `log.outcome`.
+3. **Engine-Tests für Hangman.** `tools\run-engine-tests.ps1` überspringt sich, weil `Hangman-Game.cs` keine `ENGINE START`-/`ENGINE END`-Marker hat. Die Rundenlogik ist nur über Kompilieren und den Fenstertest abgedeckt.
+4. **Befunde des Audits vom 08.11.** Was nach der Prüfung offen bleibt, steht unter [Audit](#audit-vom-08112026).
+
+## Phase 8: Nicht-Spiel-Projekte
+
+Stand 08.11.2026, gegen den Code geprüft. Korrekturen zur Bewertung vom 07.11.:
+- BsA hat 13 Seiten und 152 Properties (148 Settings und 4 Fensterschalter), nicht 14 und 158.
+- SuTo schickt die Chat-Bestätigung nicht aus dem Code, sondern aus Send-Message-Sub-Actions in einem Switch hinter dem Code.
+- GameCheck hat 49 Settings (26 `free`, 23 `sales`).
+- ChatCalendar hat keine Set Arguments, liest aber wie GameCheck nach der Regel "ein gleichnamiges Argument gewinnt".
+
+`Discord.Bot` ruht weiter: 3 409 Zeilen GUI, überschneidet sich mit BsA, nach BsA neu bewerten. `TwitchSentry` bleibt außen vor.
+
+### 8.0 Regeln für alle sechs
+
+- **Ein Import überschreibt Set Arguments.** Streamer.bot ersetzt beim Import die Action samt Sub-Actions (AutoBotCheck, Setup-Guide: "The import resets the group names"). Was heute in Set Arguments steht, geht bei jedem Update verloren. Die Umstellung holt diese Werte einmal zurück (F2) und legt sie danach in die Settings-Datei, die kein Import anfasst.
+- **Ein Set Argument gewinnt weiter** (F1). GameCheck und ChatCalendar dokumentieren das so. Wer nur den Code einfügt, behält seine Werte, und Werte je Action bleiben möglich (dryRun nur für ISDS). Damit entfällt die Lücke "Werte je Action". Wo Actions wirklich verschiedene Werte brauchen, bekommen die Keys einen Präfix.
+- **Projekte mit mehreren Actions:** Genau eine Action trägt `UiHost.Handle`. Das ist eine eigene `… Settings Host`-Action, wenn die Arbeits-Actions dauerhaft laufen (BsA-Presence) oder einzeln gelöscht werden dürfen (SuTo). Die übrigen Actions lesen die flache Datei selbst (F4).
+- **Keine Key-Umbenennung in Projekten mit mehreren Lesern** (ChatCalendar, BsA). Der Store schreibt beim Speichern den kanonischen Key zurück, die übrigen Actions fänden den alten nicht mehr. Deshalb kommt `sendAsMe` auch nicht als Alias in `conventions/keys.json`.
+- **Langläufer** (Webpost, Download, Prüflauf) laufen nie im `test`-Zweig, wegen des 5-s-Budgets. Der Zweig startet `CPH.RunAction(x, false)` und antwortet "gestartet"; ein `auto`-Panel mit `every` (F8) zeigt danach das Ergebnis.
+- **`UiHost.Handle` steht vor jedem Lock, Lauf-Check und Timer der Action** (`RunGate` in GameCheck, `running` in AutoBotCheck).
+- Die bestehende Settings-Action behält Id und Trigger und bekommt `stub/Stub.cs` als Code.
+- Jedes Projekt bekommt eine Tour, `tools\StubHarness.cs` und `tools\run-window-tests.ps1` nach dem Muster von Hangman, und `hosts/<id>/schema.json` im Framework-Repo.
+- Vor jedem Versionssprung des Frameworks `git fetch` und rebase, weil parallele Sessions ebenfalls releasen.
+
+### 8.1 OBS Notes (Ordner `OBS Notepad`, v1.0.2 → v2.0.0) – S, 2 Tage
+
+**Heute:**
+- Eine Action `OBS Notes` (`OBS-Notes.cs`, 1 128 Zeilen). Sie hat vier Befehle über Command-Ids und einen Test-Trigger, dessen Trigger-Variable `AddOBSOverlayTo` die OBS-Verbindung nennt und die Browserquelle anlegt.
+- Keine GUI, keine Settings-Datei. 7 Set Arguments in der Gruppe "Settings (Important to check!)": `useBot`, `sendAsMe`, `language` (DE/EN), `hideAfterMinutes` (0–1440, mit Dezimalstellen), `colorfulNotes`, `showGameName`, `layout` (vertical/horizontal).
+- Gelesen werden sie aus `args` über `ArgBool`, `ArgNumber`, `ReadEnglish` und `ReadHorizontal`; die nehmen auch ja/nein und h…/v….
+- Daten: `OBS Notes\<Kategorie>-Notes.json` plus `.bak` als Zeilenprotokoll, dazu `notes_state.json` fürs Overlay.
+
+**Abbildung:**
+- `SettingsFile = "OBS Notes/OBSNotes-Settings.json"`, Host `obsnotes`.
+- Tabelle: `useBot` (Konvention), `sendAction` (Konvention, `aliases: sendAsMe`), `language` (`DE|Deutsch`, `EN|English`).
+- Seite `overlay`: `layout`, `colorfulNotes`, `showGameName`, `hideAfterMinutes`, `obsConnectionId` (Konvention), `addToObs` (`action` mit `panel`).
+- `hideAfterMinutes` wird `double` mit unit `min`; der Key bleibt. `duration` passt nicht, weil es Sekunden speichert.
+- Fenster: `overlay`, `help` (alle Befehle mit ihren Aliasen), `about`. Kein Log, das Projekt schreibt keins.
+- Optional: die Notizen der laufenden Kategorie als `table` über `table:`.
+
+**Handle:** `test: (n, s) => n == "addToObs" ? AddObsOverlay(s) : null`, vor dem `EventType.Test`-Zweig.
+
+**Lücken:** F1, F2.
+
+**Schritte:**
+- Host-Block einsetzen. Werte kommen aus `UiSettings.Load(SettingsFile).With(args)`; die toleranten Parser bleiben für Set-Argument-Text.
+- Der Test-Trigger mit `AddOBSOverlayTo` bleibt; ohne ihn gilt `obsConnectionId`.
+- `.Adopt(Old("<Id von OBS Notes>"))`.
+- `.sb`: die Settings-Gruppe raus, Action `OBS Notes Settings` (Stub, `GameActionName = "OBS Notes"`) dazu, `build-import.ps1` anpassen.
+- Tests: `Harness.cs` liest aus der Datei, prüft "Set Argument gewinnt" und Adopt aus einem Test-Zip; dazu `run-window-tests.ps1`.
+- Doku: Setup-Guide (Settings-Abschnitt neu, Abschnitt Upgrade), FAQ, ein README-Bild.
+- Release v2.0.0.
+
+### 8.2 Suggestions To (v1 → v2.0.0) – S–M, 3 Tage
+
+**Heute:**
+- Drei Actions `[SuTo] ... Discord|Stoat|GameVox` (`extracted\SuTo-*.cs`: 397, 352 und 364 Zeilen), je ein Befehl auf `!suggestion`/`!vorschlag`. Nach dem Import sind sie aus; sind mehrere an, geht der Post an jeden Server.
+- Alles wird per `CPH.TryGetArg` gelesen:
+  - Discord, 12: `discordWebhookUrl`, `suggestionTemplate`, `showFooter`, `showPlatformTag`, `showTimestamp`, `randomColour`, `colourTwitch|YouTube|Kick`, und für Forum/Thread `discordForumWebhookUrl`, `discordThreadName`, `discordThreadId`. Diese drei sind ab Werk deaktivierte Sub-Actions; "an" heißt aktivieren.
+  - Stoat, 8: `stoatSuggestionWebhook`, `timestampFormat` u. a., dazu 4 nur dokumentierte: `suggestionFooterTemplate`, `iconTwitch|YouTube|Kick`.
+  - GameVox, 10.
+- Webhooks sind Secrets; mehrere werden per Komma getrennt.
+- Platzhalter sind `%suggestion%`, `%user%`, `%platform%`, im Thread-Namen `%targetUser%` und `%userName%`.
+- Die Bestätigung im Chat kommt aus dem Switch auf `%suggestionPlatform%` mit drei Send-Message-Sub-Actions (Twitch, YouTube, Kick).
+
+**Abbildung:**
+- Eine flache Datei `Suggestions To/SuTo-Settings.json` mit einem Präfix je Ziel, 38 Keys.
+- Seiten:
+  - `discord`: 12 Felder, die drei Forum-Felder in einer Sektion "optional, leer = aus", die Thread-Id schlägt den Namen wie bisher.
+  - `stoat`: 12 Felder, `stoatWebhookUrl` mit `aliases: stoatSuggestionWebhook`.
+  - `gamevox`: 10 Felder.
+  - `messages`: `msgConfirmTwitch|YouTube|Kick` und `useBot`.
+  - `help`, `about`.
+- Webhooks `masked`, die Farben eines Ziels in einer `row`.
+
+**Handle:** in einer neuen Action `[SuTo] Settings Host`, die nur den Host-Block trägt.
+- `test`: "Testvorschlag senden" je Ziel über `RunAction(ziel, false)`.
+- `validate`: Form der URL; die Thread-Id nur aus Ziffern.
+
+**Lücken:** F1, F2 (einschließlich der Send-Message-Texte), F3, F4.
+
+**Schritte:**
+- Die Bestätigung kommt in den Code, nach erfolgreichem Post, mit einer Plattformweiche wie `Say` in OBS Notes. Dann überlebt sie Importe und steht im Fenster. Der Switch entfällt.
+- Die drei Skripte lesen über `HostReader` mit `With(args)`.
+- `.sb` nach der Clone-Regel aus CLAUDE.md bauen, `$SuToScripts` in `sb-export.ps1` ergänzen.
+- Tests: `Harness.cs` (lokaler Webhook-Server) auf Datei und Args umstellen; `run-window-tests.ps1`; `sb-shots.ps1` liefert Fensterbilder.
+- Doku: Setup-Guide (die Argumenttabellen werden Seiten), Manual.md in `aaskjer/SuTo`.
+- Release v2.0.0.
+
+### 8.3 GameCheck (Ordner `FreeGameCheck`, v1.0.1 → v2.0.0) – M, 5 Tage
+
+**Heute:**
+- Zwei Actions `Free Game Check` und `Game Sale Check`, gebaut aus `src\core` und `src\free|sales` durch `tools\build.ps1`. Regeln dort: kein System.Core, C# 7, keine String-Interpolation.
+- Die Settings-Action `[CG] - Settings` hat eine eigene GUI (`src\gui\gamecheck-settings.cs`, 3 739 Zeilen) mit den Seiten Discord, Free games, Sales, Schedule, Status, About und einer Suche.
+- 49 Settings in `GameCheck\GameCheck-Settings.json`, verschachtelt: `{"version":1,"free":{…},"sales":{…}}`, Keys = Argumentnamen.
+- Die Secrets `botToken`, `webhookUrl`, `itadKey` liegen je Action in persistenten Globals `FreeGameCheck_*`/`GameSaleCheck_*`, nie in der Datei.
+- Vorrang: nicht-leeres Set Argument > Datei > Default (`ArgText`, `SecretArg`, `GetColorArg`).
+- Jeder Lauf schreibt `GameCheck_free|sales` (actionId, updated, gesetzte Argumente); die GUI sperrt diese Felder.
+- Die Status-Seite liest `checkFreeGames`/`checkGameSales` (Message-Ids, lastSent). "Check now" ruft `RunActionById(id, false)` auf, nachdem es gefragt hat, ob gespeichert werden soll.
+- Der Fensterzustand liegt in `GameCheck-Window.json`.
+
+**Abbildung:**
+- Der Host-Block kommt nach `src\core`, beide Actions tragen ihn. `GameActionName = "Free Game Check"`, Host `gamecheck`.
+- Keys werden flach mit Präfix (`freeBotToken` … `salesEmbedColorDeals`), je mit `aliases: "free.botToken"`. Gepunktete Aliase gibt es schon. Der Leser in `Run.cs` liest flach und bis zum ersten Speichern verschachtelt.
+- Seiten:
+  - `discord`: Secrets `masked` und `global:` (F5). "Both actions use the same bot and channel" wird `salesDiscord` mit `same|own` und `shows`. Die Sales-Action setzt den Key bei ihrem ersten Lauf auf `same`, wenn alle drei Werte gleich sind.
+  - `free`, `sales`.
+  - `schedule`: `*CheckIntervalMinutes` als `int` mit unit `min` (5–1440), `*DeleteOldOnResend` mit `requires: …ResendIntervalDays>0`.
+  - `status`: je Action ein `auto`-Panel mit `every: 10` (Pille, Action-Id mit `copy`, Discord-Modus, Message-Ids mit Zeit) und `checkNow` mit `saveFirst`.
+  - `about`.
+- `*ExcludePlatforms` über F6. `*Country` als feste `options`.
+- Farben werden ohne `#` gespeichert. Im Fenstertest prüfen, ob das Feld das liest; sonst ist ein Fix im Framework fällig.
+
+**Handle:**
+- `test`: die Panels aus den Globals, `checkNow`.
+- `validate`: Bot ohne Kanal-Id; weder Bot noch Webhook gesetzt.
+
+**Lücken:** F1 (ersetzt `GameCheck_*.arguments` für die Sperre), F5, F6, F7, F8, F9.
+
+**Schritte:**
+- Secrets bleiben in ihren Globals, es werden keine Daten verschoben.
+- `build.ps1` laufen lassen; `check-compile.ps1` kompiliert den Host-Block gegen die Referenzliste in `src\import\GameCheck.json`.
+- `[CG] - Settings` bekommt den Stub.
+- Weg: `src\gui`, `tools\gui\GuiHarness.cs`, `gui-build.ps1`, `check-gui.ps1`, `run-gui-tests.ps1`, `gui-shots.ps1`, `GameCheck-Window.json`.
+- `FreeGameHarness.cs` und `GameSaleHarness.cs` prüfen: flach, verschachtelt, Set Argument gewinnt, Secret aus der Globale.
+- `run-window-tests.ps1` nur mit erfundenen Ids.
+- 14 Screenshots neu, README und Setup-Guide anpassen.
+- Release v2.0.0.
+
+### 8.4 ChatCalendar (v1.0.1 → v2.0.0) – M–L, 6 Tage
+
+**Heute:**
+- Sechs Actions (`[CC] - Calendar Setup`, `[CC] - .Settings`, `Upcoming Holidays`, `Check today's holiday & firstMessage`, `Announce Holidays`, `Birthday Command`), zusammen 8 705 Zeilen. Gemeinsame Blöcke stehen als Kopien in mehreren Dateien (REFACTOR-PLAN.md).
+- GUI `ChatCalendar-Settings.cs` (3 230 Zeilen) mit 9 Seiten; Holidays hat zwei Tabs (Official/Own).
+- Keine Set Arguments. `Chat Calendar\configs.json` ist flach und hat 29 Keys, darunter `darkMode` und drei Webhooks im Klartext. Ein gleichnamiges Argument gewinnt.
+- `holidays.json`: `officialHolidays` von date.nager.at mit editierbarer `CustomHolidayMessage`, gefiltert nach `Counties` und Region; dazu `customHolidays`.
+- `birthdays.json`: Einträge mit name, platform, userId, date. Der Befehl im Chat schreibt dazu.
+- Log: `Logs\ChatCalendar-yyyy-MM-dd.txt`, Zeilen `HH:mm:ss|kind|platform|user|text`.
+
+**Abbildung:**
+- Host ist `[CC] - Calendar Setup`, weil dort CalFile und der Download sitzen. Host-Id `chatcalendar`.
+- Die Keys bleiben, damit die fünf Leser unverändert laufen. `.Senders(sendAction: "sendAsMe")`. `darkMode` wandert von selbst ins Layout.
+- Seiten:
+  - `chat`.
+  - `announcements`: `announceTime` (F12), Webhooks `masked`, `testAnnounce` über `RunActionById(Announce, false)` mit einem Panel und `every`.
+  - `calendar`: `countryCode` mit 204 festen Optionen, `region` und `timeZone` über F10, Status-Panel, `download` mit `saveFirst`.
+  - `holidays`: `officialHolidays` als `list` mit `file: holidays.json` und `field: officialHolidays`. Datum, Name und Counties sind `readonly`, Greeting editierbar; dazu `fixedRows`, `rowKey: "Date,Name"` und `filter` (F11).
+  - `ownHolidays`: `customHolidays`.
+  - `birthdays`: `list` mit `rowKey: "name,platform"`.
+  - `messages` (`{userName}`, `{holidayName}`, `{pronounType}`, `{age}`), `log`, `help`, `about`.
+- Die beiden Tabs werden zwei Seiten.
+
+**Handle:**
+- `options`: Regionen und Zeitzonen.
+- `test`: Status, Download, Testankündigung.
+- `saved`: Ist das Land oder die Region geändert, startet `RunActionById(Setup, false)` den Download.
+
+**Lücken:** F8, F10, F11, F12.
+
+**Schritte:**
+- `CalLog` (5 Kopien) schreibt das Framework-Format `[yyyy-MM-dd HH:mm:ss] KIND | Platform: … | User: … | Text: …`; alte Logdateien laufen aus. Am besten nach `sync-shared.ps1` aus REFACTOR-PLAN.md, dann ist es eine Stelle.
+- `[CC] - .Settings` (Id `c4d0a1f6-…`) bekommt den Stub.
+- Weg: `check-settings.ps1`, `test-settings-window.ps1`, `tests\SettingsThreads.cs`, `gui-shots.ps1`, `gui-stage.ps1`.
+- `Harness.cs` prüft die Leser gegen eine Datei, die das Fenster geschrieben hat.
+- `run-window-tests.ps1`: Setup und der Geburtstagsbefehl schreiben, während das Fenster offen ist (prüft `rowKey`).
+- Doku, 11 Screenshots neu.
+- Release v2.0.0.
+
+### 8.5 AutoBotCheck (v1.1.0 → v2.0.0) – S, 2 Tage
+
+**Heute:**
+- Drei Actions `TwitchInsight`, `TwitchBots.Info`, `ISDS.BanLists` in der Queue `Backend - Bot`, alle mit demselben Code (`src\AutoBotCheck.cs`, 1 068 Zeilen; `src\build_sb.py` baut die `.sb`).
+- Set Arguments je Action: `botGroupName`, `whitelistGroupName`, `botSource` (wählt die Liste), `dryRun`; ISDS hat zusätzlich `isdsLists`. Gelesen werden sie mit `GetArg(name, fallback)`.
+- Ein Test-Trigger mit `command=killprocess` stoppt den Lauf. Cache `AutoBotCheck\NonExistentBot.txt`.
+- Ergebnisse stehen nur im Streamer.bot-Log. Es gibt keinen Harness.
+
+**Abbildung:**
+- `AutoBotCheck/AutoBotCheck-Settings.json`. Der Host-Block sitzt im gemeinsamen Code, `GameActionName = "TwitchInsight"`.
+- Tabelle:
+  - `botGroupName` und `whitelistGroupName` über F10 (`optionsFrom: "groups"`).
+  - `isdsLists` über F6.
+  - `dryRun`.
+  - `runInsights|runBotsInfo|runIsds` (`confirm`, `RunAction(x, false)`).
+  - `stopRun` (setzt `stopRequested`).
+  - Ein Status-Panel mit `every: 5`.
+- `botSource` bleibt ein Set Argument und kommt nicht in die Tabelle. Ein `dryRun` je Action ist weiter per Set Argument möglich (F1).
+- Die Log-Seite liest eine eigene Datei im Framework-Format (eine Zeile je Lauf und je Bann).
+
+**Handle:** `test` (Läufe, Stopp, Status).
+
+**Lücken:** F1, F2, F6, F8, F10.
+
+**Schritte:**
+- `build_sb.py`: alle Set Arguments außer `botSource` raus, Settings-Action dazu.
+- Adopt aus allen drei Ids.
+- Ein neuer kleiner Harness und `run-window-tests.ps1`.
+- Setup-Guide: "Arguments" und "Upgrading" neu.
+- Release v2.0.0.
+
+### 8.6 BetterStreamAnnouncements (v2.1.1 → v3.0.0) – L, 9 Tage
+
+**Heute:**
+- 14 Actions: 13 Arbeits-Actions (`bsa-*.cs`, zusammen 28 064 Zeilen; darunter die Gateway-Action Presence, die dauerhaft läuft) und die GUI `bsa-settings.cs` (5 398 Zeilen).
+- `Announcements\Discord\settings.json` ist flach, die Klasse `BsASettings` hat 152 Properties:
+  - Präfixe `SF_` 74, `BA_` 33, `SE_` 15, `BOT_` 13, `PS_` 8, `CC_` 5.
+  - Dazu `DarkMode`, `Egg`, `ShowDebugSections`, `HomeShowStartHere`.
+- Jede Action liest per `JsonConvert.DeserializeObject<BsASettings>`.
+- 19 Zugangsdaten stehen im Klartext.
+- `/bsa setup`, `/streamerfriends` und `/crosspost` schreiben die Datei auch, während das Fenster offen ist.
+- `SF_*DiscordMap` ist Text der Form `login:id,…`.
+- Der Crosspost-Schlüssel liegt per DPAPI in `BsA_Crosspost.key`; das Fenster zeigt den Sicherungscode und stellt den Schlüssel wieder her.
+- Fenster:
+  - 13 Seiten in vier einklappbaren Rail-Gruppen, mit doppelten Titeln (Online, Offline, Platforms).
+  - Ein Home-Dashboard.
+  - "Status Log" ist das Streamer.bot-Log `logs\log_yyyyMMdd.log`, gefiltert.
+  - Eine Suche.
+
+**Abbildung:**
+- Die Keys bleiben (PascalCase ist ein freier Key, die Leser bleiben unverändert). Labels und Hilfen kommen aus der alten GUI. Host `bsa`.
+- Neue Action `[BsA] - Settings Host`, weil die Presence-Action belegt ist.
+- `DarkMode` und `Egg` übernimmt das Framework. `ShowDebugSections` wird ein `bool` mit `showWhen` auf die Debug-Sektionen, `HomeShowStartHere` wird `hidden`.
+- Freunde und `*RoleIds` werden `namelist`, `*DiscordMap` F15 (vorerst `text`).
+- Home wird `auto`-Panels mit `every`, gespeist aus `BsA_*_Sessions` und den Tageszahlen.
+- Der Crosspost-Schlüssel läuft über Aktionen mit `panel` und `clipboard`; Wiederherstellen über ein `transient`-Feld und eine `live`-Aktion.
+- Rail-Gruppen F13, Status Log F14, Suche F7.
+
+**Handle:**
+- `test`: Panels, Testposts per `RunAction(x, false)`, Schlüssel.
+- `validate`.
+- `saved`: Presence neu laden; heute geschieht das per `CPH.ExecuteMethod` auf die Gateway-Action.
+
+**Lücken:** F4, F7, F8, F13, F14, F15.
+
+**Schritte:**
+- Die 148 Tabellenzeilen per Skript aus `BsASettings` und den GUI-Texten erzeugen (wie `spec-to-window.ps1`).
+- Die Settings-Action bekommt den Stub.
+- Weg: die GUI, `check-settings.ps1`, `GuiShots.cs`, `gui-shots.ps1`.
+- `check-compile.ps1` und `check-actions.ps1` um die Host-Action erweitern.
+- `run-window-tests.ps1` mit einem Schreibvorgang per Slash-Befehl bei offenem Fenster.
+- Setup-Guide, FAQ und Bilder.
+- Release v3.0.0.
+
+### 8.7 Framework-Features
+
+**1.2.0 (4½ Tage)**
+- **F1 Set-Argument-Brücke.**
+  - Im Host-Block `UiSettings.With(args)`: Ein nicht-leeres Argument, dessen Name ein Key oder Alias der Tabelle ist, gewinnt und wird nach Kind gewandelt. Im HostReader geht das mit einer Key-Liste.
+  - `UiHost.Handle(…, arguments: true)` liefert im Describe `arguments: ["dryRun", …]` mit. Das Fenster zeigt diese Felder gesperrt mit der Pille "Set Argument" und einem Hinweis, wo es steht.
+  - Der Stub gibt `uiframework.callerArgs` mit; seine eigenen Trigger-Args zählen nicht.
+  - Allgemein: `locked: s => "key|Grund"`.
+  - Projekte: OBS, SuTo, GameCheck, ChatCalendar, AutoBotCheck.
+- **F2 Übernahme aus der alten Version.**
+  - `.Adopt(Old(actionId, "alt>neu", "#subActionId>key"), …)`, im Schema `window.adopt`.
+  - Nur ohne Settings-Datei: Die DLL sucht die Id in `<SB>\data\actions.json`, sonst im neuesten `backup\backup-*.zip` (in jedem liegt `actions.json`).
+  - Sie nimmt aktive Set-Argument-Sub-Actions (type 123, auch in Gruppen; `enabled:false` zählt nicht), mit `#id` auch den `text` von Send-Message-Sub-Actions (types 10, 4001, 35001).
+  - Die Werte kommen wie `set` als ungespeicherte Änderungen ins Fenster, mit dem Hinweis "N Werte aus der Sicherung vom … übernommen". Werte gehen nie ins Log.
+  - Projekte: OBS, SuTo, AutoBotCheck.
+- **F3 Platzhalter `%x%`.**
+  - `UiWindow(…, placeholderStyle: "percent")`, auch je Setting.
+  - Chips und Vorschau arbeiten mit `%name%`.
+  - Projekt: SuTo.
+- **F4 Projekte mit mehreren Actions.**
+  - `stub/HostReader.cs`: nur `UiSettings` (Load mit `.bak`-Rückfall, `With(args, keys)`), ohne Tabelle. `update-host-block.ps1` und `check-stub.ps1` kennen die Datei.
+  - Ein neues Kapitel in Getting-Started: "A project with several actions" (Host-Action, Leser, keine Umbenennung, Langläufer).
+  - Projekte: SuTo, ChatCalendar, BsA.
+
+**1.3.0 (4½ Tage)**
+- **F5 Secrets in Globals.**
+  - `S("freeBotToken", "", masked: true, global: "FreeGameCheck_botToken")`.
+  - Der Stub liest die persistente Globale vor dem Öffnen und schreibt sie nach dem Speichern über die Job-Queue. Nie in Datei, Export oder Log; "Reset" lässt sie stehen.
+  - Ohne passenden Stub zeigt die DLL das Feld gesperrt und schreibt es nicht in die Datei.
+  - Projekt: GameCheck.
+- **F6 Kind `multi`.**
+  - Häkchen über `options`, gespeichert als Komma-Text wie `namelist`.
+  - Eine ältere DLL zeigt ein Textfeld und das rote i; der Wert bleibt.
+  - Projekte: GameCheck (`*ExcludePlatforms`), AutoBotCheck (`isdsLists`).
+- **F7 Suche.**
+  - Ein Feld oben in der Rail (Strg+F). Es filtert Seiten und Felder nach Label, Hilfe und Key und hebt Treffer hervor.
+  - `UiWindow.Search(false)` schaltet es ab.
+  - Projekte: GameCheck, BsA. Beide GUIs haben die Suche heute; ohne F7 fiele sie weg.
+- **F8 Status-Panels.**
+  - `auto` mit `every: 10` (nur solange die Seite sichtbar ist).
+  - Antwortzeilen `{ "label", "text", "copy": true }` und `{ "pill", "tone": "ok|warn|muted" }`.
+  - `action` mit `saveFirst: true`.
+  - Projekte: GameCheck, ChatCalendar, AutoBotCheck, BsA.
+- **F9 Mindestversion.**
+  - `UiWindow(…, requires: "1.3.0")`. Ein Stub ab 1.3 vergleicht mit der geladenen DLL und bietet das Update an, statt das Fenster zu öffnen.
+  - Schützt F5 vor einer DLL ≤ 1.2.
+
+**1.4.0 (3½ Tage)**
+- **F10 Optionen vom Spiel.**
+  - `S("region", "", kind: "options", optionsFrom: "countryCode")`, ein neuer Request `options` und der Delegat `options: (key, s) => new[] { "DE-BY|Bayern" }`.
+  - Gefragt wird beim Öffnen und wenn sich ein genanntes Feld ändert. `optionsFrom: "groups"` liefert die Streamer.bot-Gruppen.
+  - Ein gespeicherter Wert ohne passende Option bleibt als Extra-Eintrag stehen.
+  - Projekte: ChatCalendar, AutoBotCheck.
+- **F11 Listen, die das Spiel füllt.**
+  - `rowKey`: Speichern mischt mit dem Stand der Datei. Zeilen des Spiels bleiben, Änderungen des Nutzers gewinnen.
+  - `fixedRows`: kein Hinzufügen und Löschen.
+  - `filter: "region= || Global=true || Counties~{region}"`: `~` heißt "enthält", `{key}` ist ein Feldwert; gefilterte Zeilen werden ausgeblendet, nicht gelöscht.
+  - Arrays in `readonly`-Spalten werden kommagetrennt gezeigt.
+  - Projekt: ChatCalendar.
+- **F12 Kind `time`.**
+  - `HH:mm` als Text.
+  - Projekt: ChatCalendar.
+
+**1.5.0 (3½ Tage)**
+- **F13 Rail-Gruppen.**
+  - `.Group("broadcaster", "Broadcaster", "baOnline", "baOffline", …)`. Nicht über `P(…)`, weil `fields` dort `params` ist.
+  - Die Überschriften sind einklappbar; der Anpassen-Modus verschiebt Seiten zwischen Gruppen (`pages.<id>.group`).
+  - Eine ältere DLL zeigt die Seiten flach.
+  - Projekt: BsA.
+- **F14 Streamer.bot-Log.**
+  - `.StreamerBotLog(match: new[] { "[BsA/", "'[BsA] - ", "'[SF] - " })`.
+  - Liest `<SB>\logs\log_yyyyMMdd.log` (Zeilen `[… LVL] Quelle :: Text`), filtert nach Stufe und Quelle, der Tag ist wählbar.
+  - Projekt: BsA.
+- **F15 Paarliste als Text.**
+  - `list` mit `format: "pairs"`: speichert `a:b,c:d`, liest `,`/`;` und `:`/`=`.
+  - Projekt: BsA (`SF_*DiscordMap` ×7).
+
+**Breaking:** keins für die acht Spiele.
+- Alle Felder sind optional.
+- Die neuen Parameter von `Handle` sind benannt; den neuen Host-Block per `update-host-block.ps1` brauchen nur Projekte, die sie nutzen.
+- Neue Stub-Methoden laufen über `ReflectionHost`; fehlt eine, ist das Feature aus.
+
+Zu beachten:
+- F5 mit einer alten DLL ist ein Sicherheitsrisiko; F9 fängt das ab, GameCheck setzt `requires`.
+- `sendAsMe` kommt nicht in die Konventionen (siehe 8.0).
+
+### 8.8 Reihenfolge und Meilensteine
+
+| Meilenstein | Release                          | Aufwand |
+|-------------|----------------------------------|---------|
+| M1          | UIFramework 1.2.0 (F1–F4)        | 4½ T    |
+|             | OBS Notes v2.0.0                 | 2 T     |
+|             | Suggestions To v2.0.0            | 3 T     |
+| M2          | UIFramework 1.3.0 (F5–F9)        | 4½ T    |
+|             | GameCheck v2.0.0                 | 5 T     |
+| M3          | UIFramework 1.4.0 (F10–F12)      | 3½ T    |
+|             | ChatCalendar v2.0.0              | 6 T     |
+|             | AutoBotCheck v2.0.0              | 2 T     |
+| M4          | UIFramework 1.5.0 (F13–F15)      | 3½ T    |
+|             | BetterStreamAnnouncements v3.0.0 | 9 T     |
+
+Summe: etwa 16 Tage Framework und 27 Tage Projekte, rund achteinhalb Wochen.
+
+Abweichung von der Reihenfolge vom 07.11.: AutoBotCheck kommt vor BsA. Es braucht nur F1, F2, F6, F8 und F10, und ab dann setzt ein Import die Gruppennamen nicht mehr zurück. BsA kommt zuletzt, weil F13 und F14 nur BsA dienen.
+
+Fertig je Projekt, wenn:
+- die alte GUI bzw. die Set-Argument-Gruppe weg ist,
+- ein Import über die alte Version im Fenstertest ohne Werteverlust bleibt (F2 aus einem Test-Zip),
+- `hosts/<id>/schema.json` im Framework-Repo liegt,
+- die Doku Bilder hat.
+
+## Audit vom 08.11.2026
+
+Läuft; die geprüften Befunde, die nicht sofort behoben werden, kommen hierher.
