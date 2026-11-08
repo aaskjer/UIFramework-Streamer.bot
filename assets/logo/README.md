@@ -1,6 +1,6 @@
 # UIFramework logo
 
-**U + i = you + I = your interface.** A pixel U and i on a 16 × 16 grid (32 px per cell), broken four ways at
+**U + i = User interface.** A pixel U and i on a 16 × 16 grid (32 px per cell), broken four ways at
 once: blocks with gaps on top (teleport), strips torn sideways in the middle (slice), checker dither below
 (dither), pixels dripping off the bottom and leaking up from the top (melt). The dot of the i is amber and
 beams away block by block: that dot is the "I".
