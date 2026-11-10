@@ -8,6 +8,9 @@ namespace UIFramework
     {
         public static readonly FontFamily Font = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets");
 
+        /// <summary>The magnifier of the search button.</summary>
+        public const string Search = "";
+
         /// <summary>The question mark of the tour button.</summary>
         public const string Help = "";
 

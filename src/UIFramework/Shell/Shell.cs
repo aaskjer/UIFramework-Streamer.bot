@@ -467,8 +467,16 @@ namespace UIFramework
                 DockPanel.SetDock(btnTour, Dock.Right);
                 header.Children.Add(btnTour);
             }
-            // The red "i" beside it, while something went wrong: the schema's problems and the window's failures.
+            // The magnifier beside it, and Ctrl+F: the search for a setting, a message or a page.
             var layers = new Grid();
+            var btnSearch = Ui.IconButton(Icons.Search, Icons.Font, Text.T("tip.search"));
+            btnSearch.Name = "SearchButton";
+            btnSearch.Margin = new Thickness(8, -4, 0, -4);
+            SearchBar search = null;
+            btnSearch.Click += (s, e) => search?.Open();
+            DockPanel.SetDock(btnSearch, Dock.Right);
+            header.Children.Add(btnSearch);
+            // The red "i" beside it, while something went wrong: the schema's problems and the window's failures.
             var btnProblems = ProblemsView.Button();
             btnProblems.Margin = new Thickness(8, -4, 0, -4);
             openProblems = () => ProblemsView.Open(window, layers, btnProblems, _problems);
@@ -791,7 +799,7 @@ namespace UIFramework
                 Rebuild(null);
             };
 
-            // Ctrl+S saves, Ctrl+1 to Ctrl+9 jump to the first nine pages in the rail's order.
+            // Ctrl+S saves, Ctrl+F searches, Ctrl+1 to Ctrl+9 jump to the first nine pages in the rail's order.
             if (keyHandler != null)
                 window.PreviewKeyDown -= keyHandler;
             keyHandler = (s, e) =>
@@ -801,6 +809,11 @@ namespace UIFramework
                 if (e.Key == Key.S)
                 {
                     if (!customizing) SaveNow();   // the customise mode has no Save; its changes are written as made
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.F)
+                {
+                    search?.Open();
                     e.Handled = true;
                 }
                 else if (e.Key >= Key.D1 && e.Key <= Key.D9 && e.Key - Key.D1 < pages.Count)
@@ -898,8 +911,56 @@ namespace UIFramework
             var tourParts = new Dictionary<string, FrameworkElement>(StringComparer.Ordinal)
             {
                 ["rail"] = railBorder, ["save"] = btnSave, ["saveExit"] = btnSaveExit, ["cancel"] = btnCancel, ["status"] = status,
-                ["reset"] = btnReset, ["resetPage"] = btnResetPage, ["theme"] = btnTheme, ["tour"] = btnTour
+                ["reset"] = btnReset, ["resetPage"] = btnResetPage, ["theme"] = btnTheme, ["tour"] = btnTour, ["search"] = btnSearch
             };
+
+            // ---- The search: every page, every setting a page shows and every message, as this build has them. ----
+            List<SearchEntry> SearchEntries()
+            {
+                var entries = new List<SearchEntry>();
+                for (int i = 0; i < pages.Count; i++)
+                {
+                    int index = i;
+                    entries.Add(new SearchEntry { Kind = SearchEntry.Page, Key = pages[i].Spec.Id, Title = pages[i].Spec.Title, Go = () => ShowPage(index) });
+                }
+                foreach (var setting in _spec.ResolvedSettings)
+                {
+                    // A note is text to read, not something to set; a field the window does not show cannot be gone to.
+                    if (setting.Hidden || setting.Kind == "note" || !parts.Elements.TryGetValue(setting.Key, out var field)) continue;
+                    if (field.Visibility != Visibility.Visible) continue;
+                    int index = pages.FindIndex(p => Inside(field, p.Page));
+                    if (index < 0) continue;
+                    var shown = field;
+                    entries.Add(new SearchEntry
+                    {
+                        Key = setting.Key,
+                        Title = string.IsNullOrWhiteSpace(setting.Label) ? Conventions.Humanize(setting.Key) : setting.Label,
+                        Where = string.IsNullOrWhiteSpace(setting.Section) ? pages[index].Spec.Title : pages[index].Spec.Title + " › " + setting.Section,
+                        Help = setting.Help,
+                        Go = () => { ShowPage(index); SearchBar.Reveal(window, layers, shown); }
+                    });
+                }
+                int messagesPage = pages.FindIndex(p => p.Spec.Id == "messages");
+                ComboBox picker = messagesPage < 0 ? null : Named<ComboBox>(pages[messagesPage].Page, "MessagePicker");
+                if (picker != null)
+                    foreach (var message in _spec.Messages)
+                    {
+                        var item = picker.Items.OfType<ComboBoxItem>().FirstOrDefault(c => c.Tag as string == message.Key);
+                        if (item == null) continue;
+                        entries.Add(new SearchEntry
+                        {
+                            Kind = SearchEntry.Message,
+                            Key = message.Key,
+                            Title = message.Label,
+                            Where = string.IsNullOrWhiteSpace(message.Group) ? pages[messagesPage].Spec.Title : pages[messagesPage].Spec.Title + " › " + message.Group,
+                            Help = message.Help,
+                            Go = () => { ShowPage(messagesPage); picker.SelectedItem = item; SearchBar.Reveal(window, layers, picker); }
+                        });
+                    }
+                return entries;
+            }
+            search = new SearchBar(window, layers, btnSearch, SearchEntries);
+            _search = search;
             if (!_spec.Locked) tourParts["customise"] = btnCustomize;
             List<Tour.Stop> TourStops()
             {
@@ -1005,6 +1066,28 @@ namespace UIFramework
                         string opened = Path.Combine(request.Folder, "problems.png");
                         WindowCapture.Save(layers, opened, layers.ActualWidth, layers.ActualHeight);
                         request.Written.Add(opened);
+                        closeConfirmed = true;
+                        window.Close();
+                        return;
+                    }
+                    if (request.Search != null)
+                    {
+                        // The search bar with what was asked for typed in (search.png), then where its first result
+                        // leads, ringed (search-found.png).
+                        window.UpdateLayout();
+                        search.Open();
+                        search.Box.Text = request.Search;
+                        window.UpdateLayout();
+                        WindowCapture.Settle(Math.Max(300, request.SettleMs / 3));
+                        string listed = Path.Combine(request.Folder, "search.png");
+                        WindowCapture.Save(layers, listed, layers.ActualWidth, layers.ActualHeight);
+                        request.Written.Add(listed);
+                        search.GoToSelected();
+                        window.UpdateLayout();
+                        WindowCapture.Settle(600);
+                        string found = Path.Combine(request.Folder, "search-found.png");
+                        WindowCapture.Save(layers, found, layers.ActualWidth, layers.ActualHeight);
+                        request.Written.Add(found);
                         closeConfirmed = true;
                         window.Close();
                         return;
@@ -1202,6 +1285,22 @@ namespace UIFramework
         }
 
         /// <summary>Whether <paramref name="element"/> sits somewhere inside <paramref name="page"/>, laid out or not.</summary>
+        /// <summary>The search bar of the window as it is built now, for the tests and the screenshots.</summary>
+        internal SearchBar Search => _search;
+        private SearchBar _search;
+
+        // The first element of that type and name under a page, by its logical tree (a page not yet shown has no visual one).
+        private static T Named<T>(DependencyObject root, string name) where T : FrameworkElement
+        {
+            if (root is T match && match.Name == name) return match;
+            foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+            {
+                var found = Named<T>(child, name);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
         private static bool Inside(DependencyObject element, DependencyObject page)
         {
             for (var node = element; node != null; node = LogicalTreeHelper.GetParent(node) ?? (node is Visual || node is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) : null))
@@ -1238,6 +1337,9 @@ namespace UIFramework
         public bool Tour;
         /// <summary>Photograph the window with its red "i", then with the problems panel open, instead of the pages.</summary>
         public bool Problems;
+        /// <summary>Photograph the search instead of the pages: the bar with this typed into it (search.png), then the
+        /// window after going to the first result (search-found.png).</summary>
+        public string Search;
         public readonly List<string> Written = new List<string>();
 
         public static void Save(FrameworkElement element, string file) => Save(element, file, element.ActualWidth, element.ActualHeight);

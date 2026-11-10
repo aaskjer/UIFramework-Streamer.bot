@@ -6,6 +6,19 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-10
+
+### Added
+
+- **Search with Ctrl+F.** Ctrl+F, or the new magnifier at the top right, opens a search bar in every window. It
+  finds settings (by label, help, section, page and key), messages and pages; every word typed has to occur, in any
+  order, whatever the case and the accents. Up and Down move, Enter goes there: the page comes to the front and the
+  field is scrolled into view, ringed for a moment and given the cursor. Games declare nothing for it and need no
+  update; `Tip("search")` adds the magnifier to a window's tour. See *The search* in
+  [docs/Schema.md](docs/Schema.md).
+- **`UIFramework.Preview -windowshots <folder> -search <text>`** photographs the search bar with that typed in, and
+  where its first result leads.
+
 ## [1.7.0] - 2026-11-10
 
 ### Added

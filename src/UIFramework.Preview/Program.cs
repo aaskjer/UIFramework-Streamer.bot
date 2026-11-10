@@ -69,7 +69,9 @@ namespace UIFramework.Preview
                 var request = new WindowCapture { Folder = windowShots, SettleMs = settle > 0 ? settle : 1500, Pick = Screenshots.Pick,
                     Tour = Array.Exists(args, a => a.Equals("-tour", StringComparison.OrdinalIgnoreCase)),
                     // -problems: the window with its red "i", then with the problems panel open.
-                    Problems = Array.Exists(args, a => a.Equals("-problems", StringComparison.OrdinalIgnoreCase)) };
+                    Problems = Array.Exists(args, a => a.Equals("-problems", StringComparison.OrdinalIgnoreCase)),
+                    // -search <text>: the search bar with that typed in, then where its first result leads.
+                    Search = Arg(args, "-search") };
                 string only = Arg(args, "-pages");
                 if (only != null) request.Only = new HashSet<string>(only.Split(',').Select(p => p.Trim()), StringComparer.Ordinal);
                 string names = Arg(args, "-names");

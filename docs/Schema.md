@@ -175,6 +175,24 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `About(credits, sections, links, streamerBotLink, authorLink, defaultLinks)` | the About page: the game's credits under its name (none unless given; `Tx` translates them), sections like help, the game's own links. It ends with the framework's links from `conventions/keys.json` (`about.links`: the UIFramework page, Streamer.bot, *Report something that looks wrong*, which goes to the game's issues when it names its repository, else the framework's); `defaultLinks: false` leaves them out, `streamerBotLink: false` only that one. `authorLink` does nothing any more. The framework's logo sits faint in the page's bottom right corner (its tooltip names the version, a click opens the framework's page); a game cannot remove it. In the schema `about: { credits, sections, links: [ { text, url } ], defaultLinks, streamerBotLink }` |
 | `Tour(Tip(target, title, text), …)` | a tour of the window that starts by itself on its first open; see *The tour* below |
 
+### The search
+
+Every window can be searched: **Ctrl+F**, or the magnifier at the top right, opens a bar under the header. It finds
+
+- **settings**, by their label, their help, their section, their page and their key;
+- **messages**, by their label, their group and their help;
+- **pages**, by their title.
+
+Every word typed has to occur, in any order, whatever the case and the accents (`uber` finds *Über*, `grosse`
+finds *Größe*). A word that starts the label ranks before one inside it, before one in the section or the key,
+before one only the help has. Up and Down move through the results, Enter or a click goes there: the page comes to
+the front, the field scrolls into view, is ringed in the accent colour for a moment and gets the cursor; a message
+is selected on the Messages page. Esc or a click beside the bar closes it. A game declares nothing for this; a
+setting it hides, or one a condition hides right now, is not found. `Tip("search")` puts the magnifier into the
+window's tour.
+
+Other keys of the window: **Ctrl+S** saves, **Ctrl+1** to **Ctrl+9** and **Ctrl+0** go to the first ten pages.
+
 ### The tour
 
 A window can explain itself: on its first open the tour dims the window, rings one part at a time and says what it
@@ -201,7 +219,7 @@ and the ring follows the part as it grows (a Try button's answer). `Tip` points 
 |--------|-------|-----------------------------------------------|
 | a setting's key | the field, on its page (the page comes to the front) | the setting's label and help |
 | `page:<id>` | the page's entry in the rail; the page itself stays bright | the page's title; for `messages`, `log`, `help` and `about` a line about the page |
-| `rail`, `save`, `saveExit`, `cancel`, `status`, `reset`, `resetPage`, `theme`, `customise`, `tour` | that part of the window (`tour` is the **?** itself) | the framework's, in the window's language |
+| `rail`, `save`, `saveExit`, `cancel`, `status`, `reset`, `resetPage`, `theme`, `customise`, `tour`, `search` | that part of the window (`tour` is the **?** itself, `search` the magnifier, from 1.8.0) | the framework's, in the window's language |
 | `start`, `end` | nothing: a note in the middle | the framework's welcome and goodbye |
 | null | nothing: a note in the middle | none; give a title or a text |
 
