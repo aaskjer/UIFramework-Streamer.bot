@@ -10,15 +10,17 @@ namespace UIFramework.Tests
     [Collection("AdBreak")]
     public class AdBreakTests : IDisposable
     {
-        private DateTime _now = new DateTime(2026, 11, 10, 20, 0, 0, DateTimeKind.Utc);
+        // The block remembers its last announcement, and the tests share it: each test's clock starts a day after
+        // the one before, so none is taken for the same ad break as an earlier test's.
+        private static int _day;
+        private DateTime _now;
         private readonly Func<DateTime> _clock = UiAdBreak.Now;
 
         public AdBreakTests()
         {
+            _now = new DateTime(2026, 11, 10, 20, 0, 0, DateTimeKind.Utc).AddDays(Interlocked.Increment(ref _day));
             UiAdBreak.Now = () => _now;
             UiAdBreak.End();
-            // Past the last test's announcement, whenever that was.
-            _now = _now.AddHours(DateTime.UtcNow.Ticks % 1000 + 1);
         }
 
         public void Dispose() { UiAdBreak.End(); UiAdBreak.Now = _clock; }
