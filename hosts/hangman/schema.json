@@ -1,6 +1,6 @@
 {
   "host": "hangman",
-  "version": "v13.2.0",
+  "version": "v13.3.0",
   "settingsFile": "Chat Games/Hangman Game/configs.json",
   "settings": [
     {
@@ -241,6 +241,74 @@
       "requires": "evilEnabled",
       "aliases": [
         "EvilGlitchSeconds"
+      ]
+    },
+    {
+      "key": "autoStartEnabled",
+      "default": false,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "Start rounds automatically",
+      "help": "A Streamer.bot timed action starts a round on its own schedule, on every platform with an account in Streamer.bot (YouTube while a broadcast is monitored) where no round is running. Nobody has to be a moderator for it, and no cooldown holds it back.",
+      "aliases": [
+        "AutoStartEnabled"
+      ]
+    },
+    {
+      "key": "autoStartIntervalMinutes",
+      "default": 15,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "Every (min)",
+      "help": "How long between automatic rounds. With a random time, the shortest wait.",
+      "min": 1.0,
+      "max": 1440.0,
+      "unit": "min",
+      "requires": "autoStartEnabled",
+      "row": "auto",
+      "aliases": [
+        "AutoStartIntervalMinutes"
+      ]
+    },
+    {
+      "key": "autoStartMinChatLines",
+      "default": 10,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "Only after chat lines",
+      "help": "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: rounds then start whether or not anybody is there.",
+      "min": 0.0,
+      "requires": "autoStartEnabled",
+      "row": "auto",
+      "aliases": [
+        "AutoStartMinChatLines"
+      ]
+    },
+    {
+      "key": "autoStartRandom",
+      "default": false,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "Random time",
+      "help": "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.",
+      "requires": "autoStartEnabled",
+      "aliases": [
+        "AutoStartRandom"
+      ]
+    },
+    {
+      "key": "autoStartIntervalMaxMinutes",
+      "default": 30,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "At most (min)",
+      "help": "The longest wait of a random time.",
+      "min": 1.0,
+      "max": 1440.0,
+      "unit": "min",
+      "requires": "autoStartRandom",
+      "aliases": [
+        "AutoStartIntervalMaxMinutes"
       ]
     },
     {
@@ -2945,6 +3013,26 @@
         "evilGlitchSeconds": {
           "label": "Glitch-Dauer",
           "help": "Wie lange das Overlay flackert: das alte Wort zerfällt, verwürfelt sich, das neue entschlüsselt sich, dann leuchtet der überlebende Buchstabe auf. Der Chat erfährt vom Tausch erst nach dem Glitch, Versuche werden solange ignoriert. 0 = ohne Effekt tauschen und sofort ansagen."
+        },
+        "autoStartEnabled": {
+          "label": "Runden automatisch starten",
+          "help": "Eine zeitgesteuerte Streamer.bot-Aktion startet nach ihrem eigenen Takt eine Runde, auf jeder Plattform mit einem Konto in Streamer.bot (YouTube, solange ein Broadcast Ã¼berwacht wird), auf der keine Runde lÃ¤uft. DafÃ¼r muss niemand Moderator sein, und keine Abklingzeit hÃ¤lt sie auf."
+        },
+        "autoStartIntervalMinutes": {
+          "label": "Alle (min)",
+          "help": "Wie lange zwischen automatischen Runden. Mit zufälliger Zeit die kürzeste Wartezeit."
+        },
+        "autoStartMinChatLines": {
+          "label": "Erst nach Chat-Zeilen",
+          "help": "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine: Runden starten dann, ob jemand da ist oder nicht."
+        },
+        "autoStartRandom": {
+          "label": "Zufällige Zeit",
+          "help": "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt."
+        },
+        "autoStartIntervalMaxMinutes": {
+          "label": "Höchstens (min)",
+          "help": "Die längste Wartezeit einer zufälligen Zeit."
         },
         "rewardWinPoints": {
           "label": "Gewinn zahlt",

@@ -20,6 +20,10 @@ namespace Streamer.bot.Plugin.Interface
         object KickGetBroadcaster();
         object YouTubeGetBroadcaster();
         void ShowToastNotification(string title, string message, string attribution = "", string iconPath = "");
+        void SetTimerInterval(string timerId, int interval);
+        bool GetTimerState(string timerId);
+        void EnableTimerById(string timerId);
+        void DisableTimerById(string timerId);
     }
 }
 
@@ -47,5 +51,14 @@ namespace UIFramework.Tests
         public object YouTubeGetBroadcaster() => YouTube;
         public readonly List<string> Toasts = new List<string>();
         public void ShowToastNotification(string title, string message, string attribution = "", string iconPath = "") => Toasts.Add(title + " | " + message);
+        // A timed action: null while the import has none, which throws the way Streamer.bot does.
+        public bool? TimerRunning = false;
+        public int TimerInterval;
+        public readonly List<string> TimerCalls = new List<string>();
+        private void NeedTimer() { if (TimerRunning == null) throw new System.InvalidOperationException("no such timer"); }
+        public void SetTimerInterval(string timerId, int interval) { NeedTimer(); TimerInterval = interval; TimerCalls.Add("interval " + interval); }
+        public bool GetTimerState(string timerId) { NeedTimer(); return TimerRunning.Value; }
+        public void EnableTimerById(string timerId) { NeedTimer(); TimerRunning = true; TimerCalls.Add("enable"); }
+        public void DisableTimerById(string timerId) { NeedTimer(); TimerRunning = false; TimerCalls.Add("disable"); }
     }
 }

@@ -367,6 +367,71 @@ Streamer.bot's log.* The log has one line per update with its link.
 A game gets this with the host block of UIFramework 1.4.0 or newer (`tools/update-host-block.ps1`). The host block of
 1.3.0 asked on ordinary runs of the game instead; the DLL still answers it.
 
+## A timed action
+
+Streamer.bot's own timer dialog offers three ways to run a timed action: a fixed interval, a random one between two
+bounds, and only after so many chat lines. Code can set only the interval and switch the timer on and off
+(`CPH.SetTimerInterval`, `EnableTimerById`, `DisableTimerById`), so the host block keeps the random time and the
+lines itself, in `UiTimer`. A game with rounds that start themselves declares five convention keys and makes four
+calls.
+
+| Key | Kind | Default | Meaning |
+|-----|------|---------|---------|
+| `autoStartEnabled` | bool | `false` | the timed action is on |
+| `autoStartIntervalMinutes` | int | `15` | the wait; with a random time, the shortest one |
+| `autoStartRandom` | bool | `false` | draw every wait anew, up to the maximum |
+| `autoStartIntervalMaxMinutes` | int | `30` | the longest wait of a random time |
+| `autoStartMinChatLines` | int | `0` | lines chat must have written since the last automatic start; 0 asks for none |
+
+Declared with nothing but key and default, they get their page (`game`), labels and help in English, German and
+Spanish from the conventions; the two intervals share a row and are greyed out with their switch.
+
+```csharp
+private const string AutoStartTimerId = "…";   // the timed action's id in the export
+
+public void Init()
+{
+    _cfg = Settings.Load();
+    UiTimer.Sync(CPH, AutoStartTimerId, _cfg.AutoStartEnabled, _cfg.AutoStartIntervalMinutes, _cfg.AutoStartRandom,
+        _cfg.AutoStartIntervalMaxMinutes, log: m => CPH.LogWarn(m));
+}
+
+// saved: the window's hook after a save. restart: true, so a new schedule counts from the save.
+private void WindowSaved(UiSettings s) =>
+    UiTimer.Sync(CPH, AutoStartTimerId, …, restart: true);
+
+public bool Execute()
+{
+    …
+    if (CPH.GetEventType() == EventType.TimedAction)
+    {
+        UiTimer.Rearm(CPH, AutoStartTimerId, _cfg.AutoStartIntervalMinutes, _cfg.AutoStartRandom, _cfg.AutoStartIntervalMaxMinutes);
+        foreach (string platform in connectedPlatforms)
+            if (UiTimer.TakeLines(platform, _cfg.AutoStartMinChatLines))
+                StartRound(platform);
+        return true;
+    }
+    if (isChatMessage) UiTimer.NoteLine(platform);   // every chat line the action sees
+    …
+}
+```
+
+- **`Sync`** brings the timed action in line with the settings. A timer that already runs keeps its countdown, so a
+  recompile does not push the next round out; `restart: true` switches it off and on, which starts the wait over.
+  A timed action the import does not have is one line through `log`, never an exception.
+- **`Rearm`**, once each time the timer fires: a random timer draws its next wait and starts over with it. A fixed
+  one runs on untouched.
+- **`NoteLine(scope)`** counts a chat line; **`TakeLines(scope, min)`** is true once a scope has its lines and
+  starts its count over. False leaves the count, so the round waits for the next turn of the timer and the lines
+  keep adding up, as Streamer.bot's own lines do. A scope is a platform, or `""` for a game with one chat.
+- **`NextSeconds(minutes, random, maxMinutes)`** is the wait itself: at least a minute, at most a day; a maximum
+  below the interval is the interval.
+
+For the lines the game action needs the chat message triggers of the platforms it plays on (Twitch *Chat
+Message*, YouTube *Message*, Kick *Chat Message*) next to its commands, and the export a timed action whose
+trigger is on the game action. The counts live in memory: a recompile or a restart of Streamer.bot starts them over.
+Trivia and Hangman run their automatic rounds this way.
+
 ## Export and import
 
 The customise mode's bar (the pen, bottom left) has *Export* and *Import*: Export writes the saved settings

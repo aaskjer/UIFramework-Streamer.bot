@@ -1,6 +1,6 @@
 {
   "host": "trivia",
-  "version": "v9.2.0",
+  "version": "v9.3.0",
   "settingsFile": "Chat Games/Trivia Game/configs.json",
   "settings": [
     {
@@ -63,6 +63,7 @@
     {
       "key": "answerTimeSeconds",
       "default": 60,
+      "kind": "duration",
       "page": "game",
       "section": "Rounds",
       "label": "Answer time",
@@ -77,6 +78,7 @@
     {
       "key": "normalCountdownStartSeconds",
       "default": 30,
+      "kind": "duration",
       "page": "game",
       "section": "Rounds",
       "label": "First reminder at",
@@ -91,10 +93,11 @@
     {
       "key": "delayBetweenRoundsSeconds",
       "default": 5,
+      "kind": "duration",
       "page": "game",
       "section": "Rounds",
       "label": "Delay between rounds",
-      "help": "The pause between the result of one round and the question of the next, in a back-to-back run.",
+      "help": "The pause between the result of one round and the question of the next, in a back-to-back run. With the overlay on, at least as long as it shows the result and the leaderboard after it.",
       "min": 0.0,
       "unit": "s",
       "row": "roundTimes",
@@ -267,6 +270,7 @@
     {
       "key": "blitzAnswerTimeSeconds",
       "default": 20,
+      "kind": "duration",
       "page": "game",
       "section": "Blitz rounds",
       "label": "Answer time",
@@ -281,6 +285,7 @@
     {
       "key": "blitzCountdownStartSeconds",
       "default": 10,
+      "kind": "duration",
       "page": "game",
       "section": "Blitz rounds",
       "label": "First reminder at",
@@ -376,7 +381,7 @@
       "kind": "note",
       "page": "game",
       "section": "Rounds that start themselves",
-      "help": "A Streamer.bot timed action offers a round to every platform on its own schedule, each judged on its own chat and its own running round."
+      "help": "A Streamer.bot timed action offers a round on its own schedule to every platform you are live on, each judged on its own chat and its own running round. Where it cannot be told whether you are live, recent chat decides."
     },
     {
       "key": "autoStartEnabled",
@@ -394,8 +399,8 @@
       "default": 15,
       "page": "game",
       "section": "Rounds that start themselves",
-      "label": "Every (minutes)",
-      "help": "How long between automatic rounds. A running timer keeps its old interval until it is switched off and on again.",
+      "label": "Every (min)",
+      "help": "How long between automatic rounds. With a random time, the shortest wait.",
       "min": 1.0,
       "unit": "min",
       "row": "auto",
@@ -421,7 +426,7 @@
       "default": 10,
       "page": "game",
       "section": "Rounds that start themselves",
-      "label": "Chat within (minutes)",
+      "label": "Chat within (min)",
       "help": "How recent chat has to be for the automatic round to go ahead.",
       "min": 1.0,
       "unit": "min",
@@ -431,12 +436,53 @@
       ]
     },
     {
+      "key": "autoStartRandom",
+      "default": false,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "Random time",
+      "help": "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.",
+      "requires": "autoStartEnabled",
+      "aliases": [
+        "AutoStartRandom"
+      ]
+    },
+    {
+      "key": "autoStartIntervalMaxMinutes",
+      "default": 30,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "At most (min)",
+      "help": "The longest wait of a random time.",
+      "min": 1.0,
+      "unit": "min",
+      "requires": "autoStartRandom",
+      "row": "autoMore",
+      "aliases": [
+        "AutoStartIntervalMaxMinutes"
+      ]
+    },
+    {
+      "key": "autoStartMinChatLines",
+      "default": 0,
+      "page": "game",
+      "section": "Rounds that start themselves",
+      "label": "Only after chat lines",
+      "help": "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none.",
+      "min": 0.0,
+      "requires": "autoStartEnabled",
+      "row": "autoMore",
+      "aliases": [
+        "AutoStartMinChatLines"
+      ]
+    },
+    {
       "key": "autoStartRequireChatActivity",
       "default": true,
       "page": "game",
       "section": "Rounds that start themselves",
       "label": "Only when chat has been active",
-      "help": "Off, and a round is offered on the schedule whether or not anybody is there.",
+      "help": "Off, and a round is offered on the schedule whether or not anybody is there, on every platform you are live on.",
       "aliases": [
         "AutoStartRequireChatActivity"
       ]
@@ -622,7 +668,7 @@
       "kind": "note",
       "page": "game",
       "section": "Payouts",
-      "help": "Viewers on the addicted list collect half of whatever the above works out to. That list is on the Access page."
+      "help": "Viewers on the addicted list have the Addicted cut taken off whatever the above works out to. The list and the cut are on the Access page."
     },
     {
       "key": "scoreboardTopN",
@@ -1490,6 +1536,7 @@
     {
       "key": "globalCooldown",
       "default": 0,
+      "kind": "duration",
       "page": "access",
       "section": "Cooldowns",
       "label": "Everyone",
@@ -1504,6 +1551,7 @@
     {
       "key": "userCooldown",
       "default": 0,
+      "kind": "duration",
       "page": "access",
       "section": "Cooldowns",
       "label": "Per viewer",
@@ -1554,7 +1602,7 @@
       "page": "access",
       "section": "Addicted",
       "label": "Addicted viewers",
-      "help": "They still play, but only ever collect half of what they would have won. The addicted command edits this list from chat.",
+      "help": "They still play, but their winnings are cut by the Addicted cut below. The addicted command edits this list from chat.",
       "aliases": [
         "AddictedUsers"
       ]
@@ -1569,6 +1617,20 @@
       "help": "Members of these Streamer.bot groups count as addicted too.",
       "aliases": [
         "AddictedGroups"
+      ]
+    },
+    {
+      "key": "addictedPayoutCut",
+      "default": 50.0,
+      "kind": "percent",
+      "page": "access",
+      "section": "Addicted",
+      "label": "Addicted cut",
+      "help": "How much of an addicted viewer's winnings is held back, from 0 (nothing) to 100 (all of it). 50 means they earn half. Applied last, so it cuts a subscriber or VIP boost too.",
+      "min": 0.0,
+      "max": 100.0,
+      "aliases": [
+        "AddictedPayoutCut"
       ]
     },
     {
@@ -1797,6 +1859,17 @@
       ]
     },
     {
+      "key": "overlayShowPlatform",
+      "default": true,
+      "page": "overlay",
+      "section": "What it shows",
+      "label": "Which platform it came from",
+      "help": "A chip naming Twitch, YouTube or Kick in front of the question, for streaming to more than one at once, where every platform plays a question of its own.",
+      "aliases": [
+        "OverlayShowPlatform"
+      ]
+    },
+    {
       "key": "overlayShowTimer",
       "default": true,
       "page": "overlay",
@@ -1832,10 +1905,11 @@
     {
       "key": "overlayResultSeconds",
       "default": 10,
+      "kind": "duration",
       "page": "overlay",
       "section": "What it shows",
       "label": "Result shown for",
-      "help": "How long the answer and the winners stay up, and the leaderboard after them.",
+      "help": "How long the answer and the winners stay up, and the leaderboard after them. The next question of a back-to-back run waits for them.",
       "min": 1.0,
       "unit": "s",
       "row": "overlayTiming",
@@ -2613,15 +2687,16 @@
     },
     {
       "key": "addictedAdded",
-      "default": "@{userName}, {targetUser} added to the addicted list — 50% win penalty applied. 🙏",
+      "default": "@{userName}, {targetUser} added to the addicted list — {addictedCut}% win penalty applied. 🙏",
       "kind": "template",
       "page": "messages",
       "group": "Addicted",
       "label": "Added",
-      "help": "Sent when a viewer is added to the addicted list. They then win only half their normal points.",
+      "help": "Sent when a viewer is added to the addicted list. Their winnings are then cut by the Addicted cut on the Access page.",
       "placeholders": [
         "userName",
-        "targetUser"
+        "targetUser",
+        "addictedCut"
       ],
       "aliases": [
         "AddictedAdded"
@@ -3101,7 +3176,7 @@
       "setupObsOverlay": "OBS is not connected on connection #0. Connect it in Streamer.bot under Stream Apps, OBS Studio, then try again.",
       "overlaySample": "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above.",
       "copyOverlayUrl": "Copied. Paste it into the URL of a Browser source in OBS.",
-      "overlayDemo": "The demo opened in your browser. In OBS, add &demo=1 to the URL to place the source the same way.",
+      "overlayDemo": "The demo opened in your browser. To place the source in OBS, use Show a sample round.",
       "openOverlayFolder": "Opened Chat Games\\Trivia Game\\Overlay.",
       "openQuestionsFolder": "Opened Chat Games\\Trivia Game."
     },
@@ -3427,7 +3502,7 @@
         },
         "delayBetweenRoundsSeconds": {
           "label": "Pause zwischen Runden",
-          "help": "Die Pause zwischen dem Ergebnis einer Runde und der Frage der nächsten, in einer Serie."
+          "help": "Die Pause zwischen dem Ergebnis einer Runde und der Frage der nächsten, in einer Serie. Mit eingeschaltetem Overlay mindestens so lange, wie es das Ergebnis und die Bestenliste danach zeigt."
         },
         "defaultDifficulty": {
           "label": "Schwierigkeit",
@@ -3511,27 +3586,39 @@
         },
         "autoStartNote": {
           "label": null,
-          "help": "Eine zeitgesteuerte Streamer.bot-Aktion bietet jeder Plattform nach ihrem eigenen Takt eine Runde an, jede beurteilt nach ihrem eigenen Chat und ihrer eigenen laufenden Runde."
+          "help": "Eine zeitgesteuerte Streamer.bot-Aktion bietet nach ihrem eigenen Takt jeder Plattform eine Runde an, auf der du live bist, jede beurteilt nach ihrem eigenen Chat und ihrer eigenen laufenden Runde. Lässt sich nicht feststellen, ob du live bist, entscheidet der Chat der letzten Minuten."
         },
         "autoStartEnabled": {
           "label": "Runden automatisch starten",
           "help": "Schaltet die zeitgesteuerte Aktion in Streamer.bot von hier aus an und aus."
         },
         "autoStartIntervalMinutes": {
-          "label": "Alle (Minuten)",
-          "help": "Wie lange zwischen automatischen Runden. Ein laufender Timer behält sein altes Intervall, bis er aus- und wieder eingeschaltet wird."
+          "label": "Alle (min)",
+          "help": "Wie lange zwischen automatischen Runden. Mit zufälliger Zeit die kürzeste Wartezeit."
+        },
+        "autoStartRandom": {
+          "label": "Zufällige Zeit",
+          "help": "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt."
+        },
+        "autoStartIntervalMaxMinutes": {
+          "label": "Höchstens (min)",
+          "help": "Die längste Wartezeit einer zufälligen Zeit."
+        },
+        "autoStartMinChatLines": {
+          "label": "Erst nach Chat-Zeilen",
+          "help": "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine."
         },
         "autoStartRounds": {
           "label": "Runden je Durchgang",
           "help": "Wie viele Runden ein Durchgang des Timers spielt. Immer eine, solange 'Mehrere Runden nacheinander erlauben' aus ist."
         },
         "autoStartChatActivityMinutes": {
-          "label": "Chat innerhalb (Minuten)",
+          "label": "Chat innerhalb (min)",
           "help": "Wie frisch der Chat sein muss, damit die automatische Runde stattfindet."
         },
         "autoStartRequireChatActivity": {
           "label": "Nur wenn der Chat aktiv war",
-          "help": "Aus, und eine Runde wird nach Plan angeboten, ob jemand da ist oder nicht."
+          "help": "Aus, und eine Runde wird nach Plan angeboten, ob jemand da ist oder nicht, auf jeder Plattform, auf der du live bist."
         },
         "awardPoints": {
           "label": "Punkte auszahlen",
@@ -3591,7 +3678,7 @@
         },
         "addictedNote": {
           "label": null,
-          "help": "Zuschauer auf der Süchtigen-Liste bekommen die Hälfte dessen, was oben herauskommt. Die Liste ist auf der Seite Zugriff."
+          "help": "Zuschauern auf der Süchtigen-Liste wird von dem, was oben herauskommt, der Abzug für Süchtige abgezogen. Liste und Abzug sind auf der Seite Zugriff."
         },
         "scoreboardTopN": {
           "label": "Angezeigte Plätze",
@@ -3839,11 +3926,15 @@
         },
         "addictedUsers": {
           "label": "Süchtige Zuschauer",
-          "help": "Sie spielen weiter, bekommen aber nur je die Hälfte dessen, was sie gewonnen hätten. Der Befehl !TA bearbeitet diese Liste aus dem Chat."
+          "help": "Sie spielen weiter, aber ihre Gewinne werden um den Abzug für Süchtige darunter gekürzt. Der Befehl !TA bearbeitet diese Liste aus dem Chat."
         },
         "addictedGroups": {
           "label": "Süchtige Gruppen",
           "help": "Mitglieder dieser Streamer.bot-Gruppen zählen auch als süchtig."
+        },
+        "addictedPayoutCut": {
+          "label": "Abzug für Süchtige",
+          "help": "Wie viel vom Gewinn eines süchtigen Zuschauers abgezogen wird, von 0 (nichts) bis 100 (alles). 50 heißt, er bekommt die Hälfte. Wird zuletzt angewandt, kürzt also auch einen Abonnenten- oder VIP-Bonus."
         },
         "announceEachAnswer": {
           "label": "Jede Antwort im Chat bestätigen",
@@ -3917,6 +4008,10 @@
           "label": "Kategorie und Schwierigkeit",
           "help": "Die Chips über der Frage. Getrennt von 'Schwierigkeit und Kategorie zur Frage zeigen' auf der Seite Spiel, das für den Chat ist, sodass jedes ohne das andere gehen kann."
         },
+        "overlayShowPlatform": {
+          "label": "Von welcher Plattform sie kam",
+          "help": "Ein Chip vor der Frage, der Twitch, YouTube oder Kick nennt. Für Streams auf mehreren Plattformen zugleich, wo jede ihre eigene Frage spielt."
+        },
         "overlayShowTimer": {
           "label": "Der Countdown",
           "help": "Die Uhr und der ablaufende Balken. Aus, und die Runde endet trotzdem pünktlich, es wird nur nicht gezeigt."
@@ -3931,7 +4026,7 @@
         },
         "overlayResultSeconds": {
           "label": "Ergebnis anzeigen für",
-          "help": "Wie lange Antwort und Gewinner stehen bleiben, und die Bestenliste danach."
+          "help": "Wie lange Antwort und Gewinner stehen bleiben, und die Bestenliste danach. Die nächste Frage einer Serie wartet darauf."
         },
         "overlayLeaderboardPlaces": {
           "label": "Plätze der Bestenliste",
@@ -4139,7 +4234,7 @@
         },
         "addictedAdded": {
           "label": "Hinzugefügt",
-          "help": "Gesendet, wenn ein Zuschauer auf die Süchtigen-Liste kommt. Er gewinnt dann nur die Hälfte seiner normalen Punkte."
+          "help": "Gesendet, wenn ein Zuschauer auf die Süchtigen-Liste kommt. Seine Gewinne werden dann um den Abzug für Süchtige gekürzt."
         },
         "addictedAlreadyOnList": {
           "label": "Schon auf der Liste",

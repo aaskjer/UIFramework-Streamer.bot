@@ -87,6 +87,12 @@
     "leaderboardEntry":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": ["rank", "user", "score", "medal"], "aliases": ["MsgScoreboardEntry", "ScoreboardEntry"] },
     "leaderboardEmpty":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": [], "aliases": ["MsgScoreboardEmpty", "ScoreboardEmpty", "MsgNoLeaderboard", "MsgNoStatsFound"] },
 
+    "autoStartEnabled":            { "kind": "bool", "default": false, "page": "game", "aliases": ["AutoStartEnabled"] },
+    "autoStartIntervalMinutes":    { "kind": "int",  "default": 15,    "page": "game", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartEnabled", "aliases": ["AutoStartIntervalMinutes"] },
+    "autoStartRandom":             { "kind": "bool", "default": false, "page": "game", "requires": "autoStartEnabled", "aliases": ["AutoStartRandom"] },
+    "autoStartIntervalMaxMinutes": { "kind": "int",  "default": 30,    "page": "game", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartRandom", "aliases": ["AutoStartIntervalMaxMinutes"] },
+    "autoStartMinChatLines":       { "kind": "int",  "default": 0,     "page": "game", "min": 0, "requires": "autoStartEnabled", "aliases": ["AutoStartMinChatLines"] },
+
     "overlayEnabled":        { "kind": "bool",     "default": false, "page": "overlay", "aliases": ["OverlayEnabled"] },
     "obsConnectionId":       { "kind": "int",      "default": 0,     "page": "overlay", "min": 0, "row": "obs", "aliases": ["ObsConnectionId"] },
     "obsSceneName":          { "kind": "string",   "default": "",    "page": "overlay", "row": "obs", "aliases": ["ObsSceneName"] },

@@ -122,6 +122,11 @@ is read and written back under the key.
 | `leaderboardHeader` | template | `""` | leaderboard | Header line | `MsgScoreboardHeader`, `ScoreboardHeader` |
 | `leaderboardEntry` | template | `""` | leaderboard | Entry line | `MsgScoreboardEntry`, `ScoreboardEntry` |
 | `leaderboardEmpty` | template | `""` | leaderboard | Empty board | `MsgScoreboardEmpty`, `ScoreboardEmpty`, `MsgNoLeaderboard`, `MsgNoStatsFound` |
+| `autoStartEnabled` | bool | `false` | game | Start rounds automatically | `AutoStartEnabled` |
+| `autoStartIntervalMinutes` | int | `15` | game | Every | `AutoStartIntervalMinutes` |
+| `autoStartRandom` | bool | `false` | game | Random time | `AutoStartRandom` |
+| `autoStartIntervalMaxMinutes` | int | `30` | game | At most | `AutoStartIntervalMaxMinutes` |
+| `autoStartMinChatLines` | int | `0` | game | Only after chat lines | `AutoStartMinChatLines` |
 | `overlayEnabled` | bool | `false` | overlay | Overlay enabled | `OverlayEnabled` |
 | `obsConnectionId` | int | `0` | overlay | OBS connection | `ObsConnectionId` |
 | `obsSceneName` | string | `""` | overlay | Scene | `ObsSceneName` |
@@ -164,7 +169,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 72 of 72 | 13 of 13 | 16 of 16 | 140 | 249 of 249 |
-| `lang/en.json` | 72 | 13 | 16 | 0 | 249 |
-| `lang/es.json` | 72 of 72 | 13 of 13 | 16 of 16 | 140 | 249 of 249 |
+| `lang/de.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 249 of 249 |
+| `lang/en.json` | 77 | 13 | 16 | 0 | 249 |
+| `lang/es.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 249 of 249 |
 <!-- generated:end -->

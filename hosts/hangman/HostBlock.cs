@@ -303,6 +303,11 @@ public static class UiSchema
             K("evilResetLives", "Leben beim Tausch auffüllen", "An: das neue Wort beginnt mit vollen Leben. Aus: verlorene Leben bleiben verloren, die wirklich böse Art."),
             K("evilSameCategory", "Gleiche Kategorie bevorzugen", "Tauscht zu einem Wort derselben Kategorie, wenn eines passt; sonst zu einer beliebigen Kategorie im Spiel."),
             K("evilGlitchSeconds", "Glitch-Dauer", "Wie lange das Overlay flackert: das alte Wort zerfällt, verwürfelt sich, das neue entschlüsselt sich, dann leuchtet der überlebende Buchstabe auf. Der Chat erfährt vom Tausch erst nach dem Glitch, Versuche werden solange ignoriert. 0 = ohne Effekt tauschen und sofort ansagen."),
+            K("autoStartEnabled", "Runden automatisch starten", "Eine zeitgesteuerte Streamer.bot-Aktion startet nach ihrem eigenen Takt eine Runde, auf jeder Plattform mit einem Konto in Streamer.bot (YouTube, solange ein Broadcast Ã¼berwacht wird), auf der keine Runde lÃ¤uft. DafÃ¼r muss niemand Moderator sein, und keine Abklingzeit hÃ¤lt sie auf."),
+            K("autoStartIntervalMinutes", "Alle (min)", "Wie lange zwischen automatischen Runden. Mit zufälliger Zeit die kürzeste Wartezeit."),
+            K("autoStartMinChatLines", "Erst nach Chat-Zeilen", "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine: Runden starten dann, ob jemand da ist oder nicht."),
+            K("autoStartRandom", "Zufällige Zeit", "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt."),
+            K("autoStartIntervalMaxMinutes", "Höchstens (min)", "Die längste Wartezeit einer zufälligen Zeit."),
             K("rewardWinPoints", "Gewinn zahlt", "Der Grundbetrag, den ein Zuschauer für die vollständige richtige Antwort bekommt."),
             K("rewardPerLetterEnabled", "Belohnung je Buchstabe", "Belohnt einen Zuschauer für einen richtig geratenen Buchstaben."),
             K("rewardLetterPoints", "Punkte je Buchstabe", "Was ein einzelner richtiger Buchstabe zahlt."),
@@ -557,6 +562,12 @@ public static class UiSchema
         S("evilResetLives", false, page: "game", label: "Refill the lives on a swap", help: "On: the new word starts with full lives. Off: lives already lost stay lost, the truly evil way.", section: "Evil Hangman", requires: "evilEnabled", aliases: new[] { "EvilResetLives" }),
         S("evilSameCategory", true, page: "game", label: "Prefer the same category", help: "Swap to a word from the same category when one fits; any category in play when none does.", section: "Evil Hangman", requires: "evilEnabled", aliases: new[] { "EvilSameCategory" }),
         S("evilGlitchSeconds", 3, page: "game", label: "Glitch duration", help: "How long the overlay glitches: the old word breaks up, scrambles and the new one decodes, then the surviving letter lights up. Chat only hears about the swap once the glitch has played out, and guesses are ignored until then. 0 = swap without the effect and announce it at once.", kind: "duration", section: "Evil Hangman", min: 0.0, requires: "evilEnabled", aliases: new[] { "EvilGlitchSeconds" }),
+        // ---- game: rounds that start themselves ----
+        S("autoStartEnabled", false, page: "game", label: "Start rounds automatically", help: "A Streamer.bot timed action starts a round on its own schedule, on every platform with an account in Streamer.bot (YouTube while a broadcast is monitored) where no round is running. Nobody has to be a moderator for it, and no cooldown holds it back.", section: "Rounds that start themselves", aliases: new[] { "AutoStartEnabled" }),
+        S("autoStartIntervalMinutes", 15, page: "game", label: "Every (min)", help: "How long between automatic rounds. With a random time, the shortest wait.", section: "Rounds that start themselves", min: 1.0, max: 1440.0, unit: "min", requires: "autoStartEnabled", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
+        S("autoStartMinChatLines", 10, page: "game", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: rounds then start whether or not anybody is there.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "auto", aliases: new[] { "AutoStartMinChatLines" }),
+        S("autoStartRandom", false, page: "game", label: "Random time", help: "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.", section: "Rounds that start themselves", requires: "autoStartEnabled", aliases: new[] { "AutoStartRandom" }),
+        S("autoStartIntervalMaxMinutes", 30, page: "game", label: "At most (min)", help: "The longest wait of a random time.", section: "Rounds that start themselves", min: 1.0, max: 1440.0, unit: "min", requires: "autoStartRandom", aliases: new[] { "AutoStartIntervalMaxMinutes" }),
         // ---- game: payouts ----
         S("rewardWinPoints", 500, page: "game", label: "Win pays", help: "The base amount a viewer gets for the full correct answer.", section: "Payouts", min: 0.0, aliases: new[] { "RewardWinPoints" }),
         S("rewardPerLetterEnabled", true, page: "game", label: "Reward per letter", help: "Rewards a viewer for guessing a single letter correctly.", section: "Payouts", aliases: new[] { "EnableRewardPerLetter" }),
@@ -1166,6 +1177,115 @@ public static class UiUpdateNotice
     }
 
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
+}
+
+/// <summary>A Streamer.bot timed action run the three ways its own dialog offers: every so many minutes, after a random
+/// time between two bounds, and only once chat has written so many lines. Code can set a timed action's interval and
+/// switch it on and off, nothing more, so the random time and the lines are kept here. The settings are the convention
+/// keys autoStartEnabled, autoStartIntervalMinutes, autoStartRandom, autoStartIntervalMaxMinutes and
+/// autoStartMinChatLines.
+/// <para>The game calls <see cref="Sync"/> in Init and after a save (restart: true there, so a new interval counts
+/// from the save), <see cref="NoteLine"/> for every chat message it sees, and, when the timed action fires,
+/// <see cref="Rearm"/> once and <see cref="TakeLines"/> for each chat it would start in: false means chat has been too
+/// quiet, and the round waits for the next turn of the timer, as Streamer.bot's own lines do.</para></summary>
+public static class UiTimer
+{
+    private static readonly object Gate = new object();
+    private static readonly System.Random Rng = new System.Random();
+    private static readonly System.Collections.Generic.Dictionary<string, int> Lines =
+        new System.Collections.Generic.Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>One more chat line in a scope: a platform, or "" for a game that has one chat.</summary>
+    public static void NoteLine(string scope)
+    {
+        lock (Gate)
+        {
+            int n;
+            Lines.TryGetValue(scope ?? "", out n);
+            if (n < int.MaxValue) Lines[scope ?? ""] = n + 1;
+        }
+    }
+
+    /// <summary>The chat lines of a scope since the last automatic start there.</summary>
+    public static int LinesSince(string scope)
+    {
+        lock (Gate)
+        {
+            int n;
+            return Lines.TryGetValue(scope ?? "", out n) ? n : 0;
+        }
+    }
+
+    /// <summary>Whether a scope has seen its lines: true, and the count starts over, with at least
+    /// <paramref name="minLines"/> lines since the last time (always with 0 or less); false leaves the count as it is.</summary>
+    public static bool TakeLines(string scope, int minLines)
+    {
+        lock (Gate)
+        {
+            int n;
+            Lines.TryGetValue(scope ?? "", out n);
+            if (minLines > 0 && n < minLines) return false;
+            Lines[scope ?? ""] = 0;
+            return true;
+        }
+    }
+
+    /// <summary>The next wait in seconds: the interval, or with <paramref name="random"/> a time between it and
+    /// <paramref name="maxMinutes"/>. At least a minute; a maximum below the interval is the interval.</summary>
+    public static int NextSeconds(int minutes, bool random, int maxMinutes)
+    {
+        int low = System.Math.Max(1, System.Math.Min(minutes, 1440)) * 60;
+        int high = System.Math.Max(low, System.Math.Max(1, System.Math.Min(maxMinutes, 1440)) * 60);
+        if (!random || high == low) return low;
+        lock (Gate) return Rng.Next(low, high + 1);
+    }
+
+    /// <summary>Brings the timed action in line with the settings. A timer that already runs keeps its countdown unless
+    /// <paramref name="restart"/> says the schedule changed: switching it off and on starts the wait over. A timed action
+    /// the import does not have is one line in the log, never an exception.</summary>
+    public static void Sync(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
+        bool restart = false, System.Action<string> log = null)
+    {
+        try
+        {
+            bool running = CPH.GetTimerState(timerId);
+            if (!enabled)
+            {
+                if (running) CPH.DisableTimerById(timerId);
+                return;
+            }
+            if (running && !restart)
+            {
+                // A random timer keeps the wait it drew; a fixed one is told its interval again, which costs nothing.
+                if (!random) CPH.SetTimerInterval(timerId, NextSeconds(minutes, false, maxMinutes));
+                return;
+            }
+            CPH.SetTimerInterval(timerId, NextSeconds(minutes, random, maxMinutes));
+            if (running) CPH.DisableTimerById(timerId);
+            CPH.EnableTimerById(timerId);
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("The timed action " + timerId + " could not be set: " + ex.Message);
+        }
+    }
+
+    /// <summary>When the timed action has fired: a random timer draws its next wait and starts over with it. A fixed one
+    /// simply runs on.</summary>
+    public static void Rearm(IInlineInvokeProxy CPH, string timerId, int minutes, bool random, int maxMinutes, System.Action<string> log = null)
+    {
+        if (!random) return;
+        try
+        {
+            CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
+            CPH.DisableTimerById(timerId);
+            CPH.EnableTimerById(timerId);
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("The timed action " + timerId + " could not be set: " + ex.Message);
+        }
+    }
 }
 
 /// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and

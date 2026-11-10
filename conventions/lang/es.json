@@ -62,6 +62,12 @@
     "leaderboardEntry":              { "label": "Línea de entrada" },
     "leaderboardEmpty":              { "label": "Tabla vacía" },
 
+    "autoStartEnabled":            { "label": "Iniciar rondas automáticamente", "help": "Activa y desactiva la acción temporizada de Streamer.bot que inicia una ronda." },
+    "autoStartIntervalMinutes":    { "label": "Cada", "help": "Cuánto tiempo pasa entre rondas automáticas. Con tiempo aleatorio, la espera más corta." },
+    "autoStartRandom":             { "label": "Tiempo aleatorio", "help": "Cada espera se sortea de nuevo, entre Cada y Como máximo, para que el chat no sepa cuándo llega la próxima ronda." },
+    "autoStartIntervalMaxMinutes": { "label": "Como máximo", "help": "La espera más larga de un tiempo aleatorio." },
+    "autoStartMinChatLines":       { "label": "Solo tras líneas de chat", "help": "Cuántas líneas debe haber escrito el chat desde la última ronda automática. Si son muy pocas, la ronda espera al siguiente turno del temporizador. 0 no pide ninguna." },
+
     "overlayEnabled":        { "label": "Overlay activado" },
     "overlayFolder":         { "label": "Carpeta del overlay", "help": "Dónde se escriben los archivos del overlay. Vacío usa la carpeta predeterminada junto a Streamer.bot." },
     "overlayPort":           { "label": "Puerto del overlay", "help": "0 usa el puerto WebSocket de Streamer.bot." },

@@ -244,7 +244,7 @@ public static class UiSchema
         .Answer("setupObsOverlay", "OBS is not connected on connection #0. Connect it in Streamer.bot under Stream Apps, OBS Studio, then try again.")
         .Answer("overlaySample", "Sent. If nothing shows in OBS within a few seconds, check that Streamer.bot's WebSocket server is running on the port above.")
         .Answer("copyOverlayUrl", "Copied. Paste it into the URL of a Browser source in OBS.")
-        .Answer("overlayDemo", "The demo opened in your browser. In OBS, add &demo=1 to the URL to place the source the same way.")
+        .Answer("overlayDemo", "The demo opened in your browser. To place the source in OBS, use Show a sample round.")
         .Answer("openOverlayFolder", "Opened Chat Games\\Trivia Game\\Overlay.")
         .Answer("openQuestionsFolder", "Opened Chat Games\\Trivia Game.")
         .Log("Chat Games/Logs", "Trivia-log*.txt",
@@ -309,7 +309,7 @@ public static class UiSchema
                 K("difficultyNow", "So läuft eine Runde", "Was eine Runde mit den sechs Zahlen ergibt, wie sie auf dieser Seite stehen, gespeichert oder nicht. Der Regler folgt ihnen: er zeigt die Stufe, zu der sie passen, oder Eigene."),
                 K("answerTimeSeconds", "Antwortzeit", "Wie lange eine normale Runde Antworten annimmt, in Sekunden."),
                 K("normalCountdownStartSeconds", "Erste Erinnerung bei", "Verbleibende Sekunden, bei denen der Chat die erste Countdown-Erinnerung bekommt. Die zweite kommt bei der Hälfte davon, die dritte bei der Hälfte davon, höchstens 5. Nur die Rundenlänge begrenzt das."),
-                K("delayBetweenRoundsSeconds", "Pause zwischen Runden", "Die Pause zwischen dem Ergebnis einer Runde und der Frage der nächsten, in einer Serie."),
+                K("delayBetweenRoundsSeconds", "Pause zwischen Runden", "Die Pause zwischen dem Ergebnis einer Runde und der Frage der nächsten, in einer Serie. Mit eingeschaltetem Overlay mindestens so lange, wie es das Ergebnis und die Bestenliste danach zeigt."),
                 K("defaultDifficulty", "Schwierigkeit", "Wie schwer die Fragen von opentdb, Wikidata, OdeNet, PokeAPI und IGDB sind. Deine eigenen Fragen werden auf der Seite Fragen gefiltert."),
                 K("defaultQuestionType", "Fragetyp", "Welche Form von Frage von opentdb, Wikidata, OdeNet, PokeAPI und IGDB gezogen werden darf."),
                 K("defaultCategoryId", "Kategorie-ID", "Die opentdb-Kategorie jeder Runde. 0 heißt jede Kategorie. Namen und Nummern stehen auf opentdb.com/api_config.php. Die anderen Quellen ignorieren sie."),
@@ -330,12 +330,15 @@ public static class UiSchema
                 K("allowFuzzyTextAnswers", "Ähnliche Schreibweisen", "Ein echter Tippfehler zählt noch, innerhalb der Toleranz darunter."),
                 K("fuzzyTolerance", "Unschärfe-Toleranz", "Wie viele Zeichen abweichen dürfen, bevor eine Antwort abgelehnt wird."),
                 K("minLengthForFuzzy", "Mindestlänge für Unschärfe", "Kurze Antworten werden nie unscharf zugeordnet. Halte das über der Toleranz, sonst zählen wirklich verschiedene Wörter."),
-                K("autoStartNote", null, "Eine zeitgesteuerte Streamer.bot-Aktion bietet jeder Plattform nach ihrem eigenen Takt eine Runde an, jede beurteilt nach ihrem eigenen Chat und ihrer eigenen laufenden Runde."),
+                K("autoStartNote", null, "Eine zeitgesteuerte Streamer.bot-Aktion bietet nach ihrem eigenen Takt jeder Plattform eine Runde an, auf der du live bist, jede beurteilt nach ihrem eigenen Chat und ihrer eigenen laufenden Runde. Lässt sich nicht feststellen, ob du live bist, entscheidet der Chat der letzten Minuten."),
                 K("autoStartEnabled", "Runden automatisch starten", "Schaltet die zeitgesteuerte Aktion in Streamer.bot von hier aus an und aus."),
-                K("autoStartIntervalMinutes", "Alle (Minuten)", "Wie lange zwischen automatischen Runden. Ein laufender Timer behält sein altes Intervall, bis er aus- und wieder eingeschaltet wird."),
+                K("autoStartIntervalMinutes", "Alle (min)", "Wie lange zwischen automatischen Runden. Mit zufälliger Zeit die kürzeste Wartezeit."),
+                K("autoStartRandom", "Zufällige Zeit", "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt."),
+                K("autoStartIntervalMaxMinutes", "Höchstens (min)", "Die längste Wartezeit einer zufälligen Zeit."),
+                K("autoStartMinChatLines", "Erst nach Chat-Zeilen", "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine."),
                 K("autoStartRounds", "Runden je Durchgang", "Wie viele Runden ein Durchgang des Timers spielt. Immer eine, solange 'Mehrere Runden nacheinander erlauben' aus ist."),
-                K("autoStartChatActivityMinutes", "Chat innerhalb (Minuten)", "Wie frisch der Chat sein muss, damit die automatische Runde stattfindet."),
-                K("autoStartRequireChatActivity", "Nur wenn der Chat aktiv war", "Aus, und eine Runde wird nach Plan angeboten, ob jemand da ist oder nicht."),
+                K("autoStartChatActivityMinutes", "Chat innerhalb (min)", "Wie frisch der Chat sein muss, damit die automatische Runde stattfindet."),
+                K("autoStartRequireChatActivity", "Nur wenn der Chat aktiv war", "Aus, und eine Runde wird nach Plan angeboten, ob jemand da ist oder nicht, auf jeder Plattform, auf der du live bist."),
                 K("awardPoints", "Punkte auszahlen", "Aus, und Runden werden um nichts als die Antwort gespielt."),
                 K("baseWinPoints", "Basisgewinn", "Was ein Gewinn vor den Multiplikatoren darunter zahlt."),
                 K("pointsVariable", "Punkte-Variable", "Die Variable, in der deine Punkte liegen. Currency Core von StreamUP und LOYALTY POINTS von tawmae werden von selbst gefunden; ändere das nur für ein eigenes Punktesystem."),
@@ -350,7 +353,7 @@ public static class UiSchema
                 K("subscriberBoostPercent", "Abonnenten", "Wie viel mehr ein Abonnent gewinnt, in Prozent."),
                 K("vipBoostEnabled", "VIP-Bonus", "Zahlt VIPs mehr. Boni addieren sich und gelten nach den Multiplikatoren oben."),
                 K("vipBoostPercent", "VIP", "Wie viel mehr ein VIP gewinnt, in Prozent."),
-                K("addictedNote", null, "Zuschauer auf der Süchtigen-Liste bekommen die Hälfte dessen, was oben herauskommt. Die Liste ist auf der Seite Zugriff."),
+                K("addictedNote", null, "Zuschauern auf der Süchtigen-Liste wird von dem, was oben herauskommt, der Abzug für Süchtige abgezogen. Liste und Abzug sind auf der Seite Zugriff."),
                 K("scoreboardTopN", "Angezeigte Plätze", "Wie viele Zuschauer die Bestenliste nennt."),
                 K("broadcasterAllowed", "Den Broadcaster aufnehmen", "Aus, und dein eigenes Konto erscheint nie auf der Liste."),
                 K("botAllowed", "Den Bot aufnehmen", "Aus, und dein Bot-Konto erscheint nie auf der Liste."),
@@ -412,8 +415,9 @@ public static class UiSchema
                 K("cooldownNote", null, "0 schaltet eine Abklingzeit aus. Speichern schreibt beide auf den Befehl !trivia in Streamer.bot. Was der Chat derweil erfährt, steht auf der Seite Nachrichten."),
                 K("blockedUsers", "Gesperrte Zuschauer", "Zuschauer, deren Antworten und Befehle ignoriert werden, ohne ein Wort zurück."),
                 K("blockedGroups", "Gesperrte Gruppen", "Streamer.bot-Gruppen, deren Mitglieder ignoriert werden. Die Namen müssen den Gruppen genau entsprechen."),
-                K("addictedUsers", "Süchtige Zuschauer", "Sie spielen weiter, bekommen aber nur je die Hälfte dessen, was sie gewonnen hätten. Der Befehl !TA bearbeitet diese Liste aus dem Chat."),
+                K("addictedUsers", "Süchtige Zuschauer", "Sie spielen weiter, aber ihre Gewinne werden um den Abzug für Süchtige darunter gekürzt. Der Befehl !TA bearbeitet diese Liste aus dem Chat."),
                 K("addictedGroups", "Süchtige Gruppen", "Mitglieder dieser Streamer.bot-Gruppen zählen auch als süchtig."),
+                K("addictedPayoutCut", "Abzug für Süchtige", "Wie viel vom Gewinn eines süchtigen Zuschauers abgezogen wird, von 0 (nichts) bis 100 (alles). 50 heißt, er bekommt die Hälfte. Wird zuletzt angewandt, kürzt also auch einen Abonnenten- oder VIP-Bonus."),
                 K("announceEachAnswer", "Jede Antwort im Chat bestätigen", "Aus, und die Nachrichten unter Antworten werden nie gesendet. In einem vollen Chat ist das eine Zeile je Antwort."),
                 K("overlayNote", null, "Eine Browserquelle, die die laufende Frage mit ihrem Countdown zeigt, dann die richtige Antwort, die Gewinner und die Bestenliste. Sie hört auf Streamer.bots eigenen WebSocket-Server, es ist also nichts weiter zu installieren."),
                 K("overlayEnabled", "Runden ans Overlay senden", "Aus, und das Spiel sendet dem Overlay nichts, es bleibt also leer."),
@@ -432,10 +436,11 @@ public static class UiSchema
                 K("openOverlayFolder", "Overlay-Ordner öffnen", "Öffnet den Ordner mit der Overlay-Seite im Explorer."),
                 K("overlayShowAnswerCount", "Wie viele geantwortet haben", "Zählt die Antworten, solange eine Runde läuft. Nur die Zahl, nie welche Option jemand gewählt hat."),
                 K("overlayShowDetails", "Kategorie und Schwierigkeit", "Die Chips über der Frage. Getrennt von 'Schwierigkeit und Kategorie zur Frage zeigen' auf der Seite Spiel, das für den Chat ist, sodass jedes ohne das andere gehen kann."),
+                K("overlayShowPlatform", "Von welcher Plattform sie kam", "Ein Chip vor der Frage, der Twitch, YouTube oder Kick nennt. Für Streams auf mehreren Plattformen zugleich, wo jede ihre eigene Frage spielt."),
                 K("overlayShowTimer", "Der Countdown", "Die Uhr und der ablaufende Balken. Aus, und die Runde endet trotzdem pünktlich, es wird nur nicht gezeigt."),
                 K("overlayShowWinners", "Wer gewonnen hat", "Die Namen der Gewinner mit ihren Punkten unter dem Ergebnis. Aus, und das Ergebnis sagt nur, wie viele richtig lagen."),
                 K("overlayShowLeaderboard", "Die Bestenliste nach einer Runde", "Lässt auf das Ergebnis die Spitze der Bestenliste folgen, gereiht wie !TL und mit denselben Ausnahmen."),
-                K("overlayResultSeconds", "Ergebnis anzeigen für", "Wie lange Antwort und Gewinner stehen bleiben, und die Bestenliste danach."),
+                K("overlayResultSeconds", "Ergebnis anzeigen für", "Wie lange Antwort und Gewinner stehen bleiben, und die Bestenliste danach. Die nächste Frage einer Serie wartet darauf."),
                 K("overlayLeaderboardPlaces", "Plätze der Bestenliste", "Wie viele Zuschauer die Bestenliste des Overlays nennt, bis zu 10."),
                 K("overlayPosition", "Frage", "Wo die Frage auf der Leinwand sitzt. Die Bestenliste erscheint immer oben rechts, nachdem die Frage weg ist."),
                 K("overlayScale", "Größe", "Skaliert Frage und Bestenliste zusammen. 100 ist die normale Größe, von 50 bis 150."),
@@ -487,7 +492,7 @@ public static class UiSchema
                 K("callerFooter", "Seine eigenen Zahlen", "Folgt auf 'Nicht auf der Liste' mit den eigenen Zahlen dieses Zuschauers."),
                 K("monthlyReset", "Monatlicher Reset", "Einmal angekündigt, wenn der automatische Reset die Bestenliste wischt."),
                 K("addictedUsage", "Verwendung", "Gesendet, wenn der Süchtigen-Befehl ohne Ziel benutzt wird."),
-                K("addictedAdded", "Hinzugefügt", "Gesendet, wenn ein Zuschauer auf die Süchtigen-Liste kommt. Er gewinnt dann nur die Hälfte seiner normalen Punkte."),
+                K("addictedAdded", "Hinzugefügt", "Gesendet, wenn ein Zuschauer auf die Süchtigen-Liste kommt. Seine Gewinne werden dann um den Abzug für Süchtige gekürzt."),
                 K("addictedAlreadyOnList", "Schon auf der Liste", "Gesendet, wenn ein Zuschauer hinzugefügt wird, der schon auf der Süchtigen-Liste steht."),
                 K("addictedRemoved", "Entfernt", "Gesendet, wenn ein Zuschauer von der Süchtigen-Liste genommen wird."),
                 K("addictedNotOnList", "Nicht auf der Liste", "Gesendet, wenn ein Zuschauer entfernt wird, der nicht auf der Süchtigen-Liste stand."),
@@ -589,9 +594,9 @@ public static class UiSchema
         S("difficulty", "standard", page: "game", label: "Difficulty", help: "Sets the answer times, the countdown reminders and the spelling tolerance in one go, from Relaxed (two minutes and the loosest spelling check) to Brutal (half a minute, no fuzzy matching). Every one of those numbers can still be changed by hand below; Custom is your own numbers.", kind: "slider", section: "Difficulty", options: new[] { "relaxed|Relaxed", "gentle|Gentle", "standard|Standard", "sharp|Sharp", "brutal|Brutal", "custom|Custom" }, transient: true, live: true),
         S("difficultyNote", null, page: "game", help: "A stop of the slider fills in the six numbers it stands for; nothing is saved until you save. The game only reads the numbers, so you can fine-tune them afterwards: the slider then shows Custom, or the stop they match.", kind: "note", section: "Difficulty"),
         S("difficultyNow", null, page: "game", label: "How a round plays", help: "What a round gives with the six numbers as they stand on this page, saved or not. The slider follows them: it shows the stop they match, or Custom.", kind: "action", section: "Difficulty", live: true, panel: true, auto: true),
-        S("answerTimeSeconds", 60, page: "game", label: "Answer time", help: "How long a normal round accepts answers, in seconds.", section: "Rounds", min: 1.0, unit: "s", row: "roundTimes", aliases: new[] { "AnswerTimeSeconds" }),
-        S("normalCountdownStartSeconds", 30, page: "game", label: "First reminder at", help: "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this.", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "NormalCountdownStartSeconds" }),
-        S("delayBetweenRoundsSeconds", 5, page: "game", label: "Delay between rounds", help: "The pause between the result of one round and the question of the next, in a back-to-back run.", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "DelayBetweenRoundsSeconds" }),
+        S("answerTimeSeconds", 60, page: "game", label: "Answer time", help: "How long a normal round accepts answers, in seconds.", kind: "duration", section: "Rounds", min: 1.0, unit: "s", row: "roundTimes", aliases: new[] { "AnswerTimeSeconds" }),
+        S("normalCountdownStartSeconds", 30, page: "game", label: "First reminder at", help: "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this.", kind: "duration", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "NormalCountdownStartSeconds" }),
+        S("delayBetweenRoundsSeconds", 5, page: "game", label: "Delay between rounds", help: "The pause between the result of one round and the question of the next, in a back-to-back run. With the overlay on, at least as long as it shows the result and the leaderboard after it.", kind: "duration", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "DelayBetweenRoundsSeconds" }),
         S("defaultDifficulty", "any", page: "game", label: "Difficulty", help: "How hard the questions drawn from opentdb, Wikidata, OdeNet, PokeAPI and IGDB are. Your own questions are filtered on the Questions page instead.", kind: "options", section: "Rounds", options: new[] { "any|Any", "easy|Easy", "medium|Medium", "hard|Hard" }, row: "roundDefaults", aliases: new[] { "DefaultDifficulty" }),
         S("defaultQuestionType", "both", page: "game", label: "Question type", help: "Which shape of question may be drawn from opentdb, Wikidata, OdeNet, PokeAPI and IGDB.", kind: "options", section: "Rounds", options: new[] { "both|True/False + Multiple Choice", "boolean|True/False only", "multiple|Multiple Choice only" }, row: "roundDefaults", aliases: new[] { "DefaultQuestionType" }),
         S("defaultCategoryId", "0", page: "game", label: "Category ID", help: "The opentdb category every round uses. 0 means any category. The names and their numbers are on opentdb.com/api_config.php. The other sources ignore it.", section: "Rounds", row: "roundDefaults", aliases: new[] { "DefaultCategoryId" }),
@@ -603,8 +608,8 @@ public static class UiSchema
         S("blitzNote", null, page: "game", help: "A blitz round ends on the first correct answer instead of running out the clock. Which rounds turn into one is down to chance.", kind: "note", section: "Blitz rounds"),
         S("enableBlitzTrivia", true, page: "game", label: "Enable blitz rounds", help: "Off, and every round runs its full answer time.", section: "Blitz rounds", aliases: new[] { "EnableBlitzTrivia" }),
         S("blitzChance", 10, page: "game", label: "Chance", help: "How often a round becomes a blitz round, as a percentage.", kind: "percent", section: "Blitz rounds", min: 0.0, max: 100.0, row: "blitz", aliases: new[] { "BlitzChance" }),
-        S("blitzAnswerTimeSeconds", 20, page: "game", label: "Answer time", help: "How long a blitz round accepts answers, in seconds.", section: "Blitz rounds", min: 1.0, unit: "s", row: "blitz", aliases: new[] { "BlitzAnswerTimeSeconds" }),
-        S("blitzCountdownStartSeconds", 10, page: "game", label: "First reminder at", help: "Seconds left when a blitz round gets its first reminder.", section: "Blitz rounds", min: 0.0, unit: "s", row: "blitz", aliases: new[] { "BlitzCountdownStartSeconds" }),
+        S("blitzAnswerTimeSeconds", 20, page: "game", label: "Answer time", help: "How long a blitz round accepts answers, in seconds.", kind: "duration", section: "Blitz rounds", min: 1.0, unit: "s", row: "blitz", aliases: new[] { "BlitzAnswerTimeSeconds" }),
+        S("blitzCountdownStartSeconds", 10, page: "game", label: "First reminder at", help: "Seconds left when a blitz round gets its first reminder.", kind: "duration", section: "Blitz rounds", min: 0.0, unit: "s", row: "blitz", aliases: new[] { "BlitzCountdownStartSeconds" }),
         S("matchingNote", null, page: "game", help: "Switch all four off and no answer can ever be accepted.", kind: "note", section: "Answer matching"),
         S("allowNumericAnswers", true, page: "game", label: "By option number", help: "Typing '2' picks the second option.", section: "Answer matching", aliases: new[] { "AllowNumericAnswers" }),
         S("allowExactTextAnswers", true, page: "game", label: "Exactly as written", help: "The answer text, ignoring case.", section: "Answer matching", aliases: new[] { "AllowExactTextAnswers" }),
@@ -612,12 +617,15 @@ public static class UiSchema
         S("allowFuzzyTextAnswers", true, page: "game", label: "Close spellings", help: "A genuine typo still counts, within the tolerance below.", section: "Answer matching", aliases: new[] { "AllowFuzzyTextAnswers" }),
         S("fuzzyTolerance", 2, page: "game", label: "Fuzzy tolerance", help: "How many characters may differ before an answer is turned away.", section: "Answer matching", min: 0.0, row: "fuzzy", aliases: new[] { "FuzzyTolerance" }),
         S("minLengthForFuzzy", 4, page: "game", label: "Min. length for fuzzy", help: "Short answers are never matched loosely. Keep this above the tolerance, or genuinely different words start counting.", section: "Answer matching", min: 1.0, row: "fuzzy", aliases: new[] { "MinLengthForFuzzy" }),
-        S("autoStartNote", null, page: "game", help: "A Streamer.bot timed action offers a round to every platform on its own schedule, each judged on its own chat and its own running round.", kind: "note", section: "Rounds that start themselves"),
+        S("autoStartNote", null, page: "game", help: "A Streamer.bot timed action offers a round on its own schedule to every platform you are live on, each judged on its own chat and its own running round. Where it cannot be told whether you are live, recent chat decides.", kind: "note", section: "Rounds that start themselves"),
         S("autoStartEnabled", false, page: "game", label: "Start rounds automatically", help: "Switches the Streamer.bot timed action on and off from here.", section: "Rounds that start themselves", aliases: new[] { "AutoStartEnabled" }),
-        S("autoStartIntervalMinutes", 15, page: "game", label: "Every (minutes)", help: "How long between automatic rounds. A running timer keeps its old interval until it is switched off and on again.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
+        S("autoStartIntervalMinutes", 15, page: "game", label: "Every (min)", help: "How long between automatic rounds. With a random time, the shortest wait.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
         S("autoStartRounds", 1, page: "game", label: "Rounds each time", help: "How many rounds one turn of the timer plays. Always one while 'Allow several rounds in a row' is off.", section: "Rounds that start themselves", min: 1.0, row: "auto", aliases: new[] { "AutoStartRounds" }),
-        S("autoStartChatActivityMinutes", 10, page: "game", label: "Chat within (minutes)", help: "How recent chat has to be for the automatic round to go ahead.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartChatActivityMinutes" }),
-        S("autoStartRequireChatActivity", true, page: "game", label: "Only when chat has been active", help: "Off, and a round is offered on the schedule whether or not anybody is there.", section: "Rounds that start themselves", aliases: new[] { "AutoStartRequireChatActivity" }),
+        S("autoStartChatActivityMinutes", 10, page: "game", label: "Chat within (min)", help: "How recent chat has to be for the automatic round to go ahead.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartChatActivityMinutes" }),
+        S("autoStartRandom", false, page: "game", label: "Random time", help: "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.", section: "Rounds that start themselves", requires: "autoStartEnabled", aliases: new[] { "AutoStartRandom" }),
+        S("autoStartIntervalMaxMinutes", 30, page: "game", label: "At most (min)", help: "The longest wait of a random time.", section: "Rounds that start themselves", min: 1.0, unit: "min", requires: "autoStartRandom", row: "autoMore", aliases: new[] { "AutoStartIntervalMaxMinutes" }),
+        S("autoStartMinChatLines", 0, page: "game", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "autoMore", aliases: new[] { "AutoStartMinChatLines" }),
+        S("autoStartRequireChatActivity", true, page: "game", label: "Only when chat has been active", help: "Off, and a round is offered on the schedule whether or not anybody is there, on every platform you are live on.", section: "Rounds that start themselves", aliases: new[] { "AutoStartRequireChatActivity" }),
         S("awardPoints", true, page: "game", label: "Pay out points", help: "Off, and rounds are played for nothing but the answer.", section: "Points", aliases: new[] { "AwardPoints" }),
         S("baseWinPoints", 1234, page: "game", label: "Base win", help: "What a win pays before the multipliers below.", section: "Points", min: 0.0, row: "points", aliases: new[] { "BaseWinPoints" }),
         S("pointsVariable", "points", page: "game", label: "Points variable", help: "The variable your points live in. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own; only change this for a points system of your own.", section: "Points", row: "points", aliases: new[] { "VarName" }),
@@ -632,7 +640,7 @@ public static class UiSchema
         S("subscriberBoostPercent", 10.0, page: "game", label: "Subscriber", help: "How much more a subscriber wins, as a percentage.", kind: "percent", section: "Payouts", min: 0.0, row: "sub", aliases: new[] { "SubscriberBoostPercent" }),
         S("vipBoostEnabled", false, page: "game", label: "VIP boost", help: "Pays VIPs more. Boosts stack with each other and apply after the multipliers above.", section: "Payouts", twitchOnly: true, row: "vip", aliases: new[] { "VipBoostEnabled" }),
         S("vipBoostPercent", 20.0, page: "game", label: "VIP", help: "How much more a VIP wins, as a percentage.", kind: "percent", section: "Payouts", min: 0.0, row: "vip", aliases: new[] { "VipBoostPercent" }),
-        S("addictedNote", null, page: "game", help: "Viewers on the addicted list collect half of whatever the above works out to. That list is on the Access page.", kind: "note", section: "Payouts"),
+        S("addictedNote", null, page: "game", help: "Viewers on the addicted list have the Addicted cut taken off whatever the above works out to. The list and the cut are on the Access page.", kind: "note", section: "Payouts"),
         S("scoreboardTopN", 5, page: "game", label: "Places shown", help: "How many viewers the leaderboard lists.", section: "Scoreboard", min: 1.0, aliases: new[] { "ScoreboardTopN" }),
         S("broadcasterAllowed", false, page: "game", label: "Include the broadcaster", help: "Off, and your own account never appears on the board.", section: "Scoreboard", aliases: new[] { "BroadcasterAllowed" }),
         S("botAllowed", false, page: "game", label: "Include the bot", help: "Off, and your bot account never appears on the board.", section: "Scoreboard", aliases: new[] { "BotAllowed" }),
@@ -689,13 +697,14 @@ public static class UiSchema
         S("refundFailedRedemptions", true, page: "access", label: "Refund redemptions that don't start a round", help: "A round already running, a cooldown, or no question to be had: the redemption is cancelled and the channel points go back. Only works while the redemption is still queued, a reward that skips the request queue can't be refunded.", section: "How viewers play", requires: "isChannelPointsTrigger", twitchOnly: true, aliases: new[] { "RefundFailedRedemptions" }),
         S("requireModeratorForStart", true, page: "access", label: "Only moderators may start", help: "Off, and anybody in chat can start a round. The broadcaster can always start, whatever this says.", section: "Who may run a round", aliases: new[] { "RequireModeratorForStart" }),
         S("requireModeratorForSkip", true, page: "access", label: "Only moderators may skip", help: "Off, and anybody in chat can skip the running question. Force end is always moderators only.", section: "Who may run a round", aliases: new[] { "RequireModeratorForSkip" }),
-        S("globalCooldown", 0, page: "access", label: "Everyone", help: "How long everyone waits after a round is started, for example '60'. 0 turns it off. It gates the command that starts a run, the rounds of a back-to-back series run straight through it.", section: "Cooldowns", min: 0.0, unit: "s", row: "cooldowns", aliases: new[] { "CooldownGlobalSeconds" }),
-        S("userCooldown", 0, page: "access", label: "Per viewer", help: "How long one viewer waits before starting another round, for example '60'. 0 turns it off.", section: "Cooldowns", min: 0.0, unit: "s", row: "cooldowns", aliases: new[] { "CooldownUserSeconds" }),
+        S("globalCooldown", 0, page: "access", label: "Everyone", help: "How long everyone waits after a round is started, for example '60'. 0 turns it off. It gates the command that starts a run, the rounds of a back-to-back series run straight through it.", kind: "duration", section: "Cooldowns", min: 0.0, unit: "s", row: "cooldowns", aliases: new[] { "CooldownGlobalSeconds" }),
+        S("userCooldown", 0, page: "access", label: "Per viewer", help: "How long one viewer waits before starting another round, for example '60'. 0 turns it off.", kind: "duration", section: "Cooldowns", min: 0.0, unit: "s", row: "cooldowns", aliases: new[] { "CooldownUserSeconds" }),
         S("cooldownNote", null, page: "access", help: "0 turns a cooldown off. Saving writes both onto the !trivia command in Streamer.bot. What chat is told meanwhile is on the Messages page.", kind: "note", section: "Cooldowns"),
         S("blockedUsers", "", page: "access", label: "Blocked viewers", help: "Viewers whose answers and commands are ignored, without a word back.", kind: "namelist", section: "Kept out", aliases: new[] { "BlockedUsers" }),
         S("blockedGroups", "", page: "access", label: "Blocked groups", help: "Streamer.bot user groups whose members are ignored. Names must match the groups exactly.", kind: "grouplist", section: "Kept out", aliases: new[] { "BlockedGroups" }),
-        S("addictedUsers", "", page: "access", label: "Addicted viewers", help: "They still play, but only ever collect half of what they would have won. The addicted command edits this list from chat.", kind: "namelist", section: "Addicted", aliases: new[] { "AddictedUsers" }),
+        S("addictedUsers", "", page: "access", label: "Addicted viewers", help: "They still play, but their winnings are cut by the Addicted cut below. The addicted command edits this list from chat.", kind: "namelist", section: "Addicted", aliases: new[] { "AddictedUsers" }),
         S("addictedGroups", "", page: "access", label: "Addicted groups", help: "Members of these Streamer.bot groups count as addicted too.", kind: "grouplist", section: "Addicted", aliases: new[] { "AddictedGroups" }),
+        S("addictedPayoutCut", 50.0, page: "access", label: "Addicted cut", help: "How much of an addicted viewer's winnings is held back, from 0 (nothing) to 100 (all of it). 50 means they earn half. Applied last, so it cuts a subscriber or VIP boost too.", kind: "percent", section: "Addicted", min: 0.0, max: 100.0, aliases: new[] { "AddictedPayoutCut" }),
         S("useBot", true, aliases: new[] { "UseBot" }),
         S("sendAction", false, aliases: new[] { "SendAction" }),
         S("cooldownUseBot", true, aliases: new[] { "UseBotCD" }),
@@ -719,10 +728,11 @@ public static class UiSchema
         S("openOverlayFolder", null, page: "overlay", label: "Open the overlay folder", help: "Opens the folder holding the overlay page in Explorer.", kind: "action", section: "Add it to OBS", row: "urlButtons"),
         S("overlayShowAnswerCount", true, page: "overlay", label: "How many have answered", help: "Counts the answers while a round runs. Only the number, never which option anybody picked.", section: "What it shows", aliases: new[] { "OverlayShowAnswerCount" }),
         S("overlayShowDetails", true, page: "overlay", label: "Category and difficulty", help: "The chips above the question. Separate from 'Show difficulty and category with the question' on the Game page, which is for chat, so either can go without the other.", section: "What it shows", aliases: new[] { "OverlayShowDetails" }),
+        S("overlayShowPlatform", true, page: "overlay", label: "Which platform it came from", help: "A chip naming Twitch, YouTube or Kick in front of the question, for streaming to more than one at once, where every platform plays a question of its own.", section: "What it shows", aliases: new[] { "OverlayShowPlatform" }),
         S("overlayShowTimer", true, page: "overlay", label: "The countdown", help: "The clock and the bar running down. Off, the round still ends on time, it just isn't shown.", section: "What it shows", aliases: new[] { "OverlayShowTimer" }),
         S("overlayShowWinners", true, page: "overlay", label: "Who won", help: "The winners' names with their points under the result. Off, the result only says how many were right.", section: "What it shows", aliases: new[] { "OverlayShowWinners" }),
         S("overlayShowLeaderboard", true, page: "overlay", label: "The leaderboard after a round", help: "Follows the result with the top of the leaderboard, ranked like !TL and leaving out the same viewers.", section: "What it shows", aliases: new[] { "OverlayShowLeaderboard" }),
-        S("overlayResultSeconds", 10, page: "overlay", label: "Result shown for", help: "How long the answer and the winners stay up, and the leaderboard after them.", section: "What it shows", min: 1.0, unit: "s", row: "overlayTiming", aliases: new[] { "OverlayResultSeconds" }),
+        S("overlayResultSeconds", 10, page: "overlay", label: "Result shown for", help: "How long the answer and the winners stay up, and the leaderboard after them. The next question of a back-to-back run waits for them.", kind: "duration", section: "What it shows", min: 1.0, unit: "s", row: "overlayTiming", aliases: new[] { "OverlayResultSeconds" }),
         S("overlayLeaderboardPlaces", 5, page: "overlay", label: "Leaderboard places", help: "How many viewers the overlay's leaderboard lists, up to 10.", section: "What it shows", min: 1.0, max: 10.0, row: "overlayTiming", aliases: new[] { "OverlayLeaderboardPlaces" }),
         S("overlayPosition", "bottom", page: "overlay", label: "Question", kind: "options", section: "Look", options: new[] { "bottom|Bottom centre", "top|Top centre" }, row: "placing", aliases: new[] { "OverlayPosition" }),
         S("overlayScale", 100, page: "overlay", label: "Size", help: "Scales the question and the leaderboard together. 100 is the normal size, from 50 to 150.", kind: "percent", section: "Look", min: 50.0, max: 150.0, row: "placing", aliases: new[] { "OverlayScale" }),
@@ -774,7 +784,7 @@ public static class UiSchema
         Msg("Scoreboard", "callerFooter", "🌟 Your stats: {wins} wins, {points} pts  ⚡ Blitz: {blitzwins} wins, {blitzpoints} pts", "Their Own Numbers", "Follows 'Not On The Board' with that viewer's own figures.", new[] { "wins", "points", "blitzwins", "blitzpoints" }, alias: "CallerFooter"),
         Msg("Scoreboard", "monthlyReset", "🔄 Trivia {platform} leaderboard has been reset for the new month!", "Monthly Reset", "Announced once when the leaderboard is wiped by the auto reset.", new[] { "platform" }, alias: "MonthlyReset"),
         Msg("Addicted", "addictedUsage", "@{userName}, usage: !addicted add <user>  or  !addicted remove <user>", "Usage", "Sent when the addicted command is used with no target.", new[] { "userName" }, alias: "AddictedUsage"),
-        Msg("Addicted", "addictedAdded", "@{userName}, {targetUser} added to the addicted list — 50% win penalty applied. 🙏", "Added", "Sent when a viewer is added to the addicted list. They then win only half their normal points.", new[] { "userName", "targetUser" }, alias: "AddictedAdded"),
+        Msg("Addicted", "addictedAdded", "@{userName}, {targetUser} added to the addicted list — {addictedCut}% win penalty applied. 🙏", "Added", "Sent when a viewer is added to the addicted list. Their winnings are then cut by the Addicted cut on the Access page.", new[] { "userName", "targetUser", "addictedCut" }, alias: "AddictedAdded"),
         Msg("Addicted", "addictedAlreadyOnList", "@{userName}, {targetUser} is already on the addicted list.", "Already On List", "Sent when adding a viewer who is already on the addicted list.", new[] { "userName", "targetUser" }, alias: "AddictedAlreadyOnList"),
         Msg("Addicted", "addictedRemoved", "@{userName}, {targetUser} removed from the addicted list.", "Removed", "Sent when a viewer is taken off the addicted list.", new[] { "userName", "targetUser" }, alias: "AddictedRemoved"),
         Msg("Addicted", "addictedNotOnList", "@{userName}, {targetUser} is not on the addicted list.", "Not On List", "Sent when removing a viewer who was not on the addicted list.", new[] { "userName", "targetUser" }, alias: "AddictedNotOnList"),
@@ -1250,6 +1260,115 @@ public static class UiUpdateNotice
     }
 
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
+}
+
+/// <summary>A Streamer.bot timed action run the three ways its own dialog offers: every so many minutes, after a random
+/// time between two bounds, and only once chat has written so many lines. Code can set a timed action's interval and
+/// switch it on and off, nothing more, so the random time and the lines are kept here. The settings are the convention
+/// keys autoStartEnabled, autoStartIntervalMinutes, autoStartRandom, autoStartIntervalMaxMinutes and
+/// autoStartMinChatLines.
+/// <para>The game calls <see cref="Sync"/> in Init and after a save (restart: true there, so a new interval counts
+/// from the save), <see cref="NoteLine"/> for every chat message it sees, and, when the timed action fires,
+/// <see cref="Rearm"/> once and <see cref="TakeLines"/> for each chat it would start in: false means chat has been too
+/// quiet, and the round waits for the next turn of the timer, as Streamer.bot's own lines do.</para></summary>
+public static class UiTimer
+{
+    private static readonly object Gate = new object();
+    private static readonly System.Random Rng = new System.Random();
+    private static readonly System.Collections.Generic.Dictionary<string, int> Lines =
+        new System.Collections.Generic.Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>One more chat line in a scope: a platform, or "" for a game that has one chat.</summary>
+    public static void NoteLine(string scope)
+    {
+        lock (Gate)
+        {
+            int n;
+            Lines.TryGetValue(scope ?? "", out n);
+            if (n < int.MaxValue) Lines[scope ?? ""] = n + 1;
+        }
+    }
+
+    /// <summary>The chat lines of a scope since the last automatic start there.</summary>
+    public static int LinesSince(string scope)
+    {
+        lock (Gate)
+        {
+            int n;
+            return Lines.TryGetValue(scope ?? "", out n) ? n : 0;
+        }
+    }
+
+    /// <summary>Whether a scope has seen its lines: true, and the count starts over, with at least
+    /// <paramref name="minLines"/> lines since the last time (always with 0 or less); false leaves the count as it is.</summary>
+    public static bool TakeLines(string scope, int minLines)
+    {
+        lock (Gate)
+        {
+            int n;
+            Lines.TryGetValue(scope ?? "", out n);
+            if (minLines > 0 && n < minLines) return false;
+            Lines[scope ?? ""] = 0;
+            return true;
+        }
+    }
+
+    /// <summary>The next wait in seconds: the interval, or with <paramref name="random"/> a time between it and
+    /// <paramref name="maxMinutes"/>. At least a minute; a maximum below the interval is the interval.</summary>
+    public static int NextSeconds(int minutes, bool random, int maxMinutes)
+    {
+        int low = System.Math.Max(1, System.Math.Min(minutes, 1440)) * 60;
+        int high = System.Math.Max(low, System.Math.Max(1, System.Math.Min(maxMinutes, 1440)) * 60);
+        if (!random || high == low) return low;
+        lock (Gate) return Rng.Next(low, high + 1);
+    }
+
+    /// <summary>Brings the timed action in line with the settings. A timer that already runs keeps its countdown unless
+    /// <paramref name="restart"/> says the schedule changed: switching it off and on starts the wait over. A timed action
+    /// the import does not have is one line in the log, never an exception.</summary>
+    public static void Sync(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
+        bool restart = false, System.Action<string> log = null)
+    {
+        try
+        {
+            bool running = CPH.GetTimerState(timerId);
+            if (!enabled)
+            {
+                if (running) CPH.DisableTimerById(timerId);
+                return;
+            }
+            if (running && !restart)
+            {
+                // A random timer keeps the wait it drew; a fixed one is told its interval again, which costs nothing.
+                if (!random) CPH.SetTimerInterval(timerId, NextSeconds(minutes, false, maxMinutes));
+                return;
+            }
+            CPH.SetTimerInterval(timerId, NextSeconds(minutes, random, maxMinutes));
+            if (running) CPH.DisableTimerById(timerId);
+            CPH.EnableTimerById(timerId);
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("The timed action " + timerId + " could not be set: " + ex.Message);
+        }
+    }
+
+    /// <summary>When the timed action has fired: a random timer draws its next wait and starts over with it. A fixed one
+    /// simply runs on.</summary>
+    public static void Rearm(IInlineInvokeProxy CPH, string timerId, int minutes, bool random, int maxMinutes, System.Action<string> log = null)
+    {
+        if (!random) return;
+        try
+        {
+            CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
+            CPH.DisableTimerById(timerId);
+            CPH.EnableTimerById(timerId);
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("The timed action " + timerId + " could not be set: " + ex.Message);
+        }
+    }
 }
 
 /// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and

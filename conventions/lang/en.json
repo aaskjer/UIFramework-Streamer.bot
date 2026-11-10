@@ -62,6 +62,12 @@
     "leaderboardEntry":              { "label": "Entry line" },
     "leaderboardEmpty":              { "label": "Empty board" },
 
+    "autoStartEnabled":            { "label": "Start rounds automatically", "help": "Switches the Streamer.bot timed action that starts a round on and off." },
+    "autoStartIntervalMinutes":    { "label": "Every", "help": "How long between automatic rounds. With a random time, the shortest wait." },
+    "autoStartRandom":             { "label": "Random time", "help": "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes." },
+    "autoStartIntervalMaxMinutes": { "label": "At most", "help": "The longest wait of a random time." },
+    "autoStartMinChatLines":       { "label": "Only after chat lines", "help": "How many lines chat must have written since the last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none." },
+
     "overlayEnabled":        { "label": "Overlay enabled" },
     "overlayFolder":         { "label": "Overlay folder", "help": "Where the overlay files are written. Empty uses the default next to Streamer.bot." },
     "overlayPort":           { "label": "Overlay port", "help": "0 uses the Streamer.bot WebSocket port." },

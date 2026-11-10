@@ -693,6 +693,115 @@ public static class UiUpdateNotice
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
 }
 
+/// <summary>A Streamer.bot timed action run the three ways its own dialog offers: every so many minutes, after a random
+/// time between two bounds, and only once chat has written so many lines. Code can set a timed action's interval and
+/// switch it on and off, nothing more, so the random time and the lines are kept here. The settings are the convention
+/// keys autoStartEnabled, autoStartIntervalMinutes, autoStartRandom, autoStartIntervalMaxMinutes and
+/// autoStartMinChatLines.
+/// <para>The game calls <see cref="Sync"/> in Init and after a save (restart: true there, so a new interval counts
+/// from the save), <see cref="NoteLine"/> for every chat message it sees, and, when the timed action fires,
+/// <see cref="Rearm"/> once and <see cref="TakeLines"/> for each chat it would start in: false means chat has been too
+/// quiet, and the round waits for the next turn of the timer, as Streamer.bot's own lines do.</para></summary>
+public static class UiTimer
+{
+    private static readonly object Gate = new object();
+    private static readonly System.Random Rng = new System.Random();
+    private static readonly System.Collections.Generic.Dictionary<string, int> Lines =
+        new System.Collections.Generic.Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>One more chat line in a scope: a platform, or "" for a game that has one chat.</summary>
+    public static void NoteLine(string scope)
+    {
+        lock (Gate)
+        {
+            int n;
+            Lines.TryGetValue(scope ?? "", out n);
+            if (n < int.MaxValue) Lines[scope ?? ""] = n + 1;
+        }
+    }
+
+    /// <summary>The chat lines of a scope since the last automatic start there.</summary>
+    public static int LinesSince(string scope)
+    {
+        lock (Gate)
+        {
+            int n;
+            return Lines.TryGetValue(scope ?? "", out n) ? n : 0;
+        }
+    }
+
+    /// <summary>Whether a scope has seen its lines: true, and the count starts over, with at least
+    /// <paramref name="minLines"/> lines since the last time (always with 0 or less); false leaves the count as it is.</summary>
+    public static bool TakeLines(string scope, int minLines)
+    {
+        lock (Gate)
+        {
+            int n;
+            Lines.TryGetValue(scope ?? "", out n);
+            if (minLines > 0 && n < minLines) return false;
+            Lines[scope ?? ""] = 0;
+            return true;
+        }
+    }
+
+    /// <summary>The next wait in seconds: the interval, or with <paramref name="random"/> a time between it and
+    /// <paramref name="maxMinutes"/>. At least a minute; a maximum below the interval is the interval.</summary>
+    public static int NextSeconds(int minutes, bool random, int maxMinutes)
+    {
+        int low = System.Math.Max(1, System.Math.Min(minutes, 1440)) * 60;
+        int high = System.Math.Max(low, System.Math.Max(1, System.Math.Min(maxMinutes, 1440)) * 60);
+        if (!random || high == low) return low;
+        lock (Gate) return Rng.Next(low, high + 1);
+    }
+
+    /// <summary>Brings the timed action in line with the settings. A timer that already runs keeps its countdown unless
+    /// <paramref name="restart"/> says the schedule changed: switching it off and on starts the wait over. A timed action
+    /// the import does not have is one line in the log, never an exception.</summary>
+    public static void Sync(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
+        bool restart = false, System.Action<string> log = null)
+    {
+        try
+        {
+            bool running = CPH.GetTimerState(timerId);
+            if (!enabled)
+            {
+                if (running) CPH.DisableTimerById(timerId);
+                return;
+            }
+            if (running && !restart)
+            {
+                // A random timer keeps the wait it drew; a fixed one is told its interval again, which costs nothing.
+                if (!random) CPH.SetTimerInterval(timerId, NextSeconds(minutes, false, maxMinutes));
+                return;
+            }
+            CPH.SetTimerInterval(timerId, NextSeconds(minutes, random, maxMinutes));
+            if (running) CPH.DisableTimerById(timerId);
+            CPH.EnableTimerById(timerId);
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("The timed action " + timerId + " could not be set: " + ex.Message);
+        }
+    }
+
+    /// <summary>When the timed action has fired: a random timer draws its next wait and starts over with it. A fixed one
+    /// simply runs on.</summary>
+    public static void Rearm(IInlineInvokeProxy CPH, string timerId, int minutes, bool random, int maxMinutes, System.Action<string> log = null)
+    {
+        if (!random) return;
+        try
+        {
+            CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
+            CPH.DisableTimerById(timerId);
+            CPH.EnableTimerById(timerId);
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("The timed action " + timerId + " could not be set: " + ex.Message);
+        }
+    }
+}
+
 /// <summary>The points system of this Streamer.bot, the way the games share it. StreamUP's Currency Core and
 /// Tawmae's LOYALTY POINTS each keep their settings in a persisted global that names the user variable the points
 /// live in and what they are called; when one is installed, the game uses those and its own two settings

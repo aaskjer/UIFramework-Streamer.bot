@@ -169,6 +169,8 @@ namespace UIFramework
                 setting.UnlimitedAtZero = setting.UnlimitedAtZero || known.UnlimitedAtZero;
                 // A key that belongs on a line with others (OBS connection, scene, source) sits there unless the game says otherwise.
                 setting.Row = setting.Row ?? known.Row;
+                // And one that only means something while a switch is on (the timer's intervals) is greyed out with it.
+                setting.Requires = setting.Requires ?? known.Requires;
                 if (setting.Default == null || setting.Default.Type == JTokenType.Null)
                     setting.Default = known.Default?.DeepClone();
                 foreach (var alias in known.Aliases)

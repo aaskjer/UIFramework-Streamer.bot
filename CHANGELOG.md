@@ -6,6 +6,25 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-10
+
+### Added
+
+- **A timed action on a random time and after chat lines.** Streamer.bot's timer dialog offers a fixed interval, a
+  random one and "only after so many chat lines", but code can set only the interval. `UiTimer` in the host block
+  keeps the other two: `Sync` brings the timed action in line with the settings (a running timer keeps its
+  countdown unless the schedule was just saved), `Rearm` draws a random timer's next wait each time it fires, and
+  `NoteLine` / `TakeLines` count chat lines per platform and hold a start back until there are enough. See *A timed
+  action* in [docs/Schema.md](docs/Schema.md).
+- **Five convention keys for it:** `autoStartEnabled`, `autoStartIntervalMinutes`, `autoStartRandom`,
+  `autoStartIntervalMaxMinutes` and `autoStartMinChatLines`, with page, row, labels and help in English, German and
+  Spanish. A game declares them with key and default alone.
+
+### Changed
+
+- **Trivia and Hangman run their automatic rounds on it** (Trivia v9.3.0, Hangman v13.3.0). The host copies of
+  Trivia, Hangman, Blackjack and Battleship are the games' current ones.
+
 ## [1.4.3] - 2026-11-08
 
 ### Fixed
