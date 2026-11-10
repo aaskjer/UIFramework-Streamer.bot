@@ -169,7 +169,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 249 of 249 |
-| `lang/en.json` | 77 | 13 | 16 | 0 | 249 |
-| `lang/es.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 249 of 249 |
+| `lang/de.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 259 of 259 |
+| `lang/en.json` | 77 | 13 | 16 | 0 | 259 |
+| `lang/es.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 259 of 259 |
 <!-- generated:end -->
