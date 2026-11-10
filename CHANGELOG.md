@@ -6,6 +6,24 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-10
+
+### Added
+
+- **`UiAdBreak`: Twitch's ad break as a window of time for a game.** Chat stays usable while ads run, so that is
+  when a round fits. `Begin` opens the window from Streamer.bot's *Ad Run* trigger for the ads' length (there is no
+  trigger for their end), `Active` and `SecondsLeft` say whether ads run, `Announce` answers the *Upcoming Ad*
+  trigger once per break, `RoundsThatFit` and `WithBonus` do the sums. See *Twitch's ad breaks* in
+  [docs/Schema.md](docs/Schema.md).
+- **An Automation page in the conventions,** with five keys for the ad break (`adBreakStart`, `adBreakAnnounce`,
+  `adBreakAnnounceMinutes`, `adBreakBonusPercent`, `adBreakOnly`) in English, German and Spanish.
+
+### Changed
+
+- **The timer's keys (`autoStart…`) are on the Automation page** instead of Game. A game that names their page
+  itself is not affected.
+- Trivia and Hangman start rounds with ad breaks and have the Automation page.
+
 ## [1.6.0] - 2026-11-10
 
 ### Added

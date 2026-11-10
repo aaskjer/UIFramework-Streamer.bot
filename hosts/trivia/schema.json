@@ -379,14 +379,14 @@
       "key": "autoStartNote",
       "default": null,
       "kind": "note",
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "help": "A Streamer.bot timed action offers a round on its own schedule to every platform you are live on, each judged on its own chat and its own running round. Where it cannot be told whether you are live, recent chat decides."
     },
     {
       "key": "autoStartEnabled",
       "default": false,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Start rounds automatically",
       "help": "Switches the Streamer.bot timed action on and off from here.",
@@ -397,7 +397,7 @@
     {
       "key": "autoStartIntervalMinutes",
       "default": 15,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Every (min)",
       "help": "How long between automatic rounds. With a random time, the shortest wait.",
@@ -411,7 +411,7 @@
     {
       "key": "autoStartRounds",
       "default": 1,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Rounds each time",
       "help": "How many rounds one turn of the timer plays. Always one while 'Allow several rounds in a row' is off.",
@@ -424,7 +424,7 @@
     {
       "key": "autoStartChatActivityMinutes",
       "default": 10,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Chat within (min)",
       "help": "How recent chat has to be for the automatic round to go ahead.",
@@ -438,7 +438,7 @@
     {
       "key": "autoStartRandom",
       "default": false,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Random time",
       "help": "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.",
@@ -450,7 +450,7 @@
     {
       "key": "autoStartIntervalMaxMinutes",
       "default": 30,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "At most (min)",
       "help": "The longest wait of a random time.",
@@ -465,7 +465,7 @@
     {
       "key": "autoStartMinChatLines",
       "default": 0,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Only after chat lines",
       "help": "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none.",
@@ -479,12 +479,85 @@
     {
       "key": "autoStartRequireChatActivity",
       "default": true,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Only when chat has been active",
       "help": "Off, and a round is offered on the schedule whether or not anybody is there, on every platform you are live on.",
       "aliases": [
         "AutoStartRequireChatActivity"
+      ]
+    },
+    {
+      "key": "adBreakNote",
+      "default": null,
+      "kind": "note",
+      "page": "automation",
+      "section": "Ad breaks",
+      "help": "Twitch only. While ads run, viewers cannot see the stream, but chat works as ever: a good moment for a round. Streamer.bot tells the game when an ad break starts and how long it runs; the game takes the break as over once that time has passed."
+    },
+    {
+      "key": "adBreakStart",
+      "default": false,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Start a round when ads start",
+      "help": "When an ad break starts on your Twitch channel, a round starts with it, as many rounds in a row as fit the break (within 'Rounds per command', and one while 'Allow several rounds in a row' is off). No cooldown and no moderator is needed. A round already under way is left alone.",
+      "aliases": [
+        "AdBreakStart"
+      ]
+    },
+    {
+      "key": "adBreakAnnounce",
+      "default": true,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Announce it before the ads",
+      "help": "A line in chat ahead of the ad break, so viewers know a round comes with it. The line is on the Messages page.",
+      "requires": "adBreakStart",
+      "row": "adAnnounce",
+      "aliases": [
+        "AdBreakAnnounce"
+      ]
+    },
+    {
+      "key": "adBreakAnnounceMinutes",
+      "default": 1,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Minutes before",
+      "help": "How long before the ads the line is sent, 1 to 5. Twitch tells of an ad break from five minutes ahead.",
+      "min": 1.0,
+      "max": 5.0,
+      "unit": "min",
+      "requires": "adBreakStart && adBreakAnnounce",
+      "row": "adAnnounce",
+      "aliases": [
+        "AdBreakAnnounceMinutes"
+      ]
+    },
+    {
+      "key": "adBreakBonusPercent",
+      "default": 0.0,
+      "kind": "percent",
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Bonus during ads",
+      "help": "How much more a Twitch round started during an ad break pays, as a percentage, whoever started it. 0 for none. It counts before the Addicted cut.",
+      "min": 0.0,
+      "max": 1000.0,
+      "aliases": [
+        "AdBreakBonusPercent"
+      ]
+    },
+    {
+      "key": "adBreakOnly",
+      "default": false,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Rounds only during ads",
+      "help": "On Twitch, viewers can start a round only while ads run; moderators and the broadcaster always can, and so can the timer above and your own actions. YouTube and Kick are not affected.",
+      "aliases": [
+        "AdBreakOnly"
       ]
     },
     {
@@ -2952,6 +3025,37 @@
       ]
     },
     {
+      "key": "adBreakAnnouncement",
+      "default": "📺 Ads in about {minutes} min, {seconds} seconds of them. A trivia round starts with them, so stay in chat!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ad breaks",
+      "label": "Ads Coming",
+      "help": "Sent on Twitch ahead of an ad break, with 'Announce it before the ads' on. Clear this box to say nothing.",
+      "placeholders": [
+        "minutes",
+        "seconds"
+      ],
+      "aliases": [
+        "AdBreakAnnouncement"
+      ]
+    },
+    {
+      "key": "adBreakOnlyMessage",
+      "default": "@{userName}, rounds only start during an ad break.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ad breaks",
+      "label": "Only During Ads",
+      "help": "Sent on Twitch when a viewer tries to start a round outside an ad break while 'Rounds only during ads' is on.",
+      "placeholders": [
+        "userName"
+      ],
+      "aliases": [
+        "AdBreakOnlyMessage"
+      ]
+    },
+    {
       "key": "categoryUnknown",
       "default": "@{userName}, I have no category called ‘{category}’. Available: {categories}",
       "kind": "template",
@@ -3065,6 +3169,11 @@
         "id": "game",
         "title": "Game",
         "icon": "❓"
+      },
+      {
+        "id": "automation",
+        "title": "Automation",
+        "icon": "⏱️"
       },
       {
         "id": "questions",
@@ -3191,7 +3300,7 @@
         "key": "autoStartEnabled",
         "on": "Auto start on",
         "off": "Auto start off",
-        "tooltip": "Whether rounds start themselves on Streamer.bot's timed action, from the Game page."
+        "tooltip": "Whether rounds start themselves on Streamer.bot's timed action, from the Automation page."
       },
       {
         "key": "isChannelPointsTrigger",
@@ -3728,6 +3837,32 @@
             "text": "Points"
           }
         ]
+      },
+      {
+        "name": "Trivia: Ad Break Started",
+        "code": "trivia_onAdBreak",
+        "what": "A Twitch ad break started; with 'Start a round when ads start' on, a round starts with it.",
+        "args": [
+          {
+            "name": "adLength",
+            "text": "90"
+          },
+          {
+            "name": "adRounds",
+            "text": "1"
+          }
+        ]
+      },
+      {
+        "name": "Trivia: Ad Break Ended",
+        "code": "trivia_onAdBreakEnd",
+        "what": "The ad break's length has passed.",
+        "args": [
+          {
+            "name": "adLength",
+            "text": "90"
+          }
+        ]
       }
     ],
     "methods": [
@@ -3766,6 +3901,7 @@
   "lang": {
     "de": {
       "pages": {
+        "automation": "Automatisierung",
         "questions": "Fragen",
         "sources": "Quellen",
         "suggestions": "Vorschläge"
@@ -3894,6 +4030,30 @@
         "autoStartIntervalMaxMinutes": {
           "label": "Höchstens (min)",
           "help": "Die längste Wartezeit einer zufälligen Zeit."
+        },
+        "adBreakNote": {
+          "label": null,
+          "help": "Nur Twitch. Während Werbung läuft, sehen die Zuschauer den Stream nicht, aber der Chat funktioniert wie immer: ein guter Moment für eine Runde. Streamer.bot sagt dem Spiel, wann ein Werbeblock startet und wie lange er läuft; das Spiel betrachtet ihn als beendet, sobald diese Zeit um ist."
+        },
+        "adBreakStart": {
+          "label": "Runde starten, wenn Werbung startet",
+          "help": "Startet auf deinem Twitch-Kanal ein Werbeblock, startet mit ihm eine Runde, so viele Runden nacheinander, wie in den Block passen (innerhalb von 'Runden pro Befehl', und eine, solange 'Mehrere Runden nacheinander erlauben' aus ist). Dafür braucht es keine Abklingzeit und keinen Moderator. Eine laufende Runde bleibt unberührt."
+        },
+        "adBreakAnnounce": {
+          "label": "Vor der Werbung ankündigen",
+          "help": "Eine Zeile im Chat vor dem Werbeblock, damit die Zuschauer wissen, dass mit ihm eine Runde kommt. Die Zeile steht auf der Seite Nachrichten."
+        },
+        "adBreakAnnounceMinutes": {
+          "label": "Minuten vorher",
+          "help": "Wie lange vor der Werbung die Zeile gesendet wird, 1 bis 5. Twitch meldet einen Werbeblock ab fünf Minuten vorher."
+        },
+        "adBreakBonusPercent": {
+          "label": "Bonus während der Werbung",
+          "help": "Wie viel mehr eine Twitch-Runde zahlt, die während eines Werbeblocks gestartet wurde, in Prozent, egal wer sie gestartet hat. 0 für keinen. Zählt vor dem Abzug für Süchtige."
+        },
+        "adBreakOnly": {
+          "label": "Runden nur während der Werbung",
+          "help": "Auf Twitch können Zuschauer eine Runde nur starten, während Werbung läuft; Moderatoren und der Broadcaster immer, ebenso der Timer oben und deine eigenen Actions. YouTube und Kick sind nicht betroffen."
         },
         "autoStartMinChatLines": {
           "label": "Erst nach Chat-Zeilen",
@@ -4587,6 +4747,14 @@
           "label": "Einlösung erstattet",
           "help": "Gesendet, wenn eine Einlösung keine Runde starten konnte und die Kanalpunkte zurückgingen. Leer lassen, um still zu erstatten."
         },
+        "adBreakAnnouncement": {
+          "label": "Werbung kommt",
+          "help": "Auf Twitch vor einem Werbeblock gesendet, wenn 'Vor der Werbung ankündigen' an ist. Leer lassen, um nichts zu sagen."
+        },
+        "adBreakOnlyMessage": {
+          "label": "Nur während der Werbung",
+          "help": "Auf Twitch gesendet, wenn ein Zuschauer außerhalb eines Werbeblocks eine Runde starten will, während 'Runden nur während der Werbung' an ist."
+        },
         "autoStartAnnouncement": {
           "label": "Hinweis Autostart",
           "help": "Direkt vor der Frage einer automatischen Runde gesendet, damit der Chat sie von einer angefragten unterscheidet. Leer lassen, um still zu starten."
@@ -4683,7 +4851,8 @@
         "What it shows": "Was es zeigt",
         "Where questions come from": "Woher die Fragen kommen",
         "Whether rounds reach the OBS overlay, from the Overlay page.": "Ob Runden das OBS-Overlay erreichen, von der Seite Overlay.",
-        "Whether rounds start themselves on Streamer.bot's timed action, from the Game page.": "Ob Runden sich über Streamer.bots zeitgesteuerte Aktion selbst starten, von der Seite Spiel.",
+        "Whether rounds start themselves on Streamer.bot's timed action, from the Automation page.": "Ob Runden sich über Streamer.bots zeitgesteuerte Aktion selbst starten, von der Seite Automatisierung.",
+        "Ad breaks": "Werbepausen",
         "Which of your own questions may be drawn": "Welche deiner Fragen gezogen werden dürfen",
         "Who may run a round": "Wer eine Runde leiten darf",
         "Who may suggest": "Wer vorschlagen darf",

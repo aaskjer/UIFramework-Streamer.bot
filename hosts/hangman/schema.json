@@ -246,7 +246,7 @@
     {
       "key": "autoStartEnabled",
       "default": false,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Start rounds automatically",
       "help": "A Streamer.bot timed action starts a round on its own schedule, on every platform you are live on where no round is running. Where it cannot be told whether you are live, chat that has written something since the last automatic round stands in. Nobody has to be a moderator for it, and no cooldown holds it back.",
@@ -257,7 +257,7 @@
     {
       "key": "autoStartIntervalMinutes",
       "default": 15,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Every (min)",
       "help": "How long between automatic rounds. With a random time, the shortest wait.",
@@ -273,7 +273,7 @@
     {
       "key": "autoStartMinChatLines",
       "default": 10,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Only after chat lines",
       "help": "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: being live is then enough.",
@@ -287,7 +287,7 @@
     {
       "key": "autoStartRandom",
       "default": false,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "Random time",
       "help": "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.",
@@ -299,7 +299,7 @@
     {
       "key": "autoStartIntervalMaxMinutes",
       "default": 30,
-      "page": "game",
+      "page": "automation",
       "section": "Rounds that start themselves",
       "label": "At most (min)",
       "help": "The longest wait of a random time.",
@@ -309,6 +309,83 @@
       "requires": "autoStartRandom",
       "aliases": [
         "AutoStartIntervalMaxMinutes"
+      ]
+    },
+    {
+      "key": "adBreakStart",
+      "default": false,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Start a round when ads start",
+      "help": "Twitch only. While ads run, viewers cannot see the stream, but chat works as ever. When an ad break starts on your channel, a round starts with it, with no cooldown and no moderator. A round already running is left alone. The game takes the break as over once its length has passed.",
+      "aliases": [
+        "AdBreakStart"
+      ]
+    },
+    {
+      "key": "adBreakBlitz",
+      "default": true,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Make it a blitz round",
+      "help": "The round for the ads is a blitz round: short enough for an ad break. Needs 'Blitz rounds' on the Game page; otherwise it is a normal round.",
+      "requires": "adBreakStart",
+      "aliases": [
+        "AdBreakBlitz"
+      ]
+    },
+    {
+      "key": "adBreakAnnounce",
+      "default": true,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Announce it before the ads",
+      "help": "A line in chat ahead of the ad break, so viewers know a round comes with it. The line is on the Messages page.",
+      "requires": "adBreakStart",
+      "row": "adAnnounce",
+      "aliases": [
+        "AdBreakAnnounce"
+      ]
+    },
+    {
+      "key": "adBreakAnnounceMinutes",
+      "default": 1,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Minutes before",
+      "help": "How long before the ads the line is sent, 1 to 5. Twitch tells of an ad break from five minutes ahead.",
+      "min": 1.0,
+      "max": 5.0,
+      "unit": "min",
+      "requires": "adBreakStart && adBreakAnnounce",
+      "row": "adAnnounce",
+      "aliases": [
+        "AdBreakAnnounceMinutes"
+      ]
+    },
+    {
+      "key": "adBreakBonusPercent",
+      "default": 0.0,
+      "kind": "percent",
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Bonus during ads",
+      "help": "How much more the letters and the win of a Twitch round started during an ad break pay, as a percentage, whoever started it. 0 for none.",
+      "min": 0.0,
+      "max": 1000.0,
+      "aliases": [
+        "AdBreakBonusPercent"
+      ]
+    },
+    {
+      "key": "adBreakOnly",
+      "default": false,
+      "page": "automation",
+      "section": "Ad breaks",
+      "label": "Rounds only during ads",
+      "help": "On Twitch, viewers can start a round only while ads run; moderators and the broadcaster always can, and so can the timer and your own actions. YouTube and Kick are not affected.",
+      "aliases": [
+        "AdBreakOnly"
       ]
     },
     {
@@ -2189,6 +2266,37 @@
       ]
     },
     {
+      "key": "msgAdBreakAnnouncement",
+      "default": "📺 Ads in about {minutes} min, {seconds} seconds of them. A round of Hangman starts with them, so stay in chat!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ad breaks",
+      "label": "Ads coming",
+      "help": "Sent on Twitch ahead of an ad break, with 'Announce it before the ads' on. Clear this box to say nothing.",
+      "placeholders": [
+        "minutes",
+        "seconds"
+      ],
+      "aliases": [
+        "MsgAdBreakAnnouncement"
+      ]
+    },
+    {
+      "key": "msgAdBreakOnly",
+      "default": "🚫 @{user}, Hangman only starts during an ad break.",
+      "kind": "template",
+      "page": "messages",
+      "group": "Ad breaks",
+      "label": "Only during ads",
+      "help": "Sent on Twitch when a viewer tries to start a round outside an ad break while 'Rounds only during ads' is on.",
+      "placeholders": [
+        "user"
+      ],
+      "aliases": [
+        "MsgAdBreakOnly"
+      ]
+    },
+    {
       "key": "msgNotAllowed",
       "default": "🚫 @{user}, you are not allowed to participate.",
       "kind": "template",
@@ -2571,6 +2679,11 @@
         "id": "game",
         "title": "Game",
         "icon": "🎮"
+      },
+      {
+        "id": "automation",
+        "title": "Automation",
+        "icon": "⏱️"
       },
       {
         "id": "words",
@@ -3205,6 +3318,32 @@
         ]
       },
       {
+        "name": "Hangman: Ad Break Started",
+        "code": "hm_onAdBreak",
+        "what": "A Twitch ad break started; with 'Start a round when ads start' on, a round starts with it.",
+        "args": [
+          {
+            "name": "adLength",
+            "text": "90"
+          },
+          {
+            "name": "adRoundStarted",
+            "text": "true"
+          }
+        ]
+      },
+      {
+        "name": "Hangman: Ad Break Ended",
+        "code": "hm_onAdBreakEnd",
+        "what": "The ad break's length has passed.",
+        "args": [
+          {
+            "name": "adLength",
+            "text": "90"
+          }
+        ]
+      },
+      {
         "name": "Hangman: Free Game Start",
         "code": "hm_onFreeStart",
         "what": "Free mode was switched on."
@@ -3255,10 +3394,107 @@
   "lang": {
     "de": {
       "pages": {
+        "automation": "Automatisierung",
         "words": "Wörter",
         "board": "Rangliste"
       },
+      "texts": {
+        "Ad breaks": "Werbepausen",
+        "Round": "Runde",
+        "Time reminder": "Zeiterinnerung",
+        "Hints": "Hinweise",
+        "Blitz round": "Blitzrunde",
+        "Evil Hangman": "Evil Hangman",
+        "Word scaling": "Wortskalierung",
+        "Role boosts": "Rollen-Boni",
+        "Free mode": "Freier Modus",
+        "Word selection": "Wortauswahl",
+        "Word list": "Wortliste",
+        "Import words": "Wörter importieren",
+        "Overlay file": "Overlay-Datei",
+        "Hangman figure": "Hangman-Figur",
+        "Appearance": "Aussehen",
+        "Show on overlay": "Auf dem Overlay zeigen",
+        "Who can start a round": "Wer eine Runde startet",
+        "Rate limit": "Tempolimit",
+        "Behaviour": "Verhalten",
+        "Streaks": "Serien",
+        "Auto reset": "Automatischer Reset",
+        "Guessing": "Raten",
+        "Wrong guesses": "Fehlversuche",
+        "Ending": "Ende",
+        "Blitz": "Blitz",
+        "Overlay on": "Overlay an",
+        "Overlay off": "Overlay aus",
+        "Mods start": "Mods starten",
+        "Anyone starts": "Jeder startet",
+        "Wikidata": "Wikidata",
+        "OdeNet (German nouns)": "OdeNet (deutsche Substantive)",
+        "PokéAPI (Pokémon)": "PokéAPI (Pokémon)",
+        "IGDB (video games)": "IGDB (Videospiele)",
+        "German": "Deutsch",
+        "English": "Englisch",
+        "Countries (Wikidata)": "Länder (Wikidata)",
+        "Capitals (Wikidata)": "Hauptstädte (Wikidata)",
+        "Big cities (Wikidata)": "Großstädte (Wikidata)",
+        "Rivers (Wikidata)": "Flüsse (Wikidata)",
+        "Mountains (Wikidata)": "Berge (Wikidata)",
+        "Chemical elements (Wikidata)": "Chemische Elemente (Wikidata)",
+        "Musical instruments (Wikidata)": "Musikinstrumente (Wikidata)",
+        "Sports (Wikidata)": "Sportarten (Wikidata)",
+        "Dog breeds (Wikidata)": "Hunderassen (Wikidata)",
+        "Custom class (Wikidata Q-ID)": "Eigene Klasse (Wikidata-Q-ID)",
+        "Animals (OdeNet)": "Tiere (OdeNet)",
+        "Plants (OdeNet)": "Pflanzen (OdeNet)",
+        "Food & drink (OdeNet)": "Essen & Trinken (OdeNet)",
+        "Objects & tools (OdeNet)": "Gegenstände (OdeNet)",
+        "People & jobs (OdeNet)": "Personen & Berufe (OdeNet)",
+        "Body (OdeNet)": "Körper (OdeNet)",
+        "Places (OdeNet)": "Orte (OdeNet)",
+        "Materials (OdeNet)": "Stoffe & Materialien (OdeNet)",
+        "Nature (OdeNet)": "Natur (OdeNet)",
+        "Feelings (OdeNet)": "Gefühle (OdeNet)",
+        "Auto: proportional up to 6 lives, gallows above": "Auto: proportional bis 6 Leben, darüber Galgen",
+        "Proportional: always 6 parts": "Proportional: immer 6 Teile",
+        "Classic + gallows: always 10 parts": "Klassisch + Galgen: immer 10 Teile",
+        "Overlay, from the Overlay page. Off: the game writes no overlay files.": "Overlay, von der Seite Overlay. Aus: das Spiel schreibt keine Overlay-Dateien.",
+        "Free mode, from the Game page or !SetFreeHangman. While it is on, letters and the win pay nothing.": "Freier Modus, von der Seite Spiel oder !SetFreeHangman. Solange er an ist, zahlen Buchstaben und der Gewinn nichts.",
+        "Who starts a round, from the Access page. Everyone can always guess.": "Wer eine Runde startet, von der Seite Zugriff. Raten darf immer jeder.",
+        "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.": "Noch keine Runden protokolliert. Jede Runde, jeder Versuch und jede Auszahlung landet hier, sobald 'Protokoll je Tag schreiben' an ist."
+      },
       "keys": {
+        "adBreakStart": {
+          "label": "Runde starten, wenn Werbung startet",
+          "help": "Nur Twitch. Während Werbung läuft, sehen die Zuschauer den Stream nicht, aber der Chat funktioniert wie immer. Startet auf deinem Kanal ein Werbeblock, startet mit ihm eine Runde, ohne Abklingzeit und ohne Moderator. Eine laufende Runde bleibt unberührt. Das Spiel betrachtet den Werbeblock als beendet, sobald seine Länge um ist."
+        },
+        "adBreakBlitz": {
+          "label": "Als Blitz-Runde",
+          "help": "Die Runde zur Werbung ist eine Blitz-Runde: kurz genug für einen Werbeblock. Braucht 'Blitz-Runden' auf der Seite Spiel; sonst ist es eine normale Runde."
+        },
+        "adBreakAnnounce": {
+          "label": "Vor der Werbung ankündigen",
+          "help": "Eine Zeile im Chat vor dem Werbeblock, damit die Zuschauer wissen, dass mit ihm eine Runde kommt. Die Zeile steht auf der Seite Nachrichten."
+        },
+        "adBreakAnnounceMinutes": {
+          "label": "Minuten vorher",
+          "help": "Wie lange vor der Werbung die Zeile gesendet wird, 1 bis 5. Twitch meldet einen Werbeblock ab fünf Minuten vorher."
+        },
+        "adBreakBonusPercent": {
+          "label": "Bonus während der Werbung",
+          "help": "Wie viel mehr Buchstaben und der Gewinn einer Twitch-Runde zahlen, die während eines Werbeblocks gestartet wurde, in Prozent, egal wer sie gestartet hat. 0 für keinen."
+        },
+        "adBreakOnly": {
+          "label": "Runden nur während der Werbung",
+          "help": "Auf Twitch können Zuschauer eine Runde nur starten, während Werbung läuft; Moderatoren und der Broadcaster immer, ebenso der Timer und deine eigenen Actions. YouTube und Kick sind nicht betroffen."
+        },
+        "msgAdBreakAnnouncement": {
+          "label": "Werbung kommt",
+          "help": "Auf Twitch vor einem Werbeblock gesendet, wenn 'Vor der Werbung ankündigen' an ist. Leer lassen, um nichts zu sagen."
+        },
+        "msgAdBreakOnly": {
+          "label": "Nur während der Werbung",
+          "help": "Auf Twitch gesendet, wenn ein Zuschauer außerhalb eines Werbeblocks eine Runde starten will, während 'Runden nur während der Werbung' an ist."
+        },
         "maxWrongGuesses": {
           "label": "Leben (falsche Versuche)",
           "help": "Wie viele falsche Versuche eine Runde erlaubt, bevor das letzte Leben weg ist und die Runde verloren ist."
@@ -3899,69 +4135,6 @@
           "label": "Beendet",
           "help": "Einmal gesendet, wenn !EndFreeHangman den freien Modus ausschaltet, in den Chat, aus dem der Befehl kam. Anders ausgeschaltet, etwa per Execute C# Method auf EndFreeGame, geht sie an jede Plattform mit einem Konto in Streamer.bot - an YouTube nur, solange eine Übertragung beobachtet wird."
         }
-      },
-      "texts": {
-        "Round": "Runde",
-        "Time reminder": "Zeiterinnerung",
-        "Hints": "Hinweise",
-        "Blitz round": "Blitzrunde",
-        "Evil Hangman": "Evil Hangman",
-        "Word scaling": "Wortskalierung",
-        "Role boosts": "Rollen-Boni",
-        "Free mode": "Freier Modus",
-        "Word selection": "Wortauswahl",
-        "Word list": "Wortliste",
-        "Import words": "Wörter importieren",
-        "Overlay file": "Overlay-Datei",
-        "Hangman figure": "Hangman-Figur",
-        "Appearance": "Aussehen",
-        "Show on overlay": "Auf dem Overlay zeigen",
-        "Who can start a round": "Wer eine Runde startet",
-        "Rate limit": "Tempolimit",
-        "Behaviour": "Verhalten",
-        "Streaks": "Serien",
-        "Auto reset": "Automatischer Reset",
-        "Guessing": "Raten",
-        "Wrong guesses": "Fehlversuche",
-        "Ending": "Ende",
-        "Blitz": "Blitz",
-        "Overlay on": "Overlay an",
-        "Overlay off": "Overlay aus",
-        "Mods start": "Mods starten",
-        "Anyone starts": "Jeder startet",
-        "Wikidata": "Wikidata",
-        "OdeNet (German nouns)": "OdeNet (deutsche Substantive)",
-        "PokéAPI (Pokémon)": "PokéAPI (Pokémon)",
-        "IGDB (video games)": "IGDB (Videospiele)",
-        "German": "Deutsch",
-        "English": "Englisch",
-        "Countries (Wikidata)": "Länder (Wikidata)",
-        "Capitals (Wikidata)": "Hauptstädte (Wikidata)",
-        "Big cities (Wikidata)": "Großstädte (Wikidata)",
-        "Rivers (Wikidata)": "Flüsse (Wikidata)",
-        "Mountains (Wikidata)": "Berge (Wikidata)",
-        "Chemical elements (Wikidata)": "Chemische Elemente (Wikidata)",
-        "Musical instruments (Wikidata)": "Musikinstrumente (Wikidata)",
-        "Sports (Wikidata)": "Sportarten (Wikidata)",
-        "Dog breeds (Wikidata)": "Hunderassen (Wikidata)",
-        "Custom class (Wikidata Q-ID)": "Eigene Klasse (Wikidata-Q-ID)",
-        "Animals (OdeNet)": "Tiere (OdeNet)",
-        "Plants (OdeNet)": "Pflanzen (OdeNet)",
-        "Food & drink (OdeNet)": "Essen & Trinken (OdeNet)",
-        "Objects & tools (OdeNet)": "Gegenstände (OdeNet)",
-        "People & jobs (OdeNet)": "Personen & Berufe (OdeNet)",
-        "Body (OdeNet)": "Körper (OdeNet)",
-        "Places (OdeNet)": "Orte (OdeNet)",
-        "Materials (OdeNet)": "Stoffe & Materialien (OdeNet)",
-        "Nature (OdeNet)": "Natur (OdeNet)",
-        "Feelings (OdeNet)": "Gefühle (OdeNet)",
-        "Auto: proportional up to 6 lives, gallows above": "Auto: proportional bis 6 Leben, darüber Galgen",
-        "Proportional: always 6 parts": "Proportional: immer 6 Teile",
-        "Classic + gallows: always 10 parts": "Klassisch + Galgen: immer 10 Teile",
-        "Overlay, from the Overlay page. Off: the game writes no overlay files.": "Overlay, von der Seite Overlay. Aus: das Spiel schreibt keine Overlay-Dateien.",
-        "Free mode, from the Game page or !SetFreeHangman. While it is on, letters and the win pay nothing.": "Freier Modus, von der Seite Spiel oder !SetFreeHangman. Solange er an ist, zahlen Buchstaben und der Gewinn nichts.",
-        "Who starts a round, from the Access page. Everyone can always guess.": "Wer eine Runde startet, von der Seite Zugriff. Raten darf immer jeder.",
-        "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.": "Noch keine Runden protokolliert. Jede Runde, jeder Versuch und jede Auszahlung landet hier, sobald 'Protokoll je Tag schreiben' an ist."
       }
     }
   }

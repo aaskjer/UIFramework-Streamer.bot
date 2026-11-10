@@ -124,7 +124,7 @@ namespace UIFramework.Tests
         {
             var max = Conventions.Default.Complete(new Setting { Key = "autoStartIntervalMaxMinutes" });
             Assert.Equal("int", max.Kind);
-            Assert.Equal("game", max.Page);
+            Assert.Equal("automation", max.Page);
             Assert.Equal("autoStart", max.Row);
             Assert.Equal("min", max.Unit);
             Assert.Equal("autoStartRandom", max.Requires);
@@ -154,7 +154,7 @@ namespace UIFramework.Tests
             var declared = Read("keys.json")["keys"][key] as JObject;
             Assert.NotNull(declared);
             Assert.Equal(kind, (string)declared["kind"]);
-            Assert.Equal("game", (string)declared["page"]);
+            Assert.Equal("automation", (string)declared["page"]);
             foreach (string code in new[] { "en", "de", "es" })
             {
                 var text = Read("lang." + code + ".json")["keys"][key] as JObject;

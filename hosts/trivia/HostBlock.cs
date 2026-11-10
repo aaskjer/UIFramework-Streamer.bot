@@ -243,12 +243,14 @@ public static class UiSchema
             Tr("Trivia: Round Timeout", "trivia_onTimeout", "The time ran out and nobody had it right.", "roundOutcome=NO-WINNER", "roundWinners=", "roundWinnerCount=0", "roundPoints=0"),
             Tr("Trivia: Round Skipped", "trivia_onSkip", "The question was skipped.", "roundOutcome=SKIPPED", "roundWinners=", "roundWinnerCount=0", "roundPoints=0"),
             Tr("Trivia: Round ForceEnd", "trivia_onForceEnd", "A moderator ended the round.", "roundOutcome=FORCE-END", "roundWinners=", "roundWinnerCount=0", "roundPoints=0"))
+        .Trigger("Trivia: Ad Break Started", "trivia_onAdBreak", "A Twitch ad break started; with 'Start a round when ads start' on, a round starts with it.", "adLength=90", "adRounds=1")
+        .Trigger("Trivia: Ad Break Ended", "trivia_onAdBreakEnd", "The ad break's length has passed.", "adLength=90")
         .Method("StartRound", "Starts a round, with no cooldown and no moderator check. Returns false when none started.", "triviaPlatform=in: twitch, youtube, kick or all", "triviaRounds=in: how many rounds", "triviaCategory=in: a category by name", "triviaStarted=out: whether a round began", "triviaStartedOn=out: the platforms it began on")
         .Method("GetLastRoundResult", "Sets the round arguments of the last settled round, the same the triggers carry.")
-        .Pages(P("game", "Game", "❓"), P("questions", "Questions", "📝"), P("sources", "Sources", "🌐"), P("suggestions", "Suggestions", "💡"), P("access", "Access", "👥"), P("messages", "Messages", "💬"), P("overlay", "Overlay", "📺"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Pages(P("game", "Game", "❓"), P("automation", "Automation", "⏱️"), P("questions", "Questions", "📝"), P("sources", "Sources", "🌐"), P("suggestions", "Suggestions", "💡"), P("access", "Access", "👥"), P("messages", "Messages", "💬"), P("overlay", "Overlay", "📺"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(cooldownGroup: "Cooldown")
         .Pill("overlayEnabled", "Overlay on", "Overlay off", tooltip: "Whether rounds reach the OBS overlay, from the Overlay page.")
-        .Pill("autoStartEnabled", "Auto start on", "Auto start off", tooltip: "Whether rounds start themselves on Streamer.bot's timed action, from the Game page.")
+        .Pill("autoStartEnabled", "Auto start on", "Auto start off", tooltip: "Whether rounds start themselves on Streamer.bot's timed action, from the Automation page.")
         .Pill("isChannelPointsTrigger", "Channel points", "Chat command", tooltip: "How rounds start on Twitch, from the Access page. YouTube and Kick always use the chat command.")
         .Samples("userName", "mirabel_tv", "targetUser", "kjell_plays", "winners", "@mirabel_tv, @nova_rae", "answer", "Ada Lovelace", "correctAnswer", "Ada Lovelace", "index", "2",
                  "difficulty", "MEDIUM", "category", "Science: Computers", "categories", "history, music, film", "seconds", "20", "minutes", "15", "points", "2.159", "pointsName", "Points",
@@ -317,6 +319,7 @@ public static class UiSchema
         .Cooldowns(C("0137a7a6-79b0-46a2-937f-71e23479c140", "globalCooldown", "userCooldown"))   // !trivia
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
+                Pg("automation", "Automatisierung"),
                 Pg("questions", "Fragen"),
                 Pg("sources", "Quellen"),
                 Pg("suggestions", "Vorschläge"),
@@ -351,6 +354,12 @@ public static class UiSchema
                 K("autoStartIntervalMinutes", "Alle (min)", "Wie lange zwischen automatischen Runden. Mit zufälliger Zeit die kürzeste Wartezeit."),
                 K("autoStartRandom", "Zufällige Zeit", "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt."),
                 K("autoStartIntervalMaxMinutes", "Höchstens (min)", "Die längste Wartezeit einer zufälligen Zeit."),
+                K("adBreakNote", null, "Nur Twitch. Während Werbung läuft, sehen die Zuschauer den Stream nicht, aber der Chat funktioniert wie immer: ein guter Moment für eine Runde. Streamer.bot sagt dem Spiel, wann ein Werbeblock startet und wie lange er läuft; das Spiel betrachtet ihn als beendet, sobald diese Zeit um ist."),
+                K("adBreakStart", "Runde starten, wenn Werbung startet", "Startet auf deinem Twitch-Kanal ein Werbeblock, startet mit ihm eine Runde, so viele Runden nacheinander, wie in den Block passen (innerhalb von 'Runden pro Befehl', und eine, solange 'Mehrere Runden nacheinander erlauben' aus ist). Dafür braucht es keine Abklingzeit und keinen Moderator. Eine laufende Runde bleibt unberührt."),
+                K("adBreakAnnounce", "Vor der Werbung ankündigen", "Eine Zeile im Chat vor dem Werbeblock, damit die Zuschauer wissen, dass mit ihm eine Runde kommt. Die Zeile steht auf der Seite Nachrichten."),
+                K("adBreakAnnounceMinutes", "Minuten vorher", "Wie lange vor der Werbung die Zeile gesendet wird, 1 bis 5. Twitch meldet einen Werbeblock ab fünf Minuten vorher."),
+                K("adBreakBonusPercent", "Bonus während der Werbung", "Wie viel mehr eine Twitch-Runde zahlt, die während eines Werbeblocks gestartet wurde, in Prozent, egal wer sie gestartet hat. 0 für keinen. Zählt vor dem Abzug für Süchtige."),
+                K("adBreakOnly", "Runden nur während der Werbung", "Auf Twitch können Zuschauer eine Runde nur starten, während Werbung läuft; Moderatoren und der Broadcaster immer, ebenso der Timer oben und deine eigenen Actions. YouTube und Kick sind nicht betroffen."),
                 K("autoStartMinChatLines", "Erst nach Chat-Zeilen", "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine."),
                 K("autoStartRounds", "Runden je Durchgang", "Wie viele Runden ein Durchgang des Timers spielt. Immer eine, solange 'Mehrere Runden nacheinander erlauben' aus ist."),
                 K("autoStartChatActivityMinutes", "Chat innerhalb (min)", "Wie frisch der Chat sein muss, damit die automatische Runde stattfindet."),
@@ -524,6 +533,8 @@ public static class UiSchema
                 K("globalCooldownMessage", "Globale Abklingzeit", "Gesendet, wenn der Startbefehl benutzt wird, während die globale Abklingzeit noch läuft."),
                 K("userCooldownMessage", "Nutzer-Abklingzeit", "Gesendet, wenn ein Zuschauer den Startbefehl benutzt, während seine eigene Abklingzeit noch läuft."),
                 K("redemptionRefunded", "Einlösung erstattet", "Gesendet, wenn eine Einlösung keine Runde starten konnte und die Kanalpunkte zurückgingen. Leer lassen, um still zu erstatten."),
+                K("adBreakAnnouncement", "Werbung kommt", "Auf Twitch vor einem Werbeblock gesendet, wenn 'Vor der Werbung ankündigen' an ist. Leer lassen, um nichts zu sagen."),
+                K("adBreakOnlyMessage", "Nur während der Werbung", "Auf Twitch gesendet, wenn ein Zuschauer außerhalb eines Werbeblocks eine Runde starten will, während 'Runden nur während der Werbung' an ist."),
                 K("autoStartAnnouncement", "Hinweis Autostart", "Direkt vor der Frage einer automatischen Runde gesendet, damit der Chat sie von einer angefragten unterscheidet. Leer lassen, um still zu starten."),
                 K("categoryUnknown", "Unbekannte Kategorie", "Gesendet, wenn ein Zuschauer eine Kategorie nennt, die nicht spielbar ist. Die Runde fällt so oder so aus, statt still etwas anderes zu fragen; leer lassen macht das nur still."),
                 K("modOnlyStart", "Nur Mods: Start", "Gesendet, wenn ein Zuschauer eine Runde starten will, während 'Nur Moderatoren dürfen starten' an ist."),
@@ -594,7 +605,8 @@ public static class UiSchema
                 Tx("What it shows", "Was es zeigt"),
                 Tx("Where questions come from", "Woher die Fragen kommen"),
                 Tx("Whether rounds reach the OBS overlay, from the Overlay page.", "Ob Runden das OBS-Overlay erreichen, von der Seite Overlay."),
-                Tx("Whether rounds start themselves on Streamer.bot's timed action, from the Game page.", "Ob Runden sich über Streamer.bots zeitgesteuerte Aktion selbst starten, von der Seite Spiel."),
+                Tx("Whether rounds start themselves on Streamer.bot's timed action, from the Automation page.", "Ob Runden sich über Streamer.bots zeitgesteuerte Aktion selbst starten, von der Seite Automatisierung."),
+                Tx("Ad breaks", "Werbepausen"),
                 Tx("Which of your own questions may be drawn", "Welche deiner Fragen gezogen werden dürfen"),
                 Tx("Who may run a round", "Wer eine Runde leiten darf"),
                 Tx("Who may suggest", "Wer vorschlagen darf"),
@@ -633,15 +645,21 @@ public static class UiSchema
         S("allowFuzzyTextAnswers", true, page: "game", label: "Close spellings", help: "A genuine typo still counts, within the tolerance below.", section: "Answer matching", aliases: new[] { "AllowFuzzyTextAnswers" }),
         S("fuzzyTolerance", 2, page: "game", label: "Fuzzy tolerance", help: "How many characters may differ before an answer is turned away.", section: "Answer matching", min: 0.0, row: "fuzzy", aliases: new[] { "FuzzyTolerance" }),
         S("minLengthForFuzzy", 4, page: "game", label: "Min. length for fuzzy", help: "Short answers are never matched loosely. Keep this above the tolerance, or genuinely different words start counting.", section: "Answer matching", min: 1.0, row: "fuzzy", aliases: new[] { "MinLengthForFuzzy" }),
-        S("autoStartNote", null, page: "game", help: "A Streamer.bot timed action offers a round on its own schedule to every platform you are live on, each judged on its own chat and its own running round. Where it cannot be told whether you are live, recent chat decides.", kind: "note", section: "Rounds that start themselves"),
-        S("autoStartEnabled", false, page: "game", label: "Start rounds automatically", help: "Switches the Streamer.bot timed action on and off from here.", section: "Rounds that start themselves", aliases: new[] { "AutoStartEnabled" }),
-        S("autoStartIntervalMinutes", 15, page: "game", label: "Every (min)", help: "How long between automatic rounds. With a random time, the shortest wait.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
-        S("autoStartRounds", 1, page: "game", label: "Rounds each time", help: "How many rounds one turn of the timer plays. Always one while 'Allow several rounds in a row' is off.", section: "Rounds that start themselves", min: 1.0, row: "auto", aliases: new[] { "AutoStartRounds" }),
-        S("autoStartChatActivityMinutes", 10, page: "game", label: "Chat within (min)", help: "How recent chat has to be for the automatic round to go ahead.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartChatActivityMinutes" }),
-        S("autoStartRandom", false, page: "game", label: "Random time", help: "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.", section: "Rounds that start themselves", requires: "autoStartEnabled", aliases: new[] { "AutoStartRandom" }),
-        S("autoStartIntervalMaxMinutes", 30, page: "game", label: "At most (min)", help: "The longest wait of a random time.", section: "Rounds that start themselves", min: 1.0, unit: "min", requires: "autoStartRandom", row: "autoMore", aliases: new[] { "AutoStartIntervalMaxMinutes" }),
-        S("autoStartMinChatLines", 0, page: "game", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "autoMore", aliases: new[] { "AutoStartMinChatLines" }),
-        S("autoStartRequireChatActivity", true, page: "game", label: "Only when chat has been active", help: "Off, and a round is offered on the schedule whether or not anybody is there, on every platform you are live on.", section: "Rounds that start themselves", aliases: new[] { "AutoStartRequireChatActivity" }),
+        S("autoStartNote", null, page: "automation", help: "A Streamer.bot timed action offers a round on its own schedule to every platform you are live on, each judged on its own chat and its own running round. Where it cannot be told whether you are live, recent chat decides.", kind: "note", section: "Rounds that start themselves"),
+        S("autoStartEnabled", false, page: "automation", label: "Start rounds automatically", help: "Switches the Streamer.bot timed action on and off from here.", section: "Rounds that start themselves", aliases: new[] { "AutoStartEnabled" }),
+        S("autoStartIntervalMinutes", 15, page: "automation", label: "Every (min)", help: "How long between automatic rounds. With a random time, the shortest wait.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
+        S("autoStartRounds", 1, page: "automation", label: "Rounds each time", help: "How many rounds one turn of the timer plays. Always one while 'Allow several rounds in a row' is off.", section: "Rounds that start themselves", min: 1.0, row: "auto", aliases: new[] { "AutoStartRounds" }),
+        S("autoStartChatActivityMinutes", 10, page: "automation", label: "Chat within (min)", help: "How recent chat has to be for the automatic round to go ahead.", section: "Rounds that start themselves", min: 1.0, unit: "min", row: "auto", aliases: new[] { "AutoStartChatActivityMinutes" }),
+        S("autoStartRandom", false, page: "automation", label: "Random time", help: "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.", section: "Rounds that start themselves", requires: "autoStartEnabled", aliases: new[] { "AutoStartRandom" }),
+        S("autoStartIntervalMaxMinutes", 30, page: "automation", label: "At most (min)", help: "The longest wait of a random time.", section: "Rounds that start themselves", min: 1.0, unit: "min", requires: "autoStartRandom", row: "autoMore", aliases: new[] { "AutoStartIntervalMaxMinutes" }),
+        S("autoStartMinChatLines", 0, page: "automation", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "autoMore", aliases: new[] { "AutoStartMinChatLines" }),
+        S("autoStartRequireChatActivity", true, page: "automation", label: "Only when chat has been active", help: "Off, and a round is offered on the schedule whether or not anybody is there, on every platform you are live on.", section: "Rounds that start themselves", aliases: new[] { "AutoStartRequireChatActivity" }),
+        S("adBreakNote", null, page: "automation", help: "Twitch only. While ads run, viewers cannot see the stream, but chat works as ever: a good moment for a round. Streamer.bot tells the game when an ad break starts and how long it runs; the game takes the break as over once that time has passed.", kind: "note", section: "Ad breaks"),
+        S("adBreakStart", false, page: "automation", label: "Start a round when ads start", help: "When an ad break starts on your Twitch channel, a round starts with it, as many rounds in a row as fit the break (within 'Rounds per command', and one while 'Allow several rounds in a row' is off). No cooldown and no moderator is needed. A round already under way is left alone.", section: "Ad breaks", aliases: new[] { "AdBreakStart" }),
+        S("adBreakAnnounce", true, page: "automation", label: "Announce it before the ads", help: "A line in chat ahead of the ad break, so viewers know a round comes with it. The line is on the Messages page.", section: "Ad breaks", requires: "adBreakStart", row: "adAnnounce", aliases: new[] { "AdBreakAnnounce" }),
+        S("adBreakAnnounceMinutes", 1, page: "automation", label: "Minutes before", help: "How long before the ads the line is sent, 1 to 5. Twitch tells of an ad break from five minutes ahead.", section: "Ad breaks", min: 1.0, max: 5.0, unit: "min", requires: "adBreakStart && adBreakAnnounce", row: "adAnnounce", aliases: new[] { "AdBreakAnnounceMinutes" }),
+        S("adBreakBonusPercent", 0.0, page: "automation", label: "Bonus during ads", help: "How much more a Twitch round started during an ad break pays, as a percentage, whoever started it. 0 for none. It counts before the Addicted cut.", kind: "percent", section: "Ad breaks", min: 0.0, max: 1000.0, aliases: new[] { "AdBreakBonusPercent" }),
+        S("adBreakOnly", false, page: "automation", label: "Rounds only during ads", help: "On Twitch, viewers can start a round only while ads run; moderators and the broadcaster always can, and so can the timer above and your own actions. YouTube and Kick are not affected.", section: "Ad breaks", aliases: new[] { "AdBreakOnly" }),
         S("awardPoints", true, page: "game", label: "Pay out points", help: "Off, and rounds are played for nothing but the answer.", section: "Points", aliases: new[] { "AwardPoints" }),
         S("baseWinPoints", 1234, page: "game", label: "Base win", help: "What a win pays before the multipliers below.", section: "Points", min: 0.0, row: "points", aliases: new[] { "BaseWinPoints" }),
         S("pointsVariable", "points", page: "game", label: "Points variable", help: "The variable your points live in. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own; only change this for a points system of your own.", section: "Points", row: "points", aliases: new[] { "VarName" }),
@@ -817,6 +835,8 @@ public static class UiSchema
         Msg("Cooldown", "userCooldownMessage", "@{userName}, please wait {seconds} seconds before trying again ⏳", "User Cooldown", "Sent when a viewer uses the start command while their personal cooldown is still running.", new[] { "userName", "seconds" }, alias: "UserCooldownMessage"),
         Msg("Channel points", "redemptionRefunded", "↩️ @{userName}, your channel point redemption was refunded.", "Redemption Refunded", "Sent when a redemption could not start a round and the viewer's channel points were given back. Clear this box to refund silently.", new[] { "userName" }, alias: "RedemptionRefunded"),
         Msg("Auto start", "autoStartAnnouncement", "🎲 Trivia time! Here comes a question — next one in about {minutes} minutes.", "Auto Start Notice", "Sent just before the question of an automatic round, so chat can tell it apart from one somebody asked for. Clear this box to start silently.", new[] { "minutes", "rounds" }, alias: "AutoStartAnnouncement"),
+        Msg("Ad breaks", "adBreakAnnouncement", "📺 Ads in about {minutes} min, {seconds} seconds of them. A trivia round starts with them, so stay in chat!", "Ads Coming", "Sent on Twitch ahead of an ad break, with 'Announce it before the ads' on. Clear this box to say nothing.", new[] { "minutes", "seconds" }, alias: "AdBreakAnnouncement"),
+        Msg("Ad breaks", "adBreakOnlyMessage", "@{userName}, rounds only start during an ad break.", "Only During Ads", "Sent on Twitch when a viewer tries to start a round outside an ad break while 'Rounds only during ads' is on.", new[] { "userName" }, alias: "AdBreakOnlyMessage"),
         Msg("Errors", "categoryUnknown", "@{userName}, I have no category called ‘{category}’. Available: {categories}", "Unknown Category", "Sent when a viewer names a category that cannot be played. The round is cancelled either way rather than quietly asking about something else; clearing this box only makes that happen silently.", new[] { "userName", "category", "categories" }, alias: "CategoryUnknown"),
         Msg("Errors", "modOnlyStart", "@{userName}, only moderators or the broadcaster can start a new game.", "Mod Only — Start", "Sent when a viewer tries to start a round while 'Only moderators may start' is on.", new[] { "userName" }, alias: "ModOnlyStart"),
         Msg("Errors", "modOnlySkip", "@{userName}, only moderators or the broadcaster can skip the running game.", "Mod Only — Skip", "Sent when a viewer tries to skip while 'Only moderators may skip' is on.", new[] { "userName" }, alias: "ModOnlySkip"),
@@ -1401,6 +1421,100 @@ public static class UiTriggers
         if (text == "true") return true;
         if (text == "false") return false;
         return text;
+    }
+}
+
+/// <summary>The Twitch ad break as a window of time for the game: chat stays usable while ads run, so that is when a
+/// round fits best. Streamer.bot tells of the start (the trigger Twitch, Ads, Ad Run, with the length in adLength)
+/// and of an ad to come (Upcoming Ad, every minute from five minutes ahead, with minutes and adLength); it has no
+/// trigger for the end, so the window closes when the length has passed. The game action needs both triggers. The
+/// settings are the convention keys adBreakStart, adBreakAnnounce, adBreakAnnounceMinutes, adBreakBonusPercent and
+/// adBreakOnly.
+/// <para>On EventType.TwitchAdRun the game calls <see cref="Begin"/> and starts what it wants to start; on
+/// EventType.TwitchUpcomingAd it calls <see cref="Announce"/> and says so in chat when that answers true. Wherever
+/// it matters, <see cref="Active"/> says whether ads are running. The window lives in memory: a recompile closes it.</para></summary>
+public static class UiAdBreak
+{
+    private static readonly object Gate = new object();
+    private static System.DateTime _until = System.DateTime.MinValue, _announced = System.DateTime.MinValue;
+    private static int _length, _generation;
+
+    /// <summary>The clock, for the tests.</summary>
+    public static System.Func<System.DateTime> Now = () => System.DateTime.UtcNow;
+
+    /// <summary>An ad break started. Opens the window for its length and answers that length in seconds; 0, and no
+    /// window, when the event carries none. <paramref name="ended"/> runs once when the window closes, unless
+    /// another break or <see cref="End"/> came first.</summary>
+    public static int Begin(System.Collections.Generic.IDictionary<string, object> args, System.Action ended = null)
+    {
+        int seconds = Number(args, "adLength");
+        if (seconds <= 0) return 0;
+        int mine;
+        lock (Gate)
+        {
+            _length = seconds;
+            _until = Now().AddSeconds(seconds);
+            mine = ++_generation;
+        }
+        if (ended != null)
+            System.Threading.Tasks.Task.Delay(System.TimeSpan.FromSeconds(seconds)).ContinueWith(t =>
+            {
+                lock (Gate) { if (mine != _generation) return; }
+                try { ended(); } catch (System.Exception) { }
+            });
+        return seconds;
+    }
+
+    /// <summary>Whether ads are running now.</summary>
+    public static bool Active { get { lock (Gate) return Now() < _until; } }
+
+    /// <summary>How long the running ad break still lasts, in seconds; 0 outside one.</summary>
+    public static int SecondsLeft { get { lock (Gate) return Now() < _until ? (int)System.Math.Ceiling((_until - Now()).TotalSeconds) : 0; } }
+
+    /// <summary>The length of the last ad break, in seconds.</summary>
+    public static int Length { get { lock (Gate) return _length; } }
+
+    /// <summary>Closes the window early, and nothing runs when its time would have passed.</summary>
+    public static void End() { lock (Gate) { _until = System.DateTime.MinValue; _generation++; } }
+
+    /// <summary>An ad is coming. True once per ad break, when it is <paramref name="minutesBefore"/> minutes away or
+    /// less: Streamer.bot fires every minute from five ahead, and one line in chat is enough.</summary>
+    /// <param name="minutes">How many minutes until the ads.</param>
+    /// <param name="seconds">How long they will run.</param>
+    public static bool Announce(System.Collections.Generic.IDictionary<string, object> args, int minutesBefore, out int minutes, out int seconds)
+    {
+        minutes = Number(args, "minutes");
+        seconds = Number(args, "adLength");
+        if (minutes > System.Math.Max(1, System.Math.Min(5, minutesBefore))) return false;
+        lock (Gate)
+        {
+            // The same ad break tells of itself for five minutes; the next one is further off than that.
+            if ((Now() - _announced).TotalMinutes < 6) return false;
+            _announced = Now();
+            return true;
+        }
+    }
+
+    /// <summary>How many rounds fit an ad break: each takes <paramref name="roundSeconds"/> and the pause after it
+    /// <paramref name="gapSeconds"/>. At least one, however short the ads; at most <paramref name="most"/>.</summary>
+    public static int RoundsThatFit(int adSeconds, int roundSeconds, int gapSeconds, int most)
+    {
+        int each = System.Math.Max(1, roundSeconds) + System.Math.Max(0, gapSeconds);
+        int fit = (System.Math.Max(0, adSeconds) + System.Math.Max(0, gapSeconds)) / each;
+        return System.Math.Max(1, System.Math.Min(fit, System.Math.Max(1, most)));
+    }
+
+    /// <summary>A payout with the ad break's bonus on top: <paramref name="bonusPercent"/> more, nothing for 0 or less.</summary>
+    public static double WithBonus(double factor, double bonusPercent) => bonusPercent > 0 ? factor * (1.0 + bonusPercent / 100.0) : factor;
+
+    // An argument as a whole number, whatever type Streamer.bot stored it as; 0 when it is none.
+    private static int Number(System.Collections.Generic.IDictionary<string, object> args, string name)
+    {
+        object value;
+        if (args == null || !args.TryGetValue(name, out value) || value == null) return 0;
+        double number;
+        if (!double.TryParse(System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out number)) return 0;
+        return number > 0 && number < int.MaxValue ? (int)System.Math.Round(number) : 0;
     }
 }
 

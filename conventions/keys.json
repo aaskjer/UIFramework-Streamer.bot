@@ -5,6 +5,7 @@
   "pages": {
     "general":     { "order": 10, "icon": "gear" },
     "game":        { "order": 20, "icon": "dice" },
+    "automation":  { "order": 25, "icon": "clock" },
     "points":      { "order": 30, "icon": "coins" },
     "channelPoints": { "order": 35, "icon": "gift" },
     "cooldowns":   { "order": 40, "icon": "clock" },
@@ -87,11 +88,17 @@
     "leaderboardEntry":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": ["rank", "user", "score", "medal"], "aliases": ["MsgScoreboardEntry", "ScoreboardEntry"] },
     "leaderboardEmpty":              { "kind": "template", "default": "", "page": "leaderboard", "placeholders": [], "aliases": ["MsgScoreboardEmpty", "ScoreboardEmpty", "MsgNoLeaderboard", "MsgNoStatsFound"] },
 
-    "autoStartEnabled":            { "kind": "bool", "default": false, "page": "game", "aliases": ["AutoStartEnabled"] },
-    "autoStartIntervalMinutes":    { "kind": "int",  "default": 15,    "page": "game", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartEnabled", "aliases": ["AutoStartIntervalMinutes"] },
-    "autoStartRandom":             { "kind": "bool", "default": false, "page": "game", "requires": "autoStartEnabled", "aliases": ["AutoStartRandom"] },
-    "autoStartIntervalMaxMinutes": { "kind": "int",  "default": 30,    "page": "game", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartRandom", "aliases": ["AutoStartIntervalMaxMinutes"] },
-    "autoStartMinChatLines":       { "kind": "int",  "default": 0,     "page": "game", "min": 0, "requires": "autoStartEnabled", "aliases": ["AutoStartMinChatLines"] },
+    "autoStartEnabled":            { "kind": "bool", "default": false, "page": "automation", "aliases": ["AutoStartEnabled"] },
+    "autoStartIntervalMinutes":    { "kind": "int",  "default": 15,    "page": "automation", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartEnabled", "aliases": ["AutoStartIntervalMinutes"] },
+    "autoStartRandom":             { "kind": "bool", "default": false, "page": "automation", "requires": "autoStartEnabled", "aliases": ["AutoStartRandom"] },
+    "autoStartIntervalMaxMinutes": { "kind": "int",  "default": 30,    "page": "automation", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartRandom", "aliases": ["AutoStartIntervalMaxMinutes"] },
+    "autoStartMinChatLines":       { "kind": "int",  "default": 0,     "page": "automation", "min": 0, "requires": "autoStartEnabled", "aliases": ["AutoStartMinChatLines"] },
+
+    "adBreakStart":           { "kind": "bool",    "default": false, "page": "automation", "aliases": ["AdBreakStart"] },
+    "adBreakAnnounce":        { "kind": "bool",    "default": true,  "page": "automation", "aliases": ["AdBreakAnnounce"] },
+    "adBreakAnnounceMinutes": { "kind": "int",     "default": 1,     "page": "automation", "min": 1, "max": 5, "unit": "min", "requires": "adBreakAnnounce", "aliases": ["AdBreakAnnounceMinutes"] },
+    "adBreakBonusPercent":    { "kind": "percent", "default": 0,     "page": "automation", "min": 0, "max": 1000, "aliases": ["AdBreakBonusPercent"] },
+    "adBreakOnly":            { "kind": "bool",    "default": false, "page": "automation", "aliases": ["AdBreakOnly"] },
 
     "overlayEnabled":        { "kind": "bool",     "default": false, "page": "overlay", "aliases": ["OverlayEnabled"] },
     "obsConnectionId":       { "kind": "int",      "default": 0,     "page": "overlay", "min": 0, "row": "obs", "aliases": ["ObsConnectionId"] },

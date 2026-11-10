@@ -449,6 +449,52 @@ Twitch and Kick are asked by UIFramework.dll 1.6.0 or newer, because the block i
 that references nothing but mscorlib and System.Core. Without the DLL (the settings never opened) or with an older
 one they are `Unknown`, which `log` is told once.
 
+### Twitch's ad breaks
+
+While ads run, viewers cannot see the stream, but chat works as ever: a good moment for a round. Streamer.bot has
+two triggers for it under Twitch, Ads: *Ad Run* when ads start, with their length in `adLength` (seconds), and
+*Upcoming Ad*, every minute from five minutes ahead, with `minutes` and `adLength`. It has none for the end, so
+`UiAdBreak` takes the break as over once its length has passed. The game action needs both triggers.
+
+| Key | Kind | Default | Meaning |
+|-----|------|---------|---------|
+| `adBreakStart` | bool | `false` | start a round when ads start |
+| `adBreakAnnounce` | bool | `true` | a line in chat ahead of the ads |
+| `adBreakAnnounceMinutes` | int | `1` | how long ahead, 1 to 5 |
+| `adBreakBonusPercent` | percent | `0` | how much more a round started during ads pays |
+| `adBreakOnly` | bool | `false` | viewers start rounds only during ads |
+
+They sit on the conventions' page `automation` (*Automation*), where the timer's keys are too; a game lists it
+among its pages (`P("automation", "Automation", "⏱️")`).
+
+```csharp
+EventType evt = CPH.GetEventType();
+if (evt == EventType.TwitchAdRun)
+{
+    int seconds = UiAdBreak.Begin(args, () => CPH.TriggerCodeEvent("demo_onAdBreakEnd", false));
+    if (seconds > 0 && _cfg.AdBreakStart)
+        StartRounds("twitch", UiAdBreak.RoundsThatFit(seconds, roundSeconds, pauseSeconds, most));
+    return true;
+}
+if (evt == EventType.TwitchUpcomingAd)
+{
+    if (_cfg.AdBreakAnnounce && UiAdBreak.Announce(args, _cfg.AdBreakAnnounceMinutes, out int minutes, out int seconds))
+        Say("Ads in " + minutes + " min: a round starts with them.");
+    return true;
+}
+```
+
+- **`Begin(args, ended)`** opens the window for the event's `adLength` and answers that length; 0, and no window,
+  when the event carries none. `ended` runs once when the time has passed, unless another break or `End()` came first.
+- **`Active`**, **`SecondsLeft`**, **`Length`**: whether ads run now, for how long still, and how long the last
+  break was. A game reads `Active` where a round starts, for the bonus and for `adBreakOnly`.
+- **`Announce(args, minutesBefore, out minutes, out seconds)`** is true once per ad break, when it is that near
+  (1 to 5 minutes): Streamer.bot fires every minute, and one line in chat is enough.
+- **`RoundsThatFit(adSeconds, roundSeconds, gapSeconds, most)`**: at least one, however short the ads.
+- **`WithBonus(factor, bonusPercent)`**: the payout factor with the bonus on top.
+
+The window lives in memory: a recompile closes it. Trivia and Hangman use it.
+
 ## Custom triggers and methods
 
 What a game offers the streamer's own actions is declared once, in the window:

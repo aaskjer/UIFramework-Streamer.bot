@@ -1,7 +1,7 @@
 {
   "version": 1,
   "pages": {
-    "general": "General", "game": "Game", "points": "Points & Bets", "cooldowns": "Cooldowns", "access": "Access",
+    "general": "General", "game": "Game", "automation": "Automation", "points": "Points & Bets", "cooldowns": "Cooldowns", "access": "Access",
     "messages": "Messages", "leaderboard": "Leaderboard", "overlay": "Overlay", "log": "Log", "help": "Help", "about": "About",
     "stats": "Stats", "channelPoints": "Channel points"
   },
@@ -67,6 +67,12 @@
     "autoStartRandom":             { "label": "Random time", "help": "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes." },
     "autoStartIntervalMaxMinutes": { "label": "At most", "help": "The longest wait of a random time." },
     "autoStartMinChatLines":       { "label": "Only after chat lines", "help": "How many lines chat must have written since the last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none." },
+
+    "adBreakStart":           { "label": "Start a round when ads start", "help": "Twitch only. When an ad break starts on your channel, a round starts with it: chat stays usable while the ads run." },
+    "adBreakAnnounce":        { "label": "Announce it before the ads", "help": "A line in chat ahead of the ad break, so viewers know a round comes with it." },
+    "adBreakAnnounceMinutes": { "label": "Minutes before", "help": "How long before the ads the line is sent, 1 to 5. Twitch tells of an ad break from five minutes ahead." },
+    "adBreakBonusPercent":    { "label": "Bonus during ads", "help": "How much more a round started during an ad break pays, as a percentage. 0 for none." },
+    "adBreakOnly":            { "label": "Rounds only during ads", "help": "Twitch only. Viewers can start a round only while ads run; moderators and the broadcaster always can." },
 
     "overlayEnabled":        { "label": "Overlay enabled" },
     "overlayFolder":         { "label": "Overlay folder", "help": "Where the overlay files are written. Empty uses the default next to Streamer.bot." },

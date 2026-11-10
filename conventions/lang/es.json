@@ -1,7 +1,7 @@
 {
   "version": 1,
   "pages": {
-    "general": "General", "game": "Juego", "points": "Puntos y apuestas", "cooldowns": "Tiempos de espera", "access": "Acceso",
+    "general": "General", "game": "Juego", "automation": "Automatización","points": "Puntos y apuestas", "cooldowns": "Tiempos de espera", "access": "Acceso",
     "messages": "Mensajes", "leaderboard": "Clasificación", "overlay": "Overlay", "log": "Registro", "help": "Ayuda", "about": "Acerca de",
     "stats": "Estadísticas", "channelPoints": "Puntos de canal"
   },
@@ -67,6 +67,12 @@
     "autoStartRandom":             { "label": "Tiempo aleatorio", "help": "Cada espera se sortea de nuevo, entre Cada y Como máximo, para que el chat no sepa cuándo llega la próxima ronda." },
     "autoStartIntervalMaxMinutes": { "label": "Como máximo", "help": "La espera más larga de un tiempo aleatorio." },
     "autoStartMinChatLines":       { "label": "Solo tras líneas de chat", "help": "Cuántas líneas debe haber escrito el chat desde la última ronda automática. Si son muy pocas, la ronda espera al siguiente turno del temporizador. 0 no pide ninguna." },
+
+    "adBreakStart":           { "label": "Iniciar una ronda cuando empiezan los anuncios", "help": "Solo Twitch. Cuando empieza una pausa publicitaria en tu canal, empieza una ronda con ella: el chat sigue disponible mientras se emiten los anuncios." },
+    "adBreakAnnounce":        { "label": "Anunciarlo antes de los anuncios", "help": "Una línea en el chat antes de la pausa publicitaria, para que los espectadores sepan que llega una ronda con ella." },
+    "adBreakAnnounceMinutes": { "label": "Minutos antes", "help": "Cuánto antes de los anuncios se envía la línea, de 1 a 5. Twitch avisa de una pausa publicitaria desde cinco minutos antes." },
+    "adBreakBonusPercent":    { "label": "Bonificación durante los anuncios", "help": "Cuánto más paga una ronda iniciada durante una pausa publicitaria, en porcentaje. 0 para ninguna." },
+    "adBreakOnly":            { "label": "Rondas solo durante los anuncios", "help": "Solo Twitch. Los espectadores solo pueden iniciar una ronda mientras hay anuncios; los moderadores y el streamer, siempre." },
 
     "overlayEnabled":        { "label": "Overlay activado" },
     "overlayFolder":         { "label": "Carpeta del overlay", "help": "Dónde se escriben los archivos del overlay. Vacío usa la carpeta predeterminada junto a Streamer.bot." },

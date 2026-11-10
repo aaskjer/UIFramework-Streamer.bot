@@ -827,6 +827,100 @@ public static class UiTriggers
     }
 }
 
+/// <summary>The Twitch ad break as a window of time for the game: chat stays usable while ads run, so that is when a
+/// round fits best. Streamer.bot tells of the start (the trigger Twitch, Ads, Ad Run, with the length in adLength)
+/// and of an ad to come (Upcoming Ad, every minute from five minutes ahead, with minutes and adLength); it has no
+/// trigger for the end, so the window closes when the length has passed. The game action needs both triggers. The
+/// settings are the convention keys adBreakStart, adBreakAnnounce, adBreakAnnounceMinutes, adBreakBonusPercent and
+/// adBreakOnly.
+/// <para>On EventType.TwitchAdRun the game calls <see cref="Begin"/> and starts what it wants to start; on
+/// EventType.TwitchUpcomingAd it calls <see cref="Announce"/> and says so in chat when that answers true. Wherever
+/// it matters, <see cref="Active"/> says whether ads are running. The window lives in memory: a recompile closes it.</para></summary>
+public static class UiAdBreak
+{
+    private static readonly object Gate = new object();
+    private static System.DateTime _until = System.DateTime.MinValue, _announced = System.DateTime.MinValue;
+    private static int _length, _generation;
+
+    /// <summary>The clock, for the tests.</summary>
+    public static System.Func<System.DateTime> Now = () => System.DateTime.UtcNow;
+
+    /// <summary>An ad break started. Opens the window for its length and answers that length in seconds; 0, and no
+    /// window, when the event carries none. <paramref name="ended"/> runs once when the window closes, unless
+    /// another break or <see cref="End"/> came first.</summary>
+    public static int Begin(System.Collections.Generic.IDictionary<string, object> args, System.Action ended = null)
+    {
+        int seconds = Number(args, "adLength");
+        if (seconds <= 0) return 0;
+        int mine;
+        lock (Gate)
+        {
+            _length = seconds;
+            _until = Now().AddSeconds(seconds);
+            mine = ++_generation;
+        }
+        if (ended != null)
+            System.Threading.Tasks.Task.Delay(System.TimeSpan.FromSeconds(seconds)).ContinueWith(t =>
+            {
+                lock (Gate) { if (mine != _generation) return; }
+                try { ended(); } catch (System.Exception) { }
+            });
+        return seconds;
+    }
+
+    /// <summary>Whether ads are running now.</summary>
+    public static bool Active { get { lock (Gate) return Now() < _until; } }
+
+    /// <summary>How long the running ad break still lasts, in seconds; 0 outside one.</summary>
+    public static int SecondsLeft { get { lock (Gate) return Now() < _until ? (int)System.Math.Ceiling((_until - Now()).TotalSeconds) : 0; } }
+
+    /// <summary>The length of the last ad break, in seconds.</summary>
+    public static int Length { get { lock (Gate) return _length; } }
+
+    /// <summary>Closes the window early, and nothing runs when its time would have passed.</summary>
+    public static void End() { lock (Gate) { _until = System.DateTime.MinValue; _generation++; } }
+
+    /// <summary>An ad is coming. True once per ad break, when it is <paramref name="minutesBefore"/> minutes away or
+    /// less: Streamer.bot fires every minute from five ahead, and one line in chat is enough.</summary>
+    /// <param name="minutes">How many minutes until the ads.</param>
+    /// <param name="seconds">How long they will run.</param>
+    public static bool Announce(System.Collections.Generic.IDictionary<string, object> args, int minutesBefore, out int minutes, out int seconds)
+    {
+        minutes = Number(args, "minutes");
+        seconds = Number(args, "adLength");
+        if (minutes > System.Math.Max(1, System.Math.Min(5, minutesBefore))) return false;
+        lock (Gate)
+        {
+            // The same ad break tells of itself for five minutes; the next one is further off than that.
+            if ((Now() - _announced).TotalMinutes < 6) return false;
+            _announced = Now();
+            return true;
+        }
+    }
+
+    /// <summary>How many rounds fit an ad break: each takes <paramref name="roundSeconds"/> and the pause after it
+    /// <paramref name="gapSeconds"/>. At least one, however short the ads; at most <paramref name="most"/>.</summary>
+    public static int RoundsThatFit(int adSeconds, int roundSeconds, int gapSeconds, int most)
+    {
+        int each = System.Math.Max(1, roundSeconds) + System.Math.Max(0, gapSeconds);
+        int fit = (System.Math.Max(0, adSeconds) + System.Math.Max(0, gapSeconds)) / each;
+        return System.Math.Max(1, System.Math.Min(fit, System.Math.Max(1, most)));
+    }
+
+    /// <summary>A payout with the ad break's bonus on top: <paramref name="bonusPercent"/> more, nothing for 0 or less.</summary>
+    public static double WithBonus(double factor, double bonusPercent) => bonusPercent > 0 ? factor * (1.0 + bonusPercent / 100.0) : factor;
+
+    // An argument as a whole number, whatever type Streamer.bot stored it as; 0 when it is none.
+    private static int Number(System.Collections.Generic.IDictionary<string, object> args, string name)
+    {
+        object value;
+        if (args == null || !args.TryGetValue(name, out value) || value == null) return 0;
+        double number;
+        if (!double.TryParse(System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out number)) return 0;
+        return number > 0 && number < int.MaxValue ? (int)System.Math.Round(number) : 0;
+    }
+}
+
 public enum UiLiveState { Unknown, Offline, Live }
 
 /// <summary>Whether the streamer is live on a platform, for what should only happen on stream: a round that starts

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "pages": {
-    "general": "Allgemein", "game": "Spiel", "points": "Punkte & Einsätze", "cooldowns": "Abklingzeiten", "access": "Zugriff",
+    "general": "Allgemein", "game": "Spiel", "automation": "Automatisierung", "points": "Punkte & Einsätze", "cooldowns": "Abklingzeiten", "access": "Zugriff",
     "messages": "Nachrichten", "leaderboard": "Bestenliste", "overlay": "Overlay", "log": "Protokoll", "help": "Hilfe", "about": "Über",
     "stats": "Statistik", "channelPoints": "Kanalpunkte"
   },
@@ -67,6 +67,12 @@
     "autoStartRandom":             { "label": "Zufällige Zeit", "help": "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt." },
     "autoStartIntervalMaxMinutes": { "label": "Höchstens", "help": "Die längste Wartezeit einer zufälligen Zeit." },
     "autoStartMinChatLines":       { "label": "Erst nach Chat-Zeilen", "help": "Wie viele Zeilen der Chat seit der letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine." },
+
+    "adBreakStart":           { "label": "Runde starten, wenn Werbung startet", "help": "Nur Twitch. Startet auf deinem Kanal ein Werbeblock, startet mit ihm eine Runde: der Chat bleibt nutzbar, während die Werbung läuft." },
+    "adBreakAnnounce":        { "label": "Vor der Werbung ankündigen", "help": "Eine Zeile im Chat vor dem Werbeblock, damit die Zuschauer wissen, dass mit ihm eine Runde kommt." },
+    "adBreakAnnounceMinutes": { "label": "Minuten vorher", "help": "Wie lange vor der Werbung die Zeile gesendet wird, 1 bis 5. Twitch meldet einen Werbeblock ab fünf Minuten vorher." },
+    "adBreakBonusPercent":    { "label": "Bonus während der Werbung", "help": "Wie viel mehr eine Runde zahlt, die während eines Werbeblocks gestartet wurde, in Prozent. 0 für keinen." },
+    "adBreakOnly":            { "label": "Runden nur während der Werbung", "help": "Nur Twitch. Zuschauer können eine Runde nur starten, während Werbung läuft; Moderatoren und der Broadcaster immer." },
 
     "overlayEnabled":        { "label": "Overlay aktiv" },
     "overlayFolder":         { "label": "Overlay-Ordner", "help": "Wohin die Overlay-Dateien geschrieben werden. Leer verwendet den Standard neben Streamer.bot." },

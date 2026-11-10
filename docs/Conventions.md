@@ -58,6 +58,7 @@ Generated from the files by `tools/conventions-doc.ps1`; edit the JSON, not this
 |---|---|---|---|
 | `general` | General | `gear` | 10 |
 | `game` | Game | `dice` | 20 |
+| `automation` | Automation | `clock` | 25 |
 | `points` | Points & Bets | `coins` | 30 |
 | `channelPoints` | Channel points | `gift` | 35 |
 | `cooldowns` | Cooldowns | `clock` | 40 |
@@ -122,11 +123,16 @@ is read and written back under the key.
 | `leaderboardHeader` | template | `""` | leaderboard | Header line | `MsgScoreboardHeader`, `ScoreboardHeader` |
 | `leaderboardEntry` | template | `""` | leaderboard | Entry line | `MsgScoreboardEntry`, `ScoreboardEntry` |
 | `leaderboardEmpty` | template | `""` | leaderboard | Empty board | `MsgScoreboardEmpty`, `ScoreboardEmpty`, `MsgNoLeaderboard`, `MsgNoStatsFound` |
-| `autoStartEnabled` | bool | `false` | game | Start rounds automatically | `AutoStartEnabled` |
-| `autoStartIntervalMinutes` | int | `15` | game | Every | `AutoStartIntervalMinutes` |
-| `autoStartRandom` | bool | `false` | game | Random time | `AutoStartRandom` |
-| `autoStartIntervalMaxMinutes` | int | `30` | game | At most | `AutoStartIntervalMaxMinutes` |
-| `autoStartMinChatLines` | int | `0` | game | Only after chat lines | `AutoStartMinChatLines` |
+| `autoStartEnabled` | bool | `false` | automation | Start rounds automatically | `AutoStartEnabled` |
+| `autoStartIntervalMinutes` | int | `15` | automation | Every | `AutoStartIntervalMinutes` |
+| `autoStartRandom` | bool | `false` | automation | Random time | `AutoStartRandom` |
+| `autoStartIntervalMaxMinutes` | int | `30` | automation | At most | `AutoStartIntervalMaxMinutes` |
+| `autoStartMinChatLines` | int | `0` | automation | Only after chat lines | `AutoStartMinChatLines` |
+| `adBreakStart` | bool | `false` | automation | Start a round when ads start | `AdBreakStart` |
+| `adBreakAnnounce` | bool | `true` | automation | Announce it before the ads | `AdBreakAnnounce` |
+| `adBreakAnnounceMinutes` | int | `1` | automation | Minutes before | `AdBreakAnnounceMinutes` |
+| `adBreakBonusPercent` | percent | `0` | automation | Bonus during ads | `AdBreakBonusPercent` |
+| `adBreakOnly` | bool | `false` | automation | Rounds only during ads | `AdBreakOnly` |
 | `overlayEnabled` | bool | `false` | overlay | Overlay enabled | `OverlayEnabled` |
 | `obsConnectionId` | int | `0` | overlay | OBS connection | `ObsConnectionId` |
 | `obsSceneName` | string | `""` | overlay | Scene | `ObsSceneName` |
@@ -169,7 +175,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 259 of 259 |
-| `lang/en.json` | 77 | 13 | 16 | 0 | 259 |
-| `lang/es.json` | 77 of 77 | 13 of 13 | 16 of 16 | 140 | 259 of 259 |
+| `lang/de.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 259 of 259 |
+| `lang/en.json` | 82 | 14 | 16 | 0 | 259 |
+| `lang/es.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 259 of 259 |
 <!-- generated:end -->

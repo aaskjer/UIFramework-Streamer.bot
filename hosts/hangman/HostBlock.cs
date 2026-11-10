@@ -243,13 +243,15 @@ public static class UiSchema
             Tr("Hangman: Game Loss", "hm_onLoss", "The lives ran out.", "roundOutcome=LOSS", "roundWinner=", "roundWinnerId=", "roundPoints=0", "roundWrongGuesses=6"),
             Tr("Hangman: Game Stopped", "hm_onStop", "A moderator stopped the round.", "roundOutcome=STOPPED", "roundWinner=", "roundWinnerId=", "roundPoints=0"),
             Tr("Hangman: Timeout", "hm_onTimeout", "The round's time ran out.", "roundOutcome=TIMEOUT", "roundWinner=", "roundWinnerId=", "roundPoints=0"))
+        .Trigger("Hangman: Ad Break Started", "hm_onAdBreak", "A Twitch ad break started; with 'Start a round when ads start' on, a round starts with it.", "adLength=90", "adRoundStarted=true")
+        .Trigger("Hangman: Ad Break Ended", "hm_onAdBreakEnd", "The ad break's length has passed.", "adLength=90")
         .Trigger("Hangman: Free Game Start", "hm_onFreeStart", "Free mode was switched on.")
         .Trigger("Hangman: Free Game End", "hm_onFreeEnd", "Free mode was switched off.")
         .Method("StartRound", "Starts a round, with no cooldown and no moderator check. Returns false when none started.", "hangmanPlatform=in: twitch, youtube, kick or all", "hangmanBlitz=in: true forces a blitz round", "hangmanStarted=out: whether a round began", "hangmanStartedOn=out: the platforms it began on")
         .Method("GetLastRoundResult", "Sets the round arguments of the last settled round, the same the triggers carry.")
         .Method("StartFreeGame", "Switches Free mode on.")
         .Method("EndFreeGame", "Switches Free mode off.")
-        .Pages(P("game", "Game", "🎮"), P("words", "Words", "🔤"), P("overlay", "Overlay", "📺"), P("access", "Access", "👥"), P("messages", "Messages", "💬"), P("board", "Board", "🏆"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
+        .Pages(P("game", "Game", "🎮"), P("automation", "Automation", "⏱️"), P("words", "Words", "🔤"), P("overlay", "Overlay", "📺"), P("access", "Access", "👥"), P("messages", "Messages", "💬"), P("board", "Board", "🏆"), P("log", "Log", "📜"), P("help", "How to play", "📖"), P("about", "About", "ℹ️"))
         .Senders(useBot: "useBot", sendAction: "sendAction", cooldownUseBot: "cooldownUseBot", cooldownSendAction: "cooldownSendAction", numberSeparator: "numberSeparator", cooldownGroup: "Cooldown")
         .Pill("overlayEnabled", "Overlay on", "Overlay off", tooltip: "Overlay, from the Overlay page. Off: the game writes no overlay files.")
         .Pill("freeGame", "Free mode on", "Free mode off", tooltip: "Free mode, from the Game page or !SetFreeHangman. While it is on, letters and the win pay nothing.")
@@ -302,7 +304,17 @@ public static class UiSchema
         .Cooldowns(C("c49f751d-28cd-4c9e-87e9-6a29e843e0ae", "globalCooldown", "userCooldown"))   // !hangman
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
+            Pg("automation", "Automatisierung"),
             Pg("words", "Wörter"),
+            Tx("Ad breaks", "Werbepausen"),
+            K("adBreakStart", "Runde starten, wenn Werbung startet", "Nur Twitch. Während Werbung läuft, sehen die Zuschauer den Stream nicht, aber der Chat funktioniert wie immer. Startet auf deinem Kanal ein Werbeblock, startet mit ihm eine Runde, ohne Abklingzeit und ohne Moderator. Eine laufende Runde bleibt unberührt. Das Spiel betrachtet den Werbeblock als beendet, sobald seine Länge um ist."),
+            K("adBreakBlitz", "Als Blitz-Runde", "Die Runde zur Werbung ist eine Blitz-Runde: kurz genug für einen Werbeblock. Braucht 'Blitz-Runden' auf der Seite Spiel; sonst ist es eine normale Runde."),
+            K("adBreakAnnounce", "Vor der Werbung ankündigen", "Eine Zeile im Chat vor dem Werbeblock, damit die Zuschauer wissen, dass mit ihm eine Runde kommt. Die Zeile steht auf der Seite Nachrichten."),
+            K("adBreakAnnounceMinutes", "Minuten vorher", "Wie lange vor der Werbung die Zeile gesendet wird, 1 bis 5. Twitch meldet einen Werbeblock ab fünf Minuten vorher."),
+            K("adBreakBonusPercent", "Bonus während der Werbung", "Wie viel mehr Buchstaben und der Gewinn einer Twitch-Runde zahlen, die während eines Werbeblocks gestartet wurde, in Prozent, egal wer sie gestartet hat. 0 für keinen."),
+            K("adBreakOnly", "Runden nur während der Werbung", "Auf Twitch können Zuschauer eine Runde nur starten, während Werbung läuft; Moderatoren und der Broadcaster immer, ebenso der Timer und deine eigenen Actions. YouTube und Kick sind nicht betroffen."),
+            K("msgAdBreakAnnouncement", "Werbung kommt", "Auf Twitch vor einem Werbeblock gesendet, wenn 'Vor der Werbung ankündigen' an ist. Leer lassen, um nichts zu sagen."),
+            K("msgAdBreakOnly", "Nur während der Werbung", "Auf Twitch gesendet, wenn ein Zuschauer außerhalb eines Werbeblocks eine Runde starten will, während 'Runden nur während der Werbung' an ist."),
             Pg("board", "Rangliste"),
             K("maxWrongGuesses", "Leben (falsche Versuche)", "Wie viele falsche Versuche eine Runde erlaubt, bevor das letzte Leben weg ist und die Runde verloren ist."),
             K("roundDurationSeconds", "Rundendauer", "Wie lange eine Runde laufen darf, bevor das Wort aufgedeckt wird und sie endet. Praktisch in einem ruhigen Chat, damit eine Runde nie ewig läuft. 0 = keine Grenze."),
@@ -582,12 +594,19 @@ public static class UiSchema
         S("evilResetLives", false, page: "game", label: "Refill the lives on a swap", help: "On: the new word starts with full lives. Off: lives already lost stay lost, the truly evil way.", section: "Evil Hangman", requires: "evilEnabled", aliases: new[] { "EvilResetLives" }),
         S("evilSameCategory", true, page: "game", label: "Prefer the same category", help: "Swap to a word from the same category when one fits; any category in play when none does.", section: "Evil Hangman", requires: "evilEnabled", aliases: new[] { "EvilSameCategory" }),
         S("evilGlitchSeconds", 3, page: "game", label: "Glitch duration", help: "How long the overlay glitches: the old word breaks up, scrambles and the new one decodes, then the surviving letter lights up. Chat only hears about the swap once the glitch has played out, and guesses are ignored until then. 0 = swap without the effect and announce it at once.", kind: "duration", section: "Evil Hangman", min: 0.0, requires: "evilEnabled", aliases: new[] { "EvilGlitchSeconds" }),
-        // ---- game: rounds that start themselves ----
-        S("autoStartEnabled", false, page: "game", label: "Start rounds automatically", help: "A Streamer.bot timed action starts a round on its own schedule, on every platform you are live on where no round is running. Where it cannot be told whether you are live, chat that has written something since the last automatic round stands in. Nobody has to be a moderator for it, and no cooldown holds it back.", section: "Rounds that start themselves", aliases: new[] { "AutoStartEnabled" }),
-        S("autoStartIntervalMinutes", 15, page: "game", label: "Every (min)", help: "How long between automatic rounds. With a random time, the shortest wait.", section: "Rounds that start themselves", min: 1.0, max: 1440.0, unit: "min", requires: "autoStartEnabled", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
-        S("autoStartMinChatLines", 10, page: "game", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: being live is then enough.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "auto", aliases: new[] { "AutoStartMinChatLines" }),
-        S("autoStartRandom", false, page: "game", label: "Random time", help: "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.", section: "Rounds that start themselves", requires: "autoStartEnabled", aliases: new[] { "AutoStartRandom" }),
-        S("autoStartIntervalMaxMinutes", 30, page: "game", label: "At most (min)", help: "The longest wait of a random time.", section: "Rounds that start themselves", min: 1.0, max: 1440.0, unit: "min", requires: "autoStartRandom", aliases: new[] { "AutoStartIntervalMaxMinutes" }),
+        // ---- automation: rounds that start themselves ----
+        S("autoStartEnabled", false, page: "automation", label: "Start rounds automatically", help: "A Streamer.bot timed action starts a round on its own schedule, on every platform you are live on where no round is running. Where it cannot be told whether you are live, chat that has written something since the last automatic round stands in. Nobody has to be a moderator for it, and no cooldown holds it back.", section: "Rounds that start themselves", aliases: new[] { "AutoStartEnabled" }),
+        S("autoStartIntervalMinutes", 15, page: "automation", label: "Every (min)", help: "How long between automatic rounds. With a random time, the shortest wait.", section: "Rounds that start themselves", min: 1.0, max: 1440.0, unit: "min", requires: "autoStartEnabled", row: "auto", aliases: new[] { "AutoStartIntervalMinutes" }),
+        S("autoStartMinChatLines", 10, page: "automation", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: being live is then enough.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "auto", aliases: new[] { "AutoStartMinChatLines" }),
+        S("autoStartRandom", false, page: "automation", label: "Random time", help: "Each wait is drawn anew, between Every and At most, so chat cannot tell when the next round comes.", section: "Rounds that start themselves", requires: "autoStartEnabled", aliases: new[] { "AutoStartRandom" }),
+        S("autoStartIntervalMaxMinutes", 30, page: "automation", label: "At most (min)", help: "The longest wait of a random time.", section: "Rounds that start themselves", min: 1.0, max: 1440.0, unit: "min", requires: "autoStartRandom", aliases: new[] { "AutoStartIntervalMaxMinutes" }),
+        // ---- automation: Twitch ad breaks ----
+        S("adBreakStart", false, page: "automation", label: "Start a round when ads start", help: "Twitch only. While ads run, viewers cannot see the stream, but chat works as ever. When an ad break starts on your channel, a round starts with it, with no cooldown and no moderator. A round already running is left alone. The game takes the break as over once its length has passed.", section: "Ad breaks", aliases: new[] { "AdBreakStart" }),
+        S("adBreakBlitz", true, page: "automation", label: "Make it a blitz round", help: "The round for the ads is a blitz round: short enough for an ad break. Needs 'Blitz rounds' on the Game page; otherwise it is a normal round.", section: "Ad breaks", requires: "adBreakStart", aliases: new[] { "AdBreakBlitz" }),
+        S("adBreakAnnounce", true, page: "automation", label: "Announce it before the ads", help: "A line in chat ahead of the ad break, so viewers know a round comes with it. The line is on the Messages page.", section: "Ad breaks", requires: "adBreakStart", row: "adAnnounce", aliases: new[] { "AdBreakAnnounce" }),
+        S("adBreakAnnounceMinutes", 1, page: "automation", label: "Minutes before", help: "How long before the ads the line is sent, 1 to 5. Twitch tells of an ad break from five minutes ahead.", section: "Ad breaks", min: 1.0, max: 5.0, unit: "min", requires: "adBreakStart && adBreakAnnounce", row: "adAnnounce", aliases: new[] { "AdBreakAnnounceMinutes" }),
+        S("adBreakBonusPercent", 0.0, page: "automation", label: "Bonus during ads", help: "How much more the letters and the win of a Twitch round started during an ad break pay, as a percentage, whoever started it. 0 for none.", kind: "percent", section: "Ad breaks", min: 0.0, max: 1000.0, aliases: new[] { "AdBreakBonusPercent" }),
+        S("adBreakOnly", false, page: "automation", label: "Rounds only during ads", help: "On Twitch, viewers can start a round only while ads run; moderators and the broadcaster always can, and so can the timer and your own actions. YouTube and Kick are not affected.", section: "Ad breaks", aliases: new[] { "AdBreakOnly" }),
         // ---- game: payouts ----
         S("rewardWinPoints", 500, page: "game", label: "Win pays", help: "The base amount a viewer gets for the full correct answer.", section: "Payouts", min: 0.0, aliases: new[] { "RewardWinPoints" }),
         S("rewardPerLetterEnabled", true, page: "game", label: "Reward per letter", help: "Rewards a viewer for guessing a single letter correctly.", section: "Payouts", aliases: new[] { "EnableRewardPerLetter" }),
@@ -722,6 +741,8 @@ public static class UiSchema
         Msg("Streaks", "msgStreakLost", "💔 Streak over: {users}", "Streak lost", "Sent when a lost round ends streaks of at least 'Announce from'.", new[] { "users" }, alias: "MsgStreakLost"),
         Msg("Streaks", "msgPersonalStreak", "🔥 @{user} — Streak: {streak} | Best: {beststreak}", "Personal streak", "Extra line under the personal stats while streaks are tracked.", new[] { "user", "streak", "beststreak" }, alias: "MsgPersonalStreak"),
         Msg("Access", "msgModOnly", "🚫 @{user}, only moderators and the broadcaster can start Hangman.", "Mods only", "Sent when a viewer tries to start a round while only moderators may.", new[] { "user" }, alias: "MsgModOnly"),
+        Msg("Ad breaks", "msgAdBreakAnnouncement", "📺 Ads in about {minutes} min, {seconds} seconds of them. A round of Hangman starts with them, so stay in chat!", "Ads coming", "Sent on Twitch ahead of an ad break, with 'Announce it before the ads' on. Clear this box to say nothing.", new[] { "minutes", "seconds" }, alias: "MsgAdBreakAnnouncement"),
+        Msg("Ad breaks", "msgAdBreakOnly", "🚫 @{user}, Hangman only starts during an ad break.", "Only during ads", "Sent on Twitch when a viewer tries to start a round outside an ad break while 'Rounds only during ads' is on.", new[] { "user" }, alias: "MsgAdBreakOnly"),
         Msg("Access", "msgNotAllowed", "🚫 @{user}, you are not allowed to participate.", "Not allowed", "Sent when a blocked viewer tries to take part.", new[] { "user" }, alias: "MsgNotAllowed"),
         Msg("Access", "msgAntiCheat", "⏳ @{user}, slow down! Max {maxguesses} guesses per {window}s.", "Rate limit", "Sent when a viewer is held back for guessing too fast.", new[] { "user", "maxguesses", "window" }, alias: "MsgAntiCheat"),
         Msg("Cooldown", "globalCooldownMessage", "Please wait {seconds} seconds before trying again ⏳", "Global cooldown", "Sent when someone tries to start while the global cooldown is still running.", new[] { "seconds", "user" }, alias: "GlobalMessage"),
@@ -1322,6 +1343,100 @@ public static class UiTriggers
         if (text == "true") return true;
         if (text == "false") return false;
         return text;
+    }
+}
+
+/// <summary>The Twitch ad break as a window of time for the game: chat stays usable while ads run, so that is when a
+/// round fits best. Streamer.bot tells of the start (the trigger Twitch, Ads, Ad Run, with the length in adLength)
+/// and of an ad to come (Upcoming Ad, every minute from five minutes ahead, with minutes and adLength); it has no
+/// trigger for the end, so the window closes when the length has passed. The game action needs both triggers. The
+/// settings are the convention keys adBreakStart, adBreakAnnounce, adBreakAnnounceMinutes, adBreakBonusPercent and
+/// adBreakOnly.
+/// <para>On EventType.TwitchAdRun the game calls <see cref="Begin"/> and starts what it wants to start; on
+/// EventType.TwitchUpcomingAd it calls <see cref="Announce"/> and says so in chat when that answers true. Wherever
+/// it matters, <see cref="Active"/> says whether ads are running. The window lives in memory: a recompile closes it.</para></summary>
+public static class UiAdBreak
+{
+    private static readonly object Gate = new object();
+    private static System.DateTime _until = System.DateTime.MinValue, _announced = System.DateTime.MinValue;
+    private static int _length, _generation;
+
+    /// <summary>The clock, for the tests.</summary>
+    public static System.Func<System.DateTime> Now = () => System.DateTime.UtcNow;
+
+    /// <summary>An ad break started. Opens the window for its length and answers that length in seconds; 0, and no
+    /// window, when the event carries none. <paramref name="ended"/> runs once when the window closes, unless
+    /// another break or <see cref="End"/> came first.</summary>
+    public static int Begin(System.Collections.Generic.IDictionary<string, object> args, System.Action ended = null)
+    {
+        int seconds = Number(args, "adLength");
+        if (seconds <= 0) return 0;
+        int mine;
+        lock (Gate)
+        {
+            _length = seconds;
+            _until = Now().AddSeconds(seconds);
+            mine = ++_generation;
+        }
+        if (ended != null)
+            System.Threading.Tasks.Task.Delay(System.TimeSpan.FromSeconds(seconds)).ContinueWith(t =>
+            {
+                lock (Gate) { if (mine != _generation) return; }
+                try { ended(); } catch (System.Exception) { }
+            });
+        return seconds;
+    }
+
+    /// <summary>Whether ads are running now.</summary>
+    public static bool Active { get { lock (Gate) return Now() < _until; } }
+
+    /// <summary>How long the running ad break still lasts, in seconds; 0 outside one.</summary>
+    public static int SecondsLeft { get { lock (Gate) return Now() < _until ? (int)System.Math.Ceiling((_until - Now()).TotalSeconds) : 0; } }
+
+    /// <summary>The length of the last ad break, in seconds.</summary>
+    public static int Length { get { lock (Gate) return _length; } }
+
+    /// <summary>Closes the window early, and nothing runs when its time would have passed.</summary>
+    public static void End() { lock (Gate) { _until = System.DateTime.MinValue; _generation++; } }
+
+    /// <summary>An ad is coming. True once per ad break, when it is <paramref name="minutesBefore"/> minutes away or
+    /// less: Streamer.bot fires every minute from five ahead, and one line in chat is enough.</summary>
+    /// <param name="minutes">How many minutes until the ads.</param>
+    /// <param name="seconds">How long they will run.</param>
+    public static bool Announce(System.Collections.Generic.IDictionary<string, object> args, int minutesBefore, out int minutes, out int seconds)
+    {
+        minutes = Number(args, "minutes");
+        seconds = Number(args, "adLength");
+        if (minutes > System.Math.Max(1, System.Math.Min(5, minutesBefore))) return false;
+        lock (Gate)
+        {
+            // The same ad break tells of itself for five minutes; the next one is further off than that.
+            if ((Now() - _announced).TotalMinutes < 6) return false;
+            _announced = Now();
+            return true;
+        }
+    }
+
+    /// <summary>How many rounds fit an ad break: each takes <paramref name="roundSeconds"/> and the pause after it
+    /// <paramref name="gapSeconds"/>. At least one, however short the ads; at most <paramref name="most"/>.</summary>
+    public static int RoundsThatFit(int adSeconds, int roundSeconds, int gapSeconds, int most)
+    {
+        int each = System.Math.Max(1, roundSeconds) + System.Math.Max(0, gapSeconds);
+        int fit = (System.Math.Max(0, adSeconds) + System.Math.Max(0, gapSeconds)) / each;
+        return System.Math.Max(1, System.Math.Min(fit, System.Math.Max(1, most)));
+    }
+
+    /// <summary>A payout with the ad break's bonus on top: <paramref name="bonusPercent"/> more, nothing for 0 or less.</summary>
+    public static double WithBonus(double factor, double bonusPercent) => bonusPercent > 0 ? factor * (1.0 + bonusPercent / 100.0) : factor;
+
+    // An argument as a whole number, whatever type Streamer.bot stored it as; 0 when it is none.
+    private static int Number(System.Collections.Generic.IDictionary<string, object> args, string name)
+    {
+        object value;
+        if (args == null || !args.TryGetValue(name, out value) || value == null) return 0;
+        double number;
+        if (!double.TryParse(System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out number)) return 0;
+        return number > 0 && number < int.MaxValue ? (int)System.Math.Round(number) : 0;
     }
 }
 
