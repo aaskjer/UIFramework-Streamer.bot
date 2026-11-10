@@ -204,6 +204,14 @@ public static class UiSchema
     /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
     /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
     public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
+    /// <summary>One trigger for UiWindow.Triggers: its name in Streamer.bot, its code, what it is for, and the
+    /// arguments that are its own ("name" or "name=sample value").</summary>
+    public static string[] Tr(string name, string code, string what = null, params string[] args)
+    {
+        var parts = new System.Collections.Generic.List<string> { name, code, what };
+        if (args != null) parts.AddRange(args);
+        return parts.ToArray();
+    }
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
     /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
     /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
@@ -305,6 +313,70 @@ public sealed class UiWindow
     public readonly Newtonsoft.Json.Linq.JArray PillList = new Newtonsoft.Json.Linq.JArray(), CooldownList = new Newtonsoft.Json.Linq.JArray(), HelpList = new Newtonsoft.Json.Linq.JArray(), SectionList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
     public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
+    public readonly Newtonsoft.Json.Linq.JArray TriggerList = new Newtonsoft.Json.Linq.JArray(), MethodList = new Newtonsoft.Json.Linq.JArray();
+
+    /// <summary>A custom trigger of the game, declared once: UiTriggers.Register registers every one in Init, the Help
+    /// page lists it with its arguments, and its Fire button there fires it with the sample values, so a streamer
+    /// can try an action of their own without playing a round. <paramref name="name"/> is what Streamer.bot shows
+    /// ("Trivia: Round Won"), <paramref name="code"/> what CPH.TriggerCodeEvent takes ("trivia_onWin"),
+    /// <paramref name="args"/> the arguments it carries, each "name" or "name=sample value".</summary>
+    public UiWindow Trigger(string name, string code, string what = null, params string[] args)
+    {
+        TriggerList.Add(Declared(name, code, what, args));
+        return this;
+    }
+
+    /// <summary>Several triggers that carry the same arguments (every way a round can end): <paramref name="shared"/>
+    /// once, then each trigger as UiSchema.Tr(name, code, what, own arguments). An argument a trigger names itself
+    /// replaces the shared one of that name (its own sample outcome), or is added after them.</summary>
+    public UiWindow Triggers(string[] shared, params string[][] triggers)
+    {
+        foreach (var t in triggers)
+        {
+            if (t == null || t.Length < 2) continue;
+            var args = new System.Collections.Generic.List<string>(shared ?? new string[0]);
+            for (int i = 3; i < t.Length; i++)
+            {
+                string name = ArgName(t[i]);
+                int at = args.FindIndex(a => ArgName(a) == name);
+                if (at >= 0) args[at] = t[i]; else args.Add(t[i]);
+            }
+            TriggerList.Add(Declared(t[0], t[1], t.Length > 2 ? t[2] : null, args.ToArray()));
+        }
+        return this;
+    }
+
+    private static string ArgName(string arg) { int eq = (arg ?? "").IndexOf('='); return (eq < 0 ? arg ?? "" : arg.Substring(0, eq)).Trim(); }
+
+    /// <summary>A method of the game action for an Execute C# Method sub-action in the streamer's own actions
+    /// ("StartRound"): the Help page lists it with <paramref name="what"/> it does and the arguments it reads and
+    /// sets, each "name" or "name=what it is".</summary>
+    public UiWindow Method(string name, string what = null, params string[] args)
+    {
+        MethodList.Add(Declared(name, null, what, args));
+        return this;
+    }
+
+    private static Newtonsoft.Json.Linq.JObject Declared(string name, string code, string what, string[] args)
+    {
+        var entry = new Newtonsoft.Json.Linq.JObject { ["name"] = name };
+        if (code != null) entry["code"] = code;
+        if (what != null) entry["what"] = what;
+        if (args != null && args.Length > 0)
+        {
+            var list = new Newtonsoft.Json.Linq.JArray();
+            foreach (var arg in args)
+            {
+                if (string.IsNullOrWhiteSpace(arg)) continue;
+                int eq = arg.IndexOf('=');
+                var item = new Newtonsoft.Json.Linq.JObject { ["name"] = (eq < 0 ? arg : arg.Substring(0, eq)).Trim() };
+                if (eq >= 0) item["text"] = arg.Substring(eq + 1).Trim();
+                list.Add(item);
+            }
+            entry["args"] = list;
+        }
+        return entry;
+    }
 
     /// <param name="title">Window title and About heading.</param>
     /// <param name="releases">"owner/repo" on GitHub: the repository and releases links, the update check.</param>
@@ -501,6 +573,8 @@ public sealed class UiWindow
         if (HelpList.Count > 0) root["help"] = HelpList;
         if (AboutMap != null) root["about"] = AboutMap;
         if (TourList.Count > 0) root["tour"] = TourList;
+        if (TriggerList.Count > 0) root["triggers"] = TriggerList;
+        if (MethodList.Count > 0) root["methods"] = MethodList;
         return root;
     }
 }
@@ -594,7 +668,8 @@ public static class UiHost
         {
             switch (request)
             {
-                case "test": answer = test?.Invoke(name, values); break;
+                // The Fire button of a declared trigger on the Help page; everything else is the game's to answer.
+                case "test": answer = name.StartsWith(UiTriggers.FireRequest) ? UiTriggers.Fire(CPH, name.Substring(UiTriggers.FireRequest.Length)) : test?.Invoke(name, values); break;
                 case "validate": answer = validate?.Invoke(values); break;
                 case "saved": saved?.Invoke(values); break;
                 case "table": answer = table?.Invoke(name); break;
@@ -700,7 +775,7 @@ public static class UiUpdateNotice
     }
 
     /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
-    private static System.Type FrameworkType()
+    internal static System.Type FrameworkType()
     {
         System.Type loaded = null;
         System.Version loadedVersion = null;
@@ -738,6 +813,184 @@ public static class UiUpdateNotice
     }
 
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
+}
+
+/// <summary>The custom triggers the window declares (UiWindow.Trigger). <see cref="Register"/> in the game action's
+/// Init registers every one with Streamer.bot, so the declaration is the only list there is: what is registered, what
+/// the Help page shows and what its Fire button fires cannot drift apart. The game still fires them itself with
+/// CPH.TriggerCodeEvent where its rounds end.</summary>
+public static class UiTriggers
+{
+    /// <summary>The name a Fire button asks under, followed by the trigger's code.</summary>
+    public const string FireRequest = "uiframework.trigger:";
+
+    /// <summary>Registers every declared trigger under the categories ("Chat Game", "Trivia Game"). One that fails is
+    /// logged and the rest still register.</summary>
+    public static void Register(IInlineInvokeProxy CPH, params string[] categories) => RegisterFrom(UiSchema.Window, CPH, categories);
+
+    /// <summary>Register, for a window other than the game's own (the tests').</summary>
+    public static void RegisterFrom(UiWindow window, IInlineInvokeProxy CPH, params string[] categories)
+    {
+        if (window == null) return;
+        foreach (var item in window.TriggerList)
+        {
+            string name = (string)item["name"], code = (string)item["code"];
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(code)) continue;
+            try { CPH.RegisterCustomTrigger(name, code, categories ?? new string[0]); }
+            catch (System.Exception ex) { CPH.LogError("The custom trigger " + name + " could not be registered: " + ex.Message); }
+        }
+    }
+
+    /// <summary>Fires a declared trigger with its sample values as arguments: "fired", or "unknown" for a code the
+    /// window does not declare. A sample that reads as a whole number or as true/false is passed as one.</summary>
+    public static string Fire(IInlineInvokeProxy CPH, string code) => FireFrom(UiSchema.Window, CPH, code);
+
+    /// <summary>Fire, for a window other than the game's own (the tests').</summary>
+    public static string FireFrom(UiWindow window, IInlineInvokeProxy CPH, string code)
+    {
+        if (window != null)
+            foreach (var item in window.TriggerList)
+            {
+                if ((string)item["code"] != code) continue;
+                var args = item["args"] as Newtonsoft.Json.Linq.JArray;
+                if (args != null)
+                    foreach (var arg in args)
+                        CPH.SetArgument((string)arg["name"], Sample((string)arg["text"]));
+                CPH.TriggerCodeEvent(code, true);
+                return "fired";
+            }
+        return "unknown";
+    }
+
+    /// <summary>A sample as the argument it stands for: a whole number, true or false, otherwise its text ("" for none).</summary>
+    public static object Sample(string text)
+    {
+        if (text == null) return "";
+        long number;
+        if (long.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out number)) return number;
+        if (text == "true") return true;
+        if (text == "false") return false;
+        return text;
+    }
+}
+
+public enum UiLiveState { Unknown, Offline, Live }
+
+/// <summary>Whether the streamer is live on a platform, for what should only happen on stream: a round that starts
+/// itself. Streamer.bot has no live status to ask, so Twitch is asked through its API with Streamer.bot's own token,
+/// YouTube by the broadcasts Streamer.bot monitors, and Kick through its public channel page. Twitch and Kick are
+/// asked by UIFramework.dll (the block itself must compile in an action that references nothing but mscorlib), so
+/// without the DLL (the settings never opened) or with one older than 1.6.0 they are Unknown. An answer is kept for
+/// half a minute. Whatever cannot be told (no account, a login turned down, no answer within six seconds) is
+/// Unknown, never an exception; <see cref="SkipReason"/> then lets recent chat decide.</summary>
+public static class UiLive
+{
+    private static readonly object Gate = new object();
+    private static readonly System.Collections.Generic.Dictionary<string, System.Collections.Generic.KeyValuePair<System.DateTime, UiLiveState>> Kept =
+        new System.Collections.Generic.Dictionary<string, System.Collections.Generic.KeyValuePair<System.DateTime, UiLiveState>>(System.StringComparer.OrdinalIgnoreCase);
+
+    private static bool _saidNoDll;
+
+    /// <param name="platform">"twitch", "youtube" or "kick".</param>
+    /// <param name="log">Told what went wrong, and once that the DLL is missing or too old to ask Twitch and Kick.</param>
+    public static UiLiveState Of(IInlineInvokeProxy CPH, string platform, System.Action<string> log = null)
+    {
+        string key = (platform ?? "").Trim().ToLowerInvariant();
+        lock (Gate)
+        {
+            System.Collections.Generic.KeyValuePair<System.DateTime, UiLiveState> kept;
+            if (Kept.TryGetValue(key, out kept) && (System.DateTime.UtcNow - kept.Key).TotalSeconds < 30) return kept.Value;
+        }
+        UiLiveState state = UiLiveState.Unknown;
+        try
+        {
+            if (key == "youtube")
+            {
+                var broadcasts = CPH.YouTubeGetMonitoredBroadcasts();
+                System.Collections.Generic.List<string> statuses = null;
+                if (broadcasts != null)
+                {
+                    statuses = new System.Collections.Generic.List<string>();
+                    foreach (object broadcast in broadcasts)
+                        if (broadcast != null) statuses.Add(Text(broadcast, "Status"));
+                }
+                state = YouTubeFromStatuses(statuses);
+            }
+            else if (key == "kick")
+            {
+                object broadcaster = CPH.KickGetBroadcaster();
+                string login = Text(broadcaster, "UserLogin") ?? Text(broadcaster, "UserName");
+                if (!string.IsNullOrWhiteSpace(login)) state = Ask(log, "Kick", login);
+            }
+            else
+            {
+                string id = Text(CPH.TwitchGetBroadcaster(), "UserId"), clientId = CPH.TwitchClientId, token = CPH.TwitchOAuthToken;
+                if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(token))
+                    state = Ask(log, "Twitch", id, clientId, token);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            if (log != null) log("Could not tell whether you are live on " + key + ": " + ex.Message);
+        }
+        lock (Gate) Kept[key] = new System.Collections.Generic.KeyValuePair<System.DateTime, UiLiveState>(System.DateTime.UtcNow, state);
+        return state;
+    }
+
+    /// <summary>Why something automatic does not go to a platform, or null when it does. Being live is what counts; a
+    /// platform that could not say goes by <paramref name="recentChat"/>, whether its chat has been heard lately.</summary>
+    public static string SkipReason(UiLiveState live, bool recentChat)
+    {
+        if (live == UiLiveState.Offline) return "you are not live there.";
+        if (live == UiLiveState.Unknown && !recentChat) return "it could not be told whether you are live there, and chat has been quiet.";
+        return null;
+    }
+
+    /// <summary>The statuses of the broadcasts Streamer.bot monitors: one of them live means you are. A status never
+    /// seen before leaves the question open rather than guessing; null (no list at all) too.</summary>
+    public static UiLiveState YouTubeFromStatuses(System.Collections.Generic.IEnumerable<string> statuses)
+    {
+        if (statuses == null) return UiLiveState.Unknown;
+        var offline = new System.Collections.Generic.HashSet<string>(new[] { "complete", "completed", "created", "ready", "revoked", "testing", "teststarting", "upcoming", "ended", "offline" }, System.StringComparer.OrdinalIgnoreCase);
+        bool unknown = false;
+        foreach (string status in statuses)
+        {
+            string s = (status ?? "").Trim();
+            if (s.Equals("live", System.StringComparison.OrdinalIgnoreCase) || s.Equals("liveStarting", System.StringComparison.OrdinalIgnoreCase) || s.Equals("active", System.StringComparison.OrdinalIgnoreCase))
+                return UiLiveState.Live;
+            if (!offline.Contains(s)) unknown = true;
+        }
+        return unknown ? UiLiveState.Unknown : UiLiveState.Offline;
+    }
+
+    // UIFramework.dll's Live.Twitch or Live.Kick, which answer "Live", "Offline" or "Unknown".
+    private static UiLiveState Ask(System.Action<string> log, string method, params string[] args)
+    {
+        var notices = UiUpdateNotice.FrameworkType();
+        var live = notices == null ? null : notices.Assembly.GetType("UIFramework.Live", false);
+        var ask = live == null ? null : live.GetMethod(method);
+        if (ask == null)
+        {
+            // Said once: until the settings have been opened, recent chat stands in for the live check.
+            bool first;
+            lock (Gate) { first = !_saidNoDll; _saidNoDll = true; }
+            if (first && log != null) log("Twitch and Kick cannot be asked whether you are live: that needs UIFramework.dll 1.6.0 or newer. Open the game's settings once to get it; until then recent chat decides.");
+            return UiLiveState.Unknown;
+        }
+        object[] values = new object[args.Length];
+        for (int i = 0; i < args.Length; i++) values[i] = args[i];
+        string answer = ask.Invoke(null, values) as string;
+        return answer == "Live" ? UiLiveState.Live : answer == "Offline" ? UiLiveState.Offline : UiLiveState.Unknown;
+    }
+
+    // A property of one of Streamer.bot's models as text, by name: the block compiles without naming their types.
+    private static string Text(object model, string property)
+    {
+        if (model == null) return null;
+        var p = model.GetType().GetProperty(property);
+        object value = p == null ? null : p.GetValue(model, null);
+        return value == null ? null : value.ToString();
+    }
 }
 
 /// <summary>A Streamer.bot timed action run the three ways its own dialog offers: every so many minutes, after a random

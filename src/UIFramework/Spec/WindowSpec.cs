@@ -84,6 +84,11 @@ namespace UIFramework
         public AboutSpec About = new AboutSpec();
         public LogSpec Log = new LogSpec();
         public readonly List<HelpSection> Help = new List<HelpSection>();
+        /// <summary>The game's custom triggers (schema: window.triggers): listed on the Help page, each with a button
+        /// that has the game fire it with its sample values.</summary>
+        public readonly List<Declared> Triggers = new List<Declared>();
+        /// <summary>The game action's methods for an Execute C# Method sub-action (window.methods), listed there too.</summary>
+        public readonly List<Declared> Methods = new List<Declared>();
 
         /// <summary>What <see cref="Resolve"/> found wrong with the schema or the spec (an unknown kind, a
         /// requirement on a key that is not there): listed under the red "i" in the header, so the
@@ -223,6 +228,15 @@ namespace UIFramework
     {
         public string Text, Url;
         public Link(string text, string url) { Text = text; Url = url; }
+    }
+
+    /// <summary>A custom trigger or a method the game declares for the streamer's own actions: its name, for a trigger
+    /// the code it fires under, what it is for, and its arguments, each with a sample value (a trigger) or what it is
+    /// (a method).</summary>
+    public sealed class Declared
+    {
+        public string Name, Code, What;
+        public readonly List<(string Name, string Text)> Args = new List<(string Name, string Text)>();
     }
 
     /// <summary>A heading with notes, command rows and links, for the Help and About pages.</summary>

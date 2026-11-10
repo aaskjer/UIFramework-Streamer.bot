@@ -124,6 +124,9 @@ namespace UIFramework
                 foreach (var section in help.OfType<JObject>())
                     spec.Help.Add(ParseSection(section));
 
+            ParseDeclared(root["triggers"] as JArray, spec.Triggers, needsCode: true);
+            ParseDeclared(root["methods"] as JArray, spec.Methods, needsCode: false);
+
             if (root["about"] is JObject about)
             {
                 if (about["credits"] != null) spec.About.Credits = (string)about["credits"];
@@ -193,6 +196,26 @@ namespace UIFramework
                 }
 
             return spec;
+        }
+
+        // A trigger without a code cannot be fired and one without a name cannot be shown: both are left out.
+        private static void ParseDeclared(JArray list, List<Declared> into, bool needsCode)
+        {
+            if (list == null) return;
+            foreach (var o in list.OfType<JObject>())
+            {
+                string name = (string)o["name"], code = (string)o["code"];
+                if (string.IsNullOrWhiteSpace(name) || (needsCode && string.IsNullOrWhiteSpace(code))) continue;
+                var declared = new Declared { Name = name.Trim(), Code = code?.Trim(), What = (string)o["what"] };
+                if (o["args"] is JArray args)
+                    foreach (var arg in args)
+                    {
+                        string argName = arg is JObject a ? (string)a["name"] : arg.ToString();
+                        if (!string.IsNullOrWhiteSpace(argName))
+                            declared.Args.Add((argName.Trim(), arg is JObject t ? (string)t["text"] : null));
+                    }
+                into.Add(declared);
+            }
         }
 
         private static HelpSection ParseSection(JObject o)

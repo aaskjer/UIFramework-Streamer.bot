@@ -6,6 +6,29 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-10
+
+### Added
+
+- **Custom triggers and methods are declared once.** `UiWindow.Trigger`, `Triggers` (several that share their
+  arguments) and `Method` say what a game offers the streamer's own actions. `UiTriggers.Register` in `Init()`
+  registers the triggers from that list, and the Help page ends with *Custom triggers* and *Methods for your own
+  actions*, each with its arguments, in English, German and Spanish.
+- **Fire with sample values.** A button under each trigger on the Help page has the game fire it once with its
+  sample values, so an action that listens to it can be tried without playing a round.
+- **`UiLive`: whether you are live.** Twitch through its API with Streamer.bot's token, YouTube by the monitored
+  broadcasts, Kick through its channel page; `Live`, `Offline` or `Unknown`, never an exception. Twitch and Kick
+  are asked by the DLL, since the host block must compile in an action without `System.dll`. Trivia's own check
+  moved here, and Hangman's automatic rounds use it.
+- **`tools\copy-host-block.ps1`**, and `-Into` / `-HostName` on `update-host-block.ps1`: the block a game carries
+  goes into its other action and into `hosts\<host>\HostBlock.cs` in one step, with `-Check` to compare.
+
+### Changed
+
+- **A conventions key hands on its `requires`,** so the timer's intervals are greyed out with their switch in a
+  game that declares them with key and default alone (already in 1.5.0, not listed there).
+- Trivia, Hangman, Blackjack and Battleship declare their triggers and methods this way.
+
 ## [1.5.0] - 2026-11-10
 
 ### Added

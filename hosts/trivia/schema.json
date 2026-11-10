@@ -3470,6 +3470,297 @@
       {
         "target": "end"
       }
+    ],
+    "triggers": [
+      {
+        "name": "Trivia: Round Started",
+        "code": "trivia_onRoundStart",
+        "what": "A question went out to chat."
+      },
+      {
+        "name": "Trivia: Round Won",
+        "code": "trivia_onWin",
+        "what": "A round ended with at least one right answer.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundId",
+            "text": "12"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundQuestion",
+            "text": "What is the capital of Australia?"
+          },
+          {
+            "name": "roundCorrectAnswer",
+            "text": "Canberra"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Geography"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "medium"
+          },
+          {
+            "name": "roundSource",
+            "text": "opentdb"
+          },
+          {
+            "name": "roundAnswers",
+            "text": "7"
+          },
+          {
+            "name": "roundWinners",
+            "text": "alice, bob"
+          },
+          {
+            "name": "roundWinnerCount",
+            "text": "2"
+          },
+          {
+            "name": "roundPoints",
+            "text": "300"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "Trivia: Round Timeout",
+        "code": "trivia_onTimeout",
+        "what": "The time ran out and nobody had it right.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "NO-WINNER"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundId",
+            "text": "12"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundQuestion",
+            "text": "What is the capital of Australia?"
+          },
+          {
+            "name": "roundCorrectAnswer",
+            "text": "Canberra"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Geography"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "medium"
+          },
+          {
+            "name": "roundSource",
+            "text": "opentdb"
+          },
+          {
+            "name": "roundAnswers",
+            "text": "7"
+          },
+          {
+            "name": "roundWinners",
+            "text": ""
+          },
+          {
+            "name": "roundWinnerCount",
+            "text": "0"
+          },
+          {
+            "name": "roundPoints",
+            "text": "0"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "Trivia: Round Skipped",
+        "code": "trivia_onSkip",
+        "what": "The question was skipped.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "SKIPPED"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundId",
+            "text": "12"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundQuestion",
+            "text": "What is the capital of Australia?"
+          },
+          {
+            "name": "roundCorrectAnswer",
+            "text": "Canberra"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Geography"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "medium"
+          },
+          {
+            "name": "roundSource",
+            "text": "opentdb"
+          },
+          {
+            "name": "roundAnswers",
+            "text": "7"
+          },
+          {
+            "name": "roundWinners",
+            "text": ""
+          },
+          {
+            "name": "roundWinnerCount",
+            "text": "0"
+          },
+          {
+            "name": "roundPoints",
+            "text": "0"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "Trivia: Round ForceEnd",
+        "code": "trivia_onForceEnd",
+        "what": "A moderator ended the round.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "FORCE-END"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundId",
+            "text": "12"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundQuestion",
+            "text": "What is the capital of Australia?"
+          },
+          {
+            "name": "roundCorrectAnswer",
+            "text": "Canberra"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Geography"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "medium"
+          },
+          {
+            "name": "roundSource",
+            "text": "opentdb"
+          },
+          {
+            "name": "roundAnswers",
+            "text": "7"
+          },
+          {
+            "name": "roundWinners",
+            "text": ""
+          },
+          {
+            "name": "roundWinnerCount",
+            "text": "0"
+          },
+          {
+            "name": "roundPoints",
+            "text": "0"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          }
+        ]
+      }
+    ],
+    "methods": [
+      {
+        "name": "StartRound",
+        "what": "Starts a round, with no cooldown and no moderator check. Returns false when none started.",
+        "args": [
+          {
+            "name": "triviaPlatform",
+            "text": "in: twitch, youtube, kick or all"
+          },
+          {
+            "name": "triviaRounds",
+            "text": "in: how many rounds"
+          },
+          {
+            "name": "triviaCategory",
+            "text": "in: a category by name"
+          },
+          {
+            "name": "triviaStarted",
+            "text": "out: whether a round began"
+          },
+          {
+            "name": "triviaStartedOn",
+            "text": "out: the platforms it began on"
+          }
+        ]
+      },
+      {
+        "name": "GetLastRoundResult",
+        "what": "Sets the round arguments of the last settled round, the same the triggers carry."
+      }
     ]
   },
   "lang": {

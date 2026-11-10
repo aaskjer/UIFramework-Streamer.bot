@@ -249,7 +249,7 @@
       "page": "game",
       "section": "Rounds that start themselves",
       "label": "Start rounds automatically",
-      "help": "A Streamer.bot timed action starts a round on its own schedule, on every platform with an account in Streamer.bot (YouTube while a broadcast is monitored) where no round is running. Nobody has to be a moderator for it, and no cooldown holds it back.",
+      "help": "A Streamer.bot timed action starts a round on its own schedule, on every platform you are live on where no round is running. Where it cannot be told whether you are live, chat that has written something since the last automatic round stands in. Nobody has to be a moderator for it, and no cooldown holds it back.",
       "aliases": [
         "AutoStartEnabled"
       ]
@@ -276,7 +276,7 @@
       "page": "game",
       "section": "Rounds that start themselves",
       "label": "Only after chat lines",
-      "help": "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: rounds then start whether or not anybody is there.",
+      "help": "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none: being live is then enough.",
       "min": 0.0,
       "requires": "autoStartEnabled",
       "row": "auto",
@@ -2929,6 +2929,327 @@
       {
         "target": "end"
       }
+    ],
+    "triggers": [
+      {
+        "name": "Hangman: Game Start",
+        "code": "hm_onStart",
+        "what": "A round started."
+      },
+      {
+        "name": "Hangman: Game Win",
+        "code": "hm_onWin",
+        "what": "Somebody solved the word.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "roundWord",
+            "text": "streamer"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Twitch"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "2"
+          },
+          {
+            "name": "roundLetters",
+            "text": "8"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundWinner",
+            "text": "alice"
+          },
+          {
+            "name": "roundWinnerId",
+            "text": "12345"
+          },
+          {
+            "name": "roundPoints",
+            "text": "500"
+          },
+          {
+            "name": "roundWrongGuesses",
+            "text": "2"
+          },
+          {
+            "name": "roundMaxWrong",
+            "text": "6"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundFree",
+            "text": "false"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          },
+          {
+            "name": "roundParticipants",
+            "text": "alice, bob"
+          }
+        ]
+      },
+      {
+        "name": "Hangman: Game Loss",
+        "code": "hm_onLoss",
+        "what": "The lives ran out.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "LOSS"
+          },
+          {
+            "name": "roundWord",
+            "text": "streamer"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Twitch"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "2"
+          },
+          {
+            "name": "roundLetters",
+            "text": "8"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundWinner",
+            "text": ""
+          },
+          {
+            "name": "roundWinnerId",
+            "text": ""
+          },
+          {
+            "name": "roundPoints",
+            "text": "0"
+          },
+          {
+            "name": "roundWrongGuesses",
+            "text": "6"
+          },
+          {
+            "name": "roundMaxWrong",
+            "text": "6"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundFree",
+            "text": "false"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          },
+          {
+            "name": "roundParticipants",
+            "text": "alice, bob"
+          }
+        ]
+      },
+      {
+        "name": "Hangman: Game Stopped",
+        "code": "hm_onStop",
+        "what": "A moderator stopped the round.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "STOPPED"
+          },
+          {
+            "name": "roundWord",
+            "text": "streamer"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Twitch"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "2"
+          },
+          {
+            "name": "roundLetters",
+            "text": "8"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundWinner",
+            "text": ""
+          },
+          {
+            "name": "roundWinnerId",
+            "text": ""
+          },
+          {
+            "name": "roundPoints",
+            "text": "0"
+          },
+          {
+            "name": "roundWrongGuesses",
+            "text": "2"
+          },
+          {
+            "name": "roundMaxWrong",
+            "text": "6"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundFree",
+            "text": "false"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          },
+          {
+            "name": "roundParticipants",
+            "text": "alice, bob"
+          }
+        ]
+      },
+      {
+        "name": "Hangman: Timeout",
+        "code": "hm_onTimeout",
+        "what": "The round's time ran out.",
+        "args": [
+          {
+            "name": "roundOutcome",
+            "text": "TIMEOUT"
+          },
+          {
+            "name": "roundWord",
+            "text": "streamer"
+          },
+          {
+            "name": "roundCategory",
+            "text": "Twitch"
+          },
+          {
+            "name": "roundDifficulty",
+            "text": "2"
+          },
+          {
+            "name": "roundLetters",
+            "text": "8"
+          },
+          {
+            "name": "roundPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "roundWinner",
+            "text": ""
+          },
+          {
+            "name": "roundWinnerId",
+            "text": ""
+          },
+          {
+            "name": "roundPoints",
+            "text": "0"
+          },
+          {
+            "name": "roundWrongGuesses",
+            "text": "2"
+          },
+          {
+            "name": "roundMaxWrong",
+            "text": "6"
+          },
+          {
+            "name": "roundBlitz",
+            "text": "false"
+          },
+          {
+            "name": "roundFree",
+            "text": "false"
+          },
+          {
+            "name": "roundCurrency",
+            "text": "Points"
+          },
+          {
+            "name": "roundParticipants",
+            "text": "alice, bob"
+          }
+        ]
+      },
+      {
+        "name": "Hangman: Free Game Start",
+        "code": "hm_onFreeStart",
+        "what": "Free mode was switched on."
+      },
+      {
+        "name": "Hangman: Free Game End",
+        "code": "hm_onFreeEnd",
+        "what": "Free mode was switched off."
+      }
+    ],
+    "methods": [
+      {
+        "name": "StartRound",
+        "what": "Starts a round, with no cooldown and no moderator check. Returns false when none started.",
+        "args": [
+          {
+            "name": "hangmanPlatform",
+            "text": "in: twitch, youtube, kick or all"
+          },
+          {
+            "name": "hangmanBlitz",
+            "text": "in: true forces a blitz round"
+          },
+          {
+            "name": "hangmanStarted",
+            "text": "out: whether a round began"
+          },
+          {
+            "name": "hangmanStartedOn",
+            "text": "out: the platforms it began on"
+          }
+        ]
+      },
+      {
+        "name": "GetLastRoundResult",
+        "what": "Sets the round arguments of the last settled round, the same the triggers carry."
+      },
+      {
+        "name": "StartFreeGame",
+        "what": "Switches Free mode on."
+      },
+      {
+        "name": "EndFreeGame",
+        "what": "Switches Free mode off."
+      }
     ]
   },
   "lang": {
@@ -3016,7 +3337,7 @@
         },
         "autoStartEnabled": {
           "label": "Runden automatisch starten",
-          "help": "Eine zeitgesteuerte Streamer.bot-Aktion startet nach ihrem eigenen Takt eine Runde, auf jeder Plattform mit einem Konto in Streamer.bot (YouTube, solange ein Broadcast Ã¼berwacht wird), auf der keine Runde lÃ¤uft. DafÃ¼r muss niemand Moderator sein, und keine Abklingzeit hÃ¤lt sie auf."
+          "help": "Eine zeitgesteuerte Streamer.bot-Aktion startet nach ihrem eigenen Takt eine Runde, auf jeder Plattform, auf der du live bist und keine Runde läuft. Lässt sich nicht feststellen, ob du live bist, zählt ein Chat, der seit der letzten automatischen Runde etwas geschrieben hat. Dafür muss niemand Moderator sein, und keine Abklingzeit hält sie auf."
         },
         "autoStartIntervalMinutes": {
           "label": "Alle (min)",
@@ -3024,7 +3345,7 @@
         },
         "autoStartMinChatLines": {
           "label": "Erst nach Chat-Zeilen",
-          "help": "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine: Runden starten dann, ob jemand da ist oder nicht."
+          "help": "Wie viele Zeilen der Chat einer Plattform seit ihrer letzten automatischen Runde geschrieben haben muss. Sind es zu wenige, wartet die Runde auf den nächsten Durchgang des Timers. 0 verlangt keine: live zu sein reicht dann."
         },
         "autoStartRandom": {
           "label": "Zufällige Zeit",

@@ -4314,6 +4314,376 @@
       {
         "target": "end"
       }
+    ],
+    "triggers": [
+      {
+        "name": "BJG: Hand Won",
+        "code": "bjg_onHandWon",
+        "what": "A solo hand was won.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "table"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "100"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1600"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: Hand Lost",
+        "code": "bjg_onHandLost",
+        "what": "A solo hand was lost.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "LOSS"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "table"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "-100"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1400"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: Hand Push",
+        "code": "bjg_onHandPush",
+        "what": "A solo hand ended in a push.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "PUSH"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "table"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "0"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: Blackjack",
+        "code": "bjg_onBlackjack",
+        "what": "A natural blackjack, on top of Hand Won.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "BLACKJACK"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "table"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "150"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1650"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: Duel Settled",
+        "code": "bjg_onDuelSettled",
+        "what": "A duel hand was settled.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "DUEL WIN"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "duel"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "100"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1600"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: House Hand Settled",
+        "code": "bjg_onHouseSettled",
+        "what": "A seat at a House Mode table was settled.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "HOUSE WIN"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "house"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "100"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1600"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: Hand Settled",
+        "code": "bjg_onHandSettled",
+        "what": "Any hand was settled, after the trigger of its own.",
+        "args": [
+          {
+            "name": "handOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "handUser",
+            "text": "alice"
+          },
+          {
+            "name": "handPlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "handMode",
+            "text": "table"
+          },
+          {
+            "name": "handTrigger"
+          },
+          {
+            "name": "handBet",
+            "text": "100"
+          },
+          {
+            "name": "handChange",
+            "text": "100"
+          },
+          {
+            "name": "handPreviousPoints",
+            "text": "1500"
+          },
+          {
+            "name": "handNewPoints",
+            "text": "1600"
+          },
+          {
+            "name": "handCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BJG: Free Game Start",
+        "code": "bjg_onFreeStart",
+        "what": "Free Game was switched on."
+      },
+      {
+        "name": "BJG: Free Game End",
+        "code": "bjg_onFreeEnd",
+        "what": "Free Game was switched off."
+      }
+    ],
+    "methods": [
+      {
+        "name": "StartHouseTable",
+        "what": "Opens a House Mode table, with no cooldown. Returns false when none opened.",
+        "args": [
+          {
+            "name": "blackjackPlatform",
+            "text": "in: twitch, youtube or kick"
+          },
+          {
+            "name": "blackjackRules",
+            "text": "in: a rule set by name or number, or random"
+          },
+          {
+            "name": "blackjackTableOpened",
+            "text": "out: whether a table opened"
+          },
+          {
+            "name": "blackjackRulesName",
+            "text": "out: the rules it plays"
+          }
+        ]
+      },
+      {
+        "name": "GetLastHandResult",
+        "what": "Sets the hand arguments of the last settled hand, the same the triggers carry."
+      },
+      {
+        "name": "StartFreeGame",
+        "what": "Switches Free Game on."
+      },
+      {
+        "name": "EndFreeGame",
+        "what": "Switches Free Game off."
+      }
     ]
   },
   "lang": {

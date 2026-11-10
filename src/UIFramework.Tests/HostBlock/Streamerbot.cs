@@ -24,6 +24,11 @@ namespace Streamer.bot.Plugin.Interface
         bool GetTimerState(string timerId);
         void EnableTimerById(string timerId);
         void DisableTimerById(string timerId);
+        bool RegisterCustomTrigger(string triggerName, string eventName, string[] categories);
+        void TriggerCodeEvent(string eventName, bool useArgs);
+        string TwitchClientId { get; }
+        string TwitchOAuthToken { get; }
+        System.Collections.Generic.List<object> YouTubeGetMonitoredBroadcasts();
     }
 }
 
@@ -60,5 +65,12 @@ namespace UIFramework.Tests
         public bool GetTimerState(string timerId) { NeedTimer(); return TimerRunning.Value; }
         public void EnableTimerById(string timerId) { NeedTimer(); TimerRunning = true; TimerCalls.Add("enable"); }
         public void DisableTimerById(string timerId) { NeedTimer(); TimerRunning = false; TimerCalls.Add("disable"); }
+        public readonly List<string> Registered = new List<string>(), Fired = new List<string>();
+        public bool RegisterCustomTrigger(string triggerName, string eventName, string[] categories) { Registered.Add(triggerName + "|" + eventName + "|" + string.Join("/", categories)); return true; }
+        public void TriggerCodeEvent(string eventName, bool useArgs) => Fired.Add(eventName);
+        public string TwitchClientId => null;
+        public string TwitchOAuthToken => null;
+        public List<object> Broadcasts;
+        public List<object> YouTubeGetMonitoredBroadcasts() => Broadcasts;
     }
 }

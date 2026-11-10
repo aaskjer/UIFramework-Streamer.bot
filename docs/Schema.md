@@ -432,6 +432,58 @@ Message*, YouTube *Message*, Kick *Chat Message*) next to its commands, and the 
 trigger is on the game action. The counts live in memory: a recompile or a restart of Streamer.bot starts them over.
 Trivia and Hangman run their automatic rounds this way.
 
+### Only while live
+
+Streamer.bot has no live status to ask, so `UiLive.Of(CPH, "twitch")` (or `"youtube"`, `"kick"`) finds out:
+Twitch through its API with Streamer.bot's own token, YouTube by the broadcasts Streamer.bot monitors, Kick through
+its public channel page. It answers `UiLiveState.Live`, `Offline` or `Unknown`, keeps an answer for half a minute and
+never throws. `UiLive.SkipReason(live, recentChat)` is why something automatic should stay away, or null: offline
+always keeps it away, and a platform that could not say goes by whether its chat has been heard lately.
+
+```csharp
+string skip = UiLive.SkipReason(UiLive.Of(CPH, platform, m => CPH.LogWarn(m)), UiTimer.LinesSince(platform) > 0);
+if (skip != null) continue;
+```
+
+Twitch and Kick are asked by UIFramework.dll 1.6.0 or newer, because the block itself must compile in an action
+that references nothing but mscorlib and System.Core. Without the DLL (the settings never opened) or with an older
+one they are `Unknown`, which `log` is told once.
+
+## Custom triggers and methods
+
+What a game offers the streamer's own actions is declared once, in the window:
+
+```csharp
+.Trigger("Demo: Free Game Start", "demo_onFreeStart", "Free game was switched on.")
+.Triggers(new[] { "roundOutcome=WIN", "roundWinner=alice", "roundPoints=500", "roundBlitz=false" },
+    Tr("Demo: Round Won",  "demo_onWin",  "Somebody won the round."),
+    Tr("Demo: Round Lost", "demo_onLoss", "Nobody did.", "roundOutcome=LOSS", "roundWinner=", "roundPoints=0"))
+.Method("StartRound", "Starts a round. Returns false when none started.",
+    "demoPlatform=in: twitch, youtube or kick", "demoStarted=out: whether a round began")
+```
+
+- **`Trigger(name, code, what, args…)`**: the name Streamer.bot shows, the code `CPH.TriggerCodeEvent` takes, what
+  it is for, and the arguments it carries, each `"name"` or `"name=sample value"`.
+- **`Triggers(shared, Tr(…), …)`** for triggers that carry the same arguments, every way a round can end: the
+  shared ones once, then each trigger with what is its own. An argument a trigger names itself replaces the shared
+  one of that name, or is added after them.
+- **`Method(name, what, args…)`**: a public `bool` method of the game action for an *Execute C# Method*
+  sub-action, with the arguments it reads and sets, each `"name=what it is"`.
+
+From that one list:
+
+- **`UiTriggers.Register(CPH, "Chat Game", "Demo Game")`** in `Init()` registers every trigger under those
+  categories. No `CPH.RegisterCustomTrigger` line of the game's own is left to forget.
+- **The Help page** ends with *Custom triggers* (each with its arguments and sample values) and *Methods for your
+  own actions*, in the window's language; a game with no help of its own gets the page for them.
+- **Fire with sample values**, a button under each trigger, has the game fire it once with the samples as
+  arguments, so a streamer can try an action of their own without playing a round. A sample that reads as a whole
+  number or as `true`/`false` is passed as one. The host block answers this itself (`UiHost.Handle`); the game's
+  `test` is not asked. A game with an older host block does not answer, and the window says so.
+
+The game still fires its triggers itself where its rounds end. In the schema: `window.triggers` and
+`window.methods`.
+
 ## Export and import
 
 The customise mode's bar (the pen, bottom left) has *Export* and *Import*: Export writes the saved settings

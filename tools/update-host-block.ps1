@@ -5,6 +5,9 @@
 #   tools\update-host-block.ps1 -File "C:\...\Blackjack Game\BlackjackGame.cs"
 #   tools\update-host-block.ps1 -File ... -Check      # writes nothing; fails when the file's block is behind
 #   tools\update-host-block.ps1 -File ... -Force      # writes even over lines of the game's own in the block
+#   tools\update-host-block.ps1 -File ... -Into "C:\...\BlackjackStats.cs" -HostName blackjack
+#       afterwards copies the file's block, as it then is, into the game's other action and into
+#       hosts\blackjack\HostBlock.cs (tools\copy-host-block.ps1); with -Check the copies are checked too
 #
 # A block from before the window declaration gets the template's "Window = null" line; set it after.
 # Before it writes, the file is copied to <file>.bak. It refuses, and writes nothing, when the old block holds code
@@ -14,7 +17,9 @@ param(
     [Parameter(Mandatory = $true)] [string] $File,
     [switch] $Check,
     [switch] $Force,
-    [string] $Template
+    [string] $Template,
+    [string[]] $Into = @(),
+    [string] $HostName
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,6 +27,13 @@ $root = Split-Path -Parent $PSScriptRoot
 if (-not $Template) { $Template = Join-Path $root 'stub\HostSchema.cs' }
 $utf8 = New-Object Text.UTF8Encoding $false
 $nl = "`n"
+
+# The copies of the file's block, once the file itself is as it should be.
+function Copy-Out {
+    if ($Into.Count -eq 0 -and -not $HostName) { return 0 }
+    & (Join-Path $PSScriptRoot 'copy-host-block.ps1') -File $File -Into $Into -HostName $HostName -Check:$Check | Out-Host
+    return $LASTEXITCODE
+}
 
 function Split-Block([string[]] $lines) {
     # The block's head (everything before the window comment), its region (window and table) and its tail.
@@ -69,7 +81,7 @@ $oldBlockText = ($fileLines[$first..$last] -join $nl)
 
 if ($newBlockText -ceq $oldBlockText) {   # -ceq: a change in letter case is a change too
     Write-Host "  ok   $File carries the current host block"
-    exit 0
+    exit (Copy-Out)
 }
 if ($Check) {
     Write-Host "  FAIL $File carries an older host block; run tools\update-host-block.ps1 -File on it" -ForegroundColor Red
@@ -116,4 +128,4 @@ $bytes = [IO.File]::ReadAllBytes($File)
 $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
 [IO.File]::WriteAllText($File, $result, (New-Object Text.UTF8Encoding $bom))
 Write-Host "  updated the host block in $File"
-exit 0
+exit (Copy-Out)

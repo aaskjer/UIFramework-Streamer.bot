@@ -3240,6 +3240,508 @@
       {
         "target": "end"
       }
+    ],
+    "triggers": [
+      {
+        "name": "BSG: Battle Won",
+        "code": "bsg_onBattleWon",
+        "what": "A solo battle ended with the Admiral's fleet sunk.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "battleMode",
+            "text": "solo"
+          },
+          {
+            "name": "battleUser",
+            "text": "alice"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "3"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "1"
+          },
+          {
+            "name": "battleNet",
+            "text": "800"
+          },
+          {
+            "name": "battleWinner",
+            "text": ""
+          },
+          {
+            "name": "battleCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BSG: Battle Lost",
+        "code": "bsg_onBattleLost",
+        "what": "A solo battle ended with the player's fleet sunk.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "LOSS"
+          },
+          {
+            "name": "battleMode",
+            "text": "solo"
+          },
+          {
+            "name": "battleUser",
+            "text": "alice"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "1"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "3"
+          },
+          {
+            "name": "battleNet",
+            "text": "-700"
+          },
+          {
+            "name": "battleWinner",
+            "text": ""
+          },
+          {
+            "name": "battleCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BSG: Battle Timed Out",
+        "code": "bsg_onBattleTimeout",
+        "what": "A solo player ran out of time.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "TIMEOUT"
+          },
+          {
+            "name": "battleMode",
+            "text": "solo"
+          },
+          {
+            "name": "battleUser",
+            "text": "alice"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "3"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "1"
+          },
+          {
+            "name": "battleNet",
+            "text": "800"
+          },
+          {
+            "name": "battleWinner",
+            "text": ""
+          },
+          {
+            "name": "battleCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BSG: Battle Stopped",
+        "code": "bsg_onBattleStopped",
+        "what": "A moderator stopped a solo battle.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "STOPPED"
+          },
+          {
+            "name": "battleMode",
+            "text": "solo"
+          },
+          {
+            "name": "battleUser",
+            "text": "alice"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "3"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "1"
+          },
+          {
+            "name": "battleNet",
+            "text": "800"
+          },
+          {
+            "name": "battleWinner",
+            "text": ""
+          },
+          {
+            "name": "battleCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BSG: Chat Battle Settled",
+        "code": "bsg_onChatSettled",
+        "what": "The chat's battle against the Admiral ended.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "battleMode",
+            "text": "chat"
+          },
+          {
+            "name": "battleUser",
+            "text": "Chat"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "3"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "1"
+          },
+          {
+            "name": "battleNet",
+            "text": "0"
+          },
+          {
+            "name": "battleWinner",
+            "text": ""
+          },
+          {
+            "name": "battleCurrency",
+            "text": ""
+          }
+        ]
+      },
+      {
+        "name": "BSG: Duel Settled",
+        "code": "bsg_onDuelSettled",
+        "what": "A team duel ended.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "battleMode",
+            "text": "duel"
+          },
+          {
+            "name": "battleUser",
+            "text": "alice"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "3"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "1"
+          },
+          {
+            "name": "battleNet",
+            "text": "800"
+          },
+          {
+            "name": "battleWinner",
+            "text": "Team A"
+          },
+          {
+            "name": "battleCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BSG: Battle Settled",
+        "code": "bsg_onBattleSettled",
+        "what": "Any battle ended, after the trigger of its own.",
+        "args": [
+          {
+            "name": "battleOutcome",
+            "text": "WIN"
+          },
+          {
+            "name": "battleMode",
+            "text": "solo"
+          },
+          {
+            "name": "battleUser",
+            "text": "alice"
+          },
+          {
+            "name": "battleUserId",
+            "text": "12345"
+          },
+          {
+            "name": "battlePlatform",
+            "text": "twitch"
+          },
+          {
+            "name": "battleTrigger"
+          },
+          {
+            "name": "battleBoard",
+            "text": "8x8"
+          },
+          {
+            "name": "battleShots",
+            "text": "31"
+          },
+          {
+            "name": "battleHits",
+            "text": "10"
+          },
+          {
+            "name": "battleAccuracy",
+            "text": "32"
+          },
+          {
+            "name": "battleShipsSunk",
+            "text": "3"
+          },
+          {
+            "name": "battleShipsLost",
+            "text": "1"
+          },
+          {
+            "name": "battleNet",
+            "text": "800"
+          },
+          {
+            "name": "battleWinner",
+            "text": ""
+          },
+          {
+            "name": "battleCurrency",
+            "text": "Points"
+          }
+        ]
+      },
+      {
+        "name": "BSG: Free Game Start",
+        "code": "bsg_onFreeStart",
+        "what": "Free game was switched on."
+      },
+      {
+        "name": "BSG: Free Game End",
+        "code": "bsg_onFreeEnd",
+        "what": "Free game was switched off."
+      }
+    ],
+    "methods": [
+      {
+        "name": "StartChatBattle",
+        "what": "Starts Chat vs the Admiral, with no cooldown. Returns false when none started.",
+        "args": [
+          {
+            "name": "battleshipPlatform",
+            "text": "in: twitch, youtube or kick"
+          },
+          {
+            "name": "battleshipStarted",
+            "text": "out: whether a battle began"
+          }
+        ]
+      },
+      {
+        "name": "GetLastBattleResult",
+        "what": "Sets the battle arguments of the last finished battle, the same the triggers carry."
+      },
+      {
+        "name": "StartFreeGame",
+        "what": "Switches Free game on."
+      },
+      {
+        "name": "EndFreeGame",
+        "what": "Switches Free game off."
+      }
     ]
   },
   "lang": {

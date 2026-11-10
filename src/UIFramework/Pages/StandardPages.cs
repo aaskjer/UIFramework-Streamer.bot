@@ -199,7 +199,7 @@ namespace UIFramework
 
         public static UIElement BuildHelp(PageContext ctx)
         {
-            if (ctx.Spec.Help.Count == 0)
+            if (ctx.Spec.Help.Count == 0 && ctx.Spec.Triggers.Count == 0 && ctx.Spec.Methods.Count == 0)
                 return null;
             var page = Ui.PageStack();
             bool first = true;
@@ -208,7 +208,67 @@ namespace UIFramework
                 AddSection(page, section, ctx, first);
                 first = false;
             }
+            AddDeclared(page, ctx, first);
             return Ui.Scroll(page);
+        }
+
+        /// <summary>The name a trigger's Fire button asks the game under, followed by the trigger's code (the host
+        /// block's UiTriggers.FireRequest).</summary>
+        public const string FireRequest = "uiframework.trigger:";
+        public const string FireButtonTag = "uiframework.fire";
+
+        /// <summary>What the game declared for the streamer's own actions, after its own help: the custom triggers
+        /// with their arguments and a button that fires each with its sample values, then the methods for an Execute
+        /// C# Method sub-action.</summary>
+        private static void AddDeclared(StackPanel page, PageContext ctx, bool first)
+        {
+            var lang = ctx.Spec.Conventions?.Lang;
+            string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
+            if (ctx.Spec.Triggers.Count > 0)
+            {
+                page.Children.Add(Ui.Section(Text.T("help.triggers"), first));
+                page.Children.Add(Ui.Note(Text.T("help.triggers.note")));
+                first = false;
+                foreach (var trigger in ctx.Spec.Triggers)
+                {
+                    var row = Ui.CommandRow(trigger.Name, T(trigger.What ?? ""));
+                    row.Margin = new Thickness(0, 10, 0, 0);
+                    page.Children.Add(row);
+                    if (trigger.Args.Count > 0)
+                        page.Children.Add(Ui.Note(Text.T("help.args", string.Join(", ", trigger.Args.Select(a => string.IsNullOrEmpty(a.Text) ? a.Name : a.Name + " (" + a.Text + ")")))));
+                    var fire = Ui.TextButton(Text.T("help.trigger.fire"), false);
+                    fire.Tag = FireButtonTag;
+                    fire.Margin = new Thickness(0, 6, 0, 0);
+                    fire.HorizontalAlignment = HorizontalAlignment.Left;
+                    fire.ToolTip = Text.T("help.trigger.fire.tip");
+                    AutomationProperties.SetName(fire, Text.T("help.trigger.fire") + ": " + trigger.Name);
+                    var declared = trigger;
+                    fire.Click += (s, e) =>
+                    {
+                        try
+                        {
+                            string answer = ctx.Hooks?.Test(FireRequest + declared.Code, ctx.Settings);
+                            if (answer == "fired") ctx.SetStatus?.Invoke(Text.T("help.trigger.fired", declared.Name), Theme.SuccessText, null);
+                            else ctx.SetStatus?.Invoke(Text.T("help.trigger.notFired", declared.Name), Theme.DangerText, Text.T("help.trigger.notFired.why"));
+                        }
+                        catch (Exception ex) { ctx.SetStatus?.Invoke(Text.T("help.trigger.notFired", declared.Name), Theme.DangerText, ex.Message); }
+                    };
+                    page.Children.Add(fire);
+                }
+            }
+            if (ctx.Spec.Methods.Count > 0)
+            {
+                page.Children.Add(Ui.Section(Text.T("help.methods"), first));
+                page.Children.Add(Ui.Note(Text.T("help.methods.note", ctx.Spec.Title)));
+                foreach (var method in ctx.Spec.Methods)
+                {
+                    var row = Ui.CommandRow(method.Name, T(method.What ?? ""));
+                    row.Margin = new Thickness(0, 10, 0, 0);
+                    page.Children.Add(row);
+                    foreach (var arg in method.Args)
+                        page.Children.Add(Ui.CommandRow("  " + arg.Name, T(arg.Text ?? "")));
+                }
+            }
         }
 
         private static void AddSection(StackPanel page, HelpSection section, PageContext ctx, bool first)
