@@ -239,7 +239,7 @@ namespace UIFramework
 
         /// <summary>Reads the log again whenever a file in its folder changes, so a round played in chat shows
         /// up without the reload button. Writes come in bursts, so a short timer gathers them; a folder that is
-        /// not there yet (no log written so far) is looked for every few seconds. Everything stops with the page.</summary>
+        /// not there yet (no log written so far) is looked for every few seconds. Everything stops with the page or the window.</summary>
         private static void Follow(FrameworkElement page, LogSpec spec, PageContext ctx, Action reload)
         {
             string folder = spec.FullFolder;
@@ -282,12 +282,20 @@ namespace UIFramework
             look.Tick += (sender, e) => { if (Start()) { look.Stop(); settle.Start(); } };
             if (!Start())
                 look.Start();
-            page.Unloaded += (sender, e) =>
+            // The page going (a rebuild) and the window closing both end it. Unloaded alone missed the close: WPF queues
+            // it, and the window's thread shuts its dispatcher down before the queue is run, so every window closed left
+            // its watcher on the folder, holding the whole window.
+            EventHandler closing = null;
+            void Stop()
             {
                 look.Stop();
                 settle.Stop();
                 if (watcher != null) { watcher.EnableRaisingEvents = false; watcher.Dispose(); watcher = null; }
-            };
+                dispatcher.ShutdownStarted -= closing;
+            }
+            closing = (sender, e) => Stop();
+            dispatcher.ShutdownStarted += closing;
+            page.Unloaded += (sender, e) => Stop();
         }
 
         // "WIN" reads "Win"; every part of "GAME-OVER" or "CP_START" gets its capital: "Game-Over", "Cp_Start".

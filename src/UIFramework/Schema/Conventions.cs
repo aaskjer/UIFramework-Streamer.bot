@@ -246,6 +246,10 @@ namespace UIFramework
     {
         public readonly Dictionary<string, string> Pages = new Dictionary<string, string>(StringComparer.Ordinal);
         public readonly Dictionary<string, (string Label, string Help)> Keys = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
+        /// <summary>The game's own page titles for this language (UiWindow.Lang's Pg), by page id: they come before a
+        /// translation of the declared title's wording, which may mean another thing ("Board": a scoreboard in one
+        /// game, the grid in another).</summary>
+        public readonly Dictionary<string, string> OwnPages = new Dictionary<string, string>(StringComparer.Ordinal);
         /// <summary>The game's own key texts for this language (UiWindow.Lang's K): they replace whatever the game
         /// declared for the key, where the conventions' replace only what it left out or took from them.</summary>
         public readonly Dictionary<string, (string Label, string Help)> OwnKeys = new Dictionary<string, (string, string)>(StringComparer.Ordinal);
@@ -279,7 +283,10 @@ namespace UIFramework
         {
             if (root["pages"] is JObject pages)
                 foreach (var p in pages.Properties())
+                {
                     Pages[p.Name] = p.Value.ToString();
+                    if (own) OwnPages[p.Name] = p.Value.ToString();
+                }
             Read(root["keys"] as JObject, Keys);
             if (own)
                 Read(root["keys"] as JObject, OwnKeys);
@@ -319,6 +326,7 @@ namespace UIFramework
         public (string Label, string Help) OwnKey(string key) => OwnKeys.TryGetValue(key, out var text) ? text : (null, null);
         public (string Label, string Help) EnglishKey(string key) => EnglishKeys.TryGetValue(key, out var text) ? text : (null, null);
         public string Page(string id) => Pages.TryGetValue(id, out var title) ? title : null;
+        public string OwnPage(string id) => id != null && OwnPages.TryGetValue(id, out var title) ? title : null;
         public string Placeholder(string name) => Placeholders.TryGetValue(name, out var help) ? help : null;
     }
 }

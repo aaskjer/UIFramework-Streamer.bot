@@ -350,6 +350,7 @@
     "list.emptyDefaults": "Noch nichts da. Füge eine Zeile hinzu oder stelle die Standardwerte wieder her.",
     "list.add": "Zeile hinzufügen",
     "list.add.tip": "Hängt eine leere Zeile ans Ende.",
+    "list.unreadable": "Die Datei dieser Liste ließ sich nicht lesen, deshalb kann sie gerade nicht bearbeitet werden. Schließe das Fenster und öffne es wieder, sobald die Datei frei oder repariert ist.",
     "list.addTo": "Zeile hinzufügen zu {0}",
     "list.restore": "Standardwerte wiederherstellen",
     "list.restore.tip": "Stellt die mitgelieferten Zeilen wieder her und ersetzt, was jetzt hier steht. Geschrieben wird erst beim Speichern.",

@@ -15,9 +15,11 @@ from the internet, loads like any other.
 
 **Every later open of the window:** with a DLL in place and `autoUpdate` in `uiframework.layout.json` not
 `false`, the stub reads `latest.json` (5 s timeout; offline, the window opens after that one try). When there is a newer version, a dialog asks: **Yes**
-downloads it into its own folder; when no game has loaded UIFramework in this run of Streamer.bot yet, the window
+downloads it into its own folder; when nothing has loaded UIFramework in this run of Streamer.bot yet, the window
 opens with the new one at once, otherwise from the next start (every game uses the one that is running, so two
-versions never run side by side, and the log names the one in use). **No** asks again next time. **Cancel** writes
+versions never run side by side, and the log names the one in use). A game loads it without its window too: for
+the update notice at the start (`UiUpdateNotice.Startup` in `Init()`) and for `UiLive`. With such a game imported,
+"from the next start" is the usual case, and the dialog says so. **No** asks again next time. **Cancel** writes
 `skipVersion` into the layout file: that version is not offered again, the next one is. A running DLL is never
 overwritten (it is locked, and .NET Framework does not unload).
 
@@ -37,7 +39,9 @@ a minute gives up with a message instead of downloading beside it). The
 major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host. The hash is kept beside the
 DLL (`UIFramework.dll.sha256`, written before the DLL is moved in) and checked on every load: a file damaged
 since is set aside as `UIFramework.dll.broken`, an older one opens the window, and the next open offers that
-version again. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
+version again. A game's host block checks the same hash before it loads the DLL for the update notice or the live
+check (host block of 1.8.1 and on; an older one loaded it unchecked, and the settings action then used what was
+loaded); it leaves a damaged file where it is, for the settings action to set aside. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
 has no hash file and is loaded as it is. A release
 whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.2.0 now) is not offered to
 that stub; the game has to ship the newer settings action first. Nothing from `latest.json` is taken unchecked: a

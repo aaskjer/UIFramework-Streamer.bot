@@ -38,6 +38,11 @@ namespace UIFramework
         // Lists in files of their own that could not be read when the window opened: they show their defaults, so they
         // are never written from this window.
         private readonly HashSet<string> _unreadableLists = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>Whether the keys held make a shortcut of the window's (Ctrl+S, Ctrl+F, Ctrl+1): Ctrl without Alt.
+        /// AltGr is Ctrl+Alt to Windows, and types a character: "{" on a German keyboard, "@" on a Spanish one.</summary>
+        public static bool IsShortcut(ModifierKeys held) =>
+            (held & ModifierKeys.Control) != 0 && (held & ModifierKeys.Alt) == 0;
         // The status line of the window that is up, for an error a handler did not catch.
         private Action<string> _onError;
 
@@ -339,6 +344,15 @@ namespace UIFramework
                 try { wire(); }
                 catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Page wiring failed: " + ex.Message); _problems.Add("Page wiring failed: " + ex.Message); }
             }
+            // A list whose file could not be read is not written, so it is not to be edited either: rows typed into it
+            // were dropped by a save that said "Saved".
+            foreach (var key in _unreadableLists)
+                if (parts.Lists.TryGetValue(key, out var unread))
+                {
+                    unread.IsEnabled = false;
+                    unread.ToolTip = Text.T("list.unreadable");
+                    System.Windows.Controls.ToolTipService.SetShowOnDisabled(unread, true);
+                }
 
             var pageHost = new Grid();
             foreach (var page in pages)
@@ -549,9 +563,10 @@ namespace UIFramework
                     listener();
             });
             ShowChanges();
+            // What the window shows right now, read without touching it: a name half typed or a cell being edited
+            // stays as it is (an action that follows the fields asks 350 ms after a change, in the middle of typing).
             ctx.LiveSettings = () =>
             {
-                parts.CommitNames();
                 var live = (JObject)settings.DeepClone();
                 FieldBinding.Save(live, pageHost, transientToo: true);
                 return live;
@@ -804,7 +819,8 @@ namespace UIFramework
                 window.PreviewKeyDown -= keyHandler;
             keyHandler = (s, e) =>
             {
-                if ((Keyboard.Modifiers & ModifierKeys.Control) == 0 || (tour != null && tour.Open))
+                // Ctrl alone: AltGr arrives as Ctrl+Alt, and AltGr+7 is the "{" of a German keyboard, not Ctrl+7.
+                if (!IsShortcut(Keyboard.Modifiers) || (tour != null && tour.Open))
                     return;
                 if (e.Key == Key.S)
                 {

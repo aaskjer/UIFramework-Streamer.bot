@@ -55,7 +55,7 @@ namespace UIFramework
                 else if (node is ComboBox cmb && FieldTag.Of(cmb.Tag) is FieldTag mt && (transientToo || !mt.Transient) && cmb.SelectedItem is ComboBoxItem selected)
                     settings[mt.Key] = ComboValue(mt, selected.Tag);
                 else if (node is ListEditor list && FieldTag.Of(list.Tag) is FieldTag lt && (transientToo || !lt.Transient))
-                    settings[lt.Key] = list.Value;
+                    settings[lt.Key] = transientToo ? list.Peek : list.Value;   // a live snapshot leaves a cell being edited alone
                 else if (node is OptionSlider slider && FieldTag.Of(slider.Tag) is FieldTag st && (transientToo || !st.Transient))
                     settings[st.Key] = slider.Stored;
             });

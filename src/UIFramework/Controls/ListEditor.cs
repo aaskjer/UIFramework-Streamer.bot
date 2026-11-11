@@ -124,6 +124,10 @@ namespace UIFramework
             Set(value);
         }
 
+        /// <summary>The rows as <see cref="Value"/> gives them, but without ending an edit in a table's cell: for a look
+        /// at the window while the user is typing.</summary>
+        public JArray Peek => _table != null ? _table.Peek : Value;
+
         /// <summary>The rows as they stand, empty rows left out.</summary>
         public JArray Value
         {

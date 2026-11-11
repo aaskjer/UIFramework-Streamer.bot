@@ -245,7 +245,7 @@ namespace UIFramework
                 if (hidden && !customizing)
                     continue;
                 string title = userPage?.Title
-                    ?? (lang.Translates ? lang.TextOrNull(page.Title) ?? lang.Page(page.Id) ?? page.Title : page.Title ?? lang.Page(page.Id))
+                    ?? (lang.Translates ? lang.OwnPage(page.Id) ?? lang.TextOrNull(page.Title) ?? lang.Page(page.Id) ?? page.Title : page.Title ?? lang.Page(page.Id))
                     ?? Conventions.Humanize(page.Id);
                 string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
                 if (page.Icon != null && UnknownIcon(page.Icon))

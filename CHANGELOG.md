@@ -6,6 +6,51 @@ stable releases.
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-11-11
+
+The first part of a review of the whole framework: the mistakes a streamer can run into. Games need no update for
+the window's fixes; the two in the host block reach a game with its next release.
+
+### Fixed
+
+- **AltGr no longer counts as Ctrl.** AltGr is Ctrl+Alt to Windows, so on a German keyboard `{` (AltGr+7) jumped to
+  the seventh page of a window instead of being typed, `[`, `]` and `}` likewise in windows with eight to ten pages;
+  on a Spanish one `@` and `#` went to page two and three. The window's shortcuts (Ctrl+S, Ctrl+F, Ctrl+1 to 0) now
+  take Ctrl without Alt.
+- **Typing is left alone by an action that follows the fields.** A window with an `auto` + `live` action (Trivia's
+  difficulty line) looked at the fields 350 ms after every change, and that look ended the edit of a table cell and
+  turned a half-typed name into a chip (`alice,bob` became alice, bo, b). It now reads what is there and touches
+  nothing.
+- **`turnTimeout` has no minimum of its own.** The conventions' `min: 5` went to every game that declared none, so
+  Blackjack's "0 = no limit" was shown as 0 and saved as 5. A game that wants a floor declares it (Battleship does).
+- **One game's failed release check no longer silences the update notice.** A repository without a published
+  release, a renamed one or GitHub's rate limit kept the notice waiting for good, for every game and for UIFramework
+  itself. Such a game is now left out of that run's notice; only UIFramework's own check (no network) still holds it.
+- **A list whose file could not be read cannot be edited.** It was not written, as the red **i** said, but rows
+  could be typed into it and Save answered "Saved". It is greyed out now, with the reason as its tooltip
+  (`list.unreadable`, in English, German and Spanish).
+- **`Tip("search")` is no mistake.** The stop was shown, but the declaration check did not know the part and put a
+  problem behind the red **i**.
+- **The Log page lets go of its folder when the window closes.** Its watcher was stopped only when the page was
+  rebuilt; every window closed left one behind, holding the whole closed window, until Streamer.bot ended.
+- **A game's own page title comes first.** `Pg("board", "Rangliste")` lost to the conventions' translation of the
+  wording "Board" (the grid, "Spielfeld"), so Hangman's scoreboard page was titled "Spielfeld" in German.
+- **The tour leaves Alt+F4 and Alt+Space to the window.**
+- **Host block: `UiTimer.Rearm` leaves a timer off that was switched off** between its tick and the game's run;
+  before, that run switched the automatic start back on.
+- **Host block: the DLL is loaded the way the settings action loads it.** For the update notice and `UiLive` the
+  block used `LoadFrom`, which refuses a DLL saved from a browser, did not know a folder named `v1.8.0`, and did not
+  look at the `.sha256` beside the DLL. It now uses `UnsafeLoadFrom`, takes the `v`, and leaves a DLL alone that no
+  longer matches its hash.
+- **Demo game:** the Execute Code sub-actions of `DemoGame.sb` carry their actions' names, so an *Execute C#
+  Method* sub-action elsewhere can pick them.
+
+### Changed
+
+- [docs/Loader.md](docs/Loader.md) and [docs/Getting-Started.md](docs/Getting-Started.md) no longer say that a game
+  action never loads the DLL: it does, for the update notice and the live check, which is also why a framework
+  update is usually used from the next start of Streamer.bot.
+
 ## [1.8.0] - 2026-11-10
 
 ### Added

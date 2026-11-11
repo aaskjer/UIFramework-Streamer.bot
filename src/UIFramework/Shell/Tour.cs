@@ -198,6 +198,7 @@ namespace UIFramework
             if (!_open) return;
             // On a stop to use, the keys are the user's (typing into the ringed field), but for Esc and the note's own.
             if (_stops[_index].Act && e.Key != Key.Escape && !_note.IsKeyboardFocusWithin) return;
+            if (e.Key == Key.System) return;   // Alt+F4 and Alt+Space are the window's, tour or not
             switch (e.Key)
             {
                 case Key.Escape: End(); break;

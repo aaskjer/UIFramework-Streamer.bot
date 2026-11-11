@@ -253,8 +253,9 @@ This is what to tell a streamer who imports your game, or link them here:
 - **Turning the update check off:** `"autoUpdate": false` in `uiframework.layout.json`, the file next to your
   game's settings file (`settingsFile`, relative to the Streamer.bot folder). When the file is not there yet,
   `{ "autoUpdate": false }` is all it needs. The window then opens with the DLL it has and asks nothing.
-- **Without the window:** your game action never loads the DLL; only the settings action does. With the
-  settings action disabled the game plays on with its settings file, which can still be edited by hand.
+- **Without the window:** your game action needs the DLL for two things only, the update notice at the start and
+  the live check (`UiLive`), and does without both when it is not there. With the settings action disabled the
+  game plays on with its settings file, which can still be edited by hand.
 
 [Loader.md](Loader.md) has the details: where `latest.json` comes from, the hash on every load, what happens
 offline.

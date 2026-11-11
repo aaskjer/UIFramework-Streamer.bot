@@ -350,6 +350,7 @@
     "list.emptyDefaults": "Aún no hay nada. Añade una fila o restaura los valores predeterminados.",
     "list.add": "Añadir fila",
     "list.add.tip": "Añade una fila vacía al final.",
+    "list.unreadable": "No se pudo leer el archivo de esta lista, así que ahora no se puede editar. Cierra la ventana y ábrela de nuevo cuando el archivo esté libre o reparado.",
     "list.addTo": "Añadir fila a {0}",
     "list.restore": "Restaurar predeterminados",
     "list.restore.tip": "Vuelve a poner las filas que traía de serie y reemplaza lo que hay ahora. No se escribe nada hasta que guardes.",

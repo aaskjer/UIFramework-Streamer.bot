@@ -170,7 +170,7 @@ namespace UIFramework
         /// <summary>The parts of the window a stop can name. "start" and "end" are notes in the middle with the
         /// framework's welcome and goodbye.</summary>
         public static readonly string[] Parts =
-            { "start", "end", "rail", "save", "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour" };
+            { "start", "end", "rail", "save", "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour", "search" };
 
         public TourStop() { }
         public TourStop(string target, string title = null, string text = null) { Target = target; Title = title; Text = text; }

@@ -328,9 +328,12 @@ namespace UIFramework
             get
             {
                 CommitEdit();
-                return new JArray(_records.Where(r => r.Filled).Select(r => r.Data.DeepClone()));
+                return Peek;
             }
         }
+
+        /// <summary>The rows without ending the edit of a cell: what is being typed there is not in it yet.</summary>
+        public JArray Peek => new JArray(_records.Where(r => r.Filled).Select(r => r.Data.DeepClone()));
 
         public void Set(JArray value)
         {

@@ -120,6 +120,16 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void Rearm_leaves_a_timer_alone_that_was_switched_off_meanwhile()
+        {
+            // The tick's run was queued, a save switched the timer off, then the run arrived: it stays off.
+            var cph = new FakeCph { TimerRunning = false };
+            UiTimer.Rearm(cph, "t", 15, true, 30);
+            Assert.Empty(cph.TimerCalls);
+            Assert.False(cph.TimerRunning);
+        }
+
+        [Fact]
         public void Declared_with_key_and_default_alone_the_intervals_get_row_unit_and_switch()
         {
             var max = Conventions.Default.Complete(new Setting { Key = "autoStartIntervalMaxMinutes" });

@@ -289,8 +289,8 @@ namespace UIFramework
         // ---- The checks --------------------------------------------------------------------------------------------
 
         /// <summary>Starts the checks this run's notice needs whose answer is older than <see cref="CheckEvery"/> (an
-        /// hour after a failure), each once at a time. True while any of them has no good answer yet: offline, the notice
-        /// waits and the check is tried again an hour later.</summary>
+        /// hour after a failure), each once at a time. True while any of them has no answer yet, or UIFramework's own has
+        /// failed: offline, the notice waits and the check is tried again an hour later (see <see cref="Holds"/>).</summary>
         private static bool StartChecks(JObject state, JObject run)
         {
             var checks = Obj(state, "checks");
@@ -305,7 +305,7 @@ namespace UIFramework
             foreach (var check in wanted)
             {
                 var answer0 = checks[check.Key] as JObject;
-                if (answer0 != null && answer0["failed"] != null) waiting = true;
+                if (Holds(check.Key, answer0)) waiting = true;
                 if (!Stale(answer0)) continue;
                 waiting = true;
                 if (!Running.Add(check.Key)) continue;
@@ -340,11 +340,18 @@ namespace UIFramework
             if (!InBackground && wanted.Count > 0)
             {
                 var fresh = Obj(Read(), "checks");
-                waiting = wanted.Keys.Any(k => !(fresh[k] is JObject a) || a["failed"] != null || Stale(a));
+                waiting = wanted.Keys.Any(k => !(fresh[k] is JObject a) || Holds(k, a) || Stale(a));
                 foreach (var p in fresh.Properties().ToList()) checks[p.Name] = p.Value.DeepClone();
             }
             return waiting;
         }
+
+        /// <summary>Whether a check that failed keeps the notice waiting. UIFramework's own does: it fails when there is
+        /// no network, and then nothing is known. A game's does not: a repository without a release, a renamed one or
+        /// GitHub's rate limit left every other game, and UIFramework, without their notice too; that game is left out
+        /// of this run's notice and asked again an hour later.</summary>
+        private static bool Holds(string check, JObject answer) =>
+            answer != null && answer["failed"] != null && string.Equals(check, "framework", StringComparison.OrdinalIgnoreCase);
 
         private static bool Stale(JObject check)
         {

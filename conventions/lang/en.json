@@ -208,6 +208,7 @@
     "list.emptyDefaults": "Nothing here yet. Add a row, or restore the defaults.",
     "list.add": "Add row",
     "list.add.tip": "Adds an empty row at the end.",
+    "list.unreadable": "Its file could not be read, so this list cannot be edited now. Close the window and open it again once the file is free or repaired.",
     "list.addTo": "Add row to {0}",
     "list.restore": "Restore defaults",
     "list.restore.tip": "Puts the rows this came with back, replacing what is here now. Nothing is written until you save.",

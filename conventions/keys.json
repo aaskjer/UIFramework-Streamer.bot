@@ -55,7 +55,7 @@
     "globalCooldown":    { "kind": "duration", "default": 10,    "page": "cooldowns", "min": 0, "aliases": ["CooldownGlobalSeconds", "GlobalCooldown"] },
     "userCooldown":      { "kind": "duration", "default": 30,    "page": "cooldowns", "min": 0, "aliases": ["CooldownUserSeconds", "UserCooldown"] },
     "maxGamesPerHour":   { "kind": "int",      "default": 0,     "page": "cooldowns", "min": 0, "aliases": ["MaxGamesPerHour"] },
-    "turnTimeout":       { "kind": "duration", "default": 60,    "page": "cooldowns", "min": 5, "aliases": ["TurnTimeoutSec"] },
+    "turnTimeout":       { "kind": "duration", "default": 60,    "page": "cooldowns", "aliases": ["TurnTimeoutSec"] },
     "cooldownUseBot":    { "kind": "bool",     "default": true,  "page": "cooldowns", "aliases": ["UseBotCD"] },
     "cooldownSendAction":{ "kind": "bool",     "default": false, "page": "cooldowns", "aliases": ["SendActionCD"] },
     "globalCooldownMessage": { "kind": "template", "default": "", "page": "cooldowns", "placeholders": ["user", "remaining"], "aliases": ["GlobalCooldownMsg", "GlobalCooldownMessage"] },
