@@ -163,7 +163,7 @@ namespace UIFramework.Tests
 
             var search = Walk(editor).OfType<TextBox>().First(b => AutomationNameOf(b).StartsWith("Search"));
             search.Text = "Q2";
-            Assert.Equal(1, grid.Items.Count);
+            Assert.Single(grid.Items);
             Assert.Equal(2, editor.Value.Count);   // a filtered-out row is still saved
 
             Assert.True(ListTable.Suits(columns));

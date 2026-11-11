@@ -10,9 +10,11 @@ on:
 permissions:
   contents: write
 
-# Two tags pushed close together write latest.json one after the other, never at once.
+# One run per tag, and a tag's run is never cancelled. A single group for all tags dropped a release: GitHub keeps one
+# run waiting per group, so a third tag pushed while two were in the queue cancelled the second. Two runs that reach
+# latest.json at once are handled where it is written (fetch, write, push, three tries; never back to an older version).
 concurrency:
-  group: release
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -68,10 +70,13 @@ jobs:
           if ($notes.Length -eq 0) { Write-Error "CHANGELOG.md section '## [$version]' is empty." }
           [IO.File]::WriteAllText('notes.md', $notes + "`n", (New-Object Text.UTF8Encoding $false))
 
-      - name: Build and test
-        run: |
-          dotnet build UIFramework.slnx -c Release -nologo
-          dotnet test src/UIFramework.Tests/UIFramework.Tests.csproj -c Release --no-build -nologo
+      # Two steps: in one, only the last command's exit code counted, and a build that failed in the preview alone
+      # was followed by tests that passed.
+      - name: Build
+        run: dotnet build UIFramework.slnx -c Release -nologo
+
+      - name: Test
+        run: dotnet test src/UIFramework.Tests/UIFramework.Tests.csproj -c Release --no-build -nologo
 
       - name: Hash
         id: h

@@ -316,7 +316,7 @@ describe answer leaves a line in Streamer.bot's log.
 | `validate` | before a save                            | `validate: s => …` answers the problems one per line ("Minimum bet is above the maximum"), or null; the window shows them and asks whether to save anyway |
 | `saved`    | after a save, with the saved values      | `saved: s => …` writes an overlay, restarts a timer; the cooldowns the window declares are set by the settings action before this |
 | `table`    | a `table` field is shown                 | `table: key => …` answers a JSON array of objects whose fields the columns name |
-| `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitch": { "channelId": "…", "sources": ["twitch", "7tv", "bttv", "ffz"] }, "youtube": { ":name:": "picture url" } }`; the `youtube` object adds to or replaces entries of the built-in table of YouTube's own emojis |
+| `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitchUserId": "…", "clientId": "…", "token": "…", "youtube": { ":name:": "picture url" } }` (the broadcaster's Twitch id and Streamer.bot's Twitch client id and token, for the channel's own emotes and its 7TV, BTTV and FFZ sets; without them the global emotes still have their pictures); the `youtube` object adds to or replaces entries of the built-in table of YouTube's own emojis |
 
 **The points system.** `UiCurrency.Detect(CPH, settings)` gives the user variable the points live in
 (`Variable`), what they are called (`Name`) and where that came from (`Source`): StreamUP's Currency Core
@@ -401,7 +401,7 @@ calls.
 | `autoStartIntervalMaxMinutes` | int | `30` | the longest wait of a random time |
 | `autoStartMinChatLines` | int | `0` | lines chat must have written since the last automatic start; 0 asks for none |
 
-Declared with nothing but key and default, they get their page (`game`), labels and help in English, German and
+Declared with nothing but key and default, they get their page (`automation`), labels and help in English, German and
 Spanish from the conventions; the two intervals share a row and are greyed out with their switch.
 
 ```csharp
@@ -532,7 +532,10 @@ What a game offers the streamer's own actions is declared once, in the window:
   shared ones once, then each trigger with what is its own. An argument a trigger names itself replaces the shared
   one of that name, or is added after them.
 - **`Method(name, what, args…)`**: a public `bool` method of the game action for an *Execute C# Method*
-  sub-action, with the arguments it reads and sets, each `"name=what it is"`.
+  sub-action, with the arguments it reads and sets, each `"name=what it is"`. Give the game action's Execute Code
+  sub-action a name (the *Name* field of its code window, best the action's own name): Streamer.bot then lists it
+  as "Execute Code (Demo Game)", and that is what a streamer picks in their Execute C# Method. Without a name every
+  game's code is plain "Execute Code" there, and the right one cannot be told. The name is part of the export.
 
 From that one list:
 

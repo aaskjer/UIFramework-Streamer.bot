@@ -190,7 +190,12 @@ namespace UIFramework
                     string on = (string)pill["on"], off = (string)pill["off"], tooltip = (string)pill["tooltip"];
                     if (string.IsNullOrEmpty(key)) continue;
                     spec.HeaderPillKeys.Add(key);
-                    spec.HeaderPills.Add(new HeaderPill(tooltip, ctx => ctx.Fields.LiveSwitch(key)
+                    // A switch the window does not show (its page or field hidden in the customise mode) is read from
+                    // the saved value: the pill said "off" for whatever was not on the window.
+                    bool On(PageContext ctx) => ctx.Parts != null && ctx.Parts.Switches.ContainsKey(key)
+                        ? ctx.Fields.LiveSwitch(key)
+                        : ctx.Fields.Token(key) is JToken saved && saved.Type == JTokenType.Boolean && (bool)saved;
+                    spec.HeaderPills.Add(new HeaderPill(tooltip, ctx => On(ctx)
                         ? (ctx.Spec.Conventions.Lang.Text(on), PillStyle.Success)
                         : (ctx.Spec.Conventions.Lang.Text(off), off == null ? PillStyle.None : PillStyle.Muted)));
                 }

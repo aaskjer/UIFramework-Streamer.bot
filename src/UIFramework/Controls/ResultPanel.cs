@@ -25,7 +25,7 @@ namespace UIFramework
             string text = (result ?? "").Trim();
             if (!text.StartsWith("{"))
                 return null;
-            try { return JObject.Parse(text); } catch (Exception) { return null; }
+            try { return JsonText.Parse(text) as JObject; } catch (Exception) { return null; }
         }
 
         public static void Render(StackPanel panel, string result, IHostHooks hooks = null)

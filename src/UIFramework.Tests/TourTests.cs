@@ -164,7 +164,7 @@ namespace UIFramework.Tests
         [Fact]
         public void AStopToUseIsDeclaredAndRead()
         {
-            Assert.Equal(true, (bool)UiSchema.Tip("tryRoll", "Try it", act: true).Json["act"]);
+            Assert.True((bool)UiSchema.Tip("tryRoll", "Try it", act: true).Json["act"]);
             Assert.Null(UiSchema.Tip("save").Json["act"]);
             var spec = SpecJson.Parse(@"{ ""tour"": [ { ""target"": ""tryRoll"", ""act"": true }, ""save"" ] }");
             Assert.True(spec.Tour[0].Act);

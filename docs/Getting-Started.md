@@ -30,7 +30,9 @@ File: [`examples/DemoGame/DemoGame.cs`](../examples/DemoGame/DemoGame.cs) ·
 1. *Actions* tab, right-click into the list of actions, *Add*. Name: `Demo Game`, exactly so: the settings
    action finds the game by this name.
 2. Select the new action. Under *Sub-Actions*: right-click, *Add* → *Core* → *C#* → *Execute C# Code*.
-3. In the code window, select all and delete it (Streamer.bot's template). Paste `DemoGame.cs`.
+3. In the code window, select all and delete it (Streamer.bot's template). Paste `DemoGame.cs`. Type `Demo Game`
+   into the window's *Name* field too: the sub-action is then listed as "Execute Code (Demo Game)", which is how
+   another action finds this code for an *Execute C# Method*.
 4. *Compile*: the log under the code reports no errors. Then *Save and Compile*.
 
 Nothing to add under *References*. The file is the whole game: the UIFramework host block (the settings and the

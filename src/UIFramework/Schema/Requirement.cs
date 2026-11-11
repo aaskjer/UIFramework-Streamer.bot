@@ -85,6 +85,8 @@ namespace UIFramework
                     box.TextChanged += (sender, e) => Apply();
                 else if (parts.Sliders.TryGetValue(c.Key, out var slider))
                     slider.ValueChanged += (sender, e) => Apply();
+                else if (parts.Lists.TryGetValue(c.Key, out var list))
+                    list.Changed += Apply;   // "a list is empty" follows the rows as they are added and removed
             }
             // Also when no gate is on the window: a hidden gate's saved value decides.
             Apply();
@@ -98,7 +100,8 @@ namespace UIFramework
         public static bool Holds(Fields f, WindowParts parts, Part c)
         {
             bool present = parts.Switches.ContainsKey(c.Key) || parts.Combos.ContainsKey(c.Key) || parts.Boxes.ContainsKey(c.Key) || parts.Sliders.ContainsKey(c.Key);
-            var saved = present ? null : f.Token(c.Key);
+            // A list on the window counts by the rows it shows now, read without ending an edit in it.
+            var saved = present ? null : parts.Lists.TryGetValue(c.Key, out var shown) ? shown.Peek : f.Token(c.Key);
             if (!present && (saved == null || saved.Type == JTokenType.Null)) return true;
             bool isSwitch = present ? parts.Switches.ContainsKey(c.Key) : saved.Type == JTokenType.Boolean;
             if (isSwitch)

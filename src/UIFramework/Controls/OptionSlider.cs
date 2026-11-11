@@ -58,7 +58,9 @@ namespace UIFramework
                     string text = Options.Count == 0 ? "" : Options[Index].Value ?? "";
                     return long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long whole) ? (JToken)whole : text;
                 }
-                return Whole ? (JToken)(long)Math.Round(Value) : Value;
+                // A stop of a decimal range is a multiple of the step, with its float noise: three steps of 0.1 are
+                // 0.30000000000000004. Ten decimals, as a number box shows, leave 0.3 beside the label and in the file.
+                return Whole ? (JToken)(long)Math.Round(Value) : Math.Round(Value, 10);
             }
         }
 

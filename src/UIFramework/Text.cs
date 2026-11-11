@@ -27,7 +27,15 @@ namespace UIFramework
         {
             string text = T(key);
             if (text == key) text = Code == "de" ? german : english;
-            return args.Length == 0 ? text : string.Format(CultureInfo.InvariantCulture, text, args);
+            return args.Length == 0 ? text : Fill(text, args);
+        }
+
+        /// <summary>The text with its placeholders filled, or as it is when its braces are broken: a language file
+        /// from outside (UIFramework\lang, a game's Ui texts) with "{0" in it kept the whole window from opening.</summary>
+        public static string Fill(string text, params object[] args)
+        {
+            try { return string.Format(CultureInfo.InvariantCulture, text ?? "", args); }
+            catch (FormatException) { return text ?? ""; }
         }
 
         public static string T(string key)
@@ -39,6 +47,6 @@ namespace UIFramework
         }
 
         /// <summary>The text with its {0}, {1} placeholders filled.</summary>
-        public static string T(string key, params object[] args) => string.Format(CultureInfo.InvariantCulture, T(key), args);
+        public static string T(string key, params object[] args) => Fill(T(key), args);
     }
 }

@@ -205,6 +205,15 @@ namespace UIFramework
 
         private const string HelpWrapTag = "uiframework.helpWrap";
 
+        /// <summary>A number's label with its unit behind it, "Every (min)". Whole numbers showed none, though the
+        /// timer's intervals rely on it; a label that names the unit already (a game's own "Every (min)") stays.</summary>
+        public static string WithUnit(string label, string unit)
+        {
+            if (string.IsNullOrWhiteSpace(unit)) return label;
+            string tail = "(" + unit.Trim() + ")";
+            return (label ?? "").TrimEnd().EndsWith(tail, StringComparison.OrdinalIgnoreCase) ? label : label + " " + tail;
+        }
+
         public static FrameworkElement Render(PageContext ctx, Setting s)
         {
             var f = ctx.Fields;
@@ -233,11 +242,11 @@ namespace UIFramework
                 case "int":
                     element = s.Options != null && s.Options.Count > 0
                         ? f.IntCombo(label, s.Key, s.Options.Select(o => (int.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) ? v : 0, o.Label)).ToArray(), tip)
-                        : f.IntField(label, s.Key, tip, s.UnlimitedAtZero);
+                        : f.IntField(WithUnit(label, s.Unit), s.Key, tip, s.UnlimitedAtZero);
                     SetRange(ctx, s);
                     break;
                 case "long":
-                    element = f.LongField(label, s.Key, tip, s.UnlimitedAtZero);
+                    element = f.LongField(WithUnit(label, s.Unit), s.Key, tip, s.UnlimitedAtZero);
                     SetRange(ctx, s);
                     break;
                 case "duration":
@@ -249,7 +258,7 @@ namespace UIFramework
                         element = f.DoubleCombo(label, s.Key, s.Options.Select(o => (double.TryParse(o.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : 0.0, o.Label)).ToArray(), tip);
                     else
                     {
-                        element = f.DoubleField(label + (s.Unit != null ? " (" + s.Unit + ")" : ""), s.Key, tip);
+                        element = f.DoubleField(WithUnit(label, s.Unit), s.Key, tip);
                         SetRange(ctx, s);
                     }
                     break;
@@ -583,7 +592,7 @@ namespace UIFramework
                 try
                 {
                     string json = ctx.Hooks.ReadTable(s.Key);
-                    if (!string.IsNullOrWhiteSpace(json) && JToken.Parse(json) is JArray array)
+                    if (!string.IsNullOrWhiteSpace(json) && JsonText.Parse(json) is JArray array)
                         foreach (var item in array.OfType<JObject>())
                             rows.Add(item.Properties().ToDictionary(p => p.Name, p => FieldBinding.Invariant(p.Value)));
                 }

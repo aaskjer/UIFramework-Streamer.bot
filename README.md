@@ -64,6 +64,14 @@ first use, checked against its published SHA-256, and offers new releases when t
 - 🎨 **A customise mode.** Users rename, reorder, hide and move pages and fields by drag and drop, and pick the
   theme and accent colour, and choose help as a line under each field instead of a tooltip. All of it lives in `uiframework.layout.json` and survives every import of the game;
   `Lock()` turns the mode off for a game that wants its window exactly as declared.
+- 🔎 **Search with Ctrl+F.** One bar finds every setting, message and page of a window by label, help or key
+  and takes you to the field. A tour on the first open shows a new user around.
+- ⏱️ **Rounds that start by themselves.** A timed action on a fixed or random interval, only after enough chat
+  lines, only while the stream is live, or inside Twitch's ad breaks: the helpers are in the host block
+  (`UiTimer`, `UiLive`, `UiAdBreak`), the settings and their Automation page come from the conventions.
+- 🧩 **Triggers and methods for a streamer's own actions.** A game declares its custom triggers and its methods
+  for *Execute C# Method* once; the Help page lists them with their arguments, and a button fires a trigger with
+  sample values.
 - 📜 **Log, help and about pages.** A filterable log reader for the game's log files, a help page from your
   notes and commands, an about page with your links. Mistakes in the schema sit behind a red **i** in the header.
 - 🔔 **Tells you about updates.** Once per Streamer.bot start, one notice names new releases of the games and of
@@ -119,15 +127,16 @@ what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and t
 
 ## 🛠️ Development
 
-`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the 199 tests.
+`dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the tests.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
 `-schema hosts/<game>/schema.json` the window a game declares. `-theme dark` or `light`, `-shots <folder>` renders
 every page to PNG, `-windowshots <folder>` the whole window per page at the page's full height (`-pages`, `-names`),
-`-settle 3000` waits that long for emote pictures, `-pick 1` picks the first row of every grid.
+`-settle 3000` waits that long for emote pictures, `-pick 1` picks the first row of every grid; with
+`-windowshots`, `-tour` photographs every stop of the tour, `-problems` the panel behind the red **i**,
+`-search <text>` the search bar, and `-customize` opens the customise mode.
 A tag `vX.Y.Z` with its section in [CHANGELOG.md](CHANGELOG.md) publishes the DLL and updates `lib/v1/latest.json`,
-which every stub reads. [PLAN.md](PLAN.md) (German) holds what is still open and the plan for the projects that are not games,
-[docs/Phase0-Konventionen.md](docs/Phase0-Konventionen.md) (German) the conventions drawn from the game windows
-this replaces.
+which every stub reads; only a round version (`2.0.0`) is published as a stable release, every other one as a
+pre-release. [PLAN.md](PLAN.md) (German) holds what is still open and the plan for the projects that are not games.
 
 ```
 src/UIFramework          the DLL (.NET Framework 4.8, WPF)
@@ -139,14 +148,15 @@ examples/DemoGame/       the smallest game with a window: DemoGame.cs, DemoGame.
 hosts/<name>/            schema.json of each game (what it answers, with the window) and HostBlock.cs, its host
                          block as the game carries it
 conventions/             keys.json, lang/<code>.json and emotes/, embedded into the DLL
-tools/                   update-host-block.ps1 (refresh the block in a game, keeping its table), check-stub.ps1
+tools/                   update-host-block.ps1 (refresh the block in a game, keeping its table), copy-host-block.ps1
+                         (a game's block into its other action and into hosts/<name>/), check-stub.ps1
                          (compile the stub and the demo the Streamer.bot way), build-import.ps1 (keep an export's
                          code on the files), spec-to-window.ps1 (an old spec.json as a window declaration),
                          conventions-doc.ps1 (the tables in docs/Conventions.md),
-                         update-twitch-emotes.ps1 (Twitch's global emotes for conventions/emotes)
+                         update-twitch-emotes.ps1 (Twitch's global emotes for conventions/emotes),
+                         docs-shots.ps1 (the screenshots in docs/images, rendered again)
 lib/v1/latest.json       what the loader reads: version, download url, sha256
-docs/                    Getting-Started, Schema, Conventions, Loader, Customize, Phase0-Konventionen (German);
-                         images/ the screenshots
+docs/                    Getting-Started, Schema, Conventions, Loader, Customize; images/ the screenshots
 ```
 
 ---

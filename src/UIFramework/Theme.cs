@@ -28,7 +28,15 @@ namespace UIFramework
         public static Color? AccentOverride
         {
             get => _accentSet ? _accent : _sharedAccent;
-            set { _accent = value; _accentSet = true; _sharedAccent = value; }
+            set
+            {
+                // The accent is a solid colour: one typed with an alpha ("#80FF0000") gives its red, green and blue.
+                if (value.HasValue)
+                    value = Color.FromRgb(value.Value.R, value.Value.G, value.Value.B);
+                _accent = value;
+                _accentSet = true;
+                _sharedAccent = value;
+            }
         }
 
         public static Color ContentBg => IsDark ? Color.FromRgb(36, 36, 36) : Colors.White;
@@ -114,21 +122,32 @@ namespace UIFramework
             if (h < 0) h += 360;
         }
 
-        public static string ToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+        /// <summary>#RRGGBB, or #AARRGGBB for a colour that is not opaque, so its alpha is not lost.</summary>
+        public static string ToHex(Color c) => c.A == 255 ? $"#{c.R:X2}{c.G:X2}{c.B:X2}" : $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
 
-        /// <summary>#RRGGBB or RRGGBB.</summary>
+        /// <summary>#RGB, #RRGGBB or #AARRGGBB, with or without the #.</summary>
         public static bool TryParseHex(string text, out Color colour)
         {
             colour = Colors.Transparent;
             string hex = (text ?? "").Trim().TrimStart('#');
-            if (hex.Length != 6 || !hex.All(Uri.IsHexDigit))
+            if ((hex.Length != 3 && hex.Length != 6 && hex.Length != 8) || !hex.All(Uri.IsHexDigit))
                 return false;
-            colour = Color.FromRgb(Convert.ToByte(hex.Substring(0, 2), 16), Convert.ToByte(hex.Substring(2, 2), 16), Convert.ToByte(hex.Substring(4, 2), 16));
+            // "#abc" is short for "#aabbcc", as WPF and the web read it; without an alpha the colour is opaque.
+            if (hex.Length == 3)
+                hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
+            if (hex.Length == 6)
+                hex = "FF" + hex;
+            colour = Color.FromArgb(Convert.ToByte(hex.Substring(0, 2), 16), Convert.ToByte(hex.Substring(2, 2), 16), Convert.ToByte(hex.Substring(4, 2), 16), Convert.ToByte(hex.Substring(6, 2), 16));
             return true;
         }
 
+        /// <summary>The brush of a colour field's swatch: the colour as <see cref="TryParseHex"/> reads it, so the
+        /// swatch shows what the picker opens on and the accent takes ("F1C40F" without its # too). What that does
+        /// not read (a name like "red") is shown as WPF reads it; anything else is black.</summary>
         public static SolidColorBrush ParseHexBrush(string hex)
         {
+            if (TryParseHex(hex, out Color colour))
+                return new SolidColorBrush(colour);
             try
             {
                 return new SolidColorBrush((Color)ColorConverter.ConvertFromString(string.IsNullOrWhiteSpace(hex) ? "#000000" : hex));

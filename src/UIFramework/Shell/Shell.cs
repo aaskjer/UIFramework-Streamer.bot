@@ -943,9 +943,10 @@ namespace UIFramework
                 {
                     // A note is text to read, not something to set; a field the window does not show cannot be gone to.
                     if (setting.Hidden || setting.Kind == "note" || !parts.Elements.TryGetValue(setting.Key, out var field)) continue;
-                    if (field.Visibility != Visibility.Visible) continue;
                     int index = pages.FindIndex(p => Inside(field, p.Page));
                     if (index < 0) continue;
+                    // Hidden itself or with a panel it sits in (the cooldown senders while a game message is picked).
+                    if (!ShownOn(field, pages[index].Page)) continue;
                     var shown = field;
                     entries.Add(new SearchEntry
                     {
@@ -1322,6 +1323,15 @@ namespace UIFramework
             for (var node = element; node != null; node = LogicalTreeHelper.GetParent(node) ?? (node is Visual || node is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) : null))
                 if (ReferenceEquals(node, page)) return true;
             return false;
+        }
+
+        /// <summary>Whether an element shows once its page is in front: neither it nor anything between it and the page
+        /// is hidden. The page itself is not asked: only the one in front is visible.</summary>
+        public static bool ShownOn(DependencyObject element, DependencyObject page)
+        {
+            for (var node = element; node != null && !ReferenceEquals(node, page); node = LogicalTreeHelper.GetParent(node) ?? (node is Visual || node is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) : null))
+                if (node is UIElement shown && shown.Visibility != Visibility.Visible) return false;
+            return true;
         }
 
         private void SafeHook(Action hook)

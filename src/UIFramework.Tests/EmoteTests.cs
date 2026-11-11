@@ -20,7 +20,7 @@ namespace UIFramework.Tests
         [InlineData("Kappa")]
         [InlineData(":face-blue-smiling:")]
         [InlineData("[emote:x:emojiRich]")]
-        public void Anything_else_is_no_kick_code(string code) => Assert.False(EmotePictures.KickCode.IsMatch(code));
+        public void Anything_else_is_no_kick_code(string code) => Assert.DoesNotMatch(EmotePictures.KickCode, code);
 
         [Fact]
         public void Names_come_from_the_code()
@@ -63,10 +63,10 @@ namespace UIFramework.Tests
         }
 
         [Fact]
-        public void Without_a_twitch_token_a_global_emote_still_has_its_picture()
+        public async System.Threading.Tasks.Task Without_a_twitch_token_a_global_emote_still_has_its_picture()
         {
             // A game whose Streamer.bot has no Twitch login hands over no token: Kappa comes from the embedded list.
-            var lookup = EmotePictures.TwitchLookup(new SourcesWithoutToken()).GetAwaiter().GetResult();
+            var lookup = await EmotePictures.TwitchLookup(new SourcesWithoutToken());
             Assert.True(lookup.TryGetValue("Kappa", out var kappa));
             Assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/25/default/{theme}/2.0", kappa.Url);
             Assert.Null(kappa.Source);

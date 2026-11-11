@@ -75,7 +75,7 @@ namespace UIFramework
                 // A list takes its rows as an array, or as the JSON text of one (an action that built them as a string).
                 JArray rows = value as JArray;
                 if (rows == null && value?.Type == JTokenType.String)
-                    try { rows = JArray.Parse((string)value); } catch (Exception) { return false; }
+                    try { rows = JsonText.Parse((string)value) as JArray; } catch (Exception) { return false; }
                 if (rows == null) return false;
                 string was = list.Serialized;
                 list.Set(rows);

@@ -47,8 +47,8 @@ namespace UIFramework.Tests
             };
             var editor = new ListEditor("emotes", "Kick", columns, JArray.Parse(@"[ { ""Code"": ""[emote:1730803:emojiRich]"", ""Weight"": 3 } ]"), null, "");
             Assert.Equal("[emote:1730803:emojiRich]", (string)editor.Value[0]["Code"]);
-            Assert.True(EmotePictures.KickCode.IsMatch("[emote:1730803:emojiRich]"));
-            Assert.False(EmotePictures.KickCode.IsMatch("Kappa"));
+            Assert.Matches(EmotePictures.KickCode, "[emote:1730803:emojiRich]");
+            Assert.DoesNotMatch(EmotePictures.KickCode, "Kappa");
             editor.Set(JArray.Parse(@"[ { ""Code"": ""[emote:1:x]"", ""Weight"": 1 }, { ""Code"": "" "" } ]"));
             Assert.Single(editor.Value);                       // a row with nothing typed in is dropped
         });

@@ -33,6 +33,8 @@ namespace UIFramework
                 start = Color.FromRgb(0xF1, 0xC4, 0x0F);
             Colours.RgbToHsv(start, out double hue, out double saturation, out double brightness);
             Color current = start;
+            // The picker has nothing to set the alpha with: the one the box holds ("#80FF0000") is kept in what it writes.
+            byte alpha = start.A;
             bool writing = false;
 
             const double fieldWidth = 220, fieldHeight = 140, trackWidth = 172;
@@ -87,6 +89,7 @@ namespace UIFramework
             Action<bool> show = write =>
             {
                 current = Colours.HsvToRgb(hue, saturation, brightness);
+                current.A = alpha;
                 hueLayer.Background = new SolidColorBrush(Colours.HsvToRgb(hue, 1, 1));
                 Canvas.SetLeft(fieldMarker, saturation * fieldWidth - 6);
                 Canvas.SetTop(fieldMarker, (1 - brightness) * fieldHeight - 6);
@@ -200,6 +203,7 @@ namespace UIFramework
                         hue = h;
                     saturation = sat;
                     brightness = v;
+                    alpha = colour.A;
                     show(false);
                 }
             };

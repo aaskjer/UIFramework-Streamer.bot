@@ -105,6 +105,10 @@ namespace UIFramework
         private readonly Border _panel, _catcher;
         private List<SearchEntry> _all = new List<SearchEntry>(), _shown = new List<SearchEntry>();
         private int _selected = -1;
+        // Where the keyboard was before the bar opened, to give it back when the bar closes without a result.
+        private IInputElement _focusBefore;
+        // Where the pointer was when it last counted: rows drawn or scrolled under a pointer at rest get a MouseEnter too.
+        private Point _pointerAt;
 
         public bool IsOpen { get; private set; }
         /// <summary>What is listed right now, best first.</summary>
@@ -181,6 +185,7 @@ namespace UIFramework
                 return;
             }
             IsOpen = true;
+            _focusBefore = Keyboard.FocusedElement;
             try { _all = _entries?.Invoke() ?? new List<SearchEntry>(); }
             catch (Exception) { _all = new List<SearchEntry>(); }
             Place();
@@ -191,12 +196,20 @@ namespace UIFramework
             _window.Dispatcher.BeginInvoke(new Action(() => { if (IsOpen) _box.Focus(); }), DispatcherPriority.Input);
         }
 
-        public void Close()
+        public void Close() => Close(true);
+
+        private void Close(bool giveFocusBack)
         {
             if (!IsOpen) return;
             IsOpen = false;
             _layers.Children.Remove(_panel);
             _layers.Children.Remove(_catcher);
+            // Closed without a result (Esc, a click beside it): the keyboard goes back to the field it was in. A
+            // result puts the cursor into what was found instead.
+            var before = _focusBefore;
+            _focusBefore = null;
+            if (giveFocusBack && before != null)
+                try { Keyboard.Focus(before); } catch (Exception) { }
         }
 
         /// <summary>Goes to the selected result, or to the first when none is: what Enter does.</summary>
@@ -204,7 +217,7 @@ namespace UIFramework
         {
             if (_shown.Count == 0) return;
             var entry = _shown[Math.Max(0, Math.Min(_selected, _shown.Count - 1))];
-            Close();
+            Close(false);
             try { entry.Go?.Invoke(); } catch (Exception) { }
         }
 
@@ -247,6 +260,8 @@ namespace UIFramework
                 case Key.Up: Move(-1); break;
                 case Key.PageDown: Move(6); break;
                 case Key.PageUp: Move(-6); break;
+                // Tab would take the keyboard to a header button while the bar stays up, and then no key reaches it.
+                case Key.Tab: break;
                 default: return;
             }
             e.Handled = true;
@@ -259,6 +274,7 @@ namespace UIFramework
             _shown = SearchIndex.Find(_all, query);
             _rows.Children.Clear();
             _selected = -1;
+            _pointerAt = Mouse.GetPosition(_layers);
             for (int i = 0; i < _shown.Count; i++)
                 _rows.Children.Add(Row(_shown[i], i));
             _scroll.Visibility = _shown.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -286,9 +302,20 @@ namespace UIFramework
                 ToolTip = string.IsNullOrWhiteSpace(entry.Help) ? null : entry.Help
             };
             AutomationProperties.SetName(row, entry.Title ?? entry.Key ?? "");
-            row.MouseEnter += (s, e) => Select(index);
+            row.MouseEnter += (s, e) => Hover(index, e.GetPosition(_layers));
+            row.MouseMove += (s, e) => Hover(index, e.GetPosition(_layers));
             row.MouseLeftButtonUp += (s, e) => { Select(index); GoToSelected(); };
             return row;
+        }
+
+        /// <summary>The pointer is over the row at <paramref name="index"/>, at <paramref name="at"/> over the window's
+        /// content. It selects the row only when it has moved: a row that is drawn or scrolled under a pointer at rest
+        /// must not take the selection from the best match, or Enter goes to the wrong result.</summary>
+        public void Hover(int index, Point at)
+        {
+            if (at == _pointerAt) return;
+            _pointerAt = at;
+            Select(index);
         }
 
         private void Select(int index)

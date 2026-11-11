@@ -350,7 +350,10 @@ namespace UIFramework
                 separator = f.StringCombo(Text.T("messages.numbers"), keys.NumberSeparator,
                     new[] { (".", "12.345"), (",", "12,345"), (" ", "12 345"), ("", "12345") },
                     Text.T("messages.numbers.tip"));
-                top = Ui.Row(new[] { 2.4, 1.0 }, Ui.Labeled(Text.T("messages.message"), picker), Ui.Labeled(Text.T("messages.numbers"), separator));
+                // What this page draws itself is named like a schema page's fields, so the search and the tour find it.
+                var numbers = Ui.Labeled(Text.T("messages.numbers"), separator);
+                parts.Elements[keys.NumberSeparator] = numbers;
+                top = Ui.Row(new[] { 2.4, 1.0 }, Ui.Labeled(Text.T("messages.message"), picker), numbers);
             }
             else
                 top = Ui.Row(Ui.Labeled(Text.T("messages.message"), picker));
@@ -383,11 +386,13 @@ namespace UIFramework
             if (keys.UseBot != null)
             {
                 useBot = f.Toggle(Text.T("messages.botAccount"), keys.UseBot, Text.T("messages.botAccount.tip"));
+                parts.Elements[keys.UseBot] = useBot;
                 gameSender.Children.Add(useBot);
             }
             if (keys.SendAction != null)
             {
                 sendAction = f.Toggle(Text.T("messages.sendMe"), keys.SendAction, Text.T("messages.sendMe.tip"));
+                parts.Elements[keys.SendAction] = sendAction;
                 Fields.TwitchOnly(sendAction);
                 sendAction.Margin = new Thickness(18, 0, 0, 0);
                 gameSender.Children.Add(sendAction);
@@ -397,10 +402,12 @@ namespace UIFramework
             if (hasCooldownSenders)
             {
                 useBotCd = f.Toggle(Text.T("messages.botAccount"), keys.CooldownUseBot, Text.T("messages.cooldownBot.tip"));
+                parts.Elements[keys.CooldownUseBot] = useBotCd;
                 cooldownSender.Children.Add(useBotCd);
                 if (keys.CooldownSendAction != null)
                 {
                     sendActionCd = f.Toggle(Text.T("messages.sendMe"), keys.CooldownSendAction, Text.T("messages.cooldownMe.tip"));
+                    parts.Elements[keys.CooldownSendAction] = sendActionCd;
                     Fields.TwitchOnly(sendActionCd);
                     sendActionCd.Margin = new Thickness(18, 0, 0, 0);
                     cooldownSender.Children.Add(sendActionCd);

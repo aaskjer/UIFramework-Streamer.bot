@@ -42,11 +42,11 @@ namespace UIFramework.Tests
             var german = Conventions.Load("de").Lang;
             Assert.Equal("de", german.Code);
             Assert.True(german.Translates && !english.Translates);
-            Assert.Empty(english.Keys.Keys.Where(k => !german.Keys.ContainsKey(k)));
+            Assert.DoesNotContain(english.Keys.Keys, k => !german.Keys.ContainsKey(k));
             Assert.Empty(english.Keys.Where(k => k.Value.Help != null && german.Keys[k.Key].Help == null).Select(k => k.Key));
-            Assert.Empty(english.Pages.Keys.Where(k => !german.Pages.ContainsKey(k)));
-            Assert.Empty(english.Framework.Keys.Where(k => !german.Framework.ContainsKey(k)));
-            Assert.Empty(english.Placeholders.Keys.Where(k => !german.Placeholders.ContainsKey(k)));
+            Assert.DoesNotContain(english.Pages.Keys, k => !german.Pages.ContainsKey(k));
+            Assert.DoesNotContain(english.Framework.Keys, k => !german.Framework.ContainsKey(k));
+            Assert.DoesNotContain(english.Placeholders.Keys, k => !german.Placeholders.ContainsKey(k));
             Assert.True(german.Texts.Count > 80, "the German texts (sections, pills, page titles) are missing or thin");
             Assert.Equal("Punkte", german.Text("Points"));
             Assert.Equal("Shoe", german.Text("Shoe"));

@@ -11,10 +11,24 @@
 #   tools\check-stub.ps1
 param(
     [string] $StreamerBotPath = 'C:\Users\Administrator\Downloads\Streamer.bot-x64-1.0.7',
-    [string] $RoslynHostTools = 'C:\Users\Administrator\Downloads\RhymeTime\tools'
+    [string] $RoslynHostTools = 'C:\Users\Administrator\Downloads\RhymeTime\tools',
+    # Internal: read the schema out of a compiled demo and write it to -SchemaOut. The script runs itself this way in
+    # a process of its own, because a DLL once loaded stays locked and stays the one .NET answers with: a second run
+    # in the same console could neither compile Demo.dll again nor see its new schema.
+    [string] $SchemaOf,
+    [string] $SchemaOut
 )
 
 $ErrorActionPreference = 'Stop'
+if ($SchemaOf) {
+    $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Newtonsoft.Json.dll'))
+    $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Streamer.bot.Plugin.Interface.dll'))
+    $assembly = [Reflection.Assembly]::LoadFrom($SchemaOf)
+    $json = $assembly.GetType('UiSchema').GetMethod('ToJson', [type[]]@([string], [string], [string])).Invoke($null, @('demo', 'v1.0.0', 'Demo Game/DemoGame-Settings.json'))
+    $pretty = [Newtonsoft.Json.Linq.JObject]::Parse($json).ToString()
+    [IO.File]::WriteAllText($SchemaOut, $pretty.Replace("`r`n", "`n") + "`n", (New-Object Text.UTF8Encoding $false))
+    exit 0
+}
 $root = Split-Path -Parent $PSScriptRoot
 $out = Join-Path $env:TEMP 'uiframework-stub-check'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
@@ -73,15 +87,16 @@ if ($LASTEXITCODE -ne 0) { $failed++ }
 if (Compile 'examples/DemoGame/DemoGame.cs compiles as a Streamer.bot action (host block inside)' $demo 'Demo.dll' $refs) {
     # Its schema, as the game would answer describe with, for the preview (-schema) and the docs' screenshots.
     try {
-        $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Newtonsoft.Json.dll'))
-        $null = [Reflection.Assembly]::LoadFrom((Join-Path $StreamerBotPath 'Streamer.bot.Plugin.Interface.dll'))
-        $assembly = [Reflection.Assembly]::LoadFrom((Join-Path $out 'Demo.dll'))
-        $json = $assembly.GetType('UiSchema').GetMethod('ToJson', [type[]]@([string], [string], [string])).Invoke($null, @('demo', 'v1.0.0', 'Demo Game/DemoGame-Settings.json'))
-        $pretty = [Newtonsoft.Json.Linq.JObject]::Parse($json).ToString()
+        $fresh = Join-Path $out 'demo-schema.json'
+        if (Test-Path -LiteralPath $fresh) { Remove-Item -LiteralPath $fresh -Force }
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -StreamerBotPath $StreamerBotPath -SchemaOf (Join-Path $out 'Demo.dll') -SchemaOut $fresh | Out-Null
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $fresh)) { throw 'the demo answered no schema' }
+        $now = [IO.File]::ReadAllText($fresh, [Text.Encoding]::UTF8)
         $schemaPath = Join-Path $root 'examples\DemoGame\schema.json'
         $before = if (Test-Path -LiteralPath $schemaPath) { [IO.File]::ReadAllText($schemaPath, [Text.Encoding]::UTF8) } else { '' }
-        if ($before.Replace("`r`n", "`n") -ne ($pretty.Replace("`r`n", "`n") + "`n")) {
-            [IO.File]::WriteAllText($schemaPath, $pretty.Replace("`r`n", "`n") + "`n", $utf8)
+        # -cne: a label that changed in its letter case alone is a change too.
+        if ($before.Replace("`r`n", "`n") -cne $now) {
+            [IO.File]::WriteAllText($schemaPath, $now, $utf8)
             Write-Host '  ok   examples/DemoGame/schema.json written from the game' -ForegroundColor Green
         } else { Write-Host '  ok   examples/DemoGame/schema.json is current' -ForegroundColor Green }
     }

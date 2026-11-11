@@ -241,6 +241,11 @@ namespace UIFramework
             cells.Add(remove);
             row.Element = Layout(cells.ToArray());
             row.Element.Margin = new Thickness(0, 0, 0, 6);
+            // A row the search kept only because it was being typed in is filtered once the keyboard has left it.
+            row.Element.IsKeyboardFocusWithinChanged += (sender, e) =>
+            {
+                if (!row.Element.IsKeyboardFocusWithin && !_loading && _search.Text.Length > 0 && _items.Contains(row)) Filter();
+            };
             _items.Add(row);
             _rows.Children.Add(row.Element);
             return row;
@@ -350,6 +355,12 @@ namespace UIFramework
             Filter();
         }
 
+        /// <summary>Whether a row shows under the search text: one of its texts holds it, or the row is being typed in.
+        /// Every keystroke in a cell filters again, and a row that went away under the cursor would take the keyboard
+        /// with it ("apple" under the search "app", one "p" deleted).</summary>
+        public static bool Shows(string needle, IEnumerable<string> texts, bool typedIn) =>
+            string.IsNullOrEmpty(needle) || typedIn || texts.Any(t => t != null && t.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0);
+
         /// <summary>Hides the rows the search text does not occur in, and counts.</summary>
         private void Filter()
         {
@@ -357,7 +368,7 @@ namespace UIFramework
             int shown = 0;
             foreach (var row in _items)
             {
-                bool hit = needle.Length == 0 || row.Cells.Values.Any(c => c is TextBox box && box.Text.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0);
+                bool hit = Shows(needle, row.Cells.Values.OfType<TextBox>().Select(box => box.Text), row.Element.IsKeyboardFocusWithin);
                 row.Element.Visibility = hit ? Visibility.Visible : Visibility.Collapsed;
                 if (hit) shown++;
             }

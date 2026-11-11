@@ -25,6 +25,12 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Web.Extensions
 $root = Split-Path -Parent $PSScriptRoot
 $utf8 = New-Object System.Text.UTF8Encoding $false
+# Relative paths count from where PowerShell stands: [IO.File] counts from the folder the console was started in.
+function Full([string] $path) { if ($path) { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path) } else { $path } }
+$Path = Full $Path
+$VersionFrom = Full $VersionFrom
+$ImportString = Full $ImportString
+if ($Map) { foreach ($name in @($Map.Keys)) { $Map[$name] = Full ([string] $Map[$name]) } }
 
 if (-not $Path) { $Path = Join-Path $root 'examples\DemoGame\DemoGame.sb' }
 if (-not $Map) { $Map = @{ 'Demo Game' = (Join-Path $root 'examples\DemoGame\DemoGame.cs'); '.Demo GUI' = (Join-Path $root 'stub\Stub.cs') } }

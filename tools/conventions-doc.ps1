@@ -80,7 +80,8 @@ if ($a -lt 0 -or $b -lt $a) { throw "docs/Conventions.md has no $start ... $end 
 $updated = $text.Substring(0, $a + $start.Length) + "`n" + $generated + "`n" + $text.Substring($b)
 
 if ($Check) {
-    if ($updated -ne $text) { Write-Host 'docs/Conventions.md is out of date: run tools/conventions-doc.ps1'; exit 1 }
+    # -cne: a label that changed in its letter case alone is out of date too
+    if ($updated -cne $text) { Write-Host 'docs/Conventions.md is out of date: run tools/conventions-doc.ps1'; exit 1 }
     Write-Host 'docs/Conventions.md is current'
     exit 0
 }

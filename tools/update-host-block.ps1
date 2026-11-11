@@ -24,6 +24,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+# Relative paths count from where PowerShell stands: [IO.File] counts from the folder the console was started in.
+function Full([string] $path) { if ($path) { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path) } else { $path } }
+$File = Full $File
+$Template = Full $Template
+$Into = @($Into | ForEach-Object { Full $_ })
 if (-not $Template) { $Template = Join-Path $root 'stub\HostSchema.cs' }
 $utf8 = New-Object Text.UTF8Encoding $false
 $nl = "`n"

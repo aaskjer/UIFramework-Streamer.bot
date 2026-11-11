@@ -16,6 +16,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+# Relative paths count from where PowerShell stands: [IO.File] counts from the folder the console was started in.
+function Full([string] $path) { if ($path) { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path) } else { $path } }
+$File = Full $File
+$Into = @($Into | ForEach-Object { Full $_ })
 $open = '// --- UIFramework host block'
 $close = '// --- end UIFramework host block ---'
 

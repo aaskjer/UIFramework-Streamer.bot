@@ -94,7 +94,7 @@ namespace UIFramework
             }));
             menu.Items.Add(Item(setting.Hidden ? Text.T("cust.show") : Text.T("cust.hide"), () =>
             {
-                ctx.Layout.SetField(setting.Key, "hidden", setting.Hidden ? null : (JToken)true);
+                ctx.Layout.SetField(setting.Key, "hidden", HiddenOverride(!setting.Hidden, HiddenByGame(ctx.Spec, setting.Key)));
                 Commit(ctx, pageId);
             }));
             bool message = setting.Kind == "template" && setting.Page == "messages";
@@ -166,6 +166,19 @@ namespace UIFramework
             box.Drop += (s, e) => Plain();
             return box;
         }
+
+        /// <summary>Whether the game itself hides a field (its schema, or the spec's override of it), whatever the
+        /// user's layout says.</summary>
+        private static bool HiddenByGame(WindowSpec spec, string key)
+        {
+            if (spec.Overrides.TryGetValue(key, out var over) && over.Hidden.HasValue) return over.Hidden.Value;
+            return spec.Schema?.Settings.FirstOrDefault(s => s.Key == key)?.Hidden == true;
+        }
+
+        /// <summary>What Show and Hide write into the layout: nothing (null, which takes the layout's own word away)
+        /// where the game says the same already, the wanted state where it does not. A field the game hides has no
+        /// layout entry to take away, so showing it needs a "false" of the user's.</summary>
+        public static JToken HiddenOverride(bool hide, bool hiddenByGame) => hide == hiddenByGame ? null : (JToken)hide;
 
         private enum DropZone { Left, Right, Above, Below }
 
@@ -312,6 +325,17 @@ namespace UIFramework
                 while (first > 0 && RowOf(onPage[first - 1]) == targetSetting.Row) first--;
                 while (last < onPage.Count - 1 && RowOf(onPage[last + 1]) == targetSetting.Row) last++;
             }
+            else if (!beside && at >= 0)
+            {
+                // The same for a line the page puts together by itself (three numbers, two switches): above or below
+                // all of it, not between its fields.
+                var drawn = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).ToList();
+                var lines = Lines(drawn);
+                int LineOf(string key) { int i = drawn.FindIndex(s => s.Key == key); return i < 0 ? -1 : lines[i]; }
+                int line = LineOf(target);
+                while (first > 0 && LineOf(onPage[first - 1]) == line) first--;
+                while (last < onPage.Count - 1 && LineOf(onPage[last + 1]) == line) last++;
+            }
             onPage.Insert(at < 0 ? onPage.Count : before ? first : last + 1, dragged);
             if (draggedSetting.Page != pageId)
                 ctx.Layout.SetField(dragged, "page", pageId);
@@ -323,6 +347,41 @@ namespace UIFramework
 
         /// <summary>A row others can share: named, not the "~key" a field on a line of its own carries.</summary>
         private static bool SharesRow(string row) => !string.IsNullOrEmpty(row) && !row.StartsWith("~", StringComparison.Ordinal);
+
+        // The kinds the page lines up three to a row (SchemaPage keeps the same list).
+        private static readonly HashSet<string> NumberKinds = new HashSet<string> { "int", "long", "double", "percent", "duration" };
+
+        /// <summary>The line each field of a page sits on, as the page draws them (SchemaPage.Fill): fields naming
+        /// the same row share one, and so do up to three numbers or two switches that follow each other within a
+        /// section. One number per field, in the order given; the fields of one line have the same.</summary>
+        public static List<int> Lines(IList<Setting> fields)
+        {
+            var lines = new List<int>();
+            string section = null, lineKind = null;
+            int line = -1, count = 0, most = 1;
+            foreach (var setting in fields)
+            {
+                bool heading = setting.Section != null && setting.Section != section;
+                if (heading) section = setting.Section;
+                string kind = NumberKinds.Contains(setting.Kind ?? "") ? "number" : setting.Kind == "bool" ? "bool" : "single";
+                int max = kind == "number" ? 3 : kind == "bool" ? 2 : 1;
+                if (!string.IsNullOrEmpty(setting.Row))
+                {
+                    kind = "row " + setting.Row;
+                    max = int.MaxValue;
+                }
+                if (heading || kind == "single" || kind != lineKind || count >= most)
+                {
+                    line++;
+                    count = 0;
+                }
+                lineKind = kind;
+                most = max;
+                count++;
+                lines.Add(line);
+            }
+            return lines;
+        }
 
         /// <summary>Puts the dragged field in front of the target (null: at the end) and writes an order for every
         /// field on the page. Nothing is written when that leaves the page as it is.</summary>
@@ -477,16 +536,26 @@ namespace UIFramework
                 {
                     string dragged = Dragged(ctx, e.Data, PageFormat);
                     if (dragged == null || dragged == page.Id || page.Bottom) return;
-                    var order = topPages().Select(p => p.Id).ToList();
-                    order.Remove(dragged);
-                    int at = order.IndexOf(page.Id);
-                    order.Insert(at < 0 ? order.Count : at, dragged);
+                    var order = MovePage(topPages().Select(p => p.Id).ToList(), dragged, page.Id);
                     for (int i = 0; i < order.Count; i++)
                         ctx.Layout.SetPage(order[i], "order", i * 10);
                     Commit(ctx, dragged);
                 }
                 e.Handled = true;
             };
+        }
+
+        /// <summary>The rail's order after a page is dropped on another: the dragged page takes the target's place,
+        /// after it when it came from above, before it when it came from below (as a dropped field does). Always in
+        /// front of the target, a page dragged down one place would stay where it was, and none could become the last.</summary>
+        public static List<string> MovePage(List<string> order, string dragged, string target)
+        {
+            var moved = new List<string>(order);
+            int from = moved.IndexOf(dragged);
+            moved.Remove(dragged);
+            int at = moved.IndexOf(target);
+            moved.Insert(at < 0 ? moved.Count : from >= 0 && from <= at ? at + 1 : at, dragged);
+            return moved;
         }
 
         // ---- The bar under the header ------------------------------------------------------------------

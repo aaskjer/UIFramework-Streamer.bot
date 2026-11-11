@@ -476,13 +476,18 @@ namespace UIFramework
             string source = (string)schema.Currency?["source"];
             if (string.IsNullOrWhiteSpace(source)) return;
             string variable = (string)schema.Currency["variable"] ?? "", name = (string)schema.Currency["name"] ?? "";
-            string note = source + " is installed: the points live in the user variable '" + variable + "' and are called '" + name + "'. " +
-                "This setting is used only without it.";
+            // In the window's language, like the help it is appended to (it was English in every language).
+            string Said(string key, string english)
+            {
+                var ui = spec.Conventions?.Lang?.Ui;
+                return Text.Fill(ui != null && ui.TryGetValue(key, out var own) ? own : english, source, variable, name);
+            }
+            string note = Said("currency.note", "{0} is installed: the points live in the user variable '{1}' and are called '{2}'. This setting is used only without it.");
             foreach (var s in settings)
                 if (s.Key == "pointsVariable" || s.Key == "pointsName")
                     s.Help = string.IsNullOrEmpty(s.Help) ? note : s.Help + " " + note;
             string text = source + ": " + variable;
-            string tooltip = "Points by " + source + ", in the user variable '" + variable + "', called '" + name + "'. The Points variable and Points name settings are not used while it is installed.";
+            string tooltip = Said("currency.pill", "Points by {0}, in the user variable '{1}', called '{2}'. The Points variable and Points name settings are not used while it is installed.");
             spec.CurrencyPill = new HeaderPill(tooltip, ctx => (text, PillStyle.Accent));
             spec.HeaderPills.Add(spec.CurrencyPill);
         }

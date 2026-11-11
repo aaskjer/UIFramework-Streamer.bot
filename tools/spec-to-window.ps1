@@ -15,6 +15,8 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Web.Extensions
 $root = Split-Path -Parent $PSScriptRoot
 $utf8 = New-Object Text.UTF8Encoding $false
+# A relative -Into counts from where PowerShell stands: [IO.File] counts from the folder the console was started in.
+if ($Into) { $Into = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Into) }
 $specPath = Join-Path $root "hosts\$HostName\spec.json"
 $sectionPath = Join-Path $root "hosts\$HostName\host-section.cs"
 if (-not (Test-Path -LiteralPath $specPath)) { throw "Not found: $specPath" }

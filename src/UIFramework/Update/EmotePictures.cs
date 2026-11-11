@@ -138,12 +138,16 @@ namespace UIFramework
             return image;
         }
 
-        /// <summary>Points the image at the picture of the code, or clears it when there is none.</summary>
+        /// <summary>Points the image at the picture of the code, or clears it when there is none. The image's Tag
+        /// holds the code it stands for.</summary>
         public static void Show(Image image, string platform, string code, IHostHooks hooks, Action<string> onSource = null)
         {
             image.Source = null;
             image.ToolTip = null;
             code = (code ?? "").Trim();
+            // A lookup or a download can end after the box holds another code: what ends later sets the picture only
+            // while the image still stands for its code, so "Kappa" changed to "abc" does not get Kappa's picture.
+            image.Tag = code;
             if (code.Length == 0)
                 return;
             string theme = Theme.IsDark ? "dark" : "light";
@@ -151,14 +155,14 @@ namespace UIFramework
             {
                 var m = KickCode.Match(code);
                 if (m.Success)
-                    Load(image, "https://files.kick.com/emotes/" + m.Groups[1].Value + "/fullsize");
+                    Load(image, code, "https://files.kick.com/emotes/" + m.Groups[1].Value + "/fullsize");
                 return;
             }
             if (string.Equals(platform, "youtube", StringComparison.OrdinalIgnoreCase))
             {
                 string url = YouTubeUrl(code, hooks);
                 if (url != null)
-                    Load(image, url);
+                    Load(image, code, url);
                 return;
             }
             if (!string.Equals(platform, "twitch", StringComparison.OrdinalIgnoreCase))
@@ -170,7 +174,9 @@ namespace UIFramework
                     return;
                 dispatcher.BeginInvoke(new Action(() =>
                 {
-                    Load(image, found.Url.Replace("{theme}", theme));
+                    if (!Equals(image.Tag, code))
+                        return;
+                    Load(image, code, found.Url.Replace("{theme}", theme));
                     if (found.Source != null)
                     {
                         image.ToolTip = "A " + found.Source + " emote: chat only shows it as one to viewers with the " + found.Source + " extension.";
@@ -180,7 +186,7 @@ namespace UIFramework
             }, TaskScheduler.Default);
         }
 
-        private static void Load(Image image, string url)
+        private static void Load(Image image, string code, string url)
         {
             var dispatcher = image.Dispatcher;
             var cached = Pictures.GetOrAdd(url, u => Task.Run(() => Download(u)));
@@ -197,7 +203,7 @@ namespace UIFramework
                     Pictures.TryRemove(url, out _);
                     return;
                 }
-                dispatcher.BeginInvoke(new Action(() => image.Source = picture));
+                dispatcher.BeginInvoke(new Action(() => { if (Equals(image.Tag, code)) image.Source = picture; }));
             }, TaskScheduler.Default);
         }
 
@@ -363,7 +369,11 @@ namespace UIFramework
                     foreach (var e in answer as JArray ?? new JArray())
                     {
                         var images = e["images"] as JObject;
-                        Add((string)e["code"], (string)(images?["2x"] ?? images?["1x"]), i => i, "FFZ");
+                        // An emote drawn in one size only has "2x": null, which is a token, not a missing one.
+                        string picture = (string)images?["2x"];
+                        if (string.IsNullOrEmpty(picture))
+                            picture = (string)images?["1x"];
+                        Add((string)e["code"], picture, i => i, "FFZ");
                     }
                     break;
             }

@@ -173,11 +173,15 @@ namespace UIFramework
                 setting.Requires = setting.Requires ?? known.Requires;
                 if (setting.Default == null || setting.Default.Type == JTokenType.Null)
                     setting.Default = known.Default?.DeepClone();
+                // An old name the game lists itself is read the way the game reads it: its own reader (UiSettings) knows
+                // only the game's factor, so the conventions' factor on it made the window show another number than the
+                // game used (an old "AddictedPayoutCut": 50 as 5000 percent).
+                var listedByGame = new HashSet<string>(setting.Aliases, StringComparer.Ordinal);
                 foreach (var alias in known.Aliases)
                     if (!setting.Aliases.Contains(alias))
                         setting.Aliases.Add(alias);
                 foreach (var factor in known.AliasFactors)
-                    if (!setting.AliasFactors.ContainsKey(factor.Key))
+                    if (!setting.AliasFactors.ContainsKey(factor.Key) && !listedByGame.Contains(factor.Key))
                         setting.AliasFactors[factor.Key] = factor.Value;
             }
             // The texts the conventions have for the key fill what the game left out, known key or not.

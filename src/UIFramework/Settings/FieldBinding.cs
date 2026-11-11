@@ -124,7 +124,9 @@ namespace UIFramework
                     double parsed = TryParseTyped(text, out double d) ? d : 0.0;
                     double kept = Math.Max(tag.Min, Math.Min(tag.Max, parsed));
                     clamped = kept != parsed;
-                    return kept * tag.Factor;
+                    // A percent typed as 35 is 35 * 0.01, which is 0.35000000000000003: ten decimals, as the box
+                    // shows, save 0.35. A number without a factor is saved as typed.
+                    return tag.Factor == 1.0 ? kept : Math.Round(kept * tag.Factor, 10);
                 }
                 case FieldKind.Bool:
                     return string.Equals(trimmed, "true", StringComparison.OrdinalIgnoreCase);

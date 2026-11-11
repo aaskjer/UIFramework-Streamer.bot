@@ -68,11 +68,7 @@ namespace UIFramework
             AutomationProperties.SetName(search, Text.T("log.search"));
             var searchHost = Ui.WithHint(search, Text.T("log.search"));
 
-            var resultOptions = new List<string> { AllResults };
-            resultOptions.AddRange(spec.Results.Count > 0
-                ? spec.Results
-                : entries.Select(e => outcome(e.Result)).Where(r => r.Length > 0).Distinct().OrderBy(r => r).Select(Title));
-            var results = Ui.PlainCombo(Text.T("log.result"), resultOptions.ToArray());
+            var results = Ui.PlainCombo(Text.T("log.result"), AllResults);
             var platforms = Ui.PlainCombo(Text.T("log.platform"), new[] { AllPlatforms }.Concat(spec.Platforms).ToArray());
             var dates = Ui.PlainCombo(Text.T("log.day"), AllDates);
 
@@ -165,6 +161,8 @@ namespace UIFramework
                 var lang = ctx.Spec.Conventions?.Lang;
                 string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
                 var writeLog = ctx.Fields.Toggle(T(spec.WriteLogLabel), spec.WriteLogKey, T(spec.WriteLogHelp));
+                // Named like a schema page's fields, so the search and the tour find the switch.
+                ctx.Parts.Elements[spec.WriteLogKey] = writeLog;
                 writeLog.Margin = new Thickness(0, 10, 0, 0);
                 // The customise mode has no Save: a switch flipped there would be dropped with the next rebuild.
                 if (ctx.Customizing) writeLog.IsEnabled = false;
@@ -210,6 +208,19 @@ namespace UIFramework
                 dates.SelectedItem = keep != null && dates.Items.Contains(keep) ? keep : AllDates;
             }
 
+            // A game that declares no results offers the ones its log holds, so they are filled again with every
+            // reload: a log that was empty when the window opened gets its results with the first round.
+            void FillResults(string keep)
+            {
+                results.Items.Clear();
+                results.Items.Add(AllResults);
+                foreach (string option in spec.Results.Count > 0
+                    ? spec.Results
+                    : entries.Select(e => outcome(e.Result)).Where(r => r.Length > 0).Distinct().OrderBy(r => r).Select(Title))
+                    results.Items.Add(option);
+                results.SelectedItem = keep != null && results.Items.Contains(keep) ? keep : AllResults;
+            }
+
             grid.SelectionChanged += (sender, e) => details.Text = grid.SelectedItem is LogEntry picked ? picked.Raw ?? "" : "";
             search.TextChanged += (sender, e) => ApplyFilter();
             results.SelectionChanged += (sender, e) => ApplyFilter();
@@ -218,21 +229,31 @@ namespace UIFramework
             void Reload()
             {
                 string keepDay = dates.SelectedItem as string;
+                string keepResult = results.SelectedItem as string;
+                // The log is read again by itself while a round runs in chat: the picked entry, found again by its
+                // raw line, and its detail line stay. The grid keeps the place it is scrolled to by itself.
+                string keepRaw = (grid.SelectedItem as LogEntry)?.Raw;
                 IEnumerable<LogEntry> reloaded;
                 try { reloaded = ctx.Hooks.ReadLog() ?? Enumerable.Empty<LogEntry>(); }
                 catch (Exception ex) { ctx.Log.Warn(ctx.Spec.LogPrefix + " Log could not be read: " + ex.Message); reloaded = Enumerable.Empty<LogEntry>(); }
+                // Not inside view.DeferRefresh(): the grid reads the view with every line that comes in, and a view
+                // whose refresh is deferred throws on that.
                 entries.Clear();
                 foreach (var item in reloaded.OrderByDescending(x => x.Timestamp))
                     entries.Add(item);
                 FillDates(keepDay);
-                grid.SelectedItem = null;
-                details.Text = "";
+                FillResults(keepResult);
                 ApplyFilter();
+                var again = string.IsNullOrEmpty(keepRaw) ? null : view.OfType<LogEntry>().FirstOrDefault(x => x.Raw == keepRaw);
+                grid.SelectedItem = again;
+                if (again == null)
+                    details.Text = "";
             }
             reload.Click += (sender, e) => Reload();
             Follow(root, spec, ctx, Reload);
 
             FillDates(null);
+            FillResults(null);
             ApplyFilter();
             return root;
         }

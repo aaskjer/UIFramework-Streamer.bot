@@ -1,10 +1,71 @@
 # Changelog
 
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
-its section here before the tag is pushed. Everything before 1.0.0 was published as a pre-release; 1.0.0 and on are
-stable releases.
+its section here before the tag is pushed. Everything before 1.0.0 was published as a pre-release. Since 2026-11-08
+only a round version (2.0.0, 3.0.0) is a stable release; every other one is published as a pre-release, and
+`lib/v1/latest.json`, which the games' settings actions read, names the newest of either kind.
 
 ## [Unreleased]
+
+## [1.8.2] - 2026-11-11
+
+The second part of the review: the smaller mistakes, the scripts, and the docs and pictures that had fallen
+behind. Games need no update.
+
+### Fixed
+
+- **Customise mode: *Show* shows a field the game hides.** It only took the user's own "hidden" away, and a field
+  hidden in the game's declaration has none; it now writes the "shown" the layout needs.
+- **Customise mode: a page dragged down lands after the page it is dropped on.** It always went in front, so a
+  page dragged one place down stayed where it was and none could become the last.
+- **Customise mode: a field dropped above or below a line the page put together itself** (three numbers, two
+  switches) lands above or below the whole line, as [docs/Customize.md](docs/Customize.md) says, not inside it.
+- **Search: a row under a pointer at rest no longer takes the selection** from the best match, so Enter goes where
+  the list says.
+- **Search finds what the standard pages draw:** the sender switches and the number format of the Messages page
+  and the Log page's switch. A tour stop on one of them is no longer dropped.
+- **Search: Tab stays in the box while the bar is up, and Esc gives the keyboard back** to the field it came from.
+- **A list's search leaves the row being typed in where it is.** Under the search "app", deleting a "p" from
+  "apple" hid the row under the cursor.
+- **Whole numbers show their unit** ("Every (min)"), as decimals and durations did; the timer's intervals rely on
+  it. A label that names the unit already stays as it is.
+- **A header pill follows the saved value when its switch is not on the window** (its page or field hidden in the
+  customise mode); it said "off" for whatever it could not see.
+- **The currency note and pill are in the window's language** (`currency.note`, `currency.pill`; they were English
+  in German and Spanish windows).
+- **A condition on a list follows the list**: `requires: "words"` lifts as the first row is added, not after save
+  and reopen.
+- **An old name the game lists itself is read the game's way.** The conventions' factor on `AddictedPayoutCut` was
+  applied by the window even where the game listed that name without one, so window and game disagreed (Trivia).
+- **Dates in an answer stay text.** A table answer or a `set` value like `2026-11-10T20:15:00` was shown as
+  `11/10/2026 20:15:00`.
+- **A language text with broken braces is shown as it is** instead of keeping the window from opening.
+- **Colours:** `#AARRGGBB`, documented all along, is understood by the picker, which opens on the stored colour and
+  keeps its alpha; `#abc` and `F1C40F` are read the same by the swatch, the picker and the accent. The accent stays
+  opaque.
+- **No rounding noise in saved numbers:** a decimal slider at 0.3 and a percent of 35 with a factor are saved as
+  `0.3` and `0.35`, not `0.30000000000000004`.
+- **Log page: a reload keeps the selected line and its detail**, and the result filter follows what the log holds
+  now (a log that was empty when the window opened offered "All results" only).
+- **Emote pictures:** an FFZ emote with a 1x image only has its picture, and a picture that arrives late no longer
+  sits beside another code.
+- **Host block: `UiSettings.Double` reads a whole number beyond `long`** instead of throwing in the game's run.
+
+### Changed
+
+- **Tools:** `conventions-doc.ps1 -Check` and `check-stub.ps1` notice a change in letter case alone; `check-stub.ps1`
+  runs twice in one console; `update-host-block.ps1`, `copy-host-block.ps1`, `build-import.ps1` and
+  `spec-to-window.ps1` take relative paths from where PowerShell stands. New: `tools/docs-shots.ps1` renders the
+  screenshots of the docs again.
+- **Release workflow:** one run per tag (a third tag pushed in a hurry cancelled the second), and build and tests
+  are two steps, so a failed build cannot hide behind passing tests.
+- **Docs:** every screenshot with the window around it is new (the search is in the header); README names the
+  search, the automation helpers, triggers and methods, and no longer links a deleted file; Schema.md has the
+  timer keys on the Automation page, the real shape of the `emotes` answer, and says that the game action's Execute
+  Code sub-action needs a name for *Execute C# Method* (so do Getting-Started and the Help page's note);
+  [PLAN.md](PLAN.md) is of today.
+- `hosts/chatgamble`, `hosts/slotmachine` and `hosts/rhymetime` are what the released games carry and answer.
+- The tests build without analyzer warnings.
 
 ## [1.8.1] - 2026-11-11
 
