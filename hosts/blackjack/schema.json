@@ -1,6 +1,6 @@
 {
   "host": "blackjack",
-  "version": "v17.5.0",
+  "version": "v17.5.1",
   "settingsFile": "Chat Games/Blackjack Game/BJG-Settings.json",
   "settings": [
     {
@@ -3754,9 +3754,13 @@
     {
       "key": "globalCooldownMessage",
       "default": "On cooldown for everyone - {0} seconds to go.",
+      "kind": "template",
       "page": "messages",
       "label": "Everyone",
-      "help": "Sent while the cooldown for everyone is still running. This one numbers its placeholder instead of naming it.",
+      "help": "Sent while the cooldown for everyone is still running. This one numbers its placeholder instead of naming it: {0} is the seconds left.",
+      "placeholders": [
+        "0"
+      ],
       "aliases": [
         "GlobalCooldownMsg"
       ]
@@ -3764,9 +3768,14 @@
     {
       "key": "userCooldownMessage",
       "default": "{0}, your cooldown has {1} seconds left.",
+      "kind": "template",
       "page": "messages",
       "label": "Per player",
-      "help": "Sent while that viewer's own cooldown is still running. Numbered placeholders, and the order matters.",
+      "help": "Sent while that viewer's own cooldown is still running. Numbered placeholders: {0} is the viewer, {1} the seconds left.",
+      "placeholders": [
+        "0",
+        "1"
+      ],
       "aliases": [
         "UserCooldownMsg"
       ]
@@ -3774,8 +3783,15 @@
     {
       "key": "reasonInsufficientFunds",
       "default": "Not enough {points} - you have {available} and need {required}.",
+      "kind": "template",
+      "page": "messages",
       "label": "Not enough points",
       "help": "Sent when the bet is bigger than the balance, typed out or from a shortcut.",
+      "placeholders": [
+        "points",
+        "available",
+        "required"
+      ],
       "aliases": [
         "MsgNotEnoughPoints"
       ]
@@ -3783,9 +3799,13 @@
     {
       "key": "leaderboardEmpty",
       "default": "{user}, nothing on record yet - play a hand first.",
+      "kind": "template",
       "page": "messages",
       "label": "No stats yet",
       "help": "Sent by the Stats action when a viewer checks their record before playing a hand.",
+      "placeholders": [
+        "user"
+      ],
       "aliases": [
         "MsgNoStatsFound"
       ]

@@ -838,12 +838,14 @@ public static class UiSchema
         S("cooldownUseBot", true, page: "messages", label: "Bot account", help: "Sends the cooldown replies from your bot account, separately from the game's own messages.", aliases: new[] { "UseBotCD" }),
         S("cooldownSendAction", false, page: "messages", label: "Send as /me", help: "Twitch only, and separate from the game's messages.", aliases: new[] { "SendActionCD" }),
         S("numberSeparator", ".", page: "messages", label: "Numbers", help: "The thousands separator used in every amount the game posts.", options: new[] { ".|12.345", ",|12,345", " |12 345", "|12345" }, aliases: new[] { "NumberSeparator" }),
-        S("globalCooldownMessage", "On cooldown for everyone - {0} seconds to go.", page: "messages", label: "Everyone", help: "Sent while the cooldown for everyone is still running. This one numbers its placeholder instead of naming it.", aliases: new[] { "GlobalCooldownMsg" }),
-        S("userCooldownMessage", "{0}, your cooldown has {1} seconds left.", page: "messages", label: "Per player", help: "Sent while that viewer's own cooldown is still running. Numbered placeholders, and the order matters.", aliases: new[] { "UserCooldownMsg" }),
+        // Msg, not S, for the four below: they are conventions keys, and S would hand them the conventions' placeholders
+        // ({user}, {remaining}, {amount}, ...), which this game does not fill.
+        Msg(null, "globalCooldownMessage", "On cooldown for everyone - {0} seconds to go.", "Everyone", "Sent while the cooldown for everyone is still running. This one numbers its placeholder instead of naming it: {0} is the seconds left.", new[] { "0" }, alias: "GlobalCooldownMsg"),
+        Msg(null, "userCooldownMessage", "{0}, your cooldown has {1} seconds left.", "Per player", "Sent while that viewer's own cooldown is still running. Numbered placeholders: {0} is the viewer, {1} the seconds left.", new[] { "0", "1" }, alias: "UserCooldownMsg"),
         // ---- (conventions) ----
-        S("reasonInsufficientFunds", "Not enough {points} - you have {available} and need {required}.", label: "Not enough points", help: "Sent when the bet is bigger than the balance, typed out or from a shortcut.", aliases: new[] { "MsgNotEnoughPoints" }),
+        Msg(null, "reasonInsufficientFunds", "Not enough {points} - you have {available} and need {required}.", "Not enough points", "Sent when the bet is bigger than the balance, typed out or from a shortcut.", new[] { "points", "available", "required" }, alias: "MsgNotEnoughPoints"),
         // ---- messages ----
-        S("leaderboardEmpty", "{user}, nothing on record yet - play a hand first.", page: "messages", label: "No stats yet", help: "Sent by the Stats action when a viewer checks their record before playing a hand.", aliases: new[] { "MsgNoStatsFound" }),
+        Msg(null, "leaderboardEmpty", "{user}, nothing on record yet - play a hand first.", "No stats yet", "Sent by the Stats action when a viewer checks their record before playing a hand.", new[] { "user" }, alias: "MsgNoStatsFound"),
         // ---- stats ----
         S("leaderboardSize", 5, page: "stats", label: "Places", help: "How many players the allstats command lists.", section: "The leaderboard", options: new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, aliases: new[] { "LeaderboardSize" }),
         S("leaderboardShowMedals", true, page: "stats", label: "Medals for the top three", help: "🥇 🥈 🥉 for the first three places instead of 1. 2. 3. Fourth place down always gets numbers.", section: "The leaderboard", aliases: new[] { "LeaderboardShowMedals" }),
