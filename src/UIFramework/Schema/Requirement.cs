@@ -141,9 +141,5 @@ namespace UIFramework
                 default: return true;
             }
         }
-
-        /// <summary>Kept for callers that pass a single comparison as key, operator and wanted text.</summary>
-        public static bool Holds(Fields f, WindowParts parts, string key, string op, string wanted) =>
-            Holds(f, parts, new Part { Key = key, Op = op, Values = (wanted ?? "").Split('|').Select(v => v.Trim()).ToArray() });
     }
 }

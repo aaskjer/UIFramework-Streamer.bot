@@ -78,7 +78,7 @@ first use, checked against its published SHA-256, and offers new releases when t
   UIFramework: in every connected chat, or as a Windows notification while no broadcaster account is connected.
   Games choose the texts and ways; a switch on the About page turns it off.
 - 🔄 **Updates itself.** The stub fetches the DLL, verifies it and asks before using a newer release;
-  `"autoUpdate": false` turns the check off.
+  `"autoUpdate": false` in `UIFramework\loader.json` turns the check off.
 
 <p align="center">
   <img src="docs/images/customize-dark.png" width="40%" alt="The customise mode">

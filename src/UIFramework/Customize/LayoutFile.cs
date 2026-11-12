@@ -277,20 +277,21 @@ namespace UIFramework
         public void ResetPage(string id) { (Root["pages"] as JObject)?.Remove(id); Prune("pages", id); }
         public void ResetField(string key) { (Root["fields"] as JObject)?.Remove(key); Prune("fields", key); }
 
-        /// <summary>Drops every page and field override; the theme and the update preference stay.</summary>
+        /// <summary>Drops every page and field override and the help lines under the fields; the theme, the language
+        /// and the update preference stay.</summary>
         public void ResetLayout()
         {
             Root.Remove("pages");
             Root.Remove("fields");
+            Root.Remove("helpLines");
         }
 
-        /// <summary>How many pages and fields carry an override.</summary>
+        /// <summary>How many things the customise mode changed: the pages and fields that carry an override, and the
+        /// help lines under the fields when they are on. What <see cref="ResetLayout"/> takes back.</summary>
         public int ChangeCount =>
             ((Root["pages"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0) +
-            ((Root["fields"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0);
-
-        public IEnumerable<string> OverriddenPages => (Root["pages"] as JObject)?.Properties().Select(p => p.Name) ?? Enumerable.Empty<string>();
-        public IEnumerable<string> OverriddenFields => (Root["fields"] as JObject)?.Properties().Select(p => p.Name) ?? Enumerable.Empty<string>();
+            ((Root["fields"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0) +
+            (HelpLines ? 1 : 0);
     }
 
     public sealed class LayoutPage

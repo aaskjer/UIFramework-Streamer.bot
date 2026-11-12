@@ -47,6 +47,12 @@ namespace UIFramework
             var bridge = new ReflectionHost(host);
             var schema = Schema.Parse(schemaJson);
             var spec = SpecFor(specJson, schema, settingsPath);
+            spec.HostBuildsPages = false;   // a settings action hands over a schema, never a page of its own
+            // A window that declares no log prefix writes with the settings action's, so a game's lines read the same
+            // from the first ("the window cannot open") to the last.
+            var declared = SpecJson.Root(specJson);
+            if ((declared.Count > 0 ? declared : schema.Window)?["logPrefix"] == null && !string.IsNullOrWhiteSpace(bridge.HostLogPrefix()))
+                spec.LogPrefix = bridge.HostLogPrefix();
             // For the update notice in chat: this game and its version are in use, and so is its settings action.
             try
             {

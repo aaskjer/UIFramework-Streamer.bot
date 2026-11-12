@@ -109,7 +109,7 @@ namespace UIFramework.Tests
             string bank = Path.Combine(_folder, "RT-wordbank.json");
             File.WriteAllText(bank, @"{ ""Easy"": [ { ""Word"": ""STAR"", ""Rhymes"": ""CAR"" } ], ""Medium"": [ { ""Word"": ""KEPT"" } ] }");
 
-            var store = new SettingsStore(SettingsPath, schema.Defaults());
+            var store = new SettingsStore(SettingsPath, WindowDefaults(schema));
             var settings = store.Load().Settings;
             Sidecars.Load(settings, schema.Settings, SettingsPath, null, "[t]");
             Assert.Equal("STAR", (string)settings["wordsEasy"][0]["Word"]);   // from the file
@@ -130,14 +130,28 @@ namespace UIFramework.Tests
             Assert.True(File.Exists(bank + ".bak"));
         }
 
+        // The defaults as the window has them: the schema resolved with the conventions (Entry.Prepare), which is
+        // what its store starts from.
+        private JObject WindowDefaults(Schema schema)
+        {
+            try
+            {
+                var spec = Entry.SpecFor(null, schema, SettingsPath);
+                Entry.Prepare(spec, schema);
+                return (JObject)spec.Defaults.DeepClone();
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
+        }
+
         [Fact]
-        public void StripLeavesTheSidecarFilesAlone()
+        public void ASaveOfOtherKeysLeavesTheSidecarFilesAlone()
         {
             var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
                 { ""key"": ""a"", ""default"": 1 },
                 { ""key"": ""rows"", ""default"": [], ""kind"": ""list"", ""file"": ""rows.json"", ""columns"": [ { ""key"": ""q"" } ] } ] }");
-            var settings = schema.Defaults();
-            var main = Sidecars.Strip(settings, schema.Settings);
+            var settings = WindowDefaults(schema);
+            // What a save writes when only "a" changed: the settings file without the list, and no list file.
+            var main = Sidecars.Split(settings, schema.Settings, SettingsPath, new HashSet<string> { "a" });
             Assert.Equal(1, (int)main["a"]);
             Assert.Null(main["rows"]);
             Assert.NotNull(settings["rows"]);                       // the original is untouched
@@ -149,14 +163,14 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
                 { ""key"": ""questions"", ""default"": [], ""kind"": ""list"", ""file"": ""questions.json"", ""columns"": [ { ""key"": ""q"" } ] } ] }");
-            var settings = schema.Defaults();
+            var settings = WindowDefaults(schema);
             settings["questions"] = JArray.Parse(@"[ { ""q"": ""why"" } ]");
             var main = Sidecars.Split(settings, schema.Settings, SettingsPath);
             Assert.Null(main["questions"]);
             var written = JArray.Parse(File.ReadAllText(Path.Combine(_folder, "questions.json")));
             Assert.Equal("why", (string)written[0]["q"]);
 
-            var again = schema.Defaults();
+            var again = WindowDefaults(schema);
             Sidecars.Load(again, schema.Settings, SettingsPath, null, "[t]");
             Assert.Equal("why", (string)again["questions"][0]["q"]);
         }

@@ -13,19 +13,30 @@ from the internet, loads like any other.
   version folder underneath (the releases link is in the dialog).
 - **Cancel**: nothing happens; the action logs a warning.
 
-**Every later open of the window:** with a DLL in place and `autoUpdate` in `uiframework.layout.json` not
-`false`, the stub reads `latest.json` (5 s timeout; offline, the window opens after that one try). When there is a newer version, a dialog asks: **Yes**
+**Every later open of the window:** with a DLL in place and `autoUpdate` not `false` (see *What holds for every
+game* below), the stub reads `latest.json` (5 s timeout; offline, the window opens after that one try). When there is a newer version, a dialog asks: **Yes**
 downloads it into its own folder; when nothing has loaded UIFramework in this run of Streamer.bot yet, the window
 opens with the new one at once, otherwise from the next start (every game uses the one that is running, so two
 versions never run side by side, and the log names the one in use). A game loads it without its window too: for
 the update notice at the start (`UiUpdateNotice.Startup` in `Init()`) and for `UiLive`. With such a game imported,
-"from the next start" is the usual case, and the dialog says so. **No** asks again next time. **Cancel** writes
-`skipVersion` into the layout file: that version is not offered again, the next one is. A running DLL is never
-overwritten (it is locked, and .NET Framework does not unload).
+"from the next start" is the usual case, and the dialog says so. **No** skips that version: it is not offered
+again, to any game, and the next one is. **Cancel**, the dialog's X and Esc mean "not now": the next open asks
+again. (A stub before 0.3.0 had it the other way round, so closing the dialog skipped the version for good.) A
+running DLL is never overwritten (it is locked, and .NET Framework does not unload).
 
-**The pill in the window's header:** whoever answers *No* in the update dialog sees the pill
-`UIFramework 0.3.2 available` in the window (a click opens the releases) until the version is taken or skipped
-with *Cancel*. It rests on `frameworkAvailable` in `uiframework.layout.json`; *Yes* and *Cancel* clear the note.
+**A download that GitHub does not deliver** (a 5xx, a 429, a connection that breaks or times out; a fresh
+release's file answered 504 once and loaded seconds later) is tried three times, a few seconds apart. What is left
+after the last try reads "GitHub did not deliver the file after 3 tries ... Try again in a moment."
+
+**The pill in the window's header:** whoever answers "not now" in the update dialog sees the pill
+`UIFramework 0.3.2 available` in the window (a click opens the releases) until the version is taken or skipped.
+It rests on `frameworkAvailable` in `uiframework.layout.json`; *Yes* and *No* clear the note.
+
+**What holds for every game:** the one DLL is every game's, so what is decided about it is kept once, beside it,
+in `<Streamer.bot>\UIFramework\loader.json`: `"skipVersion": "1.9.0"` (written by *No* in the update dialog) and
+`"autoUpdate": false` (written by hand: no release check in any game). A stub before 0.3.0 kept both in each game's
+`uiframework.layout.json`, where they held for that game alone; they are still read there, so a check switched off
+or a version skipped in one game's layout file stays so for that game.
 
 **Where `latest.json` comes from:** first through the GitHub API (`contents/lib/v1/latest.json`, uncached, 60
 calls per hour and IP); when the API refuses (its rate limit) or answers with something that is no `latest.json` (a
@@ -45,7 +56,7 @@ version again. A game's host block checks the same hash before it loads the DLL 
 check (host block of 1.8.1 and on; an older one loaded it unchecked, and the settings action then used what was
 loaded); it leaves a damaged file where it is, for the settings action to set aside. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
 has no hash file and is loaded as it is. A release
-whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.2.1 now) is not offered to
+whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.0 now) is not offered to
 that stub; the game has to ship the newer settings action first. The same holds for a DLL that is there already,
 installed by another game: a DLL names the stub it needs in its product version (`1.8.4+stub.0.1.0`, from
 `MinHostStub` in `UIFramework.csproj`), a stub from 0.2.1 on reads that without loading the file and passes such a
@@ -60,15 +71,30 @@ and the first run keeps serving the window. A run while the game's answer or a d
 pending only logs that.
 
 **Answers do not linger:** the global variable a game's answer comes back in is unset as soon as the stub has
-read it, so an answer that carries a secret (the emote sources hold the Twitch token) is not left readable by
-other actions or visible in Streamer.bot's variables.
+read it, also when the game's run failed, so an answer that carries a secret (the emote sources hold the Twitch
+token) is not left readable by other actions or visible in Streamer.bot's variables. From stub 0.3.0 on every
+request has a variable of its own (`uiframework.answer.<action>.<id>`, named to the game in `uiframework.var`): a
+request that hung and answers late writes into its own, not into the one the next request reads. A host block
+from before the variable was named answers into the old one, which is still read.
 
 **When the game does not answer:** each request to the game action waits five seconds to start. One the window
 stopped waiting for is skipped when Streamer.bot's thread gets to it, not run late. One that has started gets 30
-seconds more; a handler that runs longer goes on, but the window stops waiting and carries on as with no answer,
-so it never freezes. A check before saving that got no answer (a timeout, a disabled action) is not taken for "no
-problems": the window asks whether to save unchecked. A window whose request hangs can be closed and opened again,
-and when the game has not sent its schema for a minute, the next run opens the window instead of waiting for it.
+seconds more; a handler that runs longer goes on, but the window stops waiting and carries on as with no answer.
+The window does not stand still for it (UIFramework 1.9.0 and on, with any stub): the DLL asks the game from another
+thread. A Try button's answer and a table's rows arrive when they arrive, the button greyed and the table saying
+that it is asking; the check before a save waits for its answer with the window alive (it paints and moves, and
+takes no input: what the answer decides must not be overtaken). Before, the window's own thread waited, and Windows
+called a window "not responding" whose game took its time. No answer is not taken for an answer: a check before
+saving that got none (a timeout, a disabled action) is not "no problems", the window asks whether to save
+unchecked; a Try button says that the game did not answer, in the colour of a failure, instead of "done", and a
+table says so instead of showing as empty (stub 0.3.0 and on; an older stub cannot tell the two apart). A window
+whose request hangs can be closed and opened again, and when the game has not sent its schema for a minute, the
+next run opens the window instead of waiting for it.
+
+**One prefix in the log:** the lines of a game's settings start with the prefix its window declares
+(`UiWindow(..., logPrefix:)`), else with `[<game action's name>/Settings]`, from the first line ("the window cannot
+open") to the DLL's own; the game action's lines start with `[<its name>]`. Before stub 0.3.0 the stub changed to
+the window's title once the game had described itself, so one game wrote under three names.
 
 **Actions a game runs from its handlers see the request:** the stub hands each request to the game as arguments
 (`uiframework.request`, `uiframework.name`, `uiframework.values` with the settings as JSON, `uiframework.var`), and
@@ -83,8 +109,8 @@ them, before it calls the game's handler. With an older host block, clear the re
 that the settings do not hold as a number leaves that cooldown as it is (with a warning in the log) instead of
 setting it to 0, and the game hears of the save whatever happened.
 
-**The layout file** (`uiframework.layout.json`): the stub's notes in it (`skipVersion`, `frameworkAvailable`)
-are written only when they change, through a file beside it that is swapped in, and never over a file it could
+**The layout file** (`uiframework.layout.json`): the stub's note in it (`frameworkAvailable`)
+is written only when it changes, through a file beside it that is swapped in, and never over a file it could
 not read. The DLL keeps a layout file that is no JSON as `uiframework.layout.json.broken` and logs why; one another
 program holds is read again a few times and otherwise left as it is (the window starts from the defaults once).
 
@@ -97,3 +123,12 @@ runs through `System.Net.WebClient` from `System.dll`; both come with the refere
 first release of a line makes its folder). `minHostStub` is `MinHostStub` from the
 tag's `UIFramework.csproj` (raise it there when a release needs a newer stub; the DLL then carries it too), and an
 older tag released late never takes `latest.json` back.
+
+**A new major line (2.0.0):** a major version is for what breaks a game as it is (a builder call removed, a schema
+key no longer read). Nothing in a release is special about it except the stub: `FrameworkLine` in `stub/Stub.cs`
+becomes `"v2"`, the one word both `latest.json` addresses are built from, and `<Version>` in `UIFramework.csproj`
+becomes `2.0.0`, with `MinHostStub` raised to that stub's version when the DLL needs it. A test
+(`TheStubsLineIsTheFrameworksMajorVersion`) fails as long as the two disagree, so neither is forgotten. The
+workflow writes `lib/v2/latest.json` by itself, the DLL reads the file of its own line by itself, and a game on
+the v1 stub goes on reading `lib/v1/latest.json`: it keeps the last 1.x until it ships the new stub. What 2.0.0 is
+to take away is listed in [PLAN.md](../PLAN.md).

@@ -457,9 +457,11 @@ namespace UIFramework
             var content = new FrameworkElementFactory(typeof(ContentPresenter));
             content.SetValue(FrameworkElement.MarginProperty, new Thickness(8, 0, 0, 0));
             content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            var root = new FrameworkElementFactory(typeof(StackPanel));
-            root.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+            // A dock, not a row: the label gets the width that is left and wraps in it. In a row it was measured without
+            // a limit and cut at the window's edge with no "…" (long German and Spanish labels in a narrow window).
+            var root = new FrameworkElementFactory(typeof(DockPanel));
             root.SetValue(Panel.BackgroundProperty, Brushes.Transparent);
+            track.SetValue(DockPanel.DockProperty, Dock.Left);
             root.AppendChild(track);
             root.AppendChild(content);
             var template = new ControlTemplate(typeof(CheckBox)) { VisualTree = root };

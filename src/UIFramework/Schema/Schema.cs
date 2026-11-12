@@ -30,26 +30,6 @@ namespace UIFramework
 
         public Setting Find(string key) => Settings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
 
-        /// <summary>Every default as a settings object, for the store.</summary>
-        public JObject Defaults()
-        {
-            var defaults = new JObject();
-            foreach (var setting in Settings)
-                defaults[setting.Key] = setting.Default?.DeepClone() ?? JValue.CreateNull();
-            return defaults;
-        }
-
-        /// <summary>Alias to canonical key, from every setting's own alias list.</summary>
-        public Dictionary<string, string> Aliases()
-        {
-            var map = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var setting in Settings)
-                foreach (var alias in setting.Aliases)
-                    if (!map.ContainsKey(alias))
-                        map[alias] = setting.Key;
-            return map;
-        }
-
         public static Schema Parse(string json)
         {
             if (string.IsNullOrWhiteSpace(json))
@@ -152,6 +132,10 @@ namespace UIFramework
         /// any other field: the host is asked (<c>Test(key, live settings)</c>) whenever the field changes, and its
         /// answer's <c>set</c> fills in other fields, a preset slider.</summary>
         public bool Live;
+        /// <summary>On a field that is no button: the host is asked (<c>Test(key, live settings)</c>) whenever the field
+        /// changes, and its answer's <c>set</c> fills in other fields, a preset slider. What <see cref="Live"/> on such
+        /// a field also means, under a name of its own.</summary>
+        public bool Ask;
         /// <summary>For an action: the host's answer is shown in a panel under the button instead of the footer.</summary>
         public bool Panel;
         /// <summary>For an action: no button; the host is asked when the page is shown and after every change.</summary>
@@ -225,19 +209,43 @@ namespace UIFramework
                 File = (string)item["file"],
                 Field = (string)item["field"]
             };
+            // `ask` is the name for a field that asks the game whenever it changes; `live` on anything but a button
+            // meant the same and is still read. `auto` (a button's answer without the button) always follows what is
+            // typed and has its own box, so it brings `live` and `panel` with it.
+            setting.Ask = item["ask"]?.Type == JTokenType.Boolean && (bool)item["ask"];
+            if (setting.Auto) { setting.Live = true; setting.Panel = true; }
+            // A schema written by hand may use the builder's short forms, which docs/Schema.md shows beside the JSON:
+            // an option "value|Label", a column "key|kind|label", shows as "option: key, key", one aliasFactor for the
+            // first old key.
             if (item["options"] is JArray options)
                 setting.Options = options.Select(SettingOption.Parse).ToList();
             if (item["shows"] is JObject shows)
                 setting.Shows = shows.Properties().ToDictionary(p => p.Name, p => (p.Value as JArray ?? new JArray()).Select(k => k.ToString()).ToList(), StringComparer.Ordinal);
+            else if (item["shows"] is JArray showList)
+            {
+                setting.Shows = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+                foreach (string entry in showList.Select(e => e.ToString()))
+                {
+                    int colon = entry.IndexOf(':');
+                    if (colon <= 0) continue;
+                    string option = entry.Substring(0, colon).Trim();
+                    if (!setting.Shows.TryGetValue(option, out var keys)) setting.Shows[option] = keys = new List<string>();
+                    keys.AddRange(entry.Substring(colon + 1).Split(',').Select(k => k.Trim()).Where(k => k.Length > 0));
+                }
+            }
             if (item["placeholders"] is JArray placeholders)
                 setting.Placeholders = placeholders.Select(p => p.ToString()).ToList();
             if (item["columns"] is JArray columns)
-                setting.Columns = columns.OfType<JObject>().Select(SettingColumn.Parse).ToList();
+                setting.Columns = columns.Where(c => c is JObject || c.Type == JTokenType.String)
+                    .Select(c => c is JObject o ? SettingColumn.Parse(o) : SettingColumn.Parse(c.ToString())).ToList();
             if (item["aliases"] is JArray aliases)
                 setting.Aliases = aliases.Select(a => a.ToString()).ToList();
             if (item["aliasFactors"] is JObject factors)
                 foreach (var property in factors.Properties())
                     setting.AliasFactors[property.Name] = (double)property.Value;
+            if (setting.Aliases.Count > 0 && (item["aliasFactor"]?.Type == JTokenType.Integer || item["aliasFactor"]?.Type == JTokenType.Float)
+                && !setting.AliasFactors.ContainsKey(setting.Aliases[0]))
+                setting.AliasFactors[setting.Aliases[0]] = (double)item["aliasFactor"];
             return setting;
         }
 
@@ -271,6 +279,7 @@ namespace UIFramework
             if (ShowWhen != null) item["showWhen"] = ShowWhen;
             if (Shows != null) item["shows"] = new JObject(Shows.Select(p => new JProperty(p.Key, new JArray(p.Value))));
             if (Live) item["live"] = true;
+            if (Ask) item["ask"] = true;
             if (Panel) item["panel"] = true;
             if (Auto) item["auto"] = true;
             if (Columns != null) item["columns"] = new JArray(Columns.Select(c => c.ToJson()));
@@ -305,6 +314,10 @@ namespace UIFramework
                 return new SettingOption { Value = (string)o["value"] ?? "", Label = (string)o["label"] ?? (string)o["value"] ?? "" };
             // A number option is read without the system's decimal mark: 0.5 stays "0.5" on a German Windows.
             string text = FieldBinding.Invariant(token);
+            // The builder's short form, "value|Label", in a schema written by hand.
+            int bar = token.Type == JTokenType.String ? text.IndexOf('|') : -1;
+            if (bar >= 0)
+                return new SettingOption { Value = text.Substring(0, bar), Label = text.Substring(bar + 1) };
             return new SettingOption { Value = text, Label = text };
         }
 
@@ -327,6 +340,25 @@ namespace UIFramework
             Platform = (string)o["platform"],
             ReadOnly = (o["readOnly"] ?? o["readonly"])?.Type == JTokenType.Boolean && (bool)(o["readOnly"] ?? o["readonly"])
         };
+
+        /// <summary>The builder's short form, "key|kind|label", with "readonly" and an emote column's platform as flags
+        /// at the end; the label may itself contain a | and is the key when left out.</summary>
+        public static SettingColumn Parse(string text)
+        {
+            var parts = (text ?? "").Split('|').ToList();
+            var column = new SettingColumn { Key = parts[0].Trim(), Kind = parts.Count > 1 && parts[1].Trim().Length > 0 ? parts[1].Trim() : "string" };
+            bool Flag(string part) => part == "readonly" || part == "twitch" || part == "youtube" || part == "kick";
+            while (parts.Count > 3 || (parts.Count == 3 && Flag(parts[2])))
+            {
+                string last = parts[parts.Count - 1];
+                if (last == "readonly") column.ReadOnly = true;
+                else if (Flag(last)) column.Platform = last;
+                else break;
+                parts.RemoveAt(parts.Count - 1);
+            }
+            column.Label = parts.Count > 2 ? string.Join("|", parts.Skip(2)) : column.Key;
+            return column;
+        }
 
         public JObject ToJson()
         {

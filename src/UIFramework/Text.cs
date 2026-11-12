@@ -22,14 +22,6 @@ namespace UIFramework
         /// <summary>The window's language code ("en", "de").</summary>
         public static string Code => (_lang ?? _shared ?? Conventions.Default.Lang).Code ?? "en";
 
-        /// <summary>A text the language files may not have yet: theirs when they do, else the given English or German.</summary>
-        public static string Or(string key, string english, string german, params object[] args)
-        {
-            string text = T(key);
-            if (text == key) text = Code == "de" ? german : english;
-            return args.Length == 0 ? text : Fill(text, args);
-        }
-
         /// <summary>The text with its placeholders filled, or as it is when its braces are broken: a language file
         /// from outside (UIFramework\lang, a game's Ui texts) with "{0" in it kept the whole window from opening.</summary>
         public static string Fill(string text, params object[] args)

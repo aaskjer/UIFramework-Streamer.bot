@@ -45,6 +45,20 @@ namespace UIFramework
             (held & ModifierKeys.Control) != 0 && (held & ModifierKeys.Alt) == 0;
         // The status line of the window that is up, for an error a handler did not catch.
         private Action<string> _onError;
+        private Action _onWaiting;
+        private bool _busy;
+
+        /// <summary>While the game is asked before a save (<see cref="Patient.Wait{T}"/>) the window paints, moves and
+        /// answers Windows, but takes no clicks, no keys and no close: what the answer decides must not be overtaken.</summary>
+        private void Busy(bool on)
+        {
+            _busy = on;
+            var window = _window;
+            if (window == null) return;
+            if (window.Content is UIElement content) content.IsHitTestVisible = !on;
+            window.Cursor = on ? Cursors.Wait : null;
+            if (on) { try { _onWaiting?.Invoke(); } catch (Exception) { } }
+        }
 
         /// <summary>Set by a tool (the preview's -windowshots): instead of waiting for the user, the window photographs
         /// every page whole (rail, header, footer, the page at its full height) and closes. Never set in Streamer.bot.</summary>
@@ -264,6 +278,10 @@ namespace UIFramework
             // What the content hands up to the window: the window stays, its content is rebuilt in place after a
             // layout change in the customise mode, a theme switch or a reset, on the same page and scroll position.
             bool closeConfirmed = false;
+            // While the window waits for the game's check before a save it takes no keys (see Busy). Registered once
+            // and first, so it comes before the shortcuts of every rebuild.
+            window.PreviewKeyDown += (s, e) => { if (_busy) e.Handled = true; };
+            window.PreviewTextInput += (s, e) => { if (_busy) e.Handled = true; };
             Func<int> changes = () => 0;
             Func<(string Id, double Offset)> currentPage = () => (null, 0);
             double? keepOffset = null;
@@ -540,19 +558,27 @@ namespace UIFramework
             }
             ctx.SetStatus = (text, colour, why) => SetStatus(text, colour, why);
             _onError = message => SetStatus(Text.T("status.error"), Theme.DangerText, message);
+            _onWaiting = () => SetStatus(Text.T("status.waiting"), Theme.MutedColor);
 
             var baseline = new Dictionary<object, string>();
             FieldBinding.Snapshot(pageHost, baseline);
             // Numbers the window shows other than the file holds them (outside their limits, not a number): the next
             // save writes them too, so what the window shows is what the game reads.
             var repairs = FieldBinding.Repaired(settings, pageHost);
+            // Of those, the ones whose box reads other than the file's value would: what the status tells the user of.
+            var corrected = FieldBinding.Repaired(settings, pageHost, shownOtherwise: true);
             int Changes() => FieldBinding.CountChanged(pageHost, baseline);
             changes = () => { parts.CommitNames(); return Changes(); };
             currentPage = () => (pages[current].Spec.Id, (pages[current].Page as ScrollViewer)?.VerticalOffset ?? 0);
             void ShowChanges()
             {
                 int n = Changes();
-                if (n == 0) SetStatus(Text.T("status.clean"), Theme.MutedColor);
+                // What the window shows other than the file holds it (a number beyond its limits, text where a number
+                // belongs) is said, not written in silence with some later save: the game still reads the file's value.
+                if (n == 0 && corrected.Count > 0)
+                    SetStatus(corrected.Count == 1 ? Text.T("status.repairs.one") : Text.T("status.repairs.many", corrected.Count), Theme.UnsavedText,
+                        Text.T("status.repairs.why", string.Join(", ", corrected.Select(key => _spec.ResolvedSettings.FirstOrDefault(d => d.Key == key)?.Label ?? key))));
+                else if (n == 0) SetStatus(Text.T("status.clean"), Theme.MutedColor);
                 else SetStatus(n == 1 ? Text.T("status.unsaved.one") : Text.T("status.unsaved.many", n), Theme.UnsavedText);
                 DrawPills();
             }
@@ -577,7 +603,9 @@ namespace UIFramework
                 : Ui.IconButton(Theme.IsDark ? Icons.Sun : Icons.Moon, Icons.Font, Text.T("tip.theme.rainbow"));
             var btnReset = Ui.IconButton(Icons.Reset, Icons.Font, Text.T("tip.resetAll"));
             btnReset.Margin = new Thickness(6, 0, 0, 0);
-            var btnResetPage = Ui.IconButton(Icons.Refresh, Icons.Font, Text.T("tip.resetPage"));
+            // Not the circling arrow: that one reads the log and the tables again, and beside Reset all it looked like
+            // its mirror image.
+            var btnResetPage = Ui.IconButton(Icons.Undo, Icons.Font, Text.T("tip.resetPage"));
             btnResetPage.Margin = new Thickness(6, 0, 0, 0);
             var btnCancel = Ui.TextButton(Text.T("btn.cancel"), false);
             var btnSave = Ui.TextButton(Text.T("btn.save"), true);
@@ -594,6 +622,7 @@ namespace UIFramework
                 baseline.Clear();
                 FieldBinding.Snapshot(pageHost, baseline);
                 repairs.Clear();
+                corrected.Clear();
                 SetStatus(Text.T("status.saved"), Theme.SuccessText);
                 return true;
             }
@@ -690,7 +719,11 @@ namespace UIFramework
                 // current key winning over an old one left beside it.
                 var provided = new HashSet<string>(StringComparer.Ordinal);
                 var read = _store.Merged(incoming, provided);
+                // What a save would not write is not imported either: a value the game only shows (readOnly), and one
+                // its field could not hold (text for a number, an option the dropdown lacks). The rest goes through
+                // its field, as a save does: a number beyond its limits is pulled into them.
                 var known = new JObject();
+                var refused = new List<string>();
                 int unknown = 0;
                 foreach (var key in provided)
                 {
@@ -700,16 +733,30 @@ namespace UIFramework
                         unknown++;
                         continue;
                     }
-                    known[key] = read[key]?.DeepClone();
+                    string label = declared.Label ?? Conventions.Humanize(declared.Key);
+                    if (declared.ReadOnly)
+                    {
+                        refused.Add(label + " (" + Text.T("import.why.readOnly") + ")");
+                        continue;
+                    }
+                    string why = FieldBinding.AsSaved(pageHost, key, read[key], out var value);
+                    if (why != null)
+                    {
+                        refused.Add(label + " (" + why + ")");
+                        continue;
+                    }
+                    known[key] = value?.DeepClone();
                 }
+                string notTaken = refused.Count == 0 ? "" : Text.T("import.refused", refused.Count, string.Join("\n  • ", refused.Take(12)) + (refused.Count > 12 ? "\n  • …" : ""));
                 if (known.Count == 0)
                 {
-                    MessageBox.Show(Text.T("import.nothing", Path.GetFileName(dialog.FileName)), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Text.T("import.nothing", Path.GetFileName(dialog.FileName)) + notTaken, Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
                 var answer = MessageBox.Show(
                     (known.Count == 1 ? Text.T("import.confirm.one", Path.GetFileName(dialog.FileName)) : Text.T("import.confirm.many", known.Count, Path.GetFileName(dialog.FileName))) +
                     (unknown == 0 ? "" : unknown == 1 ? Text.T("import.skipped.one") : Text.T("import.skipped.many", unknown)) +
+                    notTaken +
                     Text.T("import.written", Path.GetFileName(_spec.SettingsPath)),
                     Text.T("import.dialog.title"), MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes)
@@ -726,6 +773,9 @@ namespace UIFramework
                     foreach (var property in known.Properties())
                         merged[property.Name] = property.Value?.DeepClone();
                     _spec.Clamp?.Invoke(merged);
+                    // The game's own check, as before a save: it may warn, and the user may decline.
+                    if (!Checked(merged))
+                        return;
                     _store.Save(Sidecars.Split(merged, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>(known.Properties().Select(p => p.Name), StringComparer.Ordinal), _unreadableLists));
                 }
                 catch (Exception ex)
@@ -853,12 +903,13 @@ namespace UIFramework
                 leftButtons.Children.Add(btnCustomize);
             else
             {
-                // Locked: no customise mode, but the language stays the user's to pick when the game offers more than one.
-                var language = Customize.LanguagePicker(_spec, layout, () =>
+                // Locked: no customise mode, but the language stays the user's to pick when the game offers more than
+                // one, and so does where the help shows (the customise bar's switch, which a locked window lacks).
+                void SavedThenRebuilt(string what)
                 {
-                    try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Language not saved: " + ex.Message); }
+                    try { layout.Save(); } catch (Exception ex) { _log.Warn(_spec.LogPrefix + " " + what + " not saved: " + ex.Message); }
                     // A rebuild starts from what is saved: unsaved edits are offered for saving first, as the theme does.
-                    // Cancel keeps the window as it is; the language then applies the next time it opens.
+                    // Cancel keeps the window as it is; the choice then applies the next time it opens.
                     if (Changes() > 0)
                     {
                         var answer = MessageBox.Show(Text.T("dialog.unsaved.switch"), Text.T("dialog.unsaved.title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
@@ -866,7 +917,18 @@ namespace UIFramework
                         if (answer == MessageBoxResult.Yes && !SaveNow()) return;
                     }
                     Rebuild(null);
-                });
+                }
+                var helpUnder = Ui.IconButton("💡", null, Text.T("cust.helpLines") + "\n" + Text.T("cust.helpLines.tip"));
+                helpUnder.Name = "HelpLinesButton";
+                helpUnder.Margin = new Thickness(6, 0, 0, 0);
+                helpUnder.Opacity = layout.HelpLines ? 1.0 : 0.6;
+                helpUnder.Click += (s, e) =>
+                {
+                    layout.HelpLines = !layout.HelpLines;
+                    SavedThenRebuilt("The help's place");
+                };
+                leftButtons.Children.Add(helpUnder);
+                var language = Customize.LanguagePicker(_spec, layout, () => SavedThenRebuilt("Language"));
                 if (language != null)
                 {
                     language.Margin = new Thickness(6, 0, 0, 0);
@@ -894,6 +956,32 @@ namespace UIFramework
             footerDock.Children.Add(leftButtons);
             footerDock.Children.Add(rightButtons);
             footerDock.Children.Add(status);
+            // Between the buttons the status has what they leave. In a narrow window with long button texts (German,
+            // Spanish) that was room for "Ke…": it then takes a line of its own above the buttons.
+            bool statusAbove = false;
+            void PlaceStatus()
+            {
+                double room = footerDock.ActualWidth - leftButtons.ActualWidth - rightButtons.ActualWidth;
+                bool above = footerDock.ActualWidth > 0 && room < 170;
+                if (above == statusAbove) return;
+                statusAbove = above;
+                footerDock.Children.Remove(status);
+                if (above)
+                {
+                    DockPanel.SetDock(status, Dock.Top);
+                    status.Margin = new Thickness(0, 0, 6, 6);
+                    footerDock.Children.Insert(0, status);
+                }
+                else
+                {
+                    DockPanel.SetDock(status, Dock.Left);
+                    status.Margin = new Thickness(10, 0, 6, 0);
+                    footerDock.Children.Add(status);
+                }
+            }
+            footerDock.SizeChanged += (s, e) => PlaceStatus();
+            leftButtons.SizeChanged += (s, e) => PlaceStatus();
+            rightButtons.SizeChanged += (s, e) => PlaceStatus();
             var footer = new Border
             {
                 Padding = new Thickness(12, 9, 12, 10),
@@ -1180,7 +1268,12 @@ namespace UIFramework
 
             window.Closing += (s, e) =>
             {
-                if (closeConfirmed || _shuttingDown)
+                if (_shuttingDown)
+                    return;
+                // The game is being asked before a save: the answer comes within seconds, and the save it belongs to
+                // is not left half done.
+                if (_busy) { e.Cancel = true; return; }
+                if (closeConfirmed)
                     return;
                 int n = changes();
                 if (n == 0)
@@ -1238,31 +1331,8 @@ namespace UIFramework
                         if (!JToken.DeepEquals(property.Value, unclamped[property.Name])) changed.Add(property.Name);
                 }
 
-                var warnings = _spec.Warnings?.Invoke(draft) ?? new List<string>();
-                string fromHost = null;
-                SafeHook(() => fromHost = _hooks.Validate(draft));
-                // A stub from 0.2.0 on tells "the game did not answer" from "no problems"; an older one says null for both.
-                const string noAnswer = "\u0001uiframework:no-answer";
-                if (fromHost != null && fromHost.StartsWith(noAnswer, StringComparison.Ordinal))
-                {
-                    string why = fromHost.Substring(noAnswer.Length).TrimStart(':', ' ');
-                    var unchecked_ = MessageBox.Show(
-                        Text.Or("dialog.unchecked.text",
-                            "The game did not check these settings ({0}).\n\nSave them unchecked anyway?",
-                            "Das Spiel hat diese Einstellungen nicht geprüft ({0}).\n\nTrotzdem ungeprüft speichern?", why.Length > 0 ? why : "-"),
-                        Text.Or("dialog.unchecked.title", "Not checked", "Nicht geprüft"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                    if (unchecked_ != MessageBoxResult.Yes)
-                        return false;
-                    fromHost = null;
-                }
-                if (!string.IsNullOrWhiteSpace(fromHost))
-                    warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
-                if (warnings.Count > 0)
-                {
-                    var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                    if (proceed != MessageBoxResult.Yes)
-                        return false;
-                }
+                if (!Checked(draft))
+                    return false;
 
                 // What is written is the file as it is now with the window's changes laid over it, not the copy the window
                 // read when it opened: a key the game wrote meanwhile (a viewer added from chat, a suggested question, a
@@ -1331,6 +1401,36 @@ namespace UIFramework
         {
             for (var node = element; node != null && !ReferenceEquals(node, page); node = LogicalTreeHelper.GetParent(node) ?? (node is Visual || node is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) : null))
                 if (node is UIElement shown && shown.Visibility != Visibility.Visible) return false;
+            return true;
+        }
+
+        /// <summary>What stands between settings and their file, for a save and an import alike: the window's own
+        /// warnings and the game's check. False when the user declined to write them, or the window went meanwhile.</summary>
+        private bool Checked(JObject draft)
+        {
+            var warnings = _spec.Warnings?.Invoke(draft) ?? new List<string>();
+            string fromHost = null;
+            // Asked off the window's thread: a game that takes its time leaves the window alive, without input.
+            try { fromHost = Patient.Wait(() => _hooks.Validate(draft), Busy); }
+            catch (OperationCanceledException) { return false; }   // the window is gone; nothing is saved behind it
+            catch (Exception ex) { _log.Warn(_spec.LogPrefix + " Host hook failed: " + ex.Message); _problems.Add("The game's handler failed: " + ex.Message); }
+            // A stub from 0.2.0 on tells "the game did not answer" from "no problems"; an older one says null for both.
+            if (Patient.IsNoAnswer(fromHost))
+            {
+                string why = Patient.Why(fromHost);
+                var unchecked_ = MessageBox.Show(Text.T("dialog.unchecked.text", why.Length > 0 ? why : "-"), Text.T("dialog.unchecked.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (unchecked_ != MessageBoxResult.Yes)
+                    return false;
+                fromHost = null;
+            }
+            if (!string.IsNullOrWhiteSpace(fromHost))
+                warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
+            if (warnings.Count > 0)
+            {
+                var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (proceed != MessageBoxResult.Yes)
+                    return false;
+            }
             return true;
         }
 

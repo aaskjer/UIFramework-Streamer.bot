@@ -49,17 +49,6 @@ namespace UIFramework
             }
         }
 
-        /// <summary>The settings without the sidecar keys, for a write of the settings file that must not touch
-        /// the sidecar files (the theme moving on open, a reset of the settings alone).</summary>
-        public static JObject Strip(JObject settings, IEnumerable<Setting> schema)
-        {
-            var main = (JObject)settings.DeepClone();
-            foreach (var setting in Of(schema))
-                main.Remove(setting.Key);
-            DropTransient(main, schema);
-            return main;
-        }
-
         /// <summary>A transient setting is never written: it only exists while the window is open. Neither is a note.</summary>
         public static void DropTransient(JObject main, IEnumerable<Setting> schema)
         {

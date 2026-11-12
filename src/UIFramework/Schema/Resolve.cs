@@ -25,6 +25,7 @@ namespace UIFramework
             bool customizing = spec.Customizing;
 
             spec.Problems.Clear();
+            spec.Problems.AddRange(spec.ReadProblems);
 
             // 1. Complete every setting and lay the spec's overrides on top.
             var settings = new List<Setting>();
@@ -254,7 +255,17 @@ namespace UIFramework
                 bool bottom = page.Bottom || Array.IndexOf(TrailingPages, page.Id) >= 0;
                 var fields = pageFields.TryGetValue(page.Id, out var list) ? list : new List<Setting>();
 
+                // A page the window names by its id alone that no setting is on and that is no standard page: an empty
+                // page in the rail, and most likely a slip of the pen ("mesages").
+                if (page.Title == null && page.Icon == null && page.Fields.Count == 0 && fields.Count == 0 && !page.Custom
+                    && explicitIds.Contains(page.Id) && page.Id != "messages" && Array.IndexOf(TrailingPages, page.Id) < 0
+                    && !settings.Any(s => s.Page == page.Id))
+                    spec.Problems.Add("The window names the page '" + page.Id + "', which has no title and no setting on it; it shows empty. The standard pages are messages, log, help and about.");
+
                 Func<PageContext, System.Windows.UIElement> build;
+                if (page.Custom && !spec.HostBuildsPages)
+                    spec.Problems.Add("The page '" + page.Id + "' is marked custom, but a settings action builds no pages of its own: the page is left out"
+                        + (fields.Count > 0 ? ", and with it " + string.Join(", ", fields.Select(f => "'" + f.Key + "'")) : "") + ".");
                 if (page.Custom)
                     build = null;
                 else if (page.Id == "messages")
@@ -287,6 +298,15 @@ namespace UIFramework
             "bool", "int", "long", "duration", "double", "percent", "options", "namelist", "grouplist", "colour", "color",
             "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list"
         };
+
+        private static readonly string[] PlatformNames = { "twitch", "youtube", "kick" };
+
+        // "a slider", "an options field": the kind a declaration's mistake is named with.
+        private static string Article(string kind)
+        {
+            kind = string.IsNullOrEmpty(kind) ? "text" : kind;
+            return ("aeiou".IndexOf(kind[0]) >= 0 ? "an " : "a ") + kind + " field";
+        }
 
         /// <summary>A dropdown's <c>shows</c> becomes a <c>showWhen</c> on every field it names: shown while one of the
         /// options naming it is picked. A field that has a condition already gets this one on top (both must hold).</summary>
@@ -429,7 +449,29 @@ namespace UIFramework
             foreach (var s in settings)
             {
                 if (s.Kind != null && !Kinds.Contains(s.Kind))
-                    spec.Problems.Add("'" + s.Key + "' has the kind '" + s.Kind + "', which the framework does not know; it is shown as text.");
+                    spec.Problems.Add("'" + s.Key + "' has the kind '" + s.Kind + "', which the framework does not know; it is shown as text. The kinds are " + string.Join(", ", Kinds.Where(k => k != "color").OrderBy(k => k, StringComparer.Ordinal)) + ".");
+                // What only one kind of field has does nothing on another, and nobody is told: said here.
+                if (s.Kind != "action")
+                {
+                    if (s.Auto) spec.Problems.Add("'" + s.Key + "' has auto, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
+                    else if (s.Panel) spec.Problems.Add("'" + s.Key + "' has panel, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
+                    if (s.Confirm != null) spec.Problems.Add("'" + s.Key + "' has confirm, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
+                }
+                if (s.TwitchOnly && s.Kind == "note")
+                    spec.Problems.Add("'" + s.Key + "' has twitchOnly, which a note cannot show: it has no label to carry the mark.");
+                if (s.Placeholders != null && s.Placeholders.Count > 0 && s.Kind != "template")
+                    spec.Problems.Add("'" + s.Key + "' has placeholders, which only a message has (kind template); they do nothing on " + Article(s.Kind) + ".");
+                if (s.Platform != null && Array.IndexOf(PlatformNames, s.Platform.Trim().ToLowerInvariant()) < 0)
+                    spec.Problems.Add("'" + s.Key + "' names the platform '" + s.Platform + "'; it is one of " + string.Join(", ", PlatformNames) + ".");
+                foreach (var column in s.Columns ?? new List<SettingColumn>())
+                    if (column.Platform != null && Array.IndexOf(PlatformNames, column.Platform.Trim().ToLowerInvariant()) < 0)
+                        spec.Problems.Add("The column '" + column.Key + "' of '" + s.Key + "' names the platform '" + column.Platform + "'; it is one of " + string.Join(", ", PlatformNames) + ".");
+                // A {placeholder} in a message's own text that its list lacks gets no chip, no help and no sample in
+                // the preview, and is easily one the game does not fill.
+                if (s.Kind == "template" && s.Placeholders != null && s.Placeholders.Count > 0 && s.Default?.Type == Newtonsoft.Json.Linq.JTokenType.String)
+                    foreach (var token in Regex.Matches((string)s.Default, @"\{([A-Za-z][A-Za-z0-9_]*)\}").Cast<Match>().Select(m => m.Groups[1].Value).Distinct())
+                        if (!s.Placeholders.Contains(token, StringComparer.OrdinalIgnoreCase))
+                            spec.Problems.Add("'" + s.Key + "' uses {" + token + "} in its default text, which its placeholders do not list.");
                 if ((s.Kind == "options" || (s.Kind == "slider" && !(s.Min.HasValue && s.Max.HasValue))) && (s.Options == null || s.Options.Count == 0))
                     spec.Problems.Add("'" + s.Key + "' is " + (s.Kind == "slider" ? "a slider" : "an options field") + " without options.");
                 if (s.Kind == "list" && (s.Columns == null || s.Columns.Count == 0))
@@ -451,7 +493,11 @@ namespace UIFramework
                     spec.Problems.Add("The header pill '" + key + "' is not a setting.");
             foreach (var key in spec.Overrides.Keys)
                 if (!keys.Contains(key))
-                    spec.Problems.Add("The spec overrides '" + key + "', which is not a setting.");
+                    spec.Problems.Add("The window changes '" + key + "' (UiWindow.Override, or \"overrides\" in the schema), which is not a setting.");
+            // The Log page's declared colours: a style the framework does not have is not applied.
+            foreach (var style in spec.Log.Styles)
+                if (!LogPage.TryStyle(style.Value, out _))
+                    spec.Problems.Add("The log colours '" + style.Key + "' as '" + style.Value + "'; a style is one of " + string.Join(", ", LogPage.StyleNames) + ".");
             // The tour: a stop names a setting, a page or a part of the window; one naming nothing known is skipped.
             var pageIds = new HashSet<string>(spec.SpecPages.Select(p => p.Id).Concat(settings.Select(s => s.Page)).Where(id => id != null), StringComparer.Ordinal)
                 { "messages", "log", "help", "about" };

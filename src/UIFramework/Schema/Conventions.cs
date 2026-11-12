@@ -17,7 +17,6 @@ namespace UIFramework
     {
         public readonly Dictionary<string, PageConvention> Pages = new Dictionary<string, PageConvention>(StringComparer.Ordinal);
         public readonly Dictionary<string, Setting> Keys = new Dictionary<string, Setting>(StringComparer.Ordinal);
-        public readonly Dictionary<string, Setting> FrameworkKeys = new Dictionary<string, Setting>(StringComparer.Ordinal);
         public readonly List<string> KnownPlaceholders = new List<string>();
         public Lang Lang { get; private set; } = new Lang();
         /// <summary>The links every About page ends with (keys.json's <c>about.links</c>): a text (a ui text key or
@@ -117,9 +116,6 @@ namespace UIFramework
             if (root["keys"] is JObject keys)
                 foreach (var property in keys.Properties().Where(p => !p.Name.StartsWith("$")))
                     conventions.Keys[property.Name] = ParseKey(property.Name, (JObject)property.Value);
-            if (root["framework"] is JObject framework)
-                foreach (var property in framework.Properties().Where(p => !p.Name.StartsWith("$")))
-                    conventions.FrameworkKeys[property.Name] = ParseKey(property.Name, (JObject)property.Value);
             if (root["placeholders"]?["known"] is JArray known)
                 conventions.KnownPlaceholders.AddRange(known.Select(k => k.ToString()));
             if (root["about"] is JObject about)
@@ -140,16 +136,6 @@ namespace UIFramework
             return Setting.Parse(copy);
         }
 
-        /// <summary>Alias to canonical key over every known key.</summary>
-        public Dictionary<string, string> Aliases()
-        {
-            var map = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var pair in Keys)
-                foreach (var alias in pair.Value.Aliases)
-                    if (!map.ContainsKey(alias))
-                        map[alias] = pair.Key;
-            return map;
-        }
 
         /// <summary>Fills what the host left out from the convention for the key, then from the default.</summary>
         public Setting Complete(Setting declared)

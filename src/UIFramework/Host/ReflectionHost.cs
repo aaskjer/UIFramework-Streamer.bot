@@ -20,6 +20,7 @@ namespace UIFramework
     ///   string EmoteSources()                        // JSON: twitchUserId, clientId, token (for emote pictures)
     ///   string Validate(string settingsJson)         // problems before a save, one per line; null = fine
     ///   IEnumerable&lt;string&gt; ReadLogLines()          // or string[] / List&lt;string&gt;; null = no Log page
+    ///   string WindowLogPrefix()                     // the prefix of the window's log lines, where it declares none
     /// </code>
     /// </summary>
     public sealed class ReflectionHost : IHostLog, IHostHooks
@@ -42,6 +43,13 @@ namespace UIFramework
 
         private static MethodInfo Find(Type type, string name, params Type[] parameters) =>
             type.GetMethod(name, BindingFlags.Public | BindingFlags.Instance, null, parameters, null);
+
+        /// <summary>The prefix the settings action writes its log lines with (a stub from 0.3.0 on), or null.</summary>
+        public string HostLogPrefix()
+        {
+            try { return Find(_host.GetType(), "WindowLogPrefix")?.Invoke(_host, null) as string; }
+            catch (Exception) { return null; }
+        }
 
         public void Info(string message) => Log("info", message);
         public void Warn(string message) => Log("warn", message);

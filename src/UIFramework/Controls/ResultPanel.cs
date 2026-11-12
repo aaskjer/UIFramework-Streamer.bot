@@ -28,14 +28,17 @@ namespace UIFramework
             try { return JsonText.Parse(text) as JObject; } catch (Exception) { return null; }
         }
 
-        public static void Render(StackPanel panel, string result, IHostHooks hooks = null)
+        /// <param name="failed">The text says what went wrong: it is shown in the colour of a failure.</param>
+        public static void Render(StackPanel panel, string result, IHostHooks hooks = null, bool failed = false)
         {
             string text = (result ?? "").Trim();
-            var structured = TryParse(text);
+            var structured = failed ? null : TryParse(text);
             if (structured == null)
             {
                 panel.Children.Clear();
-                panel.Children.Add(Line(text, false));
+                var line = Line(text, false);
+                if (failed) line.Foreground = new SolidColorBrush(Theme.DangerText);
+                panel.Children.Add(line);
                 return;
             }
             if (structured["lines"] == null && structured["bar"] == null)
@@ -121,7 +124,7 @@ namespace UIFramework
             for (int i = 0; i < segments.Count; i++)
             {
                 double value = Math.Max(0, (double?)segments[i]["value"] ?? 0);
-                var colour = Colours.TryParseHex((string)segments[i]["colour"], out var own) ? own : palette[i % palette.Length];
+                var colour = Colours.TryParseHex((string)(segments[i]["colour"] ?? segments[i]["color"]), out var own) ? own : palette[i % palette.Length];
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(total > 0 ? value : 1, GridUnitType.Star), MinWidth = value > 0 ? 3 : 0 });
                 var fill = new Border { Background = new SolidColorBrush(colour) };
                 Grid.SetColumn(fill, i);

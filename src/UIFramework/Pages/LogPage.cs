@@ -32,6 +32,56 @@ namespace UIFramework
             return PillStyle.Accent;
         }
 
+        /// <summary>Whether a result is the one a declaration names: "GAME-OVER", or with * for any run of
+        /// characters ("WIN-*", "*LTTR"), whatever the case.</summary>
+        public static bool Matches(string pattern, string result)
+        {
+            pattern = (pattern ?? "").Trim();
+            if (pattern.Length == 0) return false;
+            string regex = "^" + System.Text.RegularExpressions.Regex.Escape(pattern).Replace(@"\*", ".*") + "$";
+            return System.Text.RegularExpressions.Regex.IsMatch((result ?? "").Trim(), regex,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        }
+
+        public static readonly string[] StyleNames = { "success", "warning", "muted", "accent", "none" };
+
+        /// <summary>The style a declaration names: one of <see cref="StyleNames"/>.</summary>
+        public static bool TryStyle(string name, out PillStyle style)
+        {
+            switch ((name ?? "").Trim().ToLowerInvariant())
+            {
+                case "success": style = PillStyle.Success; return true;
+                case "warning": style = PillStyle.Warning; return true;
+                case "muted": style = PillStyle.Muted; return true;
+                case "accent": style = PillStyle.Accent; return true;
+                case "none": style = PillStyle.None; return true;
+                default: style = PillStyle.None; return false;
+            }
+        }
+
+        /// <summary>The value a result is filtered by: what the game declared for it (log.outcome, "DUEL WIN" to
+        /// "WIN"), else the result itself, in capitals.</summary>
+        public static string OutcomeOf(LogSpec spec, string raw)
+        {
+            if (spec.Outcome != null) return spec.Outcome(raw);
+            foreach (var declared in spec.Outcomes)
+                if (Matches(declared.Key, raw))
+                    return (declared.Value ?? "").Trim().ToUpperInvariant();
+            return (raw ?? "").Trim().ToUpperInvariant();
+        }
+
+        /// <summary>The colour of a result: the first declared style (log.styles) that names the result as the log
+        /// has it or as it is filtered, else by the words in it (<see cref="DefaultStyle"/>).</summary>
+        public static PillStyle StyleOf(LogSpec spec, string raw)
+        {
+            string outcome = OutcomeOf(spec, raw);
+            if (spec.ResultStyle != null) return spec.ResultStyle(outcome);
+            foreach (var declared in spec.Styles)
+                if ((Matches(declared.Key, raw) || Matches(declared.Key, outcome)) && TryStyle(declared.Value, out var style))
+                    return style;
+            return DefaultStyle(outcome);
+        }
+
         /// <summary>A text the game declared (a column header, the empty text) in the window's language: the game's own
         /// translation (Tx), else as declared.</summary>
         private static string Declared(PageContext ctx, string declared)
@@ -56,8 +106,7 @@ namespace UIFramework
             string AllDates = Text.T("log.allDays");
             string AllResults = Text.T("log.allResults");
             string AllPlatforms = Text.T("log.allPlatforms");
-            Func<string, string> outcome = spec.Outcome ?? (r => (r ?? "").Trim().ToUpperInvariant());
-            Func<string, PillStyle> style = spec.ResultStyle ?? DefaultStyle;
+            Func<string, string> outcome = r => OutcomeOf(spec, r);
 
             var root = new DockPanel { Margin = new Thickness(16, 12, 16, 12) };
             var entries = new ObservableCollection<LogEntry>(read.OrderByDescending(x => x.Timestamp));
@@ -78,7 +127,7 @@ namespace UIFramework
             buttons.Children.Add(reload);
             if (!string.IsNullOrEmpty(spec.Folder))
             {
-                var openFolder = Ui.IconButton(Icons.Open, Icons.Font, Text.T("log.openFolder"));
+                var openFolder = Ui.IconButton(Icons.Folder, Icons.Font, Text.T("log.openFolder"));   // the folder, as on a path field
                 openFolder.Margin = new Thickness(6, 0, 0, 0);
                 openFolder.Click += (sender, e) => Web.OpenFolder(spec.Folder, ctx.Log, ctx.Spec.LogPrefix);
                 buttons.Children.Add(openFolder);
@@ -121,7 +170,7 @@ namespace UIFramework
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
             grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, cellText));
-            grid.Columns.Add(ResultColumn(outcome, style));
+            grid.Columns.Add(ResultColumn(r => StyleOf(spec, r)));
             var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn(Text.T("log.user"), "User"), new LogColumn(Text.T("log.platform"), "Platform") };
             foreach (var column in columns)
                 grid.Columns.Add(TextColumn(Declared(ctx, column.Header), new Binding { Converter = new FieldReader(column.Field) }, cellText));
@@ -160,14 +209,18 @@ namespace UIFramework
             {
                 var lang = ctx.Spec.Conventions?.Lang;
                 string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
-                var writeLog = ctx.Fields.Toggle(T(spec.WriteLogLabel), spec.WriteLogKey, T(spec.WriteLogHelp));
-                // Named like a schema page's fields, so the search and the tour find the switch.
-                ctx.Parts.Elements[spec.WriteLogKey] = writeLog;
+                // Its help follows the user's choice like a declared field's: a tooltip, or a line under the switch.
+                string writeHelp = T(spec.WriteLogHelp);
+                bool helpLine = SchemaPage.HelpLines(ctx) && !string.IsNullOrWhiteSpace(writeHelp);
+                var writeLog = ctx.Fields.Toggle(T(spec.WriteLogLabel), spec.WriteLogKey, helpLine ? null : writeHelp);
                 writeLog.Margin = new Thickness(0, 10, 0, 0);
                 // The customise mode has no Save: a switch flipped there would be dropped with the next rebuild.
                 if (ctx.Customizing) writeLog.IsEnabled = false;
-                DockPanel.SetDock(writeLog, Dock.Bottom);
-                root.Children.Add(writeLog);
+                FrameworkElement writeRow = helpLine ? SchemaPage.HelpUnder(ctx, writeLog, writeHelp) : writeLog;
+                // Named like a schema page's fields, so the search and the tour find the switch.
+                ctx.Parts.Elements[spec.WriteLogKey] = writeRow;
+                DockPanel.SetDock(writeRow, Dock.Bottom);
+                root.Children.Add(writeRow);
             }
             DockPanel.SetDock(details, Dock.Bottom);
             root.Children.Add(details);
@@ -362,9 +415,9 @@ namespace UIFramework
             };
         }
 
-        private static DataGridTemplateColumn ResultColumn(Func<string, string> outcome, Func<string, PillStyle> style)
+        private static DataGridTemplateColumn ResultColumn(Func<string, PillStyle> style)
         {
-            var converter = new ResultPill(outcome, style);
+            var converter = new ResultPill(style);
             var pill = new FrameworkElementFactory(typeof(Border));
             pill.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
             pill.SetValue(Border.PaddingProperty, new Thickness(7, 1, 7, 2));
@@ -397,10 +450,9 @@ namespace UIFramework
 
         private sealed class ResultPill : IValueConverter
         {
-            private readonly Func<string, string> _outcome;
-            private readonly Func<string, PillStyle> _style;
+            private readonly Func<string, PillStyle> _style;   // by the result as the log has it
 
-            public ResultPill(Func<string, string> outcome, Func<string, PillStyle> style) { _outcome = outcome; _style = style; }
+            public ResultPill(Func<string, PillStyle> style) { _style = style; }
 
             public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
             {
@@ -412,7 +464,7 @@ namespace UIFramework
                     string shown = raw.ToUpperInvariant() == raw ? Title(raw) : raw;
                     return shown;
                 }
-                var colours = Ui.PillColours(_style(_outcome(raw)));
+                var colours = Ui.PillColours(_style(raw));
                 return new SolidColorBrush(part == "background" ? colours.Background : colours.Foreground);
             }
 

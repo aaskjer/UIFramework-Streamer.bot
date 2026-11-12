@@ -343,15 +343,21 @@ namespace UIFramework
                 picker.Items.Add(new ComboBoxItem { Content = def.Label, Tag = def.Key, Padding = new Thickness(16, 3, 6, 3) });
             }
 
+            // The help of this page's own fields follows the user's choice like a declared field's: a tooltip, or a
+            // line under the field (the customise bar's switch).
+            bool helpLines = SchemaPage.HelpLines(ctx);
+            string Tip(string key) => helpLines ? null : Text.T(key);
+
             Grid top;
             ComboBox separator = null;
             if (!string.IsNullOrEmpty(keys.NumberSeparator))
             {
                 separator = f.StringCombo(Text.T("messages.numbers"), keys.NumberSeparator,
                     new[] { (".", "12.345"), (",", "12,345"), (" ", "12 345"), ("", "12345") },
-                    Text.T("messages.numbers.tip"));
+                    Tip("messages.numbers.tip"));
                 // What this page draws itself is named like a schema page's fields, so the search and the tour find it.
-                var numbers = Ui.Labeled(Text.T("messages.numbers"), separator);
+                FrameworkElement numbers = Ui.Labeled(Text.T("messages.numbers"), separator);
+                if (helpLines) numbers = SchemaPage.HelpUnder(ctx, numbers, Text.T("messages.numbers.tip"));
                 parts.Elements[keys.NumberSeparator] = numbers;
                 top = Ui.Row(new[] { 2.4, 1.0 }, Ui.Labeled(Text.T("messages.message"), picker), numbers);
             }
@@ -385,13 +391,13 @@ namespace UIFramework
             var gameSender = new StackPanel { Orientation = Orientation.Horizontal };
             if (keys.UseBot != null)
             {
-                useBot = f.Toggle(Text.T("messages.botAccount"), keys.UseBot, Text.T("messages.botAccount.tip"));
+                useBot = f.Toggle(Text.T("messages.botAccount"), keys.UseBot, Tip("messages.botAccount.tip"));
                 parts.Elements[keys.UseBot] = useBot;
                 gameSender.Children.Add(useBot);
             }
             if (keys.SendAction != null)
             {
-                sendAction = f.Toggle(Text.T("messages.sendMe"), keys.SendAction, Text.T("messages.sendMe.tip"));
+                sendAction = f.Toggle(Text.T("messages.sendMe"), keys.SendAction, Tip("messages.sendMe.tip"));
                 parts.Elements[keys.SendAction] = sendAction;
                 Fields.TwitchOnly(sendAction);
                 sendAction.Margin = new Thickness(18, 0, 0, 0);
@@ -401,12 +407,12 @@ namespace UIFramework
             var cooldownSender = new StackPanel { Orientation = Orientation.Horizontal };
             if (hasCooldownSenders)
             {
-                useBotCd = f.Toggle(Text.T("messages.botAccount"), keys.CooldownUseBot, Text.T("messages.cooldownBot.tip"));
+                useBotCd = f.Toggle(Text.T("messages.botAccount"), keys.CooldownUseBot, Tip("messages.cooldownBot.tip"));
                 parts.Elements[keys.CooldownUseBot] = useBotCd;
                 cooldownSender.Children.Add(useBotCd);
                 if (keys.CooldownSendAction != null)
                 {
-                    sendActionCd = f.Toggle(Text.T("messages.sendMe"), keys.CooldownSendAction, Text.T("messages.cooldownMe.tip"));
+                    sendActionCd = f.Toggle(Text.T("messages.sendMe"), keys.CooldownSendAction, Tip("messages.cooldownMe.tip"));
                     parts.Elements[keys.CooldownSendAction] = sendActionCd;
                     Fields.TwitchOnly(sendActionCd);
                     sendActionCd.Margin = new Thickness(18, 0, 0, 0);
@@ -419,6 +425,28 @@ namespace UIFramework
             senders.Children.Add(cooldownSender);
             if (hasCooldownSenders)
                 senders.Children.Add(scope);
+
+            // With the help under the fields: one line per sender switch that shows, under their row.
+            var senderHelp = new StackPanel();
+            void DrawSenderHelp(bool cooldown)
+            {
+                senderHelp.Children.Clear();
+                if (!helpLines) return;
+                void Line(CheckBox toggle, string label, string tip)
+                {
+                    if (toggle != null) senderHelp.Children.Add(SchemaPage.HelpLine(ctx, Text.T(label) + ": " + Text.T(tip)));
+                }
+                if (cooldown)
+                {
+                    Line(useBotCd, "messages.botAccount", "messages.cooldownBot.tip");
+                    Line(sendActionCd, "messages.sendMe", "messages.cooldownMe.tip");
+                }
+                else
+                {
+                    Line(useBot, "messages.botAccount", "messages.botAccount.tip");
+                    Line(sendAction, "messages.sendMe", "messages.sendMe.tip");
+                }
+            }
 
             MessageDef current = null;
 
@@ -468,6 +496,7 @@ namespace UIFramework
                 bool cooldown = hasCooldownSenders && keys.IsCooldownGroup(current.Group);
                 gameSender.Visibility = cooldown ? Visibility.Collapsed : Visibility.Visible;
                 cooldownSender.Visibility = cooldown ? Visibility.Visible : Visibility.Collapsed;
+                DrawSenderHelp(cooldown);
                 scope.Text = cooldown ? Text.T("messages.scope.cooldown") : Text.T("messages.scope.game");
                 Render();
             }
@@ -495,6 +524,7 @@ namespace UIFramework
             page.Children.Add(Ui.Section(Text.T("messages.preview")));
             page.Children.Add(previewBox);
             page.Children.Add(senders);
+            page.Children.Add(senderHelp);
             page.Children.Add(Ui.Note(Text.T("messages.preview.note")));
 
             picker.SelectedItem = picker.Items.OfType<ComboBoxItem>().First(i => defs[0].Key.Equals(i.Tag));

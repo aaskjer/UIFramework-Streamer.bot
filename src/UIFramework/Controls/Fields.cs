@@ -428,7 +428,8 @@ namespace UIFramework
         {
             var toggle = new CheckBox
             {
-                Content = label,
+                // A text block of its own, so a label longer than the window is wide wraps instead of being cut.
+                Content = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center },
                 IsChecked = Bool(key),
                 Tag = new FieldTag(key, FieldKind.Bool),
                 ToolTip = tooltip,
@@ -447,7 +448,7 @@ namespace UIFramework
         public static void TwitchOnly(CheckBox toggle)
         {
             var label = new StackPanel { Orientation = Orientation.Horizontal };
-            label.Children.Add(new TextBlock { Text = toggle.Content as string, VerticalAlignment = VerticalAlignment.Center });
+            label.Children.Add(new TextBlock { Text = (toggle.Content as TextBlock)?.Text ?? toggle.Content as string, VerticalAlignment = VerticalAlignment.Center });
             label.Children.Add(Ui.Pill(Text.T("field.twitchOnly"), Theme.AccentSoft, Theme.AccentText));
             toggle.Content = label;
             AutomationProperties.SetName(toggle, AutomationProperties.GetName(toggle) + " (" + Text.T("field.twitchOnly") + ")");
@@ -570,6 +571,9 @@ namespace UIFramework
         /// way than <see cref="Colours.ParseHexBrush"/> (the accent takes solid colours only).</param>
         public FrameworkElement ColourField(string label, string key, string tooltip, bool labelled = true, Func<string, SolidColorBrush> swatchOf = null)
         {
+            // A box with a swatch of its own (the accent) starts its picker on what that swatch shows when the box
+            // holds no colour: an empty accent box opened the picker on yellow, not on the accent in use.
+            bool ownSwatch = swatchOf != null;
             swatchOf = swatchOf ?? Colours.ParseHexBrush;
             var box = SettingBox(label, key, (string.IsNullOrEmpty(tooltip) ? "" : tooltip + "\n") + Text.T("field.colour.tip"));
             box.Width = 92;
@@ -592,8 +596,9 @@ namespace UIFramework
             pick.Margin = new Thickness(6, 0, 0, 0);
 
             box.TextChanged += (sender, e) => swatch.Background = swatchOf(box.Text);
-            swatch.MouseLeftButtonUp += (sender, e) => _picker.Open(box, swatch);
-            pick.Click += (sender, e) => _picker.Open(box, swatch);
+            Color? Shown() => ownSwatch ? swatchOf(box.Text)?.Color : (Color?)null;
+            swatch.MouseLeftButtonUp += (sender, e) => _picker.Open(box, swatch, Shown());
+            pick.Click += (sender, e) => _picker.Open(box, swatch, Shown());
 
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             row.Children.Add(box);

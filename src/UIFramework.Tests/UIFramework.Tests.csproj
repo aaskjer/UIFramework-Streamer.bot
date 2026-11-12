@@ -24,4 +24,20 @@
     <Compile Include="..\..\stub\HostSchema.cs" Link="HostBlock\HostSchema.cs" />
   </ItemGroup>
 
+  <!-- The settings action (stub/Stub.cs), compiled here too, so it is tested without a Streamer.bot: Streamer.bot gives
+       an action's class its base (with CPH in it) when it compiles it; here the class gets a stand-in for that base
+       (HostBlock/StubBase.cs) and another name, since it is not the only CPHInline a test project may meet. -->
+  <Target Name="StubUnderTest" BeforeTargets="CoreCompile" Inputs="..\..\stub\Stub.cs;$(MSBuildProjectFullPath)" Outputs="$(IntermediateOutputPath)StubUnderTest.g.cs">
+    <PropertyGroup>
+      <StubSource>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\stub\Stub.cs'))</StubSource>
+      <StubPatched>$(StubSource.Replace('public class CPHInline', 'public class StubUnderTest : UIFramework.Tests.StubBase').Replace('CPHInline', 'StubUnderTest'))</StubPatched>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)StubUnderTest.g.cs" Lines="$([MSBuild]::Escape($(StubPatched)))" Overwrite="true" />
+  </Target>
+  <Target Name="StubUnderTestCompile" BeforeTargets="CoreCompile" DependsOnTargets="StubUnderTest">
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)StubUnderTest.g.cs" />
+    </ItemGroup>
+  </Target>
+
 </Project>

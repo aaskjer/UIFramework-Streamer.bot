@@ -108,6 +108,16 @@ The demo becomes your game in `DemoGame.cs` (save it under your game's name) and
 1. **Names.** In `CPHInline`: `ActionName` (your game action's name: the log lines carry it), `SettingsFile` (where the settings
    go, relative to the Streamer.bot folder), `CurrentVersion`, and the short host id `"demo"` in the
    `UiHost.Handle` call. In the settings action: `GameActionName`, the same name as `ActionName`.
+
+   | Name | Where | What it is for |
+   |------|-------|----------------|
+   | `GameActionName` | the settings action (`Stub.cs`), its one line to fill in | the action the settings action runs to ask the game; it must be the game action's exact name in Streamer.bot. Also the prefix of the settings' log lines, `[<name>/Settings]` |
+   | `ActionName` | the game action, passed to `UiHost.Handle` and `UiUpdateNotice.Startup` | the prefix of the game's own log lines, `[<name>]`. `null` in `UiHost.Handle` takes the name Streamer.bot gives the run |
+   | the host id (`"demo"`) | `UiHost.Handle`, `UiUpdateNotice.Startup` | a short name for the framework's files and the update notice; it never shows |
+   | `SettingsFile` | the game action | where the settings live, relative to the Streamer.bot folder; the layout file sits beside it |
+   | `CurrentVersion` | the game action | the game's version: the About page shows it, the update check compares it |
+   | the window's title | `new UiWindow("Demo Game", …)` | the window's title bar and the About page's heading |
+   | `logPrefix` | `new UiWindow(…, logPrefix: "[Demo]")`, optional | another prefix for the settings' log lines than `[<GameActionName>/Settings]` |
 2. **Settings,** in the `Table` near the top of the host block: one line per setting your game reads.
 
    ```csharp
@@ -196,7 +206,7 @@ action for each of its requests, and a sub-action after the code still runs once
 code returned `true`: a chat message or a sound there would go out every time the window asks something.
 
 `UiHost.Handle` takes optional delegates, the ways the window talks to your game: `test` answers a Try button or
-a live field, `validate` checks before a save, `saved` runs after one, `table` and `emotes` fill special fields. A
+a field that asks on every change (`ask`), `validate` checks before a save, `saved` runs after one, `table` and `emotes` fill special fields. A
 game with plain settings passes none. The demo's Try button:
 
 ```csharp
@@ -207,7 +217,9 @@ if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, SettingsFile,
 
 **The window waits five seconds for an answer.** The settings action runs your game action with
 `CPH.RunAction(..., true)` and waits; a request it has given up on is skipped, not run late. One that has started
-gets 30 seconds more, then the window stops waiting and goes on without its answer. So inside `test`,
+gets 30 seconds more, then the window stops waiting and goes on without its answer. The window itself stays
+usable meanwhile (a Try button is greyed until its answer is there; the check before a save keeps the input away),
+and an answer that never came reads "the game did not answer", not "done". So inside `test`,
 `validate`, `saved`, `table` and `emotes`:
 
 - Do not call `CPH.RunAction(other, true)` on an action that sits in the same **blocking** action queue as the
@@ -250,11 +262,13 @@ This is what to tell a streamer who imports your game, or link them here:
   release into `<Streamer.bot>\UIFramework\lib\<version>\` (for example `lib\1.2.0\UIFramework.dll`). The file is
   checked against its published SHA-256 before it is used. *No* opens the `lib` folder so they can put the DLL there
   themselves, in a folder named after its version; *Cancel* leaves everything as it is.
-- **Updates:** when a newer framework release is out, the window asks before it downloads anything. *Cancel*
-  skips that version for good, *No* shows it as a pill in the window's header until it is taken.
-- **Turning the update check off:** `"autoUpdate": false` in `uiframework.layout.json`, the file next to your
-  game's settings file (`settingsFile`, relative to the Streamer.bot folder). When the file is not there yet,
-  `{ "autoUpdate": false }` is all it needs. The window then opens with the DLL it has and asks nothing.
+- **Updates:** when a newer framework release is out, the window asks before it downloads anything. *No* skips
+  that version, for every game; *Cancel* (or closing the dialog) means "not now" and shows it as a pill in the
+  window's header until it is taken.
+- **Turning the update check off:** `{ "autoUpdate": false }` in `<Streamer.bot>\UIFramework\loader.json` turns it
+  off for every game. For one game alone, `"autoUpdate": false` goes into its `uiframework.layout.json`, the file
+  next to its settings file (`settingsFile`, relative to the Streamer.bot folder). The window then opens with the
+  DLL it has and asks nothing.
 - **Without the window:** your game action needs the DLL for two things only, the update notice at the start and
   the live check (`UiLive`), and does without both when it is not there. With the settings action disabled the
   game plays on with its settings file, which can still be edited by hand.

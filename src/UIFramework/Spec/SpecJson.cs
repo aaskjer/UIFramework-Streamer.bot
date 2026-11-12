@@ -122,7 +122,7 @@ namespace UIFramework
 
             if (root["help"] is JArray help)
                 foreach (var section in help.OfType<JObject>())
-                    spec.Help.Add(ParseSection(section));
+                    spec.Help.Add(ParseSection(section, spec, "help"));
 
             ParseDeclared(root["triggers"] as JArray, spec.Triggers, needsCode: true);
             ParseDeclared(root["methods"] as JArray, spec.Methods, needsCode: false);
@@ -132,10 +132,16 @@ namespace UIFramework
                 if (about["credits"] != null) spec.About.Credits = (string)about["credits"];
                 if (about["sections"] is JArray sections)
                     foreach (var section in sections.OfType<JObject>())
-                        spec.About.Sections.Add(ParseSection(section));
+                        spec.About.Sections.Add(ParseSection(section, spec, "About"));
                 if (about["links"] is JArray links)
                     foreach (var link in links.OfType<JObject>())
-                        spec.About.Links.Add(new Link((string)link["text"], (string)link["url"]));
+                    {
+                        // The builder hands every line as one type, so a Cmd, a Note or a Tip compiles here too.
+                        if (string.IsNullOrWhiteSpace((string)link["text"]) || string.IsNullOrWhiteSpace((string)link["url"]))
+                            spec.ReadProblems.Add("A link of the About page has no text or no url (a Cmd, a Note or a Tip where a Link belongs?); it is left out.");
+                        else
+                            spec.About.Links.Add(new Link((string)link["text"], (string)link["url"]));
+                    }
                 if (about["streamerBotLink"]?.Type == JTokenType.Boolean) spec.About.ShowStreamerBotLink = (bool)about["streamerBotLink"];
                 if (about["defaultLinks"]?.Type == JTokenType.Boolean) spec.About.ShowDefaultLinks = (bool)about["defaultLinks"];
                 // "authorLink" of older host blocks is read no more: the framework names no author of its own.
@@ -157,6 +163,8 @@ namespace UIFramework
                     }
                 if (log["results"] is JArray results)
                     spec.Log.Results.AddRange(results.Select(r => r.ToString()));
+                Pairs(log["styles"], spec.Log.Styles);
+                Pairs(log["outcome"], spec.Log.Outcomes);
                 if (log["platforms"] is JArray platforms)
                 {
                     spec.Log.Platforms.Clear();
@@ -177,7 +185,13 @@ namespace UIFramework
                     else if (stop is JObject t)
                     {
                         string target = (string)t["target"], title = (string)t["title"], text = (string)t["text"];
-                        if (string.IsNullOrWhiteSpace(target) && string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(text)) continue;
+                        if (string.IsNullOrWhiteSpace(target) && string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(text))
+                        {
+                            // The builder hands every line as one type, so a Cmd, a Link or a Note compiles in a tour.
+                            if (t.Count > 0)
+                                spec.ReadProblems.Add("A stop of the tour has neither a target nor a title nor a text (a Cmd, a Link or a Note where a Tip belongs?); it is left out.");
+                            continue;
+                        }
                         spec.Tour.Add(new TourStop(string.IsNullOrWhiteSpace(target) ? null : target.Trim(), title, text)
                             { Act = t["act"]?.Type == JTokenType.Boolean && (bool)t["act"] });
                     }
@@ -203,6 +217,21 @@ namespace UIFramework
             return spec;
         }
 
+        // Pairs in order: an object ({ "WIN-*": "success" }), or a list of "WIN-*|success" as the builder takes them.
+        private static void Pairs(JToken declared, List<KeyValuePair<string, string>> into)
+        {
+            if (declared is JObject map)
+                foreach (var property in map.Properties())
+                    into.Add(new KeyValuePair<string, string>(property.Name, property.Value?.ToString()));
+            else if (declared is JArray list)
+                foreach (var item in list)
+                {
+                    string text = item.ToString();
+                    int bar = text.LastIndexOf('|');
+                    if (bar > 0) into.Add(new KeyValuePair<string, string>(text.Substring(0, bar).Trim(), text.Substring(bar + 1).Trim()));
+                }
+        }
+
         // A trigger without a code cannot be fired and one without a name cannot be shown: both are left out.
         private static void ParseDeclared(JArray list, List<Declared> into, bool needsCode)
         {
@@ -223,7 +252,7 @@ namespace UIFramework
             }
         }
 
-        private static HelpSection ParseSection(JObject o)
+        private static HelpSection ParseSection(JObject o, WindowSpec spec = null, string where = null)
         {
             var section = new HelpSection((string)o["heading"]);
             if (o["lines"] is JArray lines)
@@ -234,6 +263,8 @@ namespace UIFramework
                     if (l["note"] != null) section.Note((string)l["note"]);
                     else if (l["command"] != null) section.Command((string)l["command"], (string)l["what"] ?? "");
                     else if (l["link"] != null) section.Link((string)l["link"], (string)l["url"]);
+                    // The builder hands every line as one type, so a Tip compiles in a help section.
+                    else spec?.ReadProblems.Add("A line of the " + where + " section '" + (string)o["heading"] + "' is neither a note, a command nor a link (a Tip?); it is left out.");
                 }
             return section;
         }

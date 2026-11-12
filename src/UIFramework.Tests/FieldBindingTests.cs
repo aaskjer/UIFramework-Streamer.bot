@@ -120,9 +120,9 @@ namespace UIFramework.Tests
             var (f, parts, _, _) = Make("{}", @"{ ""cd"": 120 }");
             f.DurationField("Cooldown", "cd", "", "min");
             Assert.Equal("2", parts.Boxes["cd"].Text);
-            Assert.True(Requirement.Holds(f, parts, "cd", ">=", "120"));
+            Assert.True(Requirement.Holds(f, parts, Requirement.Parse("cd>=120")[0]));
             parts.Boxes["cd"].Text = "1";
-            Assert.False(Requirement.Holds(f, parts, "cd", ">=", "120"));
+            Assert.False(Requirement.Holds(f, parts, Requirement.Parse("cd>=120")[0]));
         });
 
         [Fact]

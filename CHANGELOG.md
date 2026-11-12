@@ -8,6 +8,119 @@ follows it go to `lib/v2/latest.json`.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-12
+
+The Log page's colours can be declared, and what the audit of 2026-11-08 had left open is done. The window's
+part works with every game as it is. The settings action's part (stub 0.3.0) and the builder's new parts come to
+a game with its next release; nothing a game has stops working.
+
+### Added
+
+- **A game declares the colours of its results on the Log page:** `.Log(..., styles: new[] { "GAME-OVER|muted",
+  "WIN-*|success" }, outcome: new[] { "DUEL WIN|WIN" })`, in the schema `log.styles` and `log.outcome`. The colours
+  were guessed from words in the result, so Hangman's `GAME-OVER` and `MISS-LTTR` showed in the accent colour. A
+  style is `success`, `warning`, `muted`, `accent` or `none`; `*` stands for any run of characters; the first that
+  fits wins, and a result none names is coloured by its words as before. `outcome` names what a result is filtered
+  by. See *The colours of the results* in [docs/Schema.md](docs/Schema.md).
+- **`ask`:** a field that asks the game whenever it changes (a preset slider whose answer fills other fields) has a
+  name of its own. `live` on a field that is no button meant the same and is still read.
+- **Builder:** `UiSchema.P(...).AtBottom()` (a page at the foot of the rail) and `UiWindow.InLanguage("de")` (the
+  window's language); both could only be said in the schema. `UiHost.Handle` takes `null` for the action's name and
+  uses the one Streamer.bot gives the run.
+- **Without the mouse:** the rail takes the keyboard (Tab, Up and Down, Enter or Space). In the customise mode the
+  Menu key (or Shift+F10) opens a field's or a page's menu, which has *Move up* and *Move down* now, also on
+  Alt+Up and Alt+Down; the moved one keeps the keyboard.
+- **A locked window can show the help under the fields:** a bulb in its footer, beside the language. The switch for
+  it sits in the customise bar, which a locked window does not have.
+- **Tests for the settings action.** `stub/Stub.cs` is compiled into the tests against a stand-in for Streamer.bot
+  and tested there: versions, the download's tries, the files it keeps, how it asks the game.
+
+### Fixed
+
+- **The window does not stand still while the game is asked.** A Try button, a table and the check before a save
+  waited for the game on the window's own thread, up to 35 seconds when the game's handler hung, and Windows called
+  the window "not responding"; [docs/Loader.md](docs/Loader.md) said it never froze. The game is asked from another
+  thread now. A Try button's answer and a table's rows arrive when they arrive (the button is greyed, the table says
+  that it is asking); the check before a save waits with the window alive, without input. With every settings
+  action, also the ones games carry today.
+- **No answer is not "done".** A Try button whose game did not answer (a timeout, a disabled action) showed
+  "done" in green; it says that the game did not answer, in the colour of a failure, and a table says so instead
+  of showing as empty (stub 0.3.0).
+- **An import is checked like a save.** It wrote values without their fields' limits, without a look at their
+  type and without the game's `validate`, and it wrote `readOnly` settings. Every value goes through its field now
+  (a number beyond its limits is pulled into them; text for a number or an option the dropdown lacks is not taken),
+  a `readOnly` setting is left alone, the dialog names what is not taken and why, and the game checks as before a
+  save. The dialog no longer says "replace": what the file does not name stays.
+- **A value the window shows other than the file has it is said:** a number beyond its limits or text where a
+  number belongs showed corrected and was written with some later save, without a word, while the game went on
+  reading the file's value. The status line names how many, its tooltip which.
+- **A `readOnly` setting follows its conditions and has its help:** `showWhen`, `requires`, its section's condition
+  and its help (tooltip or line) were skipped for it.
+- **The help under the fields reaches the framework's own fields:** the Messages page's sender switches and number
+  format and the Log page's switch kept their help in the tooltip.
+- **Long labels and the status line in a narrow window.** A switch's label wraps instead of being cut at the
+  window's edge without "…" (German and Spanish labels at the smallest width); the status line takes a line of its
+  own above the footer's buttons when they leave it no room (it read "Ke…").
+- **Customise mode:** a click on *Done* or *Export* right after typing an accent colour is no longer lost (taking
+  the colour rebuilt the window under the pointer); the hint counts the help switch as a change, *Reset layout*
+  takes it back too and is greyed while there is nothing to take back; an empty accent box opens the picker on the
+  accent in use, not on yellow.
+- **Icons:** *Reset page* no longer looks like the mirror image of *Reset all* and no longer shares its arrow with
+  "read again" on the Log page and the tables; the Log page's folder button has the folder a path field has.
+- **`twitchOnly` works on every field with a label.** It was read for switches alone and did nothing elsewhere
+  (three reward ids in Trivia): such a field says "(Twitch only)" in its label.
+- **`auto` brings `live` and `panel`.** An action without a button followed the typed values only with `live` and
+  wanted `panel` although it has a box of its own.
+- **Settings action (stub 0.3.0):**
+  - *Closing the update dialog no longer skips the version for good.* **No** skips it, **Cancel**, the X and Esc
+    mean "not now". Before, No meant "later" and Cancel "skip", so the X skipped.
+  - *A download GitHub does not deliver is tried three times* (a 5xx, a 429, a broken or timed-out connection),
+    and what is left reads "GitHub did not deliver the file ... Try again in a moment" instead of the raw error.
+  - *Every request to the game has a variable of its own,* so a request that hung and answers late cannot be read
+    by the next one; it is unset also when the game's run failed.
+  - *What holds for the one DLL is kept once:* a skipped version and `"autoUpdate": false` live in
+    `<Streamer.bot>\UIFramework\loader.json` and hold for every game. They were kept per game, so each game asked
+    again about a version another had skipped. A game's layout file is still read.
+  - *Today's log lines show while a round runs:* the log was opened as a file nobody writes to, which the game's
+    open file is not.
+  - *One prefix in the log,* `[<game action>/Settings]` or the one the window declares, from the first line to the
+    DLL's lines; it changed to the window's title half-way.
+  - The release check counts `1.9` as `1.9.0`; the hint for a DLL fetched by hand no longer asks GitHub a second
+    time (offline it stood still again) and does not name a release this settings action is too old for; the
+    dialog no longer says the host block stands "at the end" of the action.
+
+### Changed
+
+- **The red i says more:** `panel`, `auto` or `confirm` on a field that is no button; `placeholders` on one that
+  is no message; a `platform` that is none; a `{placeholder}` in a message's default text that its list lacks; a
+  page named by its id alone that no setting is on (`"mesages"`); a `custom` page behind the generic settings
+  action, which was left out with its fields in silence; a `Cmd`, `Link` or `Note` in the tour and a `Tip` in a
+  help section (one type in the host block, so the wrong one compiled and was dropped); an unknown style of the
+  Log page's colours. An unknown kind is told the kinds there are, and "The spec overrides" is said in the
+  builder's words.
+- **A schema written by hand may use the builder's short forms,** which the docs showed as if they were JSON: an
+  option `"a|Label"`, a list column `"key|kind|label"`, `shows` as `"option: key, key"`, one `aliasFactor`. A bar
+  segment's colour is read as `color` too.
+- **Texts:** English dialog titles in one spelling; the tour names Ctrl+0; the icon hint lists `gift` and says
+  that an unknown name shows a dot; a page's tooltip in the customise mode names *Change icon*.
+- **Docs:** `requires` greys a field out, `showWhen` hides it (`hide:` in front of a `requires` is still read and
+  no longer recommended); what the game's `UiSettings` does not know of the conventions; a table of the names a
+  game carries ([docs/Getting-Started.md](docs/Getting-Started.md)); how a new major line is released
+  ([docs/Loader.md](docs/Loader.md)).
+
+### Removed
+
+- Code nothing used: `Sidecars.Strip`, `Requirement.Holds(key, op, wanted)`, `Conventions.Aliases()` and
+  `FrameworkKeys`, `LayoutFile.OverriddenPages` and `OverriddenFields`, `Schema.Defaults()` and `Aliases()`,
+  `Text.Or`. The tests that went through them go the way the window goes.
+- `hosts/rhymetime/spec.json` and `host-section.cs`, left from before the game declared its window.
+
+### For 2.0.0
+
+- The settings action reads its major line from one word, `FrameworkLine` in `stub/Stub.cs`, and a test fails
+  while that word and the DLL's major version disagree. Nothing else is prepared in code: what a major version is
+  to take away is listed in [PLAN.md](PLAN.md).
+
 ## [1.8.4] - 2026-11-12
 
 The two points the review had left open. The DLL's part works with every game as it is; the settings action's

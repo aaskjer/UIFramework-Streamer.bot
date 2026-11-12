@@ -111,13 +111,6 @@ namespace UIFramework.Tests
         }
 
         [Fact]
-        public void ATextTheLanguageFilesLackFallsBackToTheGivenOne()
-        {
-            Assert.Equal("Not checked", Text.Or("no.such.key", "Not checked", "Nicht geprüft"));
-            Assert.Equal("a 1", Text.Or("no.such.key", "a {0}", "b {0}", 1));
-        }
-
-        [Fact]
         public void AnAnswerWithOnlyAStatusKeepsThePanel()
         {
             Sta(() =>

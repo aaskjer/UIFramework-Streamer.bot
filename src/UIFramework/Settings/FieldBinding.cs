@@ -353,7 +353,13 @@ namespace UIFramework
         /// hold: a value outside the field's limits or not a number, which the box shows as its limit or its default.
         /// The window writes these with the next save, so the box and the file agree. A key the settings do not have
         /// is left to the game's own default.</summary>
-        public static HashSet<string> Repaired(JObject settings, object root)
+        public static HashSet<string> Repaired(JObject settings, object root) => Repaired(settings, root, false);
+
+        /// <summary>The same; with <paramref name="shownOtherwise"/> only the keys whose box reads other than the file's
+        /// value would: a number pulled into its limits, text where a number belongs. A value that is merely stored
+        /// in another form (a ceiling's 0 for "no limit", written as the type's largest number) is nothing to tell the
+        /// user about.</summary>
+        public static HashSet<string> Repaired(JObject settings, object root, bool shownOtherwise)
         {
             var keys = new HashSet<string>(StringComparer.Ordinal);
             VisitTree(root, node =>
@@ -367,6 +373,7 @@ namespace UIFramework
                     // Number boxes only: a text is shown as it is stored.
                     if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
                     would = ValueOf(tag, txt.Text);
+                    if (shownOtherwise && Display(tag, have) == Display(tag, would)) return;
                 }
                 else if (node is CheckBox chk) would = chk.IsChecked ?? false;                    // "yes" shown as off
                 else if (node is ComboBox cmb && cmb.SelectedItem is ComboBoxItem selected) would = ComboValue(tag, selected.Tag);
@@ -445,6 +452,51 @@ namespace UIFramework
         }
 
         /// <summary>Number fields whose text is not a usable number, as "Label: 'text'" lines.</summary>
+        /// <summary>A value from outside (an import) as the window would save it: through the field that shows its key,
+        /// so a number is pulled into the field's limits, a switch is a switch and a dropdown one of its options.
+        /// Returns why the value cannot be taken (in the window's language), or null with what to store in
+        /// <paramref name="saved"/>. A key no field shows is taken as it is.</summary>
+        public static string AsSaved(object root, string key, JToken value, out JToken saved)
+        {
+            JToken result = value;
+            string problem = null;
+            bool found = false;
+            VisitTree(root, node =>
+            {
+                if (found || !(node is FrameworkElement fe) || !(FieldTag.Of(fe.Tag) is FieldTag tag) || tag.Transient || tag.Key != key) return;
+                found = true;
+                if (node is CheckBox)
+                {
+                    if (value != null && value.Type == JTokenType.Boolean) return;
+                    string text = Invariant(value).Trim().ToLowerInvariant();
+                    if (text == "true" || text == "false") result = text == "true";
+                    else problem = Text.T("import.why.switch");
+                }
+                else if (node is TextBox && IsNumberKind(tag))
+                {
+                    string text = Display(tag, value);
+                    if (value is JContainer || !IsValidNumber(tag, text)) problem = Text.T("import.why.number");
+                    else result = ValueOf(tag, text);
+                }
+                else if (node is TextBox)
+                {
+                    if (value is JContainer) problem = Text.T("import.why.text");
+                    else if (value == null || value.Type != JTokenType.String) result = Invariant(value);
+                }
+                else if (node is ComboBox cmb)
+                {
+                    string wanted = Invariant(value);
+                    var item = cmb.Items.OfType<ComboBoxItem>().FirstOrDefault(i => string.Equals(Invariant(ComboValue(tag, i.Tag)), wanted, StringComparison.OrdinalIgnoreCase));
+                    if (item == null) problem = Text.T("import.why.option");
+                    else result = ComboValue(tag, item.Tag);
+                }
+                else if (node is ListEditor && !(value is JArray))
+                    problem = Text.T("import.why.list");
+            });
+            saved = result;
+            return problem;
+        }
+
         public static List<string> InvalidNumberFields(object root)
         {
             var invalid = new List<string>();

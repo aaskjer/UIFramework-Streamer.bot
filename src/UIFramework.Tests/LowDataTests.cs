@@ -51,9 +51,9 @@ namespace UIFramework.Tests
 
             foreach (var (f, p) in new[] { (shown, parts), (hidden, hiddenParts) })
             {
-                Assert.True(Requirement.Holds(f, p, "pct", ">=", "0.5"));
-                Assert.False(Requirement.Holds(f, p, "pct", ">=", "50"));
-                Assert.True(Requirement.Holds(f, p, "rounds", ">", "1000"));
+                Assert.True(Requirement.Holds(f, p, Requirement.Parse("pct>=0.5")[0]));
+                Assert.False(Requirement.Holds(f, p, Requirement.Parse("pct>=50")[0]));
+                Assert.True(Requirement.Holds(f, p, Requirement.Parse("rounds>1000")[0]));
             }
 
             // An empty list is empty; one with entries is not.

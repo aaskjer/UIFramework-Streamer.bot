@@ -218,19 +218,24 @@ namespace UIFramework
         {
             var f = ctx.Fields;
             string label = s.Label ?? Conventions.Humanize(s.Key);
+            // A switch carries "Twitch only" as a pill; any other field says it in its label (a reward's id, a button).
+            // It was read for switches alone and did nothing elsewhere, without a word.
+            if (s.TwitchOnly && s.Kind != "bool" && s.Kind != "note")
+                label += " (" + Text.T("field.twitchOnly") + ")";
             string help = s.Help ?? "";
             // The user may have the help as a line under each field instead of in its tooltip (the customise bar). A
             // note and a list show their help as text anyway.
             bool helpLine = ctx.Layout?.HelpLines == true && !string.IsNullOrWhiteSpace(help) && s.Kind != "note" && s.Kind != "list";
             string tip = helpLine ? null : help;
+            FrameworkElement element;
             if (s.ReadOnly)
             {
+                // Shown, not edited; its help, its conditions and its section's go with it like any field's.
                 var value = new TextBlock { Text = f.String(s.Key), FontSize = 13, Foreground = Theme.LabelFg, Margin = new Thickness(0, 4, 0, 4) };
-                return Ui.Labeled(label, value);
+                element = Ui.Labeled(label, value);
+                if (!string.IsNullOrEmpty(tip)) element.ToolTip = tip;
             }
-
-            FrameworkElement element;
-            switch (s.Kind)
+            else switch (s.Kind)
             {
                 case "bool":
                 {
@@ -325,7 +330,7 @@ namespace UIFramework
             }
             if (s.Transient)
                 FieldBinding.MarkTransient(element);
-            if (s.Live && s.Kind != "action")
+            if ((s.Ask || s.Live) && s.Kind != "action" && !s.ReadOnly)
             {
                 // A field that asks the host whenever it changes; `set` in the answer fills in other fields (a preset slider).
                 var source = element;
@@ -362,12 +367,26 @@ namespace UIFramework
         }
 
         /// <summary>A field with its help as a small line underneath, links in it clickable.</summary>
-        private static FrameworkElement WithHelpLine(PageContext ctx, FrameworkElement field, string help)
+        private static FrameworkElement WithHelpLine(PageContext ctx, FrameworkElement field, string help) => HelpUnder(ctx, field, help);
+
+        /// <summary>Whether the user has the help as lines under the fields (the customise bar's switch) instead of in
+        /// the tooltips. The pages the framework draws itself ask this for their own fields.</summary>
+        public static bool HelpLines(PageContext ctx) => ctx.Layout?.HelpLines == true;
+
+        /// <summary>A help text as the small line that goes under a field.</summary>
+        public static TextBlock HelpLine(PageContext ctx, string help)
         {
             var line = Ui.NoteWithLinks(help, ctx.OpenUrl);
             line.FontSize = 11;
             line.Margin = new Thickness(0, 3, 0, 6);   // apart from the next field's label
             line.Tag = HelpLineTag;
+            return line;
+        }
+
+        /// <summary>A field with its help as a line underneath.</summary>
+        public static FrameworkElement HelpUnder(PageContext ctx, FrameworkElement field, string help)
+        {
+            var line = HelpLine(ctx, help);
             var wrapper = new StackPanel { Tag = HelpWrapTag };
             wrapper.Children.Add(field);
             wrapper.Children.Add(line);
@@ -459,7 +478,14 @@ namespace UIFramework
             if (s.Panel || s.Auto)
                 panel = new StackPanel();
 
-            void Run() => Ask(ctx, s, label, panel);
+            // Each question has a number: an answer that comes after a later question was asked is not shown over it.
+            int asked = 0;
+            Button button = null;
+            void Run()
+            {
+                int mine = ++asked;
+                Ask(ctx, s, label, panel, () => mine == asked, button);
+            }
 
             if (s.Auto)
             {
@@ -479,7 +505,7 @@ namespace UIFramework
                 return Stack(Ui.SmallLabel(label, 0), box);
             }
 
-            var button = Ui.TextButton(label, false);
+            button = Ui.TextButton(label, false);
             button.Margin = new Thickness(0, 8, 0, 0);
             button.HorizontalAlignment = HorizontalAlignment.Left;
             button.ToolTip = help;
@@ -509,12 +535,45 @@ namespace UIFramework
         /// <summary>Asks the host about a setting and places the answer: "set" (values for other fields of the window,
         /// applied as if typed, nothing saved) and "status" (a line for the footer) are taken out of a JSON answer; the
         /// rest goes to the panel when there is one, to the footer otherwise.</summary>
-        private static void Ask(PageContext ctx, Setting s, string label, StackPanel panel)
+        /// <remarks>The game is asked off the window's thread (<see cref="Patient"/>): an answer that takes its time
+        /// leaves the window usable, with the button greyed until it is there. No answer at all (the settings action's
+        /// marker) is shown as a failure, not as "done".</remarks>
+        private static void Ask(PageContext ctx, Setting s, string label, StackPanel panel, Func<bool> current = null, Button button = null)
         {
+            void Failed(string why)
+            {
+                if (panel != null) { ResultPanel.Render(panel, Text.T("action.failedWhy", label, why), failed: true); ShowAnswerBox(panel); }
+                else ctx.SetStatus(Text.T("action.failed", label), Theme.DangerText, why);
+            }
+            JObject settings;
             try
             {
-                var settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings;
-                string result = ctx.Hooks.Test(s.Key, settings);
+                // A copy: the question is put together on another thread while the window goes on changing its own.
+                settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : (JObject)ctx.Settings.DeepClone();
+            }
+            catch (Exception ex) { Failed(ex.Message); return; }
+            if (button != null) button.IsEnabled = false;
+            Patient.Ask(() => ctx.Hooks.Test(s.Key, settings), (result, error) =>
+            {
+                if (button != null) button.IsEnabled = true;
+                if (current != null && !current()) return;
+                if (error != null) { Failed(error.Message); return; }
+                if (Patient.IsNoAnswer(result))
+                {
+                    string why = Patient.Why(result);
+                    if (panel != null) { ResultPanel.Render(panel, Text.T("action.noAnswerWhy", label, why.Length > 0 ? why : "-"), failed: true); ShowAnswerBox(panel); }
+                    else ctx.SetStatus(Text.T("action.noAnswer", label), Theme.DangerText, why);
+                    return;
+                }
+                try { Place(ctx, s, label, panel, result); }
+                catch (Exception ex) { Failed(ex.Message); }
+            },
+            waiting: () => { if (panel == null && s.Kind == "action") ctx.SetStatus(Text.T("action.waiting", label), Theme.MutedColor, null); });
+        }
+
+        private static void Place(PageContext ctx, Setting s, string label, StackPanel panel, string result)
+        {
+            {
                 JObject structured = ResultPanel.TryParse(result);
                 if (structured?["set"] is JObject values)
                     LiveValues.Apply(ctx.Parts, values);
@@ -538,11 +597,6 @@ namespace UIFramework
                 }
                 else if (result != null || s.Kind == "action")
                     ctx.SetStatus(result ?? Text.T("action.done", label), Theme.SuccessText, null);
-            }
-            catch (Exception ex)
-            {
-                if (panel != null) { ResultPanel.Render(panel, Text.T("action.failedWhy", label, ex.Message)); ShowAnswerBox(panel); }
-                else ctx.SetStatus(Text.T("action.failed", label), Theme.DangerText, ex.Message);
             }
         }
 
@@ -586,22 +640,41 @@ namespace UIFramework
             host.Children.Add(grid);
             host.Children.Add(empty);
 
+            // The rows come from the game, asked off the window's thread (Patient): a game that takes its time leaves
+            // "Loading" in the table instead of holding the window, and one that does not answer is said to have not.
+            int asked = 0;
             void Load()
             {
-                var rows = new List<Dictionary<string, string>>();
-                try
+                int mine = ++asked;
+                Patient.Ask(() => ctx.Hooks.ReadTable(s.Key), (json, error) =>
                 {
-                    string json = ctx.Hooks.ReadTable(s.Key);
-                    if (!string.IsNullOrWhiteSpace(json) && JsonText.Parse(json) is JArray array)
-                        foreach (var item in array.OfType<JObject>())
-                            rows.Add(item.Properties().ToDictionary(p => p.Name, p => FieldBinding.Invariant(p.Value)));
-                }
-                catch (Exception ex)
+                    if (mine != asked) return;
+                    var rows = new List<Dictionary<string, string>>();
+                    string failed = null;
+                    try
+                    {
+                        if (error != null) throw error;
+                        if (Patient.IsNoAnswer(json)) failed = Patient.Why(json);
+                        else if (!string.IsNullOrWhiteSpace(json) && JsonText.Parse(json) is JArray array)
+                            foreach (var item in array.OfType<JObject>())
+                                rows.Add(item.Properties().ToDictionary(p => p.Name, p => FieldBinding.Invariant(p.Value)));
+                    }
+                    catch (Exception ex) { failed = ex.Message; }
+                    if (failed != null)
+                        ctx.Log.Warn(ctx.Spec.LogPrefix + " Table '" + s.Key + "' could not be read: " + failed);
+                    grid.ItemsSource = rows;
+                    empty.Text = failed != null ? Text.T("table.noAnswer") : Text.T("table.empty");
+                    empty.Foreground = failed != null ? new SolidColorBrush(Theme.DangerText) : Theme.MutedFg;
+                    empty.ToolTip = string.IsNullOrEmpty(failed) ? null : failed;
+                    empty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                },
+                waiting: () =>
                 {
-                    ctx.Log.Warn(ctx.Spec.LogPrefix + " Table '" + s.Key + "' could not be read: " + ex.Message);
-                }
-                grid.ItemsSource = rows;
-                empty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                    if (grid.Items.Count > 0) return;   // the rows it has stay until the new ones are there
+                    empty.Text = Text.T("table.loading");
+                    empty.Foreground = Theme.MutedFg;
+                    empty.Visibility = Visibility.Visible;
+                });
             }
 
             var reload = Ui.IconButton(Icons.Refresh, Icons.Font, Text.T("table.reload"));

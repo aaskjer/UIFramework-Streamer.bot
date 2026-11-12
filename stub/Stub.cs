@@ -38,7 +38,9 @@ public class CPHInline
         if (string.IsNullOrWhiteSpace(file))
             throw new InvalidOperationException("The action '" + GameActionName + "' names no settings file (UiHost.Handle's settingsFile).");
         SettingsPath = Path.IsPathRooted(file) ? file : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, file);
-        LogPrefix = (string)Window["logPrefix"] ?? "[" + ((string)Window["title"] ?? GameActionName) + "/Settings]";
+        // One prefix from the first line to the last: the one the window declares, else the game action's name. The
+        // DLL takes it from Host.WindowLogPrefix, so its lines read the same.
+        LogPrefix = (string)Window["logPrefix"] ?? "[" + GameActionName + "/Settings]";
     }
 
     // ================================================================================================
@@ -104,10 +106,14 @@ public class CPHInline
             return (int)Math.Max(0, Math.Min(86400, Math.Round(value)));
         }
 
-        public string Test(string name, string settingsJson) => _owner.AskGame("test", name, settingsJson);
-        // No answer is not "no problems": the window gets a marker and asks before saving unchecked.
-        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson, KnowsNoAnswer() ? NoAnswer : null);
-        public string ReadTable(string key) => _owner.AskGame("table", key, null);
+        /// <summary>The prefix of this window's log lines, for the DLL's own.</summary>
+        public string WindowLogPrefix() => LogPrefix;
+
+        // No answer is not "done", "no problems" or "no rows": the window gets a marker and says so (a Try button and a
+        // table in the colour of a failure, a save by asking before it saves unchecked).
+        public string Test(string name, string settingsJson) => _owner.AskGame("test", name, settingsJson, KnowsNoAnswer("test") ? NoAnswer : null);
+        public string Validate(string settingsJson) => _owner.AskGame("validate", null, settingsJson, KnowsNoAnswer("validate") ? NoAnswer : null);
+        public string ReadTable(string key) => _owner.AskGame("table", key, null, KnowsNoAnswer("table") ? NoAnswer : null);
         public string EmoteSources() => _owner.AskGame("emotes", null, null);
 
         // The log as the window declares it: every file matching the pattern in the folder, oldest file first.
@@ -124,9 +130,22 @@ public class CPHInline
                 .SelectMany(ReadLinesSafe).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
         }
 
+        // Shared with whoever writes: the game holds today's file open while a round runs, and File.ReadAllLines asks
+        // for a file nobody writes to, so today's lines were missing just then.
         private static IEnumerable<string> ReadLinesSafe(string file)
         {
-            try { return File.ReadAllLines(file); } catch (Exception) { return new string[0]; }
+            try
+            {
+                var lines = new List<string>();
+                using (var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                using (var reader = new StreamReader(stream))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) lines.Add(line);
+                }
+                return lines;
+            }
+            catch (Exception) { return new string[0]; }
         }
     }
 
@@ -244,32 +263,45 @@ public class CPHInline
 
     private string AskGameLocked(string request, string name, string values)
     {
-        string var = request == "describe" ? SchemaVar(GameActionName) : AnswerVar(GameActionName);
-        CPH.UnsetGlobalVar(var, false);
+        // A variable of its own for every request: a request that hung and answers late writes into its own, not into
+        // the one the next request reads. A host block from before the game was told the name answers into the old one.
+        string legacy = request == "describe" ? SchemaVar(GameActionName) : AnswerVar(GameActionName);
+        string var = legacy + "." + Guid.NewGuid().ToString("N");
+        CPH.UnsetGlobalVar(legacy, false);
         CPH.SetArgument("uiframework.request", request);
         CPH.SetArgument("uiframework.name", name ?? "");
         CPH.SetArgument("uiframework.values", values ?? "");
         CPH.SetArgument("uiframework.var", var);   // where the answer goes; the game uses it over its own name
         if (!CPH.ActionExists(GameActionName))
             throw new InvalidOperationException("There is no action named '" + GameActionName + "' in this Streamer.bot. GameActionName in the settings action must be the game action's exact name.");
-        if (!CPH.RunAction(GameActionName, true))
-            throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled?");
-        string answer = CPH.GetGlobalVar<string>(var, false);
-        // Gone once read: an answer can carry a secret (the emote sources hold the Twitch token), and a global stays
-        // readable by every action and visible in Streamer.bot's variables until it is unset.
-        CPH.UnsetGlobalVar(var, false);
-        return string.IsNullOrEmpty(answer) ? null : answer;
+        try
+        {
+            if (!CPH.RunAction(GameActionName, true))
+                throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled?");
+            string answer = CPH.GetGlobalVar<string>(var, false);
+            if (string.IsNullOrEmpty(answer)) answer = CPH.GetGlobalVar<string>(legacy, false);
+            return string.IsNullOrEmpty(answer) ? null : answer;
+        }
+        finally
+        {
+            // Gone once read, also when the run failed: an answer can carry a secret (the emote sources hold the Twitch
+            // token), and a global stays readable by every action and visible in Streamer.bot's variables until it is unset.
+            CPH.UnsetGlobalVar(var, false);
+            CPH.UnsetGlobalVar(legacy, false);
+        }
     }
 
     /// <summary>What the window gets when the game did not answer at all (a timeout, a disabled or missing action),
-    /// told apart from an answer that is empty. The window's save asks before saving what nobody checked.</summary>
+    /// told apart from an answer that is empty. The window's save asks before saving what nobody checked; a Try button
+    /// and a table say that the game did not answer.</summary>
     private const string NoAnswer = "\u0001uiframework:no-answer";
 
-    // A DLL before 0.9.13 shows the marker as a warning line; it gets null for "no answer", as it always did.
-    private static bool KnowsNoAnswer()
+    // A DLL that does not know the marker would show it as text; it gets null for "no answer", as it always did. The
+    // check before a save knows it since 0.9.13, a Try button and a table since 1.9.0.
+    private static bool KnowsNoAnswer(string request)
     {
         var version = ParseVersion(_show?.DeclaringType?.Assembly is Assembly a ? VersionOf(a) : null);
-        return version == null || version >= new Version(0, 9, 13);
+        return version == null || version >= (request == "validate" ? new Version(0, 9, 13) : new Version(1, 9, 0));
     }
 
     /// <summary>The same from any thread (the window's): waits for Streamer.bot's thread to run it; a failure is
@@ -295,24 +327,27 @@ public class CPHInline
                 "Look in Streamer.bot's log just above this line. A game action that ran shows there as 'InlineCode :: Running default entry point' (log level debug); " +
                 "nothing of the kind means the action has no enabled Execute Code sub-action with the game in it. A compile error or an exception from the game shows there too.\n" +
                 "Then check the action's code: Execute() must call UiHost.Handle(args, CPH, ...) before anything else, and the host block " +
-                "at its end must be the current one (UIFramework's stub/HostSchema.cs; tools/update-host-block.ps1 refreshes it).");
+                "in it must be the current one (UIFramework's stub/HostSchema.cs; tools/update-host-block.ps1 refreshes it).");
         return schema;
     }
 
     // ================================================================================================
     // LOADER: finds UIFramework.dll under <Streamer.bot>\UIFramework\lib\<version>\. The first time, it asks
     // whether to download the DLL from GitHub or to show the folder it belongs in. Every later open looks for a
-    // newer release and asks whether to fetch it; "Cancel" skips that version until the next one.
+    // newer release and asks whether to fetch it; "No" skips that version until the next one.
     // ================================================================================================
 
     private const string FrameworkName = "UIFramework for streamer.bot";
     // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
     // and is not offered to this one, and an installed DLL that asks for a newer one is passed over (0.2.1 and on).
-    private const string StubVersion = "0.2.1";
+    private const string StubVersion = "0.3.0";
+    // The major line this stub is made for: it reads lib/<line>/latest.json and so is never offered a release of
+    // another line. A new major version of the framework changes this one word.
+    private const string FrameworkLine = "v1";
     // The API answers with the file as it is on main right now; the raw CDN keeps a copy for up to five minutes and
     // ignores a cache-busting query, so it is the fallback only (rate limit on the API, or the API unreachable).
-    private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/v1/latest.json?ref=main";
-    private const string LatestUrl = "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/v1/latest.json";
+    private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/" + FrameworkLine + "/latest.json?ref=main";
+    private const string LatestUrl = "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/" + FrameworkLine + "/latest.json";
     private const string FrameworkReleasesUrl = "https://github.com/aaskjer/UIFramework-Streamer.bot/releases";
     private static readonly string LibRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
 
@@ -410,14 +445,24 @@ public class CPHInline
     }
 
     /// <summary>Where a DLL fetched by hand belongs: the folder of the version latest.json names, or a placeholder.
-    /// Joined by hand: Path.Combine on .NET Framework throws on the placeholder's angle brackets.</summary>
+    /// Joined by hand: Path.Combine on .NET Framework throws on the placeholder's angle brackets. latest.json is not
+    /// asked for twice in one run (a failed download has it, a failed check would only wait again), and a release this
+    /// settings action is too old for is not the example.</summary>
     private static string ExamplePath()
     {
-        string version;
-        try { version = ReleaseVersion(FetchLatest()); }
-        catch (Exception) { version = "<version>"; }
+        string version = "<version>";
+        try
+        {
+            var latest = _latestSeen ?? (_latestFailed ? null : FetchLatest());
+            if (latest != null && NeedsNewerStub(latest) == null) version = ReleaseVersion(latest);
+        }
+        catch (Exception) { }
         return LibRoot + "\\" + version + "\\UIFramework.dll";
     }
+
+    // What this run learned from latest.json, or that it could not be had. Both are forgotten when the next run opens.
+    private static JObject _latestSeen;
+    private static bool _latestFailed;
 
     private static void OpenFolder(string folder)
     {
@@ -477,6 +522,18 @@ public class CPHInline
     /// network is unreachable or timed out: that would only keep the window waiting another five seconds.</summary>
     private static JObject FetchLatest()
     {
+        try
+        {
+            var latest = FetchLatestNow();
+            _latestSeen = latest;
+            _latestFailed = false;
+            return latest;
+        }
+        catch (Exception) { _latestFailed = true; throw; }
+    }
+
+    private static JObject FetchLatestNow()
+    {
         EnsureTls12();
         using (var client = new QuickWebClient())
         {
@@ -489,6 +546,46 @@ public class CPHInline
                 client.Headers.Remove("Accept");
                 return ParseLatest(client.DownloadString(LatestUrl + "?t=" + DateTime.UtcNow.Ticks));
             }
+        }
+    }
+
+    /// <summary>Whether a failed download is worth another try: GitHub answered with a 5xx or 429, or the connection
+    /// broke or timed out on the way. A 404 or a refused certificate stays what it is.</summary>
+    private static bool WorthAnotherTry(System.Net.WebException ex)
+    {
+        if (ex.Response is System.Net.HttpWebResponse response)
+            return (int)response.StatusCode >= 500 || (int)response.StatusCode == 429;
+        return ex.Status == System.Net.WebExceptionStatus.Timeout || ex.Status == System.Net.WebExceptionStatus.ReceiveFailure ||
+               ex.Status == System.Net.WebExceptionStatus.ConnectionClosed || ex.Status == System.Net.WebExceptionStatus.KeepAliveFailure ||
+               ex.Status == System.Net.WebExceptionStatus.PipelineFailure;
+    }
+
+    // How long a failed download waits before its next try; three tries in all.
+    private static int[] _retryPausesMs = { 2000, 4000 };
+
+    /// <summary>The download itself, tried again after a moment when GitHub did not deliver (a fresh release's asset
+    /// answered 504 once, and loaded seconds later). What is left after the last try says so in plain words.</summary>
+    private static void DownloadWithRetry(Uri uri, string target, Action<Uri, string> fetch)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            try { fetch(uri, target); return; }
+            catch (System.Net.WebException ex) when (WorthAnotherTry(ex))
+            {
+                try { if (File.Exists(target)) File.Delete(target); } catch (Exception) { }
+                if (attempt >= _retryPausesMs.Length)
+                    throw new InvalidOperationException("GitHub did not deliver the file after " + (attempt + 1) + " tries (" + ex.Message + "). Try again in a moment.");
+                Thread.Sleep(_retryPausesMs[attempt]);
+            }
+        }
+    }
+
+    private static void FetchFile(Uri uri, string target)
+    {
+        using (var client = new QuickWebClient { TimeoutMs = 60000 })
+        {
+            client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
+            client.DownloadFile(uri, target);
         }
     }
 
@@ -557,11 +654,7 @@ public class CPHInline
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
                 string temp = target + ".download";
                 EnsureTls12();
-                using (var client = new QuickWebClient { TimeoutMs = 60000 })
-                {
-                    client.Headers.Add("User-Agent", "UIFramework-Loader/1.0");
-                    client.DownloadFile(uri, temp);
-                }
+                DownloadWithRetry(uri, temp, FetchFile);
                 string actual = HashOf(temp);
                 if (actual != expected)
                 {
@@ -592,16 +685,42 @@ public class CPHInline
         catch (Exception) { return null; }
     }
 
-    private static bool AutoUpdateEnabled()
+    // What holds for the one DLL every game shares is kept once, beside it: <Streamer.bot>\UIFramework\loader.json
+    // ("autoUpdate": false, "skipVersion": "1.9.0"). The same keys in a game's layout file, where a settings action
+    // before 0.3.0 kept them, are still read: a release skipped or a check switched off there stays so for that game.
+    private static readonly string LoaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "loader.json");
+
+    private static JObject ReadLoader()
     {
-        var token = ReadLayout()["autoUpdate"];
-        return token == null || token.Type != JTokenType.Boolean || (bool)token;
+        try { return File.Exists(LoaderPath) ? JObject.Parse(File.ReadAllText(LoaderPath)) : new JObject(); }
+        catch (Exception) { return new JObject(); }
     }
 
-    // "Cancel" in the update dialog: that version is not offered again.
-    private static string SkippedVersion() => (string)ReadLayout()["skipVersion"];
+    private static bool SwitchedOff(JToken token) => token != null && token.Type == JTokenType.Boolean && !(bool)token;
 
-    private static void SkipVersion(string version) => WriteLayout(layout => layout["skipVersion"] = version);
+    private static bool AutoUpdateEnabled() => !SwitchedOff(ReadLoader()["autoUpdate"]) && !SwitchedOff(ReadLayout()["autoUpdate"]);
+
+    // "No" in the update dialog: that version is not offered again, to any game.
+    private static bool Skipped(Version version)
+    {
+        var wanted = Full(version);
+        return wanted != null && (wanted.Equals(Full(ParseVersion((string)ReadLoader()["skipVersion"]))) || wanted.Equals(Full(ParseVersion((string)ReadLayout()["skipVersion"]))));
+    }
+
+    private static void SkipVersion(string version)
+    {
+        try
+        {
+            var loader = ReadLoader();
+            loader["skipVersion"] = version;
+            Directory.CreateDirectory(Path.GetDirectoryName(LoaderPath));
+            string temp = LoaderPath + ".tmp";
+            File.WriteAllText(temp, loader.ToString(Newtonsoft.Json.Formatting.Indented));
+            if (File.Exists(LoaderPath)) File.Replace(temp, LoaderPath, null);
+            else File.Move(temp, LoaderPath);
+        }
+        catch (Exception) { WriteLayout(layout => layout["skipVersion"] = version); }   // at least for this game
+    }
 
     // The note for the window's header pill: a release the user answered "No" to; removed again otherwise.
     private static void NoteLayout(string key, string value) => WriteLayout(layout => { if (value == null) layout.Remove(key); else layout[key] = value; });
@@ -633,7 +752,7 @@ public class CPHInline
         var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (!AutoUpdateEnabled())
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in uiframework.layout.json).");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in UIFramework\\loader.json or in this game's uiframework.layout.json).");
             return installed;
         }
         JObject latest;
@@ -655,15 +774,16 @@ public class CPHInline
             CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
             return installed;
         }
-        if (newest == null || have == null || newest <= have)
+        // Missing parts count as 0: a folder named "1.9" holds what latest.json calls "1.9.0".
+        if (newest == null || have == null || Full(newest) <= Full(have))
         {
             CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
-        if (string.Equals(SkippedVersion(), newest.ToString(), StringComparison.OrdinalIgnoreCase))
+        if (Skipped(newest))
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in uiframework.layout.json).");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in UIFramework\\loader.json or in this game's uiframework.layout.json).");
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
@@ -674,10 +794,11 @@ public class CPHInline
         var answer = Ask(
             "A newer version of " + FrameworkName + " is available: " + newest + " (installed: " + have + ").\n\n" +
             "Yes: download it now" + (loaded ? "; it is used from the next start of Streamer.bot." : " and open the settings with it.") + "\n" +
-            "No: ask again next time.\n" +
-            "Cancel: skip version " + newest + ".",
+            "No: skip version " + newest + "; the next release is offered again.\n" +
+            "Cancel: not now, ask again next time.",
             MbYesNoCancel, MbIconInformation);
-        if (answer == IdCancel)
+        // Closing the dialog (its X, Esc) is Cancel: "not now". Skipping a version for good takes a choice of its own.
+        if (answer == IdNo)
         {
             SkipVersion(newest.ToString());
             NoteLayout("frameworkAvailable", null);
@@ -882,6 +1003,8 @@ public class CPHInline
     private bool Open()
     {
         _botThread = Thread.CurrentThread.ManagedThreadId;
+        _latestSeen = null;
+        _latestFailed = false;
         // The game first: without its answer there is nothing to show, and the settings file is named in it.
         string schema;
         Volatile.Write(ref _ownerGone, 0);

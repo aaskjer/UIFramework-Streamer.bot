@@ -64,6 +64,18 @@ namespace UIFramework
             };
             AutomationProperties.SetName(item, title);
             item.MouseLeftButtonUp += (s, e) => select();
+            // By keyboard too: Tab reaches the rail, Up and Down move along it, Enter or Space opens the page. (In the
+            // customise mode the Menu key or Shift+F10 opens the page's menu, as a right-click does.)
+            item.Focusable = true;
+            item.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter || e.Key == Key.Space) { select(); e.Handled = true; }
+                else if (e.Key == Key.Down || e.Key == Key.Up)
+                {
+                    int at = Items.IndexOf(item) + (e.Key == Key.Down ? 1 : -1);
+                    if (at >= 0 && at < Items.Count) { Items[at].Focus(); e.Handled = true; }
+                }
+            };
             item.MouseEnter += (s, e) => { if (item != _active) item.Background = new SolidColorBrush(Theme.Hover); };
             item.MouseLeave += (s, e) => { if (item != _active) item.Background = Brushes.Transparent; };
             Items.Add(item);

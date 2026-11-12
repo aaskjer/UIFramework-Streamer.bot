@@ -93,7 +93,13 @@ namespace UIFramework
         /// <summary>What <see cref="Resolve"/> found wrong with the schema or the spec (an unknown kind, a
         /// requirement on a key that is not there): listed under the red "i" in the header, so the
         /// host's author sees it without reading Streamer.bot's log.</summary>
+        /// <summary>Whether the host builds the pages the spec marks as custom (<see cref="IHostHooks.BuildPage"/>): a
+        /// host in code does, a game behind the generic settings action cannot, and is told so.</summary>
+        public bool HostBuildsPages = true;
         public readonly List<string> Problems = new List<string>();
+        /// <summary>What reading the window's declaration found (a tour stop that is none, a help line of no kind):
+        /// kept apart, since <see cref="Problems"/> is gathered anew with every resolve, and added to it there.</summary>
+        public readonly List<string> ReadProblems = new List<string>();
 
         /// <summary>The settings behind the header pills, for the checks.</summary>
         public readonly List<string> HeaderPillKeys = new List<string>();
@@ -289,9 +295,16 @@ namespace UIFramework
         public string WriteLogHelp;
         /// <summary>Null: the framework's own text, in its language.</summary>
         public string EmptyText;
-        /// <summary>Colours a result: success, warning, muted or accent. Null uses <see cref="LogPage.DefaultStyle"/>.</summary>
+        /// <summary>What a game declares for its results' colours (log.styles), in order: a result or a pattern with *
+        /// ("WIN-*") and success, warning, muted, accent or none. The first that matches wins; a result none names is
+        /// coloured by the words in it (<see cref="LogPage.DefaultStyle"/>).</summary>
+        public readonly List<KeyValuePair<string, string>> Styles = new List<KeyValuePair<string, string>>();
+        /// <summary>What a game declares its results are filtered by (log.outcome), in order: a result or a pattern and
+        /// the filter value, "DUEL WIN" to "WIN".</summary>
+        public readonly List<KeyValuePair<string, string>> Outcomes = new List<KeyValuePair<string, string>>();
+        /// <summary>For a host in code: colours an outcome, ahead of <see cref="Styles"/>.</summary>
         public Func<string, PillStyle> ResultStyle;
-        /// <summary>Shortens a raw result to the filter value and the pill text, e.g. "DUEL WIN" to "WIN". Null keeps it.</summary>
+        /// <summary>For a host in code: a raw result's filter value, ahead of <see cref="Outcomes"/>.</summary>
         public Func<string, string> Outcome;
     }
 

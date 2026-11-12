@@ -25,13 +25,15 @@ namespace UIFramework
         /// <summary>The picker is on screen and still writing into its box.</summary>
         public bool IsOpen => _popup != null && _popup.IsOpen;
 
-        public void Open(TextBox target, FrameworkElement anchor)
+        /// <param name="fallback">Where the picker starts when the box holds no colour: the colour its swatch shows (the
+        /// accent in use for an empty accent box). Without one it starts on yellow.</param>
+        public void Open(TextBox target, FrameworkElement anchor, Color? fallback = null)
         {
             if (_popup != null)
                 _popup.IsOpen = false;
             // A name in the box ("red") is where the picker starts, as a code is.
             if (!Colours.TryParse(target.Text, out Color start))
-                start = Color.FromRgb(0xF1, 0xC4, 0x0F);
+                start = fallback ?? Color.FromRgb(0xF1, 0xC4, 0x0F);
             Colours.RgbToHsv(start, out double hue, out double saturation, out double brightness);
             Color current = start;
             // The picker has nothing to set the alpha with: the one the box holds ("#80FF0000") is kept in what it writes.

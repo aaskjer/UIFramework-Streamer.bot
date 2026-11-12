@@ -40,6 +40,11 @@ namespace UIFramework
 
         // ---- Fields ------------------------------------------------------------------------------------
 
+        // The field and the page a keyboard move was made on: the window is built again after it, and the moved one
+        // gets the keyboard back, so it can be moved on.
+        [ThreadStatic] private static string _focusField;
+        [ThreadStatic] private static string _focusPage;
+
         public static FrameworkElement Wrap(PageContext ctx, Setting setting, FrameworkElement element, string pageId)
         {
             element.IsEnabled = false;
@@ -120,11 +125,44 @@ namespace UIFramework
                 }
                 menu.Items.Add(move);
             }
+            // Without the mouse: Tab reaches the field, the Menu key (or Shift+F10) opens this menu, and Move up and
+            // Move down, also Alt+Up and Alt+Down, do what dragging does. The moved field keeps the keyboard.
+            List<string> OnPage() => ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            void Move(int by)
+            {
+                var keys = OnPage();
+                int at = keys.IndexOf(setting.Key), to = at + by;
+                if (at < 0 || to < 0 || to >= keys.Count) return;
+                _focusField = setting.Key;
+                ReorderFields(ctx, pageId, setting.Key, by < 0 ? keys[to] : to + 1 < keys.Count ? keys[to + 1] : null);
+            }
+            var here = OnPage();
+            var up = Item(Text.T("cust.moveUp"), () => Move(-1));
+            up.IsEnabled = here.IndexOf(setting.Key) > 0;
+            up.InputGestureText = "Alt+↑";
+            var down = Item(Text.T("cust.moveDown"), () => Move(1));
+            down.IsEnabled = here.IndexOf(setting.Key) >= 0 && here.IndexOf(setting.Key) < here.Count - 1;
+            down.InputGestureText = "Alt+↓";
+            menu.Items.Add(up);
+            menu.Items.Add(down);
             menu.Items.Add(new Separator());
             var reset = Item(Text.T("cust.resetField"), () => { ctx.Layout.ResetField(setting.Key); Commit(ctx, pageId); });
             reset.IsEnabled = ctx.Layout.Field(setting.Key) != null;
             menu.Items.Add(reset);
             box.ContextMenu = menu;
+            box.Focusable = true;
+            box.KeyDown += (s, e) =>
+            {
+                var key = e.Key == Key.System ? e.SystemKey : e.Key;
+                if ((Keyboard.Modifiers & ModifierKeys.Alt) == 0 || (key != Key.Up && key != Key.Down)) return;
+                Move(key == Key.Up ? -1 : 1);
+                e.Handled = true;
+            };
+            if (setting.Key == _focusField)
+            {
+                _focusField = null;
+                box.Loaded += (s, e) => box.Focus();
+            }
 
             // Drag: the key travels; drop on another field reorders, drop on a rail page moves.
             Point? pressed = null;
@@ -486,11 +524,46 @@ namespace UIFramework
             });
             hide.IsEnabled = !fixedPage;
             menu.Items.Add(hide);
+            // Without the mouse (the rail's items take the keyboard, see Rail.Item): the Menu key opens this menu, and
+            // Move up and Move down, also Alt+Up and Alt+Down, do what dragging a page does.
+            void Move(int by)
+            {
+                if (page.Bottom) return;
+                var order = topPages().Select(p => p.Id).ToList();
+                int at = order.IndexOf(page.Id), to = at + by;
+                if (at < 0 || to < 0 || to >= order.Count) return;
+                var moved = MovePage(order, page.Id, order[to]);
+                for (int i = 0; i < moved.Count; i++)
+                    ctx.Layout.SetPage(moved[i], "order", i * 10);
+                _focusPage = page.Id;
+                Commit(ctx, page.Id);
+            }
+            var top = page.Bottom ? new List<string>() : topPages().Select(p => p.Id).ToList();
+            var up = Item(Text.T("cust.moveUp"), () => Move(-1));
+            up.IsEnabled = top.IndexOf(page.Id) > 0;
+            up.InputGestureText = "Alt+↑";
+            var down = Item(Text.T("cust.moveDown"), () => Move(1));
+            down.IsEnabled = top.IndexOf(page.Id) >= 0 && top.IndexOf(page.Id) < top.Count - 1;
+            down.InputGestureText = "Alt+↓";
+            menu.Items.Add(up);
+            menu.Items.Add(down);
             menu.Items.Add(new Separator());
             var reset = Item(Text.T("cust.resetPage"), () => { ctx.Layout.ResetPage(page.Id); Commit(ctx, page.Id); });
             reset.IsEnabled = ctx.Layout.Page(page.Id) != null;
             menu.Items.Add(reset);
             item.ContextMenu = menu;
+            item.KeyDown += (s, e) =>
+            {
+                var key = e.Key == Key.System ? e.SystemKey : e.Key;
+                if ((Keyboard.Modifiers & ModifierKeys.Alt) == 0 || (key != Key.Up && key != Key.Down)) return;
+                Move(key == Key.Up ? -1 : 1);
+                e.Handled = true;
+            };
+            if (page.Id == _focusPage)
+            {
+                _focusPage = null;
+                item.Loaded += (s, e) => item.Focus();
+            }
 
             Point? pressed = null;
             item.PreviewMouseLeftButtonDown += (s, e) => pressed = e.GetPosition(item);
@@ -620,7 +693,35 @@ namespace UIFramework
                 }
                 settle.Tick += (s, e) => CommitAccent();
                 accentBox.TextChanged += (s, e) => { settle.Stop(); settle.Start(); };
-                accentBox.LostFocus += (s, e) => CommitAccent();
+                // Leaving the box by a click on a button: taking the colour builds the window again, and the button
+                // under the pointer would be gone before the click is done (a click on Done or Export was lost). The
+                // click comes first; the colour follows once the window is the active one again (a dialog the button
+                // opened has closed).
+                void AfterClick()
+                {
+                    var owner = Window.GetWindow(accentBox);
+                    if (owner != null && !owner.IsActive && owner.IsVisible)
+                    {
+                        var later = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                        later.Tick += (s, e) => { later.Stop(); AfterClick(); };
+                        later.Start();
+                        return;
+                    }
+                    CommitAccent();
+                }
+                accentBox.LostFocus += (s, e) =>
+                {
+                    var owner = Window.GetWindow(accentBox);
+                    if (owner == null || Mouse.LeftButton != MouseButtonState.Pressed) { CommitAccent(); return; }
+                    settle.Stop();
+                    MouseButtonEventHandler released = null;
+                    released = (s2, e2) =>
+                    {
+                        owner.PreviewMouseLeftButtonUp -= released;
+                        owner.Dispatcher.BeginInvoke(new Action(AfterClick), System.Windows.Threading.DispatcherPriority.ContextIdle);
+                    };
+                    owner.PreviewMouseLeftButtonUp += released;
+                };
                 accentBox.KeyDown += (s, e) => { if (e.Key == Key.Enter) CommitAccent(); };
                 ctx.Parts.Boxes.Remove("accent");
             }
@@ -650,6 +751,14 @@ namespace UIFramework
 
             // Icon buttons like the footer's: the texts are their tooltips, so the bar stays one row wide.
             var reset = Ui.IconButton(Icons.Undo, Icons.Font, Text.T("cust.resetLayout"));
+            // Nothing to take back: the button says so by being greyed, instead of doing nothing when clicked.
+            if (ctx.Layout.ChangeCount == 0)
+            {
+                reset.IsEnabled = false;
+                reset.Opacity = 0.45;
+                ToolTipService.SetShowOnDisabled(reset, true);
+                reset.ToolTip = Text.T("cust.resetLayout") + "\n" + Text.T("cust.changes.none");
+            }
             reset.Click += (s, e) =>
             {
                 if (ctx.Layout.ChangeCount == 0) return;

@@ -175,7 +175,7 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 271 of 271 |
-| `lang/en.json` | 82 | 14 | 16 | 0 | 271 |
-| `lang/es.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 271 of 271 |
+| `lang/de.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 289 of 289 |
+| `lang/en.json` | 82 | 14 | 16 | 0 | 289 |
+| `lang/es.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 289 of 289 |
 <!-- generated:end -->
