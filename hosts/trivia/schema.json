@@ -1,6 +1,6 @@
 {
   "host": "trivia",
-  "version": "v9.3.1",
+  "version": "v9.3.2",
   "settingsFile": "Chat Games/Trivia Game/configs.json",
   "settings": [
     {
@@ -1210,7 +1210,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "help": "opentdb: thousands of English questions in two dozen categories, filtered on the Game page.",
-      "requires": "hide:questionSource=opentdb"
+      "showWhen": "questionSource=opentdb"
     },
     {
       "key": "sourceNoteWikidata",
@@ -1219,7 +1219,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "help": "Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic.",
-      "requires": "hide:questionSource=wikidata"
+      "showWhen": "questionSource=wikidata"
     },
     {
       "key": "sourceNoteOdenet",
@@ -1228,7 +1228,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "help": "OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once.",
-      "requires": "hide:questionSource=odenet"
+      "showWhen": "questionSource=odenet"
     },
     {
       "key": "sourceNotePokeapi",
@@ -1237,7 +1237,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "help": "PokeAPI: Pokémon types, generations, Pokédex entries and evolutions.",
-      "requires": "hide:questionSource=pokeapi"
+      "showWhen": "questionSource=pokeapi"
     },
     {
       "key": "sourceNoteIgdb",
@@ -1246,7 +1246,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "help": "IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below.",
-      "requires": "hide:questionSource=igdb"
+      "showWhen": "questionSource=igdb"
     },
     {
       "key": "sourceNoteCustom",
@@ -1255,7 +1255,7 @@
       "page": "sources",
       "section": "Where questions come from",
       "help": "Only your own list on the Questions page, in the language you wrote it.",
-      "requires": "hide:questionSource=custom"
+      "showWhen": "questionSource=custom"
     },
     {
       "key": "mixOwnQuestions",
@@ -1319,7 +1319,7 @@
       "page": "sources",
       "section": "IGDB access",
       "help": "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret.",
-      "requires": "hide:questionSource=igdb"
+      "showWhen": "questionSource=igdb"
     },
     {
       "key": "igdbClientId",
@@ -1328,7 +1328,7 @@
       "section": "IGDB access",
       "label": "Client ID",
       "help": "The Client ID of your Twitch developer application.",
-      "requires": "hide:questionSource=igdb",
+      "showWhen": "questionSource=igdb",
       "row": "igdb",
       "aliases": [
         "IgdbClientId"
@@ -1341,8 +1341,8 @@
       "section": "IGDB access",
       "label": "Client Secret",
       "help": "The Client Secret of that application. It is stored in configs.json on this PC and sent to Twitch only, to get IGDB's access token.",
-      "requires": "hide:questionSource=igdb",
       "masked": true,
+      "showWhen": "questionSource=igdb",
       "row": "igdb",
       "aliases": [
         "IgdbClientSecret"
@@ -3560,6 +3560,10 @@
         {
           "text": "Trivia Game on the Streamer.bot Discord",
           "url": "https://discord.com/channels/834650675224248362/1519697548791644241/1519697548791644241"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },

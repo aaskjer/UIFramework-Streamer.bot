@@ -1,6 +1,6 @@
 {
   "host": "slotmachine",
-  "version": "16.4.1",
+  "version": "16.4.2",
   "settingsFile": "Chat Games/Slot Machine Game/SMG-Settings.json",
   "settings": [
     {
@@ -1372,6 +1372,10 @@
         {
           "text": "Slot Machine Game on the Streamer.bot Discord",
           "url": "https://discord.com/channels/834650675224248362/1446889756297527530/1446889756297527530"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },

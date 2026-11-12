@@ -1,6 +1,6 @@
 {
   "host": "highlow",
-  "version": "v2.3.1",
+  "version": "v2.3.2",
   "settingsFile": "Chat Games/High-Low Game/HLG-Settings.json",
   "settings": [
     {
@@ -880,6 +880,10 @@
         {
           "text": "StreamUP - Currency Core",
           "url": "https://streamup.tips/product/currency-core"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },

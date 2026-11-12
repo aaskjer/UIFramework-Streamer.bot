@@ -1,6 +1,6 @@
 {
   "host": "battleship",
-  "version": "v2.4.1",
+  "version": "v2.4.2",
   "settingsFile": "Chat Games/Battleship Game/BSG-Settings.json",
   "settings": [
     {
@@ -3221,6 +3221,10 @@
         {
           "text": "Battleship Game on the Streamer.bot Discord",
           "url": "https://discord.com/channels/834650675224248362/1447648588694818836/1447648588694818836"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },

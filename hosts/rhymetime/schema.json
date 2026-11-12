@@ -1,6 +1,6 @@
 {
   "host": "rhymetime",
-  "version": "v2.4.1",
+  "version": "v2.4.2",
   "settingsFile": "Chat Games/RhymeTime/RT-settings.json",
   "settings": [
     {
@@ -1416,6 +1416,10 @@
         {
           "text": "tawmae - LOYALTY POINTS",
           "url": "https://tawmae.xyz/loyalty-points"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },

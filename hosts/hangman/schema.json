@@ -1,6 +1,6 @@
 {
   "host": "hangman",
-  "version": "v13.3.1",
+  "version": "v13.3.2",
   "settingsFile": "Chat Games/Hangman Game/configs.json",
   "settings": [
     {
@@ -3023,6 +3023,10 @@
         {
           "text": "Hangman Game on the Streamer.bot Discord",
           "url": "https://discord.com/channels/834650675224248362/1448251872744837203/1448251872744837203"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },

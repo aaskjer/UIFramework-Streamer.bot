@@ -25,10 +25,11 @@ public static class UiSchema
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
-        // its answer under the button, Auto asks it on show and after every change without a button. Live on any
-        // other field asks the host whenever the field changes (a preset slider whose answer fills in other fields).
+        // its answer under the button, Auto asks it on show and after every change without a button (and brings Live
+        // and Panel with it). Ask, on any other field, asks the host whenever the field changes (a preset slider whose
+        // answer fills in other fields); Live on such a field means the same and is still read.
         // Row: settings naming the same row, one after the other, share one line of the page.
-        public bool Transient, Live, Panel, Auto;
+        public bool Transient, Live, Panel, Auto, Ask;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
         // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
@@ -43,9 +44,9 @@ public static class UiSchema
     /// <summary>A setting: key and default, then whatever the conventions cannot know. Keys the conventions know
     /// (useBot, globalCooldown, blockedUsers, ...) need nothing but their default. An option is "value" or
     /// "value|label". aliasFactor multiplies the first alias's value on the move (a fraction to percent: 100).
-    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free"; with
-    /// "hide:" in front the field is hidden instead of greyed out while it does not hold. masked shows a text field as dots.
-    /// showWhen shows the field only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
+    /// requires is a switch's key, or a condition on any field: "numberOfSlots>=5", "cpBetMode=fixed", "mode!=free": the
+    /// field is greyed out while it does not hold. masked shows a text field as dots.
+    /// showWhen hides the field instead, and shows it only while its condition holds: "questionSource=igdb", several values "mode=a|b", several
     /// conditions "mode!=free && useBot", "!key" for a switch that is off. On a dropdown, shows names per option the fields it
     /// shows: "igdb: clientId, clientSecret". readOnly shows a value the game writes without letting the user edit it; step is
     /// a slider's step; group puts a message template under a heading of its own.</summary>
@@ -54,7 +55,7 @@ public static class UiSchema
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
         string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
-        bool readOnly = false, double? step = null, string group = null)
+        bool readOnly = false, double? step = null, string group = null, bool ask = false)
     {
         return new Setting
         {
@@ -62,7 +63,7 @@ public static class UiSchema
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
-            ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group
+            ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask
         };
     }
 
@@ -144,6 +145,7 @@ public static class UiSchema
         if (s.File != null) item["file"] = s.File;
         if (s.Transient) item["transient"] = true;
         if (s.Live) item["live"] = true;
+        if (s.Ask) item["ask"] = true;
         if (s.Panel) item["panel"] = true;
         if (s.Auto) item["auto"] = true;
         if (s.TwitchOnly) item["twitchOnly"] = true;
@@ -315,7 +317,7 @@ public static class UiSchema
                     Link("IGDB", "https://www.igdb.com/"),
                     Note("opentdb is an independent open-source project used through its free API; if you like it, support it or contribute questions. Wikidata's facts are free for any use (CC0). OdeNet by Melanie Siegel and Francis Bond is licensed CC BY-SA 4.0, and the definitions shown in chat are taken from it. Pokémon data comes from PokeAPI; Pokémon and its names are trademarks of Nintendo, Creatures and GAME FREAK. Video game data is provided by IGDB.com. None of these projects is affiliated with or endorses Trivia Game."))
             },
-            links: new[] { Link("Trivia Game on the Streamer.bot Discord", "https://discord.com/channels/834650675224248362/1519697548791644241/1519697548791644241") })
+            links: new[] { Link("Trivia Game on the Streamer.bot Discord", "https://discord.com/channels/834650675224248362/1519697548791644241/1519697548791644241"), Link("aaskjer on Twitch", "https://twitch.tv/aaskjer") })
         .Cooldowns(C("0137a7a6-79b0-46a2-937f-71e23479c140", "globalCooldown", "userCooldown"))   // !trivia
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
@@ -697,19 +699,19 @@ public static class UiSchema
         S("questionSource", "opentdb", page: "sources", label: "Question source", help: "Where each round's question comes from. Your own questions can be mixed into any of them below, or played alone with 'Only my questions'.", kind: "options", section: "Where questions come from", options: new[] { "opentdb|opentdb", "wikidata|Wikidata (SPARQL)", "odenet|OdeNet (German WordNet)", "pokeapi|PokeAPI", "igdb|IGDB", "custom|Only my questions" }, row: "source", aliases: new[] { "QuestionSource" }),
         S("questionLanguage", "en", page: "sources", label: "Question language", help: "The language Wikidata, PokeAPI and IGDB questions are written in, names included where the source has them. opentdb is English and OdeNet German whatever this says; your own questions are as you wrote them.", kind: "options", section: "Where questions come from", options: new[] { "en|English", "de|Deutsch" }, row: "source", aliases: new[] { "QuestionLanguage" }),
         S("checkSource", null, page: "sources", label: "Check", help: "Asks the source picked beside it whether it answers right now: opentdb, Wikidata, PokeAPI, GitHub for OdeNet's word list, or Twitch for the IGDB keys. Nothing is saved.", kind: "action", section: "Where questions come from", live: true, panel: true, row: "source"),
-        S("sourcesNote", null, page: "sources", help: "opentdb: thousands of English questions in two dozen categories, filtered on the Game page.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=opentdb"),
-        S("sourceNoteWikidata", null, page: "sources", help: "Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=wikidata"),
-        S("sourceNoteOdenet", null, page: "sources", help: "OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=odenet"),
-        S("sourceNotePokeapi", null, page: "sources", help: "PokeAPI: Pokémon types, generations, Pokédex entries and evolutions.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=pokeapi"),
-        S("sourceNoteIgdb", null, page: "sources", help: "IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=igdb"),
-        S("sourceNoteCustom", null, page: "sources", help: "Only your own list on the Questions page, in the language you wrote it.", kind: "note", section: "Where questions come from", requires: "hide:questionSource=custom"),
+        S("sourcesNote", null, page: "sources", help: "opentdb: thousands of English questions in two dozen categories, filtered on the Game page.", kind: "note", section: "Where questions come from", showWhen: "questionSource=opentdb"),
+        S("sourceNoteWikidata", null, page: "sources", help: "Wikidata: questions built from Wikidata's facts (capitals, currencies, elements, moons, paintings, books, films); chat can pick a topic.", kind: "note", section: "Where questions come from", showWhen: "questionSource=wikidata"),
+        S("sourceNoteOdenet", null, page: "sources", help: "OdeNet: German vocabulary from the Open German WordNet, always German; the word list (about 4 MB) is downloaded once.", kind: "note", section: "Where questions come from", showWhen: "questionSource=odenet"),
+        S("sourceNotePokeapi", null, page: "sources", help: "PokeAPI: Pokémon types, generations, Pokédex entries and evolutions.", kind: "note", section: "Where questions come from", showWhen: "questionSource=pokeapi"),
+        S("sourceNoteIgdb", null, page: "sources", help: "IGDB: video game release years, studios and platforms; needs a Twitch developer application of your own, see below.", kind: "note", section: "Where questions come from", showWhen: "questionSource=igdb"),
+        S("sourceNoteCustom", null, page: "sources", help: "Only your own list on the Questions page, in the language you wrote it.", kind: "note", section: "Where questions come from", showWhen: "questionSource=custom"),
         S("mixOwnQuestions", false, page: "sources", label: "Mix in my questions", help: "Draws some rounds from your own list on the Questions page instead of the source above, whichever source that is. How many is set beside it.", section: "Where questions come from", showWhen: "questionSource!=custom", row: "mix", aliases: new[] { "MixOwnQuestions" }),
         S("customQuestionChance", 50, page: "sources", label: "Share of mine", help: "How likely each round is to come from your own list while 'Mix in my questions' is on. 50 is roughly every other round.", kind: "percent", section: "Where questions come from", min: 0.0, max: 100.0, requires: "mixOwnQuestions", showWhen: "questionSource!=custom", row: "mix", aliases: new[] { "CustomQuestionChance" }),
         S("cacheSize", 5, page: "sources", label: "Fetch ahead", help: "How many opentdb questions are fetched at once and kept for later rounds. Larger means fewer API calls. The other sources keep what they fetch on disk anyway, under Chat Games\\Trivia Game\\Sources.", section: "Where questions come from", min: 1.0, showWhen: "questionSource=opentdb", row: "mix", aliases: new[] { "CacheSize" }),
         S("customFallback", true, page: "sources", label: "Fall back to the other source", help: "When one side cannot produce a question, an empty list, filters that match nothing or a source that does not answer, the round takes it from the other instead of failing: your own list and the source above while mixing, opentdb with 'Only my questions'.", section: "Where questions come from", aliases: new[] { "CustomFallback" }),
-        S("igdbNote", null, page: "sources", help: "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret.", kind: "note", section: "IGDB access", requires: "hide:questionSource=igdb"),
-        S("igdbClientId", "", page: "sources", label: "Client ID", help: "The Client ID of your Twitch developer application.", section: "IGDB access", requires: "hide:questionSource=igdb", row: "igdb", aliases: new[] { "IgdbClientId" }),
-        S("igdbClientSecret", "", page: "sources", label: "Client Secret", help: "The Client Secret of that application. It is stored in configs.json on this PC and sent to Twitch only, to get IGDB's access token.", section: "IGDB access", requires: "hide:questionSource=igdb", row: "igdb", masked: true, aliases: new[] { "IgdbClientSecret" }),
+        S("igdbNote", null, page: "sources", help: "IGDB is run by Twitch and only answers an application registered with Twitch. Register one at https://dev.twitch.tv/console/apps: any name, http://localhost as the OAuth redirect URL, category Application Integration, client type Confidential. Then copy its Client ID here and create a Client Secret with New Secret.", kind: "note", section: "IGDB access", showWhen: "questionSource=igdb"),
+        S("igdbClientId", "", page: "sources", label: "Client ID", help: "The Client ID of your Twitch developer application.", section: "IGDB access", showWhen: "questionSource=igdb", row: "igdb", aliases: new[] { "IgdbClientId" }),
+        S("igdbClientSecret", "", page: "sources", label: "Client Secret", help: "The Client Secret of that application. It is stored in configs.json on this PC and sent to Twitch only, to get IGDB's access token.", section: "IGDB access", showWhen: "questionSource=igdb", row: "igdb", masked: true, aliases: new[] { "IgdbClientSecret" }),
         S("suggestNote", null, page: "suggestions", help: "Viewers write trivia for you with !suggest. One message carries the whole question, separated by pipes: !suggest What year did Twitch launch? | 2011 | 2007 | 2014, the question first, then the correct answer, then up to three wrong ones.", kind: "note", section: "Questions from chat"),
         S("allowQuestionSuggestions", false, page: "suggestions", label: "Allow question suggestions", help: "Off, and !suggest answers with the 'Suggestions off' message.", section: "Questions from chat", aliases: new[] { "AllowQuestionSuggestions" }),
         S("whoSuggestsNote", null, page: "suggestions", help: "A suggestion is accepted from somebody who redeemed the reward, belongs to one of the groups, or is a moderator while that is on. Anyone else gets the 'No permission' message.", kind: "note", section: "Who may suggest"),
@@ -957,14 +959,20 @@ public sealed class UiWindow
     /// accent colour are not applied. Theme and language stay the user's to pick.</summary>
     public UiWindow Lock(bool locked = true) { Locked = locked; return this; }
 
+    /// <summary>The window's language, whatever the user's is ("de"): the window then offers no language to pick.
+    /// Left out, the user picks among the languages there are texts for.</summary>
+    public UiWindow InLanguage(string code) { Language = code; return this; }
+
     /// <summary>The pages in order: a UiPage (UiSchema.P) or the id of a standard page ("messages", "log", "help", "about").</summary>
     public UiWindow Pages(params object[] pages) { PageList.AddRange(pages); return this; }
 
     /// <summary>The Log page: the folder (relative to the Streamer.bot folder) and the files in it, "BJG-log*.txt";
     /// the bool setting behind "Write a log file per day"; the columns after Time and Result as "Header|field" or a
-    /// field; the values of the Result filter.</summary>
+    /// field; the values of the Result filter. <paramref name="styles"/> colours results, "GAME-OVER|muted" or with *
+    /// "WIN-*|success" (success, warning, muted, accent, none; the first that fits wins, the rest go by the words in
+    /// them); <paramref name="outcome"/> names what a result is filtered by, "DUEL WIN|WIN".</summary>
     public UiWindow Log(string folder, string files, string writeLogKey = null, string writeLogHelp = null, string[] columns = null, string[] results = null,
-        string[] platforms = null, string emptyText = null, string writeLogLabel = null)
+        string[] platforms = null, string emptyText = null, string writeLogLabel = null, string[] styles = null, string[] outcome = null)
     {
         LogMap = new Newtonsoft.Json.Linq.JObject { ["folder"] = folder, ["files"] = files };
         if (writeLogKey != null) LogMap["writeLogKey"] = writeLogKey;
@@ -983,7 +991,21 @@ public sealed class UiWindow
         }
         if (results != null) LogMap["results"] = new Newtonsoft.Json.Linq.JArray(results);
         if (platforms != null) LogMap["platforms"] = new Newtonsoft.Json.Linq.JArray(platforms);
+        if (styles != null) LogMap["styles"] = LogPairs(styles);
+        if (outcome != null) LogMap["outcome"] = LogPairs(outcome);
         return this;
+    }
+
+    // "WIN-*|success" as the schema has it: { "WIN-*": "success" }, in the order given.
+    private static Newtonsoft.Json.Linq.JObject LogPairs(string[] pairs)
+    {
+        var map = new Newtonsoft.Json.Linq.JObject();
+        foreach (var pair in pairs)
+        {
+            int bar = (pair ?? "").LastIndexOf('|');
+            if (bar > 0) map[pair.Substring(0, bar).Trim()] = pair.Substring(bar + 1).Trim();
+        }
+        return map;
     }
 
     /// <summary>Commands whose cooldowns follow settings (UiSchema.C): the settings action sets them after every save.</summary>
@@ -1057,8 +1079,6 @@ public sealed class UiWindow
         return this;
     }
 
-    /// <summary>A tour of the window, stop by stop (UiSchema.Tip): it starts by itself on the window's first open and
-    /// again from the ? in the header. Its texts translate through Lang's Tx like every declared text.</summary>
     /// <summary>How the update notice once per Streamer.bot start tells of this game (docs/Schema.md, "Update notice"):
     /// <paramref name="chat"/> a line in every connected chat, with <paramref name="chatText"/> (null: the framework's,
     /// in the window's language); <paramref name="toast"/> a Windows toast, <paramref name="toastAlways"/> or only while no
@@ -1073,6 +1093,8 @@ public sealed class UiWindow
         return this;
     }
 
+    /// <summary>A tour of the window, stop by stop (UiSchema.Tip): it starts by itself on the window's first open and
+    /// again from the ? in the header. Its texts translate through Lang's Tx like every declared text.</summary>
     public UiWindow Tour(params UiLine[] tips)
     {
         foreach (var tip in tips) TourList.Add(tip.Json);
@@ -1135,6 +1157,8 @@ public sealed class UiPage
 {
     public string Id, Title, Icon; public string[] Fields; public bool Custom, Bottom;
     public UiPage(string id, string title, string icon, string[] fields) { Id = id; Title = title; Icon = icon; Fields = fields; }
+    /// <summary>Puts the page at the foot of the rail, above How to play, Log and About: UiSchema.P("stats", "Stats").AtBottom().</summary>
+    public UiPage AtBottom(bool bottom = true) { Bottom = bottom; return this; }
     public Newtonsoft.Json.Linq.JObject ToJson()
     {
         var page = new Newtonsoft.Json.Linq.JObject { ["id"] = Id };
@@ -1180,7 +1204,8 @@ public static class UiHost
 
     /// <param name="args">The action's arguments.</param>
     /// <param name="CPH">The action's CPH.</param>
-    /// <param name="actionName">This action's name, as the settings action knows it.</param>
+    /// <param name="actionName">This action's name, as the settings action knows it: the prefix of its log lines.
+    /// Null takes the name Streamer.bot gives the run (its argument actionName).</param>
     /// <param name="host">A short name of the game for the framework's files, "blackjack".</param>
     /// <param name="version">The game's version, "v17.0.0".</param>
     /// <param name="settingsFile">The settings file, relative to the Streamer.bot folder.</param>
@@ -1198,6 +1223,7 @@ public static class UiHost
         if (request == null && args != null && args.ContainsKey("uiframework.describe")) request = "describe";
         if (string.IsNullOrEmpty(request))
             return false;
+        if (string.IsNullOrEmpty(actionName)) actionName = Arg(args, "actionName") ?? "";
         // The settings action names the global it will read; without that (an older stub) the name is built here.
         string var = Arg(args, "uiframework.var");
         if (request == "describe")

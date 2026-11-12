@@ -1,6 +1,6 @@
 {
   "host": "chatgamble",
-  "version": "25.2.1",
+  "version": "25.2.2",
   "settingsFile": "Chat Games/Classic Chat Gamble/configs.json",
   "settings": [
     {
@@ -1172,6 +1172,10 @@
         {
           "text": "Classic Chat Gamble on the Streamer.bot Discord",
           "url": "https://discord.com/channels/834650675224248362/1446874050310836396/1446874050310836396"
+        },
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
         }
       ]
     },
