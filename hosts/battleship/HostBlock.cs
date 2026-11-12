@@ -498,7 +498,7 @@ public static class UiSchema
                     Note("Battles are paid in the points of a currency system. These two are found on their own:"),
                     Link("Currency Core by StreamUP", "https://streamup.tips/product/currency-core"),
                     Link("LOYALTY POINTS by tawmae", "https://tawmae.xyz/loyalty-points"))
-            }, links: new[] { Link("Battleship Game on the Streamer.bot Discord", "https://discord.com/channels/834650675224248362/1447648588694818836/1447648588694818836"), Link("aaskjer on Twitch", "https://twitch.tv/aaskjer") })
+            }, links: new[] { Link("aaskjer on Twitch", "https://twitch.tv/aaskjer") })
         // The tour on the window's first open (the ? in the header shows it again); the framework brings the texts.
         .Tour(Tip("start"), Tip("rail"), Tip("save"), Tip("customise"), Tip("end"));
 
