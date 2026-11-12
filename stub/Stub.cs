@@ -307,8 +307,8 @@ public class CPHInline
 
     private const string FrameworkName = "UIFramework for streamer.bot";
     // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
-    // and is not offered to this one.
-    private const string StubVersion = "0.2.0";
+    // and is not offered to this one, and an installed DLL that asks for a newer one is passed over (0.2.1 and on).
+    private const string StubVersion = "0.2.1";
     // The API answers with the file as it is on main right now; the raw CDN keeps a copy for up to five minutes and
     // ignores a cache-busting query, so it is the fallback only (rate limit on the API, or the API unreachable).
     private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/v1/latest.json?ref=main";
@@ -318,9 +318,12 @@ public class CPHInline
 
     private static string FindFramework() => FrameworkCandidates().FirstOrDefault();
 
-    /// <summary>Every installed UIFramework.dll, newest first: when the newest cannot be loaded (a damaged file, a
-    /// build this stub does not fit), the next older one opens the window instead.</summary>
-    private static List<string> FrameworkCandidates()
+    /// <summary>Every installed UIFramework.dll this stub fits, newest first: when the newest cannot be loaded (a
+    /// damaged file, a build this stub does not fit), the next older one opens the window instead. One that asks
+    /// for a newer settings action (another game installed it) is left out, as its download would have been.</summary>
+    private static List<string> FrameworkCandidates() => InstalledFrameworks().Where(dll => StubNeededBy(dll) == null).ToList();
+
+    private static List<string> InstalledFrameworks()
     {
         if (!Directory.Exists(LibRoot))
             return new List<string>();
@@ -330,6 +333,22 @@ public class CPHInline
             .OrderByDescending(x => x.Version)
             .Select(x => Path.Combine(x.Dir, "UIFramework.dll"))
             .ToList();
+    }
+
+    /// <summary>The settings action an installed DLL needs when that is newer than this one, else null. The DLL names
+    /// it in its product version ("1.9.0+stub.0.3.0"), which is read without loading the file; a DLL that names none
+    /// (every one before 1.8.4) fits.</summary>
+    private static Version StubNeededBy(string dllPath)
+    {
+        try
+        {
+            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dllPath).ProductVersion ?? "";
+            int at = product.IndexOf("+stub.", StringComparison.Ordinal);
+            if (at < 0) return null;
+            var needs = Full(ParseVersion(product.Substring(at + 6).Trim()));
+            return needs != null && needs > Full(ParseVersion(StubVersion)) ? needs : null;
+        }
+        catch (Exception) { return null; }
     }
 
     private static Version ParseVersion(string text)
@@ -356,7 +375,9 @@ public class CPHInline
             return dll;
 
         var answer = Ask(
-            "The settings window is built by UIFramework.dll, which is not installed in this Streamer.bot yet.\n\n" +
+            (InstalledFrameworks().Count > 0
+                ? "The settings window is built by UIFramework.dll, and the one installed in this Streamer.bot needs a newer settings action than this game's.\n\n"
+                : "The settings window is built by UIFramework.dll, which is not installed in this Streamer.bot yet.\n\n") +
             "Yes: download it now from GitHub into\n" + LibRoot + "\n\n" +
             "No: I already have the file; show me the folder it belongs in.",
             MbYesNoCancel, MbIconQuestion);
@@ -879,6 +900,16 @@ public class CPHInline
         }
         finally { Volatile.Write(ref _askingGame, 0); }
         string dll;
+        try
+        {
+            foreach (var passed in InstalledFrameworks())
+            {
+                var needs = StubNeededBy(passed);
+                if (needs != null)
+                    CPH.LogWarn(LogPrefix + " " + passed + " needs a newer settings action (stub " + needs + ", this one is " + StubVersion + ") and is passed over; update the game to use it.");
+            }
+        }
+        catch (Exception) { }
         try { dll = EnsureFramework(); }
         catch (Exception ex)
         {

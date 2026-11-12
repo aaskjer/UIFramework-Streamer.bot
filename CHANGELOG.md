@@ -8,6 +8,33 @@ follows it go to `lib/v2/latest.json`.
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-11-12
+
+The two points the review had left open. The DLL's part works with every game as it is; the settings action's
+part (stub 0.2.1) comes to a game with its next release.
+
+### Fixed
+
+- **A DLL is not used by a settings action older than it asks for.** `minHostStub` in `latest.json` only kept such
+  a release from being downloaded; a DLL another game had installed or loaded already was used all the same. The
+  DLL now names the stub it needs (`MinHostStub` in `UIFramework.csproj`, in the file's product version as
+  `1.8.4+stub.0.1.0`) and opens no window for an older one: the game's dialog says which stub it needs. The
+  release workflow writes the same value into `latest.json`, so the two cannot disagree.
+- **Settings action (stub 0.2.1): an installed DLL that needs a newer stub is passed over** for an older one that
+  fits, before it is loaded, with a line in the log. When no installed DLL fits, the dialog says so and offers the
+  download.
+- **Log page: lines coming in leave the row being read where it is.** The grid kept its offset, which counts rows,
+  and the newest line is the first row: every line a round in chat added pushed the rows down by one. The entry
+  at the top of the grid is found again and put back there. At the very top nothing is held, so new lines show
+  as they come.
+
+### Checked
+
+- **A table list's search and the row being edited** (the row editor's mistake of 1.8.2): the table does not have
+  it. The row stays while a cell is typed in and on the way to the next cell, and the search takes it when the
+  row is left. One difference stays: saving while the cell is still open ends the row's edit, so a row that no
+  longer matches the search is taken then.
+
 ## [1.8.3] - 2026-11-12
 
 Games need no update.

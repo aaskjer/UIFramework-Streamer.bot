@@ -32,18 +32,56 @@ namespace UIFramework
         /// </summary>
         public static bool Show(string specJson, string schemaJson, string settingsPath, object host, Action pump = null)
         {
+            string stubVersion = null;
+            try
+            {
+                var stub = host?.GetType().DeclaringType?.GetField("StubVersion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                stubVersion = stub?.GetRawConstantValue() as string ?? stub?.GetValue(null) as string;
+            }
+            catch (Exception) { }
+            // A settings action older than this DLL works with gets no window: latest.json's minHostStub kept such a
+            // DLL from being downloaded by it, but one another game had installed or loaded was used all the same.
+            string refusal = StubRefusal(stubVersion, MinHostStub);
+            if (refusal != null)
+                throw new InvalidOperationException(refusal);
             var bridge = new ReflectionHost(host);
             var schema = Schema.Parse(schemaJson);
             var spec = SpecFor(specJson, schema, settingsPath);
             // For the update notice in chat: this game and its version are in use, and so is its settings action.
             try
             {
-                var stub = host?.GetType().DeclaringType?.GetField("StubVersion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-                UpdateNotices.Register(schema.Host, spec.Title, schema.Version, (string)schema.Window?["releases"], settingsPath, stub?.GetRawConstantValue() as string ?? stub?.GetValue(null) as string,
+                UpdateNotices.Register(schema.Host, spec.Title, schema.Version, (string)schema.Window?["releases"], settingsPath, stubVersion,
                     schema.Window?["updates"]?.ToString(Newtonsoft.Json.Formatting.None));
             }
             catch (Exception) { }
             return Show(spec, schema, bridge, bridge, pump);
+        }
+
+        /// <summary>The oldest settings action (its StubVersion) this DLL works with, from the product version the
+        /// build wrote ("1.8.4+stub.0.1.0", MinHostStub in UIFramework.csproj); null when the build named none.</summary>
+        public static string MinHostStub
+        {
+            get
+            {
+                string product = typeof(Entry).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
+                int at = product.IndexOf("+stub.", StringComparison.Ordinal);
+                return at < 0 ? null : product.Substring(at + 6);
+            }
+        }
+
+        /// <summary>What a settings action older than <paramref name="minHostStub"/> is told instead of getting a
+        /// window, or null when it fits. A stub that names no version (the preview, a test) and a DLL that asks for
+        /// none always fit; missing parts of a version count as 0, as in the stub.</summary>
+        public static string StubRefusal(string stubVersion, string minHostStub)
+        {
+            Version has = Web.ParseVersion(stubVersion), needs = Web.ParseVersion(minHostStub);
+            if (has == null || needs == null)
+                return null;
+            Version Full(Version v) => new Version(v.Major, v.Minor, Math.Max(0, v.Build), Math.Max(0, v.Revision));
+            if (Full(has) >= Full(needs))
+                return null;
+            return "UIFramework " + FrameworkVersion + " needs a newer settings action (stub " + minHostStub + ", this game's is " + stubVersion +
+                "). Update the game, or remove this version's folder under <Streamer.bot>\\UIFramework\\lib and restart Streamer.bot, so that an older UIFramework.dll is used.";
         }
 
         /// <summary>The spec the stub carries, or, when it carries none, the window the schema declares; a

@@ -11,7 +11,13 @@
     <Nullable>disable</Nullable>
     <RootNamespace>UIFramework</RootNamespace>
     <AssemblyName>UIFramework</AssemblyName>
-    <Version>1.8.3</Version>
+    <Version>1.8.4</Version>
+    <!-- The oldest settings action (StubVersion in stub/Stub.cs) this DLL works with. It goes into the product
+         version ("1.8.4+stub.0.1.0"), where a stub reads it without loading the file and the DLL reads it to refuse
+         an older stub, and the release workflow writes it into latest.json as minHostStub. -->
+    <MinHostStub>0.1.0</MinHostStub>
+    <InformationalVersion>$(Version)+stub.$(MinHostStub)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Authors>aaskjer</Authors>
     <Product>UIFramework for streamer.bot</Product>
     <Description>Settings-window framework for Streamer.bot extensions.</Description>

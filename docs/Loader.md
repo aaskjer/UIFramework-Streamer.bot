@@ -45,8 +45,12 @@ version again. A game's host block checks the same hash before it loads the DLL 
 check (host block of 1.8.1 and on; an older one loaded it unchecked, and the settings action then used what was
 loaded); it leaves a damaged file where it is, for the settings action to set aside. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
 has no hash file and is loaded as it is. A release
-whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.2.0 now) is not offered to
-that stub; the game has to ship the newer settings action first. Nothing from `latest.json` is taken unchecked: a
+whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.2.1 now) is not offered to
+that stub; the game has to ship the newer settings action first. The same holds for a DLL that is there already,
+installed by another game: a DLL names the stub it needs in its product version (`1.8.4+stub.0.1.0`, from
+`MinHostStub` in `UIFramework.csproj`), a stub from 0.2.1 on reads that without loading the file and passes such a
+DLL over for an older one that fits, and the DLL itself (1.8.4 and on) opens no window for an older stub but says
+which one it needs. That also covers a stub before 0.2.1 and a DLL another game has loaded already. Nothing from `latest.json` is taken unchecked: a
 release without a `sha256` is not installed, a `url` that is not `https://` is not fetched, and a `version` that is
 not two to four numbers with dots (`1.2.0`, a leading `v` allowed) never becomes a folder name.
 
@@ -90,6 +94,6 @@ runs through `System.Net.WebClient` from `System.dll`; both come with the refere
 **Release:** a tag `vX.Y.Z` (the `<Version>` in `UIFramework.csproj` must match) makes
 `.github/workflows/release.yml` build the tag's own commit (which must be on `main`), test, create the release with
 `UIFramework.dll` and write `lib/v<major>/latest.json` on `main` (`lib/v1/` for 1.x.y, `lib/v2/` from 2.0.0 on; the
-first release of a line makes its folder). `minHostStub` is carried over from main's
-`latest.json` (raise it there when a release needs a newer stub; for a new line, commit a `latest.json` that holds
-only `minHostStub` before the tag), and an older tag released late never takes `latest.json` back.
+first release of a line makes its folder). `minHostStub` is `MinHostStub` from the
+tag's `UIFramework.csproj` (raise it there when a release needs a newer stub; the DLL then carries it too), and an
+older tag released late never takes `latest.json` back.

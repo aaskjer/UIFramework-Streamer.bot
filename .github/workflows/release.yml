@@ -56,6 +56,9 @@ jobs:
           if ($xml -notmatch "<Version>$([regex]::Escape($version))</Version>") {
             Write-Error "The tag says $version but UIFramework.csproj says $([regex]::Match($xml, '<Version>([^<]+)</Version>').Groups[1].Value); bump the csproj first."
           }
+          # The oldest settings action this DLL works with, for latest.json: the DLL carries it in its product version
+          # and refuses an older stub itself. A tag from before 1.8.4 names none; latest.json's own is kept then.
+          "stub=$([regex]::Match($xml, '<MinHostStub>([^<]+)</MinHostStub>').Groups[1].Value)" >> $env:GITHUB_OUTPUT
           # Stable releases are round versions only (2.0.0, 3.0.0); everything else is a pre-release (2026-11-08).
           "prerelease=$(if ($version -notmatch '^[1-9][0-9]*\.0\.0$') { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
 
@@ -119,10 +122,9 @@ jobs:
           for ($try = 1; $try -le 3; $try++) {
             git fetch origin main --quiet
             git checkout -B main origin/main --quiet
-            # minHostStub is kept from main's latest.json (raise it there when a release needs a newer stub), and an
-            # older tag released late never takes latest.json back below what is out already. The first release of a
-            # major line finds no file: its folder is made here, and a minHostStub that line needs is committed in a
-            # latest.json without a version before the tag.
+            # minHostStub is the tag's own (MinHostStub in UIFramework.csproj; raise it there when a release needs a
+            # newer stub), and an older tag released late never takes latest.json back below what is out already. The
+            # first release of a major line finds no file: its folder is made here.
             $current = if (Test-Path $path) { Get-Content $path -Raw | ConvertFrom-Json } else { $null }
             if ($current -and $current.version -and [version]$current.version -gt [version]$version) {
               Write-Host "latest.json names $($current.version), newer than $version; left as it is."
@@ -132,7 +134,7 @@ jobs:
               version     = $version
               url         = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/UIFramework.dll'
               sha256      = '${{ steps.h.outputs.sha }}'
-              minHostStub = $(if ($current -and $current.minHostStub) { $current.minHostStub } else { '0.1.0' })
+              minHostStub = $(if ('${{ steps.v.outputs.stub }}') { '${{ steps.v.outputs.stub }}' } elseif ($current -and $current.minHostStub) { $current.minHostStub } else { '0.1.0' })
               note        = 'Read by the loader in every host''s settings action. Written by .github/workflows/release.yml on a tag vX.Y.Z.'
             }
             $json = ($latest | ConvertTo-Json) + "`n"

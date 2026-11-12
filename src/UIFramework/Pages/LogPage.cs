@@ -231,8 +231,14 @@ namespace UIFramework
                 string keepDay = dates.SelectedItem as string;
                 string keepResult = results.SelectedItem as string;
                 // The log is read again by itself while a round runs in chat: the picked entry, found again by its
-                // raw line, and its detail line stay. The grid keeps the place it is scrolled to by itself.
+                // raw line, and its detail line stay. So does the place being read: the grid keeps its offset, which counts
+                // rows, and the newest line is the first row, so every line a round adds pushed the rows down by one.
+                // The entry at the top of the grid is found again and put back there. At the very top nothing is held:
+                // new lines show as they come.
                 string keepRaw = (grid.SelectedItem as LogEntry)?.Raw;
+                var viewer = grid.Template?.FindName("DG_ScrollViewer", grid) as ScrollViewer;
+                int top = viewer != null && viewer.CanContentScroll ? (int)viewer.VerticalOffset : 0;
+                string topRaw = top > 0 && top < grid.Items.Count ? (grid.Items[top] as LogEntry)?.Raw : null;
                 IEnumerable<LogEntry> reloaded;
                 try { reloaded = ctx.Hooks.ReadLog() ?? Enumerable.Empty<LogEntry>(); }
                 catch (Exception ex) { ctx.Log.Warn(ctx.Spec.LogPrefix + " Log could not be read: " + ex.Message); reloaded = Enumerable.Empty<LogEntry>(); }
@@ -248,6 +254,9 @@ namespace UIFramework
                 grid.SelectedItem = again;
                 if (again == null)
                     details.Text = "";
+                int now = RowOf(grid.Items, topRaw, top);
+                if (now >= 0)
+                    viewer.ScrollToVerticalOffset(now);
             }
             reload.Click += (sender, e) => Reload();
             Follow(root, spec, ctx, Reload);
@@ -317,6 +326,19 @@ namespace UIFramework
             closing = (sender, e) => Stop();
             dispatcher.ShutdownStarted += closing;
             page.Unloaded += (sender, e) => Stop();
+        }
+
+        /// <summary>The row that holds the entry with this raw line, or -1. Two entries can read the same (a line
+        /// without a time): the one nearest to where it was is meant.</summary>
+        public static int RowOf(System.Collections.IList rows, string raw, int was)
+        {
+            if (string.IsNullOrEmpty(raw))
+                return -1;
+            int found = -1;
+            for (int i = 0; i < rows.Count; i++)
+                if (rows[i] is LogEntry entry && entry.Raw == raw && (found < 0 || Math.Abs(i - was) < Math.Abs(found - was)))
+                    found = i;
+            return found;
         }
 
         // "WIN" reads "Win"; every part of "GAME-OVER" or "CP_START" gets its capital: "Game-Over", "Cp_Start".

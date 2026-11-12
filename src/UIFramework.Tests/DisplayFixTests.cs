@@ -343,7 +343,8 @@ namespace UIFramework.Tests
                 Assert.NotSame(picked, again);
                 Assert.Equal(raw, again.Raw);
                 Assert.Equal(raw, details.Text);
-                Assert.Equal(30, viewer.VerticalOffset);
+                // The new line is the first row: the row that was at the top is one further down, and still at the top.
+                Assert.Equal(31, viewer.VerticalOffset);
 
                 // With a filter that still shows the entry, the same.
                 Combo(page, "log.result").SelectedItem = "Win";
