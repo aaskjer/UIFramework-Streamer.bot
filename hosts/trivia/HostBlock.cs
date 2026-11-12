@@ -191,7 +191,7 @@ public static class UiSchema
     }
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
     /// setting's key, "page:id" for a page in the rail, a part of the window ("start", "end", "rail", "save",
-    /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour"), or null for a note in the
+    /// "saveExit", "cancel", "status", "reset", "resetPage", "theme", "customise", "tour", "search"), or null for a note in the
     /// middle. Left out, title and text are the framework's own for a part or a page, a setting's label and help.
     /// act: the user may use the ringed part while the stop is up (press the Try button, type into the field).</summary>
     public static UiLine Tip(string target, string title = null, string text = null, bool act = false)
@@ -1344,22 +1344,46 @@ public static class UiUpdateNotice
             {
                 System.Version version;
                 string file = System.IO.Path.Combine(dir, "UIFramework.dll");
-                if (System.Version.TryParse(System.IO.Path.GetFileName(dir), out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
+                // "v1.8.0" is a folder too, as it is to the settings action.
+                string folder = System.IO.Path.GetFileName(dir).TrimStart('v', 'V');
+                if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
                 {
                     newest = Full(version);
                     newestFile = file;
                 }
             }
-        if (newestFile != null && (loadedVersion == null || newest > loadedVersion))
+        if (newestFile != null && newestFile != _refused && (loadedVersion == null || newest > loadedVersion))
         {
             try
             {
-                var type = System.Reflection.Assembly.LoadFrom(newestFile).GetType("UIFramework.UpdateNotices", false);
+                // As the settings action loads it: not a file that no longer matches the hash it was downloaded with
+                // (that one is left for the settings action to set aside), and with UnsafeLoadFrom, since LoadFrom
+                // refuses a DLL saved from a browser (Windows' "downloaded from the internet" mark).
+                if (!Intact(newestFile)) { _refused = newestFile; return loaded; }
+                var type = System.Reflection.Assembly.UnsafeLoadFrom(newestFile).GetType("UIFramework.UpdateNotices", false);
                 if (type != null) return type;
             }
-            catch (System.Exception) { }
+            catch (System.Exception) { _refused = newestFile; }
         }
         return loaded;
+    }
+
+    // The newest DLL once it was found damaged or would not load: not hashed and tried again on every call.
+    private static string _refused;
+
+    /// <summary>Whether the DLL still is what was downloaded: its SHA-256 against the .sha256 file the settings action
+    /// wrote beside it. A DLL put in by hand has no such file and counts as it is.</summary>
+    internal static bool Intact(string dll)
+    {
+        string hashFile = dll + ".sha256";
+        if (!System.IO.File.Exists(hashFile)) return true;
+        string expected = System.IO.File.ReadAllText(hashFile).Trim().ToLowerInvariant();
+        var text = new System.Text.StringBuilder();
+        using (var sha = System.Security.Cryptography.SHA256.Create())
+        using (var stream = System.IO.File.OpenRead(dll))
+            foreach (byte b in sha.ComputeHash(stream))
+                text.Append(b.ToString("x2"));
+        return text.ToString() == expected;
     }
 
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
@@ -1729,12 +1753,13 @@ public static class UiTimer
     }
 
     /// <summary>When the timed action has fired: a random timer draws its next wait and starts over with it. A fixed one
-    /// simply runs on.</summary>
+    /// simply runs on, and one that was switched off meanwhile (a save between the tick and this run) stays off.</summary>
     public static void Rearm(IInlineInvokeProxy CPH, string timerId, int minutes, bool random, int maxMinutes, System.Action<string> log = null)
     {
         if (!random) return;
         try
         {
+            if (!CPH.GetTimerState(timerId)) return;
             CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
             CPH.DisableTimerById(timerId);
             CPH.EnableTimerById(timerId);
@@ -1916,7 +1941,9 @@ public sealed class UiSettings
         var t = Token(key);
         if (t == null) return 0;
         double d;
-        if (t.Type == Newtonsoft.Json.Linq.JTokenType.Integer || t.Type == Newtonsoft.Json.Linq.JTokenType.Float) d = System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)t).Value, System.Globalization.CultureInfo.InvariantCulture);
+        // A whole number beyond long is a BigInteger to Json.NET, which Convert cannot take: read from its digits.
+        var number = (t.Type == Newtonsoft.Json.Linq.JTokenType.Integer || t.Type == Newtonsoft.Json.Linq.JTokenType.Float) ? ((Newtonsoft.Json.Linq.JValue)t).Value : null;
+        if (number is System.IConvertible) d = System.Convert.ToDouble(number, System.Globalization.CultureInfo.InvariantCulture);
         else if (!double.TryParse(t.ToString().Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d)) return 0;
         return double.IsNaN(d) || double.IsInfinity(d) ? 0 : d;
     }
