@@ -340,7 +340,7 @@ public class CPHInline
     private const string FrameworkName = "UIFramework for streamer.bot";
     // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
     // and is not offered to this one, and an installed DLL that asks for a newer one is passed over (0.2.1 and on).
-    private const string StubVersion = "0.3.0";
+    private const string StubVersion = "0.3.1";
     // The major line this stub is made for: it reads lib/<line>/latest.json and so is never offered a release of
     // another line. A new major version of the framework changes this one word.
     private const string FrameworkLine = "v1";
@@ -745,6 +745,23 @@ public class CPHInline
         catch (Exception) { }
     }
 
+    /// <summary>What the update dialog asks. running: the version this Streamer.bot has loaded already (a game loads
+    /// it at the start for its update notice, or a settings window was open), null when none is: only then can the
+    /// new one be used at once.</summary>
+    private static string UpdateQuestion(string newest, string have, string running) =>
+        "A newer version of " + FrameworkName + " is available: " + newest + " (installed: " + have + ").\n\n" +
+        "Yes: download it now" + (running != null
+            ? ". It takes effect once Streamer.bot is restarted: version " + running + " is running here already and stays in use until then."
+            : " and open the settings with it. Streamer.bot needs no restart.") + "\n" +
+        "No: skip version " + newest + "; the next release is offered again.\n" +
+        "Cancel: not now, ask again next time.";
+
+    /// <summary>What is said after a download that cannot be used yet.</summary>
+    private static string RestartHint(string newest, string running) =>
+        FrameworkName + " " + newest + " is downloaded.\n\n" +
+        "Restart Streamer.bot for it to take effect. Version " + running + " is running here already, and a running version cannot be swapped.\n\n" +
+        "There is no hurry: until the restart everything goes on with " + running + ", so it can wait until after your stream.";
+
     /// <summary>Looks for a newer release than the one installed and offers to fetch it. Returns the DLL to use:
     /// the new one when it could be loaded now, else the one that is there.</summary>
     private string OfferUpdate(string installed)
@@ -789,14 +806,16 @@ public class CPHInline
         }
         CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
 
+        // The version running in this Streamer.bot already, if any: it stays in use until Streamer.bot restarts.
         bool loaded;
-        lock (BridgeGate) loaded = _show != null || LoadedFramework() != null;
-        var answer = Ask(
-            "A newer version of " + FrameworkName + " is available: " + newest + " (installed: " + have + ").\n\n" +
-            "Yes: download it now" + (loaded ? "; it is used from the next start of Streamer.bot." : " and open the settings with it.") + "\n" +
-            "No: skip version " + newest + "; the next release is offered again.\n" +
-            "Cancel: not now, ask again next time.",
-            MbYesNoCancel, MbIconInformation);
+        string running = null;
+        lock (BridgeGate)
+        {
+            var assembly = _show?.DeclaringType?.Assembly ?? LoadedFramework();
+            loaded = _show != null || assembly != null;
+            if (loaded) running = assembly != null ? VersionOf(assembly) : have.ToString();
+        }
+        var answer = Ask(UpdateQuestion(newest.ToString(), have.ToString(), running), MbYesNoCancel, MbIconInformation);
         // Closing the dialog (its X, Esc) is Cancel: "not now". Skipping a version for good takes a choice of its own.
         if (answer == IdNo)
         {
@@ -816,6 +835,9 @@ public class CPHInline
             string path = Download(latest);
             NoteLayout("frameworkAvailable", null);
             CPH.LogInfo(LogPrefix + " UIFramework " + newest + " downloaded to " + path + (loaded ? "; it is used from the next start of Streamer.bot." : "."));
+            // Said once more where it cannot be missed: without it the window opens as before and nothing shows
+            // that the update waits for a restart.
+            if (loaded) Ask(RestartHint(newest.ToString(), running), MbOk, MbIconInformation);
             return loaded ? installed : path;
         }
         catch (Exception ex)
