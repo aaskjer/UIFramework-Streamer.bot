@@ -131,4 +131,4 @@ becomes `2.0.0`, with `MinHostStub` raised to that stub's version when the DLL n
 (`TheStubsLineIsTheFrameworksMajorVersion`) fails as long as the two disagree, so neither is forgotten. The
 workflow writes `lib/v2/latest.json` by itself, the DLL reads the file of its own line by itself, and a game on
 the v1 stub goes on reading `lib/v1/latest.json`: it keeps the last 1.x until it ships the new stub. What 2.0.0 is
-to take away is listed in [PLAN.md](../PLAN.md).
+to take away is planned outside this repository.

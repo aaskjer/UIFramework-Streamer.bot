@@ -1,7 +1,7 @@
 # Writes the window declaration of a host as C# from the spec its stub used to carry: hosts/<host>/spec.json
 # (title, pages, senders, pills, samples, answers, overrides, log, help, about) and the CommandCooldowns of
 # hosts/<host>/host-section.cs become one UiWindow builder expression for the game's host block, so that help
-# and about texts are not typed in again. A one-off per host on the way to the generic stub (PLAN.md, 7.5).
+# and about texts are not typed in again. A one-off per host on the way to the generic stub.
 #
 #   tools\spec-to-window.ps1 -HostName highlow                       # prints the declaration
 #   tools\spec-to-window.ps1 -HostName highlow -Into hosts\highlow\HostBlock.cs

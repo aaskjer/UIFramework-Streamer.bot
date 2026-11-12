@@ -119,7 +119,7 @@ a game with its next release; nothing a game has stops working.
 
 - The settings action reads its major line from one word, `FrameworkLine` in `stub/Stub.cs`, and a test fails
   while that word and the DLL's major version disagree. Nothing else is prepared in code: what a major version is
-  to take away is listed in [PLAN.md](PLAN.md).
+  to take away is planned outside this repository.
 
 ## [1.8.4] - 2026-11-12
 
@@ -219,8 +219,7 @@ behind. Games need no update.
 - **Docs:** every screenshot with the window around it is new (the search is in the header); README names the
   search, the automation helpers, triggers and methods, and no longer links a deleted file; Schema.md has the
   timer keys on the Automation page, the real shape of the `emotes` answer, and says that the game action's Execute
-  Code sub-action needs a name for *Execute C# Method* (so do Getting-Started and the Help page's note);
-  [PLAN.md](PLAN.md) is of today.
+  Code sub-action needs a name for *Execute C# Method* (so do Getting-Started and the Help page's note).
 - `hosts/chatgamble`, `hosts/slotmachine` and `hosts/rhymetime` are what the released games carry and answer.
 - The tests build without analyzer warnings.
 

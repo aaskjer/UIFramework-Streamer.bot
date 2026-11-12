@@ -136,7 +136,7 @@ every page to PNG, `-windowshots <folder>` the whole window per page at the page
 `-search <text>` the search bar, and `-customize` opens the customise mode.
 A tag `vX.Y.Z` with its section in [CHANGELOG.md](CHANGELOG.md) publishes the DLL and updates the `latest.json` of
 its major line (`lib/v1/` for 1.x.y, `lib/v2/` from 2.0.0 on), which the stubs of that line read; only a round version (`2.0.0`) is published as a stable release, every other one as a
-pre-release. [PLAN.md](PLAN.md) (German) holds what is still open and the plan for the projects that are not games.
+pre-release.
 
 ```
 src/UIFramework          the DLL (.NET Framework 4.8, WPF)

@@ -64,7 +64,7 @@ namespace UIFramework.Tests
         private static string RepoRoot()
         {
             string root = System.AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-            while (root != null && !File.Exists(Path.Combine(root, "PLAN.md"))) root = Path.GetDirectoryName(root);
+            while (root != null && !File.Exists(Path.Combine(root, "UIFramework.slnx"))) root = Path.GetDirectoryName(root);
             return root ?? throw new System.InvalidOperationException("repo root not found");
         }
 

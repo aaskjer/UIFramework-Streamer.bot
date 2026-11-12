@@ -9,3 +9,5 @@ TestResults/
 .remember/
 release/
 *.bak
+# the plan is private and stays local
+/PLAN.md

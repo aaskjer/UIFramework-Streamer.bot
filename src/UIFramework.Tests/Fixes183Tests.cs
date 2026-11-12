@@ -135,7 +135,7 @@ namespace UIFramework.Tests
         public void The_release_workflow_writes_latest_json_under_the_tags_major_line()
         {
             string root = System.AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-            while (root != null && !File.Exists(Path.Combine(root, "PLAN.md"))) root = Path.GetDirectoryName(root);
+            while (root != null && !File.Exists(Path.Combine(root, "UIFramework.slnx"))) root = Path.GetDirectoryName(root);
             Assert.NotNull(root);
             string workflow = File.ReadAllText(Path.Combine(root, ".github", "workflows", "release.yml"));
             Assert.Contains("lib/v$($version.Split('.')[0])/latest.json", workflow);

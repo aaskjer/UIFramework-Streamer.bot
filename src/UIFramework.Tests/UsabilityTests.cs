@@ -13,7 +13,7 @@ namespace UIFramework.Tests
         private static string RepoRoot()
         {
             var dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "PLAN.md")))
+            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "UIFramework.slnx")))
                 dir = dir.Parent;
             return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
         }
