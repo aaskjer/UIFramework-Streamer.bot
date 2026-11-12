@@ -8,6 +8,16 @@ follows it go to `lib/v2/latest.json`.
 
 ## [Unreleased]
 
+### Changed
+
+- **The update dialog says when Streamer.bot needs a restart (settings action, stub 0.3.1).** A newer UIFramework
+  can only be used at once while none is running in this Streamer.bot; a game that loads it at the start (the
+  update notice, `UiLive`) or a window opened before keeps the running one in use. The dialog now says which case
+  it is: "Streamer.bot needs no restart", or "takes effect once Streamer.bot is restarted", with the version that
+  runs until then. After a download that has to wait, a second note says it once more (restart Streamer.bot; no
+  hurry, it can wait until after the stream): the window opened as before and only the log told. Nothing changes
+  in the DLL; a game gets it with its next release.
+
 ## [1.9.0] - 2026-11-12
 
 The Log page's colours can be declared, and what the audit of 2026-11-08 had left open is done. The window's
