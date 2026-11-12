@@ -431,7 +431,7 @@
       "page": "messages",
       "group": "Game",
       "label": "Outcome",
-      "help": "Sent after every guess. {pointsSection} reads like ' won 1.234 Points' or ' lost 1.234 Points' and stays empty when no points changed.",
+      "help": "Sent after every guess. {pointsSection} reads like ' won 1.234 Points' or ' lost 1.234 Points' and stays empty when no points changed; {result}, {emoji}, {sign} and {pointsSection} come from the Outcome words below.",
       "placeholders": [
         "user",
         "guess",
@@ -448,6 +448,81 @@
       ],
       "aliases": [
         "OutcomeTemplate"
+      ]
+    },
+    {
+      "key": "wordCorrect",
+      "default": "correct",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Right guess",
+      "help": "What {result} says after a right guess.",
+      "placeholders": []
+    },
+    {
+      "key": "wordIncorrect",
+      "default": "incorrect",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Wrong guess",
+      "help": "What {result} says after a wrong guess.",
+      "placeholders": []
+    },
+    {
+      "key": "emojiCorrect",
+      "default": "🙂",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Emoji, right",
+      "help": "What {emoji} shows after a right guess.",
+      "placeholders": []
+    },
+    {
+      "key": "emojiIncorrect",
+      "default": "😥",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Emoji, wrong",
+      "help": "What {emoji} shows after a wrong guess.",
+      "placeholders": []
+    },
+    {
+      "key": "wordWon",
+      "default": "won",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Points won",
+      "help": "What {sign} says when the guess won points.",
+      "placeholders": []
+    },
+    {
+      "key": "wordLost",
+      "default": "lost",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Points lost",
+      "help": "What {sign} says when the guess cost points.",
+      "placeholders": []
+    },
+    {
+      "key": "pointsSectionTemplate",
+      "default": "{sign} {pointsDelta} {currency}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Outcome words",
+      "label": "Points part",
+      "help": "What {pointsSection} reads when points changed; it stays empty when none did.",
+      "placeholders": [
+        "sign",
+        "pointsDelta",
+        "currency",
+        "pointsName"
       ]
     },
     {
@@ -778,7 +853,7 @@
         "heading": "Guessing",
         "lines": [
           {
-            "note": "There is always a number from 1 to 100 waiting; it is drawn when Streamer.bot starts. Viewers guess whether the next number will be higher, lower or the same. The answer names both numbers, and the new one is what the next guess is measured against."
+            "note": "There is always a number from 1 to 100 waiting; it is drawn once and kept, also when Streamer.bot restarts. Viewers guess whether the next number will be higher, lower or the same. The answer names both numbers, and the new one is what the next guess is measured against."
           },
           {
             "command": "!high",
@@ -834,7 +909,7 @@
         "heading": "For your own actions",
         "lines": [
           {
-            "note": "Every settled guess fires a custom trigger - HLG: Guess Won or HLG: Guess Lost, and HLG: Guess Settled always (Custom > Chat Game > High-Low Game) - with the guess as arguments: guessOutcome, guessUser, guessUserId, guessPlatform, guessGuess, guessPreviousNumber, guessNewNumber, guessMode, guessStake, guessAmount, guessPreviousPoints, guessNewPoints, guessCurrency and guessFree. GetLastGuessResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
+            "note": "Every settled guess fires a custom trigger - HLG: Guess Won or HLG: Guess Lost, and HLG: Guess Settled always (Custom > Chat Game > High-Low Game) - with the guess as arguments: guessOutcome, guessUser, guessUserId, guessPlatform, guessGuess, guessPreviousNumber, guessNewNumber, guessMode, guessStake, guessAmount, guessPreviousPoints, guessNewPoints, guessCurrency, guessFree, guessSessionGuesses and guessAlltimeGuesses. GetLastGuessResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."
           },
           {
             "note": "HLG: New Number fires when !highlowsetup draws one (numberNew, numberUser, numberPlatform). HLG: Free Game Start and HLG: Free Game End fire when Free mode is switched from chat or by an Execute C# Method on StartFreeGame or EndFreeGame."
@@ -1009,6 +1084,34 @@
         "logToFile": {
           "label": "Protokolldatei pro Tag schreiben",
           "help": "Schreibt jeden entschiedenen Tipp, jede neue Zahl und jede erstattete Einlösung in eine datierte 'HLG-log-yyyy-MM-dd.txt' im Ordner Chat Games\\Logs, eine Datei pro Tag."
+        },
+        "wordCorrect": {
+          "label": "Richtiger Tipp",
+          "help": "Was {result} nach einem richtigen Tipp sagt."
+        },
+        "wordIncorrect": {
+          "label": "Falscher Tipp",
+          "help": "Was {result} nach einem falschen Tipp sagt."
+        },
+        "emojiCorrect": {
+          "label": "Emoji, richtig",
+          "help": "Was {emoji} nach einem richtigen Tipp zeigt."
+        },
+        "emojiIncorrect": {
+          "label": "Emoji, falsch",
+          "help": "Was {emoji} nach einem falschen Tipp zeigt."
+        },
+        "wordWon": {
+          "label": "Punkte gewonnen",
+          "help": "Was {sign} sagt, wenn der Tipp Punkte gewonnen hat."
+        },
+        "wordLost": {
+          "label": "Punkte verloren",
+          "help": "Was {sign} sagt, wenn der Tipp Punkte gekostet hat."
+        },
+        "pointsSectionTemplate": {
+          "label": "Punkte-Teil",
+          "help": "Was {pointsSection} liest, wenn sich Punkte geändert haben; ohne Änderung bleibt es leer."
         }
       },
       "texts": {
@@ -1020,6 +1123,7 @@
         "Fixed bet": "Fester Einsatz",
         "Viewer types a bet": "Zuschauer tippt einen Einsatz",
         "Free, like chat": "Frei, wie im Chat",
+        "Outcome words": "Wörter im Ergebnis",
         "Player": "Spieler",
         "Guess": "Tipp",
         "Previous": "Vorher",

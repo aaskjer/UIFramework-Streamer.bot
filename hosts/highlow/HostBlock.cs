@@ -278,6 +278,14 @@ public static class UiSchema
             K("refundFailedRedemptions", "Einlösungen ohne Tipp erstatten", "Eine Einlösung, die ohne Tipp endet (blockierter Zuschauer, Abklingzeit, abgelehnter Einsatz, Fehler), bekommt ihre Kanalpunkte zurück. Twitch erstattet nur, solange die Einlösung in der Warteschlange steht; die Belohnungen dürfen sie also nicht überspringen."),
             Tx("Cost of the reward", "Kosten der Belohnung"), Tx("Fixed bet", "Fester Einsatz"), Tx("Viewer types a bet", "Zuschauer tippt einen Einsatz"), Tx("Free, like chat", "Frei, wie im Chat"),
             K("logToFile", "Protokolldatei pro Tag schreiben", "Schreibt jeden entschiedenen Tipp, jede neue Zahl und jede erstattete Einlösung in eine datierte 'HLG-log-yyyy-MM-dd.txt' im Ordner Chat Games\\Logs, eine Datei pro Tag."),
+            K("wordCorrect", "Richtiger Tipp", "Was {result} nach einem richtigen Tipp sagt."),
+            K("wordIncorrect", "Falscher Tipp", "Was {result} nach einem falschen Tipp sagt."),
+            K("emojiCorrect", "Emoji, richtig", "Was {emoji} nach einem richtigen Tipp zeigt."),
+            K("emojiIncorrect", "Emoji, falsch", "Was {emoji} nach einem falschen Tipp zeigt."),
+            K("wordWon", "Punkte gewonnen", "Was {sign} sagt, wenn der Tipp Punkte gewonnen hat."),
+            K("wordLost", "Punkte verloren", "Was {sign} sagt, wenn der Tipp Punkte gekostet hat."),
+            K("pointsSectionTemplate", "Punkte-Teil", "Was {pointsSection} liest, wenn sich Punkte geändert haben; ohne Änderung bleibt es leer."),
+            Tx("Outcome words", "Wörter im Ergebnis"),
             Tx("Player", "Spieler"), Tx("Guess", "Tipp"), Tx("Previous", "Vorher"), Tx("New", "Neu"), Tx("Change", "Änderung"),
             Tx("How guesses come in on Twitch. YouTube and Kick always use the chat commands.", "Wie Tipps auf Twitch ankommen. YouTube und Kick nutzen immer die Chat-Befehle."))
         .Samples("guess", "!high", "result", "correct", "emoji", "🙂", "previousNumber", "42", "newNumber", "77", "number", "42", "sessionGuesses", "3", "alltimeGuesses", "57", "sign", "won", "pointsDelta", "1.234", "pointsSection", " won 1.234 Points", "currency", "Points", "seconds", "12", "amount", "500")
@@ -293,7 +301,7 @@ public static class UiSchema
             results: new[] { "WIN", "LOSS", "REFUND", "NEW-NUMBER" }, platforms: new[] { "twitch", "youtube", "kick" })
         .Help(
             H("Guessing",
-                Note("There is always a number from 1 to 100 waiting; it is drawn when Streamer.bot starts. Viewers guess whether the next number will be higher, lower or the same. The answer names both numbers, and the new one is what the next guess is measured against."),
+                Note("There is always a number from 1 to 100 waiting; it is drawn once and kept, also when Streamer.bot restarts. Viewers guess whether the next number will be higher, lower or the same. The answer names both numbers, and the new one is what the next guess is measured against."),
                 Cmd("!high", "the next number is higher. Right pays the win amount, wrong costs nothing."),
                 Cmd("!low", "the next number is lower. Same payout as !high."),
                 Cmd("!equal", "the next number is the same. Right pays double, wrong costs the win amount."),
@@ -307,7 +315,7 @@ public static class UiSchema
                 Note("Create one reward each for high, low and equal and paste their IDs on the Channel points page. The game listens to every redemption and plays only those three. Leave 'Skip Reward Requests Queue' off on the rewards, or Twitch cannot refund a redemption that does not play."),
                 Note("Cost and Fixed spend the channel points as the stake: a correct guess pays the stake in points, double on equal. Input lets the viewer type a bet in their own points; only a wrong equal costs it. Free plays like the chat commands.")),
             H("For your own actions",
-                Note("Every settled guess fires a custom trigger - HLG: Guess Won or HLG: Guess Lost, and HLG: Guess Settled always (Custom > Chat Game > High-Low Game) - with the guess as arguments: guessOutcome, guessUser, guessUserId, guessPlatform, guessGuess, guessPreviousNumber, guessNewNumber, guessMode, guessStake, guessAmount, guessPreviousPoints, guessNewPoints, guessCurrency and guessFree. GetLastGuessResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."),
+                Note("Every settled guess fires a custom trigger - HLG: Guess Won or HLG: Guess Lost, and HLG: Guess Settled always (Custom > Chat Game > High-Low Game) - with the guess as arguments: guessOutcome, guessUser, guessUserId, guessPlatform, guessGuess, guessPreviousNumber, guessNewNumber, guessMode, guessStake, guessAmount, guessPreviousPoints, guessNewPoints, guessCurrency, guessFree, guessSessionGuesses and guessAlltimeGuesses. GetLastGuessResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action."),
                 Note("HLG: New Number fires when !highlowsetup draws one (numberNew, numberUser, numberPlatform). HLG: Free Game Start and HLG: Free Game End fire when Free mode is switched from chat or by an Execute C# Method on StartFreeGame or EndFreeGame.")),
             H("Where things are kept",
                 Cmd("HLG-Settings.json", "everything on these pages."),
@@ -365,7 +373,14 @@ public static class UiSchema
         S("leaderboardExcludeBroadcaster", true, page: "leaderboard", label: "Leave the broadcaster out", help: "Your own guesses still count; you are just not ranked.", section: "Scoreboards"),
         S("leaderboardExcludeBot", true, page: "leaderboard", label: "Leave the bot account out", section: "Scoreboards"),
         // ---- messages ----
-        Msg("Game", "outcomeTemplate", "Hey {user}! Previous: {previousNumber}, New: {newNumber}. Your guess '{guess}' was {result} {emoji} {pointsSection}. Session: {sessionGuesses} guesses, All-time: {alltimeGuesses}.", "Outcome", "Sent after every guess. {pointsSection} reads like ' won 1.234 Points' or ' lost 1.234 Points' and stays empty when no points changed.", new[] { "user", "guess", "result", "emoji", "previousNumber", "newNumber", "sessionGuesses", "alltimeGuesses", "pointsSection", "sign", "pointsDelta", "currency" }, alias: "OutcomeTemplate"),
+        Msg("Game", "outcomeTemplate", "Hey {user}! Previous: {previousNumber}, New: {newNumber}. Your guess '{guess}' was {result} {emoji} {pointsSection}. Session: {sessionGuesses} guesses, All-time: {alltimeGuesses}.", "Outcome", "Sent after every guess. {pointsSection} reads like ' won 1.234 Points' or ' lost 1.234 Points' and stays empty when no points changed; {result}, {emoji}, {sign} and {pointsSection} come from the Outcome words below.", new[] { "user", "guess", "result", "emoji", "previousNumber", "newNumber", "sessionGuesses", "alltimeGuesses", "pointsSection", "sign", "pointsDelta", "currency" }, alias: "OutcomeTemplate"),
+        Msg("Outcome words", "wordCorrect", "correct", "Right guess", "What {result} says after a right guess.", new string[0]),
+        Msg("Outcome words", "wordIncorrect", "incorrect", "Wrong guess", "What {result} says after a wrong guess.", new string[0]),
+        Msg("Outcome words", "emojiCorrect", "🙂", "Emoji, right", "What {emoji} shows after a right guess.", new string[0]),
+        Msg("Outcome words", "emojiIncorrect", "😥", "Emoji, wrong", "What {emoji} shows after a wrong guess.", new string[0]),
+        Msg("Outcome words", "wordWon", "won", "Points won", "What {sign} says when the guess won points.", new string[0]),
+        Msg("Outcome words", "wordLost", "lost", "Points lost", "What {sign} says when the guess cost points.", new string[0]),
+        Msg("Outcome words", "pointsSectionTemplate", "{sign} {pointsDelta} {currency}", "Points part", "What {pointsSection} reads when points changed; it stays empty when none did.", new[] { "sign", "pointsDelta", "currency", "pointsName" }),
         Msg("Game", "startMessage", "🎲 High-Low game started! The current number is {number}. Please type '!high', '!low' or '!equal' to guess whether the next number will be higher, lower, or equal.", "New round", "Sent when a moderator runs !highlowsetup. A number is ready from the start, so the game also runs without it.", new[] { "number", "user" }),
         Msg("Free mode", "freeGameStartMessage", "🎲 Free mode is ON! Guess for free - no {currency} at stake!", "Started", "Sent once when Free mode is turned on by !SetFreeHighLow, in the chat the command came from. Turned on another way, say by an Execute C# Method on StartFreeGame in an action of your own, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }),
         Msg("Free mode", "freeGameEndMessage", "⏹️ Free mode has ended. Guesses count for {currency} again!", "Ended", "Sent once when Free mode is turned off by !EndFreeHighLow, in the chat the command came from. Turned off another way, say by an Execute C# Method on EndFreeGame, it goes to every platform with an account in Streamer.bot - to YouTube only while a broadcast is monitored.", new[] { "currency" }),

@@ -96,6 +96,13 @@ public sealed class Settings
     public bool LeaderboardExcludeBot => _s.Bool("leaderboardExcludeBot");
 
     public string OutcomeTemplate => _s.String("outcomeTemplate");
+    public string WordCorrect => _s.String("wordCorrect");
+    public string WordIncorrect => _s.String("wordIncorrect");
+    public string EmojiCorrect => _s.String("emojiCorrect");
+    public string EmojiIncorrect => _s.String("emojiIncorrect");
+    public string WordWon => _s.String("wordWon");
+    public string WordLost => _s.String("wordLost");
+    public string PointsSectionTemplate => _s.String("pointsSectionTemplate");
     public string StartMessage => _s.String("startMessage");
     public string FreeGameStartMessage => _s.String("freeGameStartMessage");
     public string FreeGameEndMessage => _s.String("freeGameEndMessage");
