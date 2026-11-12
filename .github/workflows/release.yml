@@ -1,6 +1,7 @@
 # On a tag vX.Y.Z: build the DLL, run the tests, publish the tag's release with UIFramework.dll and the version's
-# section of CHANGELOG.md as its notes (stable only for a round X.0.0; every other version is a pre-release), and write lib/v1/latest.json (version, url,
-# sha256) back to main, which is what every host's loader reads.
+# section of CHANGELOG.md as its notes (stable only for a round X.0.0; every other version is a pre-release), and write lib/v<major>/latest.json
+# (version, url, sha256) back to main, which is what the loader of every host of that major line reads: 1.x.y goes to
+# lib/v1, 2.0.0 and what follows it to lib/v2, so a v1 host is never offered a 2.x.
 name: Release
 
 on:
@@ -48,6 +49,8 @@ jobs:
           # since the loader and latest.json know plain versions only.
           if ($version -notmatch '^\d+\.\d+\.\d+$') { Write-Error "$tag is not vX.Y.Z; only plain versions are released." }
           "version=$version" >> $env:GITHUB_OUTPUT
+          # The major line names the folder of latest.json: lib/v1 for 1.x.y, lib/v2 from 2.0.0 on.
+          "latest=lib/v$($version.Split('.')[0])/latest.json" >> $env:GITHUB_OUTPUT
           $csproj = 'src/UIFramework/UIFramework.csproj'
           $xml = Get-Content $csproj -Raw
           if ($xml -notmatch "<Version>$([regex]::Escape($version))</Version>") {
@@ -106,19 +109,22 @@ jobs:
           body_path: notes.md
           prerelease: ${{ steps.v.outputs.prerelease == 'true' }}
 
-      - name: Write lib/v1/latest.json
+      - name: Write ${{ steps.v.outputs.latest }}
         shell: pwsh
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           $version = '${{ steps.v.outputs.version }}'
+          $path = '${{ steps.v.outputs.latest }}'
           for ($try = 1; $try -le 3; $try++) {
             git fetch origin main --quiet
             git checkout -B main origin/main --quiet
             # minHostStub is kept from main's latest.json (raise it there when a release needs a newer stub), and an
-            # older tag released late never takes latest.json back below what is out already.
-            $current = Get-Content lib/v1/latest.json -Raw | ConvertFrom-Json
-            if ([version]$current.version -gt [version]$version) {
+            # older tag released late never takes latest.json back below what is out already. The first release of a
+            # major line finds no file: its folder is made here, and a minHostStub that line needs is committed in a
+            # latest.json without a version before the tag.
+            $current = if (Test-Path $path) { Get-Content $path -Raw | ConvertFrom-Json } else { $null }
+            if ($current -and $current.version -and [version]$current.version -gt [version]$version) {
               Write-Host "latest.json names $($current.version), newer than $version; left as it is."
               exit 0
             }
@@ -126,12 +132,13 @@ jobs:
               version     = $version
               url         = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/UIFramework.dll'
               sha256      = '${{ steps.h.outputs.sha }}'
-              minHostStub = $(if ($current.minHostStub) { $current.minHostStub } else { '0.1.0' })
+              minHostStub = $(if ($current -and $current.minHostStub) { $current.minHostStub } else { '0.1.0' })
               note        = 'Read by the loader in every host''s settings action. Written by .github/workflows/release.yml on a tag vX.Y.Z.'
             }
             $json = ($latest | ConvertTo-Json) + "`n"
-            [IO.File]::WriteAllText('lib/v1/latest.json', $json, (New-Object Text.UTF8Encoding $false))
-            git add lib/v1/latest.json
+            New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null
+            [IO.File]::WriteAllText((Join-Path $PWD $path), $json, (New-Object Text.UTF8Encoding $false))
+            git add $path
             git diff --cached --quiet
             if ($LASTEXITCODE -eq 0) { Write-Host 'latest.json already says this.'; exit 0 }
             git commit -m "latest.json: ${{ github.ref_name }}" --quiet

@@ -576,6 +576,12 @@ namespace UIFramework
             return row;
         }
 
+        /// <summary>The swatch beside the accent box shows the colour the window takes for the box's text: a code or a
+        /// name ("red") as itself, an empty box as the default blue, and what is no solid colour (a code with an
+        /// alpha, a typo) as the accent in use, since that text is not taken.</summary>
+        public static SolidColorBrush AccentSwatch(string text) =>
+            new SolidColorBrush(Colours.TryParseSolid(text, out var colour) ? colour : string.IsNullOrWhiteSpace(text) ? Theme.DefaultAccent : Theme.Accent);
+
         public static FrameworkElement Bar(PageContext ctx, Action done, Action exportSettings = null, Action importSettings = null)
         {
             var text = new TextBlock
@@ -593,7 +599,7 @@ namespace UIFramework
             DrawText();
 
             var accentFields = new Fields(ctx.Parts, new JObject { ["accent"] = ctx.Layout.Accent }, new JObject { ["accent"] = "" }, ctx.OpenUrl);
-            var accent = accentFields.ColourField(Text.T("cust.accent"), "accent", Text.T("cust.accent.tip"), labelled: false);
+            var accent = accentFields.ColourField(Text.T("cust.accent"), "accent", Text.T("cust.accent.tip"), labelled: false, swatchOf: AccentSwatch);
             if (ctx.Parts.Boxes.TryGetValue("accent", out var accentBox))
             {
                 accentBox.Tag = null;   // not a setting; never saved into the host's file
@@ -608,7 +614,7 @@ namespace UIFramework
                     settle.Stop();
                     string hex = accentBox.Text.Trim();
                     if (hex == (ctx.Layout.Accent ?? "")) return;
-                    if (hex.Length > 0 && !Colours.TryParseHex(hex, out _)) return;
+                    if (hex.Length > 0 && !Colours.TryParseSolid(hex, out _)) return;
                     ctx.Layout.Accent = hex;
                     Commit(ctx, null);
                 }

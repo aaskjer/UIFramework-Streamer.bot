@@ -51,7 +51,9 @@ namespace UIFramework
         public static Brush SubFg => new SolidColorBrush(SubColor);
         public static Brush MutedFg => new SolidColorBrush(MutedColor);
 
-        public static Color Accent => AccentOverride ?? (IsDark ? Color.FromRgb(96, 165, 250) : Color.FromRgb(37, 99, 235));
+        /// <summary>The blue a window has while the user picked no accent.</summary>
+        public static Color DefaultAccent => IsDark ? Color.FromRgb(96, 165, 250) : Color.FromRgb(37, 99, 235);
+        public static Color Accent => AccentOverride ?? DefaultAccent;
         public static Color AccentText => AccentOverride.HasValue
             ? (IsDark ? Colours.Lighten(AccentOverride.Value, 0.35) : Colours.Darken(AccentOverride.Value, 0.15))
             : (IsDark ? Color.FromRgb(147, 197, 253) : Color.FromRgb(29, 78, 216));
@@ -141,9 +143,33 @@ namespace UIFramework
             return true;
         }
 
+        /// <summary>A colour by its name, in any case: "red", "Blue", "yellow", "DarkOrange" (the names of
+        /// <see cref="Colors"/>, "grey" spelt either way). Letters only, so no hex code is taken for one.</summary>
+        public static bool TryParseName(string text, out Color colour)
+        {
+            colour = Colors.Transparent;
+            string name = (text ?? "").Trim();
+            if (name.Length == 0 || !name.All(char.IsLetter))
+                return false;
+            const System.Reflection.BindingFlags named = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase;
+            var known = typeof(Colors).GetProperty(name, named)
+                ?? typeof(Colors).GetProperty(System.Text.RegularExpressions.Regex.Replace(name, "grey", "gray", System.Text.RegularExpressions.RegexOptions.IgnoreCase), named);
+            if (known == null || known.PropertyType != typeof(Color))
+                return false;
+            colour = (Color)known.GetValue(null, null);
+            return true;
+        }
+
+        /// <summary>A hex code or a colour's name: what a colour box holds that the picker can start from.</summary>
+        public static bool TryParse(string text, out Color colour) => TryParseHex(text, out colour) || TryParseName(text, out colour);
+
+        /// <summary>A solid colour, which is what the accent takes: #RGB, #RRGGBB (with or without the #) or a name
+        /// like "red". A code with an alpha ("#80FF0000") and "transparent" are none.</summary>
+        public static bool TryParseSolid(string text, out Color colour) => TryParse(text, out colour) && colour.A == 255;
+
         /// <summary>The brush of a colour field's swatch: the colour as <see cref="TryParseHex"/> reads it, so the
-        /// swatch shows what the picker opens on and the accent takes ("F1C40F" without its # too). What that does
-        /// not read (a name like "red") is shown as WPF reads it; anything else is black.</summary>
+        /// swatch shows what the picker opens on ("F1C40F" without its # too). What that does not read (a name like
+        /// "red") is shown as WPF reads it; anything else is black. The accent's swatch is Customize.AccentSwatch.</summary>
         public static SolidColorBrush ParseHexBrush(string hex)
         {
             if (TryParseHex(hex, out Color colour))

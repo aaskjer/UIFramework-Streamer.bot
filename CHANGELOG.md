@@ -3,9 +3,26 @@
 The release workflow puts the section for the tagged version into the GitHub release, so every version needs
 its section here before the tag is pushed. Everything before 1.0.0 was published as a pre-release. Since 2026-11-08
 only a round version (2.0.0, 3.0.0) is a stable release; every other one is published as a pre-release, and
-`lib/v1/latest.json`, which the games' settings actions read, names the newest of either kind.
+`lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
+follows it go to `lib/v2/latest.json`.
 
 ## [Unreleased]
+
+## [1.8.3] - 2026-11-12
+
+Games need no update.
+
+### Changed
+
+- **The accent colour takes a colour's name:** `red`, `blue`, `yellow`, any of the colour names WPF knows, in any
+  case (`grey` spelt either way). The swatch showed such a name already, but the window kept its old accent.
+- **The accent colour takes no alpha.** `#80FF0000` was applied as plain red since 1.8.2; it is not taken any more,
+  and the swatch beside the box stays on the accent in use instead of showing a colour the window does not get.
+  A game's own colour settings keep their alpha.
+- **The colour picker opens on a name.** With `red` in the box it started on its default yellow.
+- **`latest.json` lives under its major line.** The release workflow wrote every version to `lib/v1/latest.json`,
+  so a 2.0.0 would have been offered to every v1 game. It now writes `lib/v<major>/latest.json`: 2.0.0 goes to
+  `lib/v2/`, which only a stub made for that line reads. The DLL's update check reads the file of its own line.
 
 ## [1.8.2] - 2026-11-11
 

@@ -467,7 +467,7 @@
     "cust.changes.one": "1 Änderung gespeichert.",
     "cust.changes.many": "{0} Änderungen gespeichert.",
     "cust.accent": "Akzentfarbe",
-    "cust.accent.tip": "Die Hervorhebungsfarbe dieses und jedes anderen UIFramework-Fensters: die blauen Buttons, eingeschaltete Schalter, die aktive Seite in der Leiste, Links und diese Leiste. Leer: das Standardblau.",
+    "cust.accent.tip": "Die Hervorhebungsfarbe dieses und jedes anderen UIFramework-Fensters: die blauen Buttons, eingeschaltete Schalter, die aktive Seite in der Leiste, Links und diese Leiste. Ein Farbname geht auch: red, blue, yellow. Leer: das Standardblau.",
     "cust.language": "Sprache",
     "cust.helpLines": "Hilfe unter den Feldern",
     "cust.helpLines.tip": "Zeigt die Hilfe jedes Felds als Zeile darunter statt im Tooltip.",

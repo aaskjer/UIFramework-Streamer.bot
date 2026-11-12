@@ -27,7 +27,8 @@ user's.
   A hidden field keeps its value in the settings file.
 - **The bar at the top**, one row: the accent colour (blue buttons, switches that are on, the active page in
   the rail, links, the bar itself; for every UIFramework window of this Streamer.bot; taken once the picker
-  closes or the typing pauses), the language (by its name: English, Deutsch, Español …), then four icon buttons named by their tooltips: *Reset
+  closes or the typing pauses; a hex code `#RRGGBB` or `#RGB`, or a colour's name such as `red`, `blue`, `yellow`;
+  a code with an alpha is not taken), the language (by its name: English, Deutsch, Español …), then four icon buttons named by their tooltips: *Reset
   layout* (everything but the theme), *Export* and *Import* of the settings (see docs/Schema.md), *Open file*
   (the layout file); then *Done*. Under them: the switch *Help under fields* (each field's help as a small line
   under it instead of in its tooltip, for every UIFramework window of this game) and the hint with the count of
@@ -64,7 +65,7 @@ the window itself stays where it is.
 |--------------------------------|------------------------------------------------------------------------------|
 | `theme.dark`                   | dark (`true`) or light; missing: dark                                        |
 | `theme.rainbow`                | rainbow mode, for one open only                                              |
-| `theme.accent`                 | the accent colour `#rrggbb`; empty: the default blue                         |
+| `theme.accent`                 | the accent colour, `#rrggbb` or a name (`red`); empty: the default blue      |
 | `language`                     | `en`, `de`, `es` or a language from `UIFramework\lang\`: the window's own texts (buttons, status line, dialogs, menus, the Messages, Log and About pages' chrome), the labels and help of the conventions' keys, and the declared sections, page titles, pills, option labels and message groups the conventions or the game translate (docs/Schema.md, *Languages*); missing: `en`. What nothing translates stays as declared; the lines of the help and about pages translate through the game's `Tx` |
 | `autoUpdate`                   | `false`: the loader no longer asks about new versions                        |
 | `updateNotices`                | `false`: this game is left out of the update notice once per Streamer.bot start (the switch *Tell me about updates* on its About page; docs/Schema.md, *Update notice*); missing: on |

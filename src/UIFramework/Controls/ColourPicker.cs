@@ -29,7 +29,8 @@ namespace UIFramework
         {
             if (_popup != null)
                 _popup.IsOpen = false;
-            if (!Colours.TryParseHex(target.Text, out Color start))
+            // A name in the box ("red") is where the picker starts, as a code is.
+            if (!Colours.TryParse(target.Text, out Color start))
                 start = Color.FromRgb(0xF1, 0xC4, 0x0F);
             Colours.RgbToHsv(start, out double hue, out double saturation, out double brightness);
             Color current = start;
@@ -196,7 +197,7 @@ namespace UIFramework
                     target.TextChanged -= typed;
                     return;
                 }
-                if (!writing && Colours.TryParseHex(target.Text, out Color colour) && colour != current)
+                if (!writing && Colours.TryParse(target.Text, out Color colour) && colour != current)
                 {
                     Colours.RgbToHsv(colour, out double h, out double sat, out double v);
                     if (sat > 0)

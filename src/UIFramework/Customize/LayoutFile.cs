@@ -201,7 +201,7 @@ namespace UIFramework
         public void ApplyTheme()
         {
             Theme.IsDark = Dark ?? true;
-            Theme.AccentOverride = Colours.TryParseHex(Accent, out var accent) ? accent : (System.Windows.Media.Color?)null;
+            Theme.AccentOverride = Colours.TryParseSolid(Accent, out var accent) ? accent : (System.Windows.Media.Color?)null;
         }
 
         // ---- The user's layout: what the customise mode writes ------------------------------------------

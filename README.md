@@ -134,8 +134,8 @@ every page to PNG, `-windowshots <folder>` the whole window per page at the page
 `-settle 3000` waits that long for emote pictures, `-pick 1` picks the first row of every grid; with
 `-windowshots`, `-tour` photographs every stop of the tour, `-problems` the panel behind the red **i**,
 `-search <text>` the search bar, and `-customize` opens the customise mode.
-A tag `vX.Y.Z` with its section in [CHANGELOG.md](CHANGELOG.md) publishes the DLL and updates `lib/v1/latest.json`,
-which every stub reads; only a round version (`2.0.0`) is published as a stable release, every other one as a
+A tag `vX.Y.Z` with its section in [CHANGELOG.md](CHANGELOG.md) publishes the DLL and updates the `latest.json` of
+its major line (`lib/v1/` for 1.x.y, `lib/v2/` from 2.0.0 on), which the stubs of that line read; only a round version (`2.0.0`) is published as a stable release, every other one as a
 pre-release. [PLAN.md](PLAN.md) (German) holds what is still open and the plan for the projects that are not games.
 
 ```
@@ -155,7 +155,7 @@ tools/                   update-host-block.ps1 (refresh the block in a game, kee
                          conventions-doc.ps1 (the tables in docs/Conventions.md),
                          update-twitch-emotes.ps1 (Twitch's global emotes for conventions/emotes),
                          docs-shots.ps1 (the screenshots in docs/images, rendered again)
-lib/v1/latest.json       what the loader reads: version, download url, sha256
+lib/v1/latest.json       what the loader reads: version, download url, sha256 (one folder per major line)
 docs/                    Getting-Started, Schema, Conventions, Loader, Customize; images/ the screenshots
 ```
 

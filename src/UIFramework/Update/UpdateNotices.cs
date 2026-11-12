@@ -36,7 +36,12 @@ namespace UIFramework
         /// <summary>How long after the first game of a Streamer.bot run the notice waits, so every game that starts with
         /// Streamer.bot has told which version it runs.</summary>
         public static TimeSpan Delay = TimeSpan.FromSeconds(20);
-        public const string FrameworkLatestUrl = "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/v1/latest.json";
+        /// <summary>The latest.json of this DLL's own major line: a 1.x reads lib/v1 and never hears of a 2.x, which
+        /// the release workflow writes to lib/v2.</summary>
+        public static readonly string FrameworkLatestUrl = LatestUrlOf(typeof(UpdateNotices).Assembly.GetName().Version.Major);
+
+        public static string LatestUrlOf(int major) =>
+            "https://raw.githubusercontent.com/aaskjer/UIFramework-Streamer.bot/main/lib/v" + major + "/latest.json";
 
         // ---- What tests change: the shared file's folder, how a URL is fetched, the clock, the run, background checks. ----
         public static string Folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework");

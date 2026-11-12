@@ -566,8 +566,11 @@ namespace UIFramework
         public bool PickerOpen => _picker.IsOpen;
 
         /// <param name="labelled">false: the row alone (box, swatch, picker), for a caller that labels it inline.</param>
-        public FrameworkElement ColourField(string label, string key, string tooltip, bool labelled = true)
+        /// <param name="swatchOf">What the swatch shows for the box's text, for a field that reads its colour another
+        /// way than <see cref="Colours.ParseHexBrush"/> (the accent takes solid colours only).</param>
+        public FrameworkElement ColourField(string label, string key, string tooltip, bool labelled = true, Func<string, SolidColorBrush> swatchOf = null)
         {
+            swatchOf = swatchOf ?? Colours.ParseHexBrush;
             var box = SettingBox(label, key, (string.IsNullOrEmpty(tooltip) ? "" : tooltip + "\n") + Text.T("field.colour.tip"));
             box.Width = 92;
             box.HorizontalAlignment = HorizontalAlignment.Left;
@@ -580,7 +583,7 @@ namespace UIFramework
                 CornerRadius = new CornerRadius(5),
                 BorderBrush = new SolidColorBrush(Theme.InputBorder),
                 BorderThickness = new Thickness(1),
-                Background = Colours.ParseHexBrush(box.Text),
+                Background = swatchOf(box.Text),
                 Cursor = Cursors.Hand,
                 ToolTip = Text.T("colour.pick.tip")
             };
@@ -588,7 +591,7 @@ namespace UIFramework
             var pick = Ui.IconButton("🎨", null, Text.T("colour.pick", label.ToLowerInvariant()));
             pick.Margin = new Thickness(6, 0, 0, 0);
 
-            box.TextChanged += (sender, e) => swatch.Background = Colours.ParseHexBrush(box.Text);
+            box.TextChanged += (sender, e) => swatch.Background = swatchOf(box.Text);
             swatch.MouseLeftButtonUp += (sender, e) => _picker.Open(box, swatch);
             pick.Click += (sender, e) => _picker.Open(box, swatch);
 

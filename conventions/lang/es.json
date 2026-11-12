@@ -467,7 +467,7 @@
     "cust.changes.one": "1 cambio guardado.",
     "cust.changes.many": "{0} cambios guardados.",
     "cust.accent": "Color de acento",
-    "cust.accent.tip": "El color de realce de esta y de todas las demás ventanas de UIFramework: los botones azules, los interruptores activados, la página activa de la barra lateral, los enlaces y esta barra. Vacío: el azul predeterminado.",
+    "cust.accent.tip": "El color de realce de esta y de todas las demás ventanas de UIFramework: los botones azules, los interruptores activados, la página activa de la barra lateral, los enlaces y esta barra. También vale el nombre de un color: red, blue, yellow. Vacío: el azul predeterminado.",
     "cust.language": "Idioma",
     "cust.helpLines": "Ayuda bajo los campos",
     "cust.helpLines.tip": "Muestra la ayuda de cada campo como una línea debajo en lugar de en su descripción emergente.",

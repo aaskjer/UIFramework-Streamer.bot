@@ -325,7 +325,7 @@
     "cust.changes.one": "1 change saved.",
     "cust.changes.many": "{0} changes saved.",
     "cust.accent": "Accent colour",
-    "cust.accent.tip": "The highlight colour of this and every other UIFramework window: the blue buttons, switches that are on, the active page in the rail, links and this bar. Empty: the default blue.",
+    "cust.accent.tip": "The highlight colour of this and every other UIFramework window: the blue buttons, switches that are on, the active page in the rail, links and this bar. A colour's name works too: red, blue, yellow. Empty: the default blue.",
     "cust.language": "Language",
     "cust.helpLines": "Help under fields",
     "cust.helpLines.tip": "Shows each field's help as a line under it instead of in its tooltip.",

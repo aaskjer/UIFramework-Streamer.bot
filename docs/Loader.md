@@ -36,7 +36,9 @@ whether it asked, skipped or is turned off.
 **Safety:** HTTPS (TLS 1.2 is added only where the process pinned older protocols; Windows' own choice stays otherwise),
 SHA-256 from `latest.json`, a global mutex so that several hosts do not download at once (one still waiting after
 a minute gives up with a message instead of downloading beside it). The
-major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host. The hash is kept beside the
+major line is in the path (`lib/v1/`): an incompatible v2 never lands in a v1 host, because the release workflow
+writes 2.0.0 and what follows it to `lib/v2/latest.json`, which only a stub made for that line reads (its two
+`latest.json` addresses name `lib/v2/`). The DLL's own update check reads the file of its own major line too. The hash is kept beside the
 DLL (`UIFramework.dll.sha256`, written before the DLL is moved in) and checked on every load: a file damaged
 since is set aside as `UIFramework.dll.broken`, an older one opens the window, and the next open offers that
 version again. A game's host block checks the same hash before it loads the DLL for the update notice or the live
@@ -87,6 +89,7 @@ runs through `System.Net.WebClient` from `System.dll`; both come with the refere
 
 **Release:** a tag `vX.Y.Z` (the `<Version>` in `UIFramework.csproj` must match) makes
 `.github/workflows/release.yml` build the tag's own commit (which must be on `main`), test, create the release with
-`UIFramework.dll` and write `lib/v1/latest.json` on `main`. `minHostStub` is carried over from main's
-`latest.json` (raise it there when a release needs a newer stub), and an older tag released late never takes
-`latest.json` back.
+`UIFramework.dll` and write `lib/v<major>/latest.json` on `main` (`lib/v1/` for 1.x.y, `lib/v2/` from 2.0.0 on; the
+first release of a line makes its folder). `minHostStub` is carried over from main's
+`latest.json` (raise it there when a release needs a newer stub; for a new line, commit a `latest.json` that holds
+only `minHostStub` before the tag), and an older tag released late never takes `latest.json` back.
