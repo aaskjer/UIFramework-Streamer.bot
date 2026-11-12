@@ -19,7 +19,11 @@ downloads it into its own folder; when nothing has loaded UIFramework in this ru
 opens with the new one at once, otherwise from the next start (every game uses the one that is running, so two
 versions never run side by side, and the log names the one in use). A game loads it without its window too: for
 the update notice at the start (`UiUpdateNotice.Startup` in `Init()`) and for `UiLive`. With such a game imported,
-"from the next start" is the usual case, and the dialog says so. **No** skips that version: it is not offered
+"from the next start" is the usual case. The dialog says which of the two it is: that Streamer.bot needs no
+restart, or that the new version takes effect once Streamer.bot is restarted and which version runs until then.
+After such a download a second note says it again (restart Streamer.bot; no hurry, everything goes on with the
+running version, so it can wait until after the stream), because the window then opens as before and nothing else
+shows that an update is waiting (stub 0.3.1; 0.3.0 said "used from the next start" in the dialog only). **No** skips that version: it is not offered
 again, to any game, and the next one is. **Cancel**, the dialog's X and Esc mean "not now": the next open asks
 again. (A stub before 0.3.0 had it the other way round, so closing the dialog skipped the version for good.) A
 running DLL is never overwritten (it is locked, and .NET Framework does not unload).
@@ -56,7 +60,7 @@ version again. A game's host block checks the same hash before it loads the DLL 
 check (host block of 1.8.1 and on; an older one loaded it unchecked, and the settings action then used what was
 loaded); it leaves a damaged file where it is, for the settings action to set aside. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
 has no hash file and is loaded as it is. A release
-whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.0 now) is not offered to
+whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.1 now) is not offered to
 that stub; the game has to ship the newer settings action first. The same holds for a DLL that is there already,
 installed by another game: a DLL names the stub it needs in its product version (`1.8.4+stub.0.1.0`, from
 `MinHostStub` in `UIFramework.csproj`), a stub from 0.2.1 on reads that without loading the file and passes such a
