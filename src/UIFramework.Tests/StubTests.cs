@@ -261,6 +261,34 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void TheUpdateDialogSaysWhenStreamerBotNeedsARestart()
+        {
+            string Text(string name, params object[] args) => (string)typeof(StubUnderTest).GetMethod(name, Any).Invoke(null, args);
+
+            // Nothing loaded yet: the new version opens the window at once.
+            string free = Text("UpdateQuestion", "1.9.1", "1.9.0", null);
+            Assert.Contains("1.9.1 (installed: 1.9.0)", free);
+            Assert.Contains("needs no restart", free);
+            Assert.DoesNotContain("is restarted", free);
+
+            // A version is running: the dialog names it and the restart, and so does the note after the download.
+            string busy = Text("UpdateQuestion", "1.9.1", "1.9.0", "1.8.4");
+            Assert.Contains("once Streamer.bot is restarted", busy);
+            Assert.Contains("version 1.8.4 is running", busy);
+            Assert.DoesNotContain("needs no restart", busy);
+            foreach (string text in new[] { free, busy })
+            {
+                Assert.Contains("No: skip version 1.9.1", text);
+                Assert.Contains("Cancel: not now", text);
+            }
+
+            string after = Text("RestartHint", "1.9.1", "1.8.4");
+            Assert.Contains("1.9.1 is downloaded", after);
+            Assert.Contains("Restart Streamer.bot", after);
+            Assert.Contains("goes on with 1.8.4", after);
+        }
+
+        [Fact]
         public void TodaysLogIsReadWhileTheGameHoldsItOpen()
         {
             string logs = Path.Combine(_folder, "logs");
