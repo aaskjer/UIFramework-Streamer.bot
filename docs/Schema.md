@@ -356,6 +356,11 @@ describe answer leaves a line in Streamer.bot's log.
 | `table`    | a `table` field is shown                 | `table: key => …` answers a JSON array of objects whose fields the columns name |
 | `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitchUserId": "…", "clientId": "…", "token": "…", "youtube": { ":name:": "picture url" } }` (the broadcaster's Twitch id and Streamer.bot's Twitch client id and token, for the channel's own emotes and its 7TV, BTTV and FFZ sets; without them the global emotes still have their pictures); the `youtube` object adds to or replaces entries of the built-in table of YouTube's own emojis |
 
+**A request that takes long on purpose** (a Try button that imports a word list) calls `UiHost.StillWorking()`
+every few seconds while it works. The settings action gives a request 30 seconds once it has started and then
+stops waiting for its answer; each `StillWorking()` gives it 30 seconds from then (stub 0.3.1 and on; an older
+stub ignores it). Outside a request it does nothing.
+
 **The points system.** `UiCurrency.Detect(CPH, settings)` gives the user variable the points live in
 (`Variable`), what they are called (`Name`) and where that came from (`Source`): StreamUP's Currency Core
 (`currency_ProductSettings`) or Tawmae's LOYALTY POINTS (`tawmae_Settings_LOYALTY POINTS`) when one is installed,
@@ -369,7 +374,9 @@ The values arrive as `UiSettings` with `Bool`, `Int`, `Long`, `Double`, `String`
 `Clamp` and `Raw` (the JSON object). `UiSettings.Load(path)` reads the settings file the same way, old keys
 through the aliases; a relative path starts in the Streamer.bot folder. A file that cannot be read gives the
 `.bak` of the window's last save, else the defaults, and `Problem` says so (`FromBackup` which);
-`UiSettings.Load(path, CPH.LogWarn)` also logs it.
+`UiSettings.Load(path, CPH.LogWarn)` also logs it. A file that is missing while the window saves (it swaps the new
+file in, the old one becoming the `.bak`) is waited for a moment, and one still missing beside its `.bak` is read
+from that; only a file never saved gives the defaults without a word.
 
 **What the game's side does not know: the conventions.** `UiSettings` reads what the game's `Table` declares, and
 nothing else. For a key the conventions know (`S("globalCooldown", 30)`) the label, the page, the limits and the

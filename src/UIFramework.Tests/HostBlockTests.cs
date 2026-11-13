@@ -49,6 +49,116 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AFileMissingBesideItsBackupIsReadFromTheBackup()
+        {
+            // The window's save swaps the new file in (File.Replace, the old one becoming the .bak): for a moment, or
+            // after a swap that failed halfway, there is only the .bak. A round starting then played on the defaults.
+            string file = TempSettings("missing-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            File.WriteAllText(file + ".bak", @"{ ""sides"": 8 }");
+            string heard = null;
+            var backup = UiSettings.Load(file, message => heard = message);
+            Assert.True(backup.FromBackup);
+            Assert.Equal(8, backup.Raw.Value<int>("sides"));
+            Assert.Contains("missing", backup.Problem);
+            Assert.Equal(backup.Problem, heard);
+
+            // A file that appears while it is waited for is read.
+            File.Delete(file + ".bak");
+            File.WriteAllText(file + ".tmp", @"{ ""sides"": 12 }");
+            var swap = new Thread(() => { Thread.Sleep(20); File.Move(file + ".tmp", file); });
+            swap.Start();
+            var later = UiSettings.Load(file);
+            swap.Join();
+            Assert.Null(later.Problem);
+            Assert.Equal(12, later.Raw.Value<int>("sides"));
+        }
+
+        [Fact]
+        public void AFileNeverSavedIsTheDefaultsWithoutAWord()
+        {
+            string file = TempSettings("never-" + Guid.NewGuid().ToString("N"));
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var none = UiSettings.Load(file);
+            Assert.Null(none.Problem);
+            Assert.False(none.FromBackup);
+            Assert.Empty(none.Raw.Properties());
+            Assert.True(watch.ElapsedMilliseconds < 100, "a game whose settings were never saved waited " + watch.ElapsedMilliseconds + " ms");
+        }
+
+        [Fact]
+        public void AHandlerThatStillWorksSaysSoWhereTheSettingsActionLooks()
+        {
+            var cph = new FakeCph();
+            string var = "uiframework.answer.Demo." + Guid.NewGuid().ToString("N");
+            string key = UiHost.WorkingKey(var);
+            object during = null;
+            var args = new Dictionary<string, object> { ["uiframework.request"] = "test", ["uiframework.name"] = "importWords", ["uiframework.var"] = var };
+            try
+            {
+                Assert.True(UiHost.Handle(args, cph, "Demo", "demo", "v1.0.0", "Demo/settings.json",
+                    test: (name, values) => { UiHost.StillWorking(); during = AppDomain.CurrentDomain.GetData(key); return "imported"; }));
+                Assert.IsType<long>(during);
+                Assert.Equal("imported", cph.Globals[var]);
+
+                // After the request, nothing is said for it any more.
+                AppDomain.CurrentDomain.SetData(key, null);
+                UiHost.StillWorking();
+                Assert.Null(AppDomain.CurrentDomain.GetData(key));
+            }
+            finally { AppDomain.CurrentDomain.SetData(key, null); }
+        }
+
+        [Fact]
+        public void TheUpdateNoticeTakesTheNextOlderDllWhenTheNewestCannotBeUsed()
+        {
+            // A Streamer.bot of its own (an AppDomain whose folder holds UIFramework\lib), with no UIFramework loaded:
+            // 3.0.0 needs a newer settings action, 2.0.0 lost its hash, 1.0.0 is fine. The block refused the newest
+            // once and then had no DLL for the whole run.
+            string root = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "lib-" + Guid.NewGuid().ToString("N"));
+            string lib = Path.Combine(root, "UIFramework", "lib");
+            foreach (var version in new[] { "1.0.0", "2.0.0", "3.0.0" }) Directory.CreateDirectory(Path.Combine(lib, version));
+            File.Copy(typeof(Entry).Assembly.Location, Path.Combine(lib, "1.0.0", "UIFramework.dll"));
+            File.Copy(typeof(JObject).Assembly.Location, Path.Combine(lib, "1.0.0", "Newtonsoft.Json.dll"));
+            File.WriteAllText(Path.Combine(lib, "2.0.0", "UIFramework.dll"), "abc");
+            File.WriteAllText(Path.Combine(lib, "2.0.0", "UIFramework.dll.sha256"), "0000");
+            TooNewDll(Path.Combine(lib, "3.0.0"));
+
+            var domain = AppDomain.CreateDomain("probe", null, new AppDomainSetup { ApplicationBase = root });
+            try
+            {
+                var probe = (FrameworkProbe)domain.CreateInstanceFromAndUnwrap(typeof(FrameworkProbe).Assembly.Location, typeof(FrameworkProbe).FullName);
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);   // and again
+            }
+            finally
+            {
+                AppDomain.Unload(domain);
+                try { Directory.Delete(root, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+        }
+
+        // A DLL whose product version asks for a settings action no game has: "9.0.0+stub.99.0".
+        private static void TooNewDll(string folder)
+        {
+            var name = new System.Reflection.AssemblyName("TooNew") { Version = new Version(9, 0, 0, 0) };
+            var builder = AppDomain.CurrentDomain.DefineDynamicAssembly(name, System.Reflection.Emit.AssemblyBuilderAccess.Save, folder);
+            builder.DefineDynamicModule("TooNew", "UIFramework.dll");
+            builder.DefineVersionInfoResource("UIFramework", "9.0.0+stub.99.0", "", "", "");
+            builder.Save("UIFramework.dll");
+        }
+
+        [Fact]
+        public void TheBlockKnowsTheSettingsActionItIsReleasedWith()
+        {
+            Assert.False(UiUpdateNotice.NeedsNewerStub(typeof(Entry).Assembly.Location));   // 1.x+stub.0.1.0 fits
+            string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "too-new-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            TooNewDll(folder);
+            Assert.True(UiUpdateNotice.NeedsNewerStub(Path.Combine(folder, "UIFramework.dll")));
+        }
+
+        [Fact]
         public void LoadReadsARelativePathFromTheStreamerbotFolder()
         {
             string name = "uif-relative-" + Guid.NewGuid().ToString("N") + ".json";
@@ -250,5 +360,11 @@ namespace UIFramework.Tests
             Entry.Prepare(spec, schema);
             Assert.Equal(8, spec.Problems.Count);
         }
+    }
+
+    /// <summary>Asks the host block for the update notices in an AppDomain of its own, where no UIFramework is loaded.</summary>
+    public sealed class FrameworkProbe : MarshalByRefObject
+    {
+        public string Notices() => UiUpdateNotice.FrameworkType()?.Assembly.Location;
     }
 }

@@ -90,7 +90,7 @@ public class CPHInline
                         catch (Exception ex) { _owner.CPH.LogError(LogPrefix + " A cooldown could not be set: " + ex.Message); }
                     }
                 }
-                finally { _owner.AskGameNow("saved", null, settingsJson); }
+                finally { _owner.TellSaved(settingsJson); }
             }, false);
         }
 
@@ -149,6 +149,45 @@ public class CPHInline
         }
     }
 
+    /// <summary>Tells the game of a save, from the queue, where nobody waits for the answer. A request that found
+    /// another one still running (TimeoutException) is sent again, three times in all; what still fails goes to the log
+    /// and into a note beside the window: the game goes on with what it set up from the settings before (an overlay, a
+    /// timed action) until it hears of a save.</summary>
+    private void TellSaved(string settingsJson)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                AskGameNow("saved", null, settingsJson);
+                return;
+            }
+            catch (TimeoutException ex) when (attempt < 3)
+            {
+                CPH.LogWarn(LogPrefix + " The game has not heard of the save yet (" + ex.Message + "); telling it again.");
+            }
+            catch (Exception ex)
+            {
+                CPH.LogError(LogPrefix + " The game did not hear of the save: " + ex.Message);
+                _tell("The settings are saved, but the action '" + GameActionName + "' did not hear of it:\n\n" + ex.Message +
+                    "\n\nWhat the game set up from the settings before (an overlay, a timed action) stays so until it hears of a save. Save once more, or restart Streamer.bot.");
+                return;
+            }
+        }
+    }
+
+    // A note that does not wait for its OK: the pump goes on serving the window meanwhile.
+    private static Action<string> _tell = text =>
+    {
+        var thread = new Thread(() =>
+        {
+            try { MessageBoxW(IntPtr.Zero, text, FrameworkName, MbOk | MbIconWarning | 0x10000 /* MB_SETFOREGROUND */ | 0x40000 /* MB_TOPMOST */); }
+            catch (Exception) { }
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+    };
+
     // ================================================================================================
     // JOBS: the window runs on its own thread; anything that needs CPH is queued here and run by Pump,
     // which the DLL calls every 100 ms on Streamer.bot's thread while the window is open, and once after.
@@ -170,8 +209,9 @@ public class CPHInline
 
     /// <summary>Runs a job on Streamer.bot's thread: at once when this is that thread, else through the queue.
     /// With <paramref name="wait"/> the call blocks until the job ran and rethrows what it threw: five seconds for it to
-    /// start, thirty more once it has started. A job that runs longer keeps running, but the window stops waiting for it
-    /// and goes on as with no answer, so a game handler that hangs never freezes the window.</summary>
+    /// start, thirty more once it has started, and thirty from each time the game says it is still working on the
+    /// request (UiHost.StillWorking: an import that takes long on purpose). A job that runs longer keeps running, but the
+    /// window stops waiting for it and goes on as with no answer, so a game handler that hangs never freezes the window.</summary>
     private void RunOnBot(Action job, bool wait)
     {
         if (Thread.CurrentThread.ManagedThreadId == _botThread) { job(); return; }
@@ -184,15 +224,46 @@ public class CPHInline
             if (Interlocked.CompareExchange(ref state, 1, 0) != 0) return;
             try { job(); } catch (Exception ex) { failure = ex; } finally { done.Set(); }
         });
-        if (!done.Wait(TimeSpan.FromSeconds(5)))
+        if (!done.Wait(_toStart))
         {
             if (Interlocked.CompareExchange(ref state, 2, 0) == 0)
                 throw new TimeoutException("the action '" + GameActionName + "' did not answer within five seconds.");
-            // It has started: its answer is on the way, unless the game's handler hangs.
-            if (!done.Wait(TimeSpan.FromSeconds(30)))
-                throw new TimeoutException("the action '" + GameActionName + "' started but did not finish within 30 seconds; its answer is not used.");
+            // It has started: its answer is on the way, unless the game's handler hangs. One that says it still works
+            // gets its time again from then.
+            var until = DateTime.UtcNow + _toFinish;
+            while (!done.Wait(Left(until)))
+            {
+                var beat = LastBeat();
+                if (beat == null || beat.Value + _toFinish <= DateTime.UtcNow)
+                    throw new TimeoutException("the action '" + GameActionName + "' " + (beat == null ? "started but did not finish within 30 seconds" : "said it was still working, then nothing more for 30 seconds") + "; its answer is not used.");
+                until = beat.Value + _toFinish;
+            }
         }
         if (failure != null) throw failure;
+    }
+
+    // How long a request may take to start, and to finish once started (or since the game last said it still works).
+    private static TimeSpan _toStart = TimeSpan.FromSeconds(5), _toFinish = TimeSpan.FromSeconds(30);
+
+    private static TimeSpan Left(DateTime until)
+    {
+        var left = until - DateTime.UtcNow;
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
+    // Where the request being answered now keeps the time the game last said it still works on it: this AppDomain's
+    // data under UiHost.WorkingKey of its variable (the host block writes it there; a global would only fill
+    // Streamer.bot's variables).
+    private static string _beatKey;
+
+    private static DateTime? LastBeat()
+    {
+        try
+        {
+            string key = Volatile.Read(ref _beatKey);
+            return key != null && AppDomain.CurrentDomain.GetData(key) is long ticks ? new DateTime(ticks, DateTimeKind.Utc) : (DateTime?)null;
+        }
+        catch (Exception) { return null; }
     }
 
     // The game answers the window's requests through non-persistent globals. Streamer.bot keeps its globals in
@@ -274,6 +345,8 @@ public class CPHInline
         CPH.SetArgument("uiframework.var", var);   // where the answer goes; the game uses it over its own name
         if (!CPH.ActionExists(GameActionName))
             throw new InvalidOperationException("There is no action named '" + GameActionName + "' in this Streamer.bot. GameActionName in the settings action must be the game action's exact name.");
+        string beat = var + ".working";   // UiHost.WorkingKey in the host block
+        Volatile.Write(ref _beatKey, beat);
         try
         {
             if (!CPH.RunAction(GameActionName, true))
@@ -288,6 +361,8 @@ public class CPHInline
             // token), and a global stays readable by every action and visible in Streamer.bot's variables until it is unset.
             CPH.UnsetGlobalVar(var, false);
             CPH.UnsetGlobalVar(legacy, false);
+            Interlocked.CompareExchange(ref _beatKey, null, beat);
+            try { AppDomain.CurrentDomain.SetData(beat, null); } catch (Exception) { }
         }
     }
 
@@ -300,7 +375,7 @@ public class CPHInline
     // check before a save knows it since 0.9.13, a Try button and a table since 1.9.0.
     private static bool KnowsNoAnswer(string request)
     {
-        var version = ParseVersion(_show?.DeclaringType?.Assembly is Assembly a ? VersionOf(a) : null);
+        var version = Full(ParseVersion(_show?.DeclaringType?.Assembly is Assembly a ? VersionOf(a) : null));
         return version == null || version >= (request == "validate" ? new Version(0, 9, 13) : new Version(1, 9, 0));
     }
 
@@ -690,10 +765,14 @@ public class CPHInline
     // before 0.3.0 kept them, are still read: a release skipped or a check switched off there stays so for that game.
     private static readonly string LoaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "loader.json");
 
-    private static JObject ReadLoader()
+    private static JObject ReadLoader() => TryReadLoader() ?? new JObject();
+
+    /// <summary>loader.json, an empty one when there is none, null when it cannot be read (locked, damaged): then it
+    /// counts as empty, and nothing is written over it, as with the layout file.</summary>
+    private static JObject TryReadLoader()
     {
         try { return File.Exists(LoaderPath) ? JObject.Parse(File.ReadAllText(LoaderPath)) : new JObject(); }
-        catch (Exception) { return new JObject(); }
+        catch (Exception) { return null; }
     }
 
     private static bool SwitchedOff(JToken token) => token != null && token.Type == JTokenType.Boolean && !(bool)token;
@@ -707,42 +786,51 @@ public class CPHInline
         return wanted != null && (wanted.Equals(Full(ParseVersion((string)ReadLoader()["skipVersion"]))) || wanted.Equals(Full(ParseVersion((string)ReadLayout()["skipVersion"]))));
     }
 
-    private static void SkipVersion(string version)
+    /// <summary>Keeps a skipped version in loader.json, for every game; when that cannot be read (it is not written
+    /// over then) or written, at least in this game's layout file. Returns where it went, null when nowhere.</summary>
+    private static string SkipVersion(string version)
     {
-        try
+        var loader = TryReadLoader();
+        if (loader != null)
         {
-            var loader = ReadLoader();
-            loader["skipVersion"] = version;
-            Directory.CreateDirectory(Path.GetDirectoryName(LoaderPath));
-            string temp = LoaderPath + ".tmp";
-            File.WriteAllText(temp, loader.ToString(Newtonsoft.Json.Formatting.Indented));
-            if (File.Exists(LoaderPath)) File.Replace(temp, LoaderPath, null);
-            else File.Move(temp, LoaderPath);
+            try
+            {
+                loader["skipVersion"] = version;
+                Directory.CreateDirectory(Path.GetDirectoryName(LoaderPath));
+                string temp = LoaderPath + ".tmp";
+                File.WriteAllText(temp, loader.ToString(Newtonsoft.Json.Formatting.Indented));
+                if (File.Exists(LoaderPath)) File.Replace(temp, LoaderPath, null);
+                else File.Move(temp, LoaderPath);
+                return "UIFramework\\loader.json";
+            }
+            catch (Exception) { }
         }
-        catch (Exception) { WriteLayout(layout => layout["skipVersion"] = version); }   // at least for this game
+        return WriteLayout(layout => layout["skipVersion"] = version) ? "this game's uiframework.layout.json" : null;
     }
 
     // The note for the window's header pill: a release the user answered "No" to; removed again otherwise.
     private static void NoteLayout(string key, string value) => WriteLayout(layout => { if (value == null) layout.Remove(key); else layout[key] = value; });
 
-    private static void WriteLayout(Action<JObject> change)
+    /// <summary>Changes the layout file; false when it could not be read or written.</summary>
+    private static bool WriteLayout(Action<JObject> change)
     {
         try
         {
             // A file that cannot be read is the user's customisation in a bad moment: it is not written over. A note
             // that changes nothing is not written either, and a write goes beside the file and is swapped in.
             var layout = TryReadLayout();
-            if (layout == null) return;
+            if (layout == null) return false;
             var before = layout.ToString(Newtonsoft.Json.Formatting.None);
             change(layout);
-            if (layout.ToString(Newtonsoft.Json.Formatting.None) == before) return;
+            if (layout.ToString(Newtonsoft.Json.Formatting.None) == before) return true;
             Directory.CreateDirectory(Path.GetDirectoryName(LayoutPath));
             string temp = LayoutPath + ".tmp";
             File.WriteAllText(temp, layout.ToString(Newtonsoft.Json.Formatting.Indented));
             if (File.Exists(LayoutPath)) File.Replace(temp, LayoutPath, null);
             else File.Move(temp, LayoutPath);
+            return true;
         }
-        catch (Exception) { }
+        catch (Exception) { return false; }
     }
 
     /// <summary>What the update dialog asks. running: the version this Streamer.bot has loaded already (a game loads
@@ -767,6 +855,8 @@ public class CPHInline
     private string OfferUpdate(string installed)
     {
         var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
+        if (File.Exists(LoaderPath) && TryReadLoader() == null)
+            CPH.LogWarn(LogPrefix + " UIFramework\\loader.json cannot be read; it counts as empty (its autoUpdate and skipVersion too) and is not written over until it is mended.");
         if (!AutoUpdateEnabled())
         {
             CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in UIFramework\\loader.json or in this game's uiframework.layout.json).");
@@ -819,9 +909,12 @@ public class CPHInline
         // Closing the dialog (its X, Esc) is Cancel: "not now". Skipping a version for good takes a choice of its own.
         if (answer == IdNo)
         {
-            SkipVersion(newest.ToString());
+            string kept = SkipVersion(newest.ToString());
             NoteLayout("frameworkAvailable", null);
-            CPH.LogInfo(LogPrefix + " UIFramework " + newest + " skipped; the next release will be offered again.");
+            if (kept != null)
+                CPH.LogInfo(LogPrefix + " UIFramework " + newest + " skipped (kept in " + kept + "); the next release will be offered again.");
+            else
+                CPH.LogWarn(LogPrefix + " UIFramework " + newest + " could not be skipped: neither UIFramework\\loader.json nor this game's uiframework.layout.json could be written. It is offered again next time.");
             return installed;
         }
         if (answer != IdYes)

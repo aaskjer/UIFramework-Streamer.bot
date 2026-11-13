@@ -217,7 +217,9 @@ if (UiHost.Handle(args, CPH, ActionName, "demo", CurrentVersion, SettingsFile,
 
 **The window waits five seconds for an answer.** The settings action runs your game action with
 `CPH.RunAction(..., true)` and waits; a request it has given up on is skipped, not run late. One that has started
-gets 30 seconds more, then the window stops waiting and goes on without its answer. The window itself stays
+gets 30 seconds more, then the window stops waiting and goes on without its answer; a handler that takes long on
+purpose (an import) calls `UiHost.StillWorking()` every few seconds, and each call gives it 30 seconds from then
+(stub 0.3.1 and on). The window itself stays
 usable meanwhile (a Try button is greyed until its answer is there; the check before a save keeps the input away),
 and an answer that never came reads "the game did not answer", not "done". So inside `test`,
 `validate`, `saved`, `table` and `emotes`:

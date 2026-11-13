@@ -18,6 +18,42 @@ follows it go to `lib/v2/latest.json`.
   hurry, it can wait until after the stream): the window opened as before and only the log told. Nothing changes
   in the DLL; a game gets it with its next release.
 
+### Added
+
+- **`UiHost.StillWorking()` (host block, stub 0.3.1):** a request that takes long on purpose (a Try button that
+  imports a word list) says that it is still at work, and the settings action waits 30 seconds from then for its
+  answer. It gave every request 30 seconds after it started and then dropped the answer while the work went on;
+  Hangman stopped its import at 28 seconds for that. 30 seconds stays what a request gets without the call. See
+  *The game's side* in [docs/Schema.md](docs/Schema.md).
+
+### Fixed
+
+- **The update notice takes the next older DLL when the newest cannot be used (host block).** When the newest
+  `UIFramework.dll` under `lib\` failed its hash or threw once while loading, the block gave up on every DLL for the
+  rest of the run: no update notice, and `UiLive` said Unknown for Twitch and Kick until Streamer.bot restarted. It
+  now tries the installed ones newest first and passes over one that is damaged, will not load, or needs a newer
+  settings action than the one released with the block (`StubVersion` in the block, kept equal to the stub's); a
+  file downloaded again is tried again. Once a UIFramework is loaded, the block takes that one: .NET answers every
+  later load of a `UIFramework.dll`, whichever version, with the one already loaded.
+- **A round that starts while the window saves reads the saved settings (host block).** The window swaps the new
+  settings file in, the old one becoming the `.bak`, and for that moment there is no file; `UiSettings.Load` took
+  the missing file for one never saved and gave the defaults without a word. It now waits a moment for a file that
+  is being swapped in, and reads the `.bak` (saying so in `Problem`) when only that is left; a game whose settings
+  were never saved still gets the defaults at once.
+- **A save that switches automatic rounds off keeps the timer off (host block).** `UiTimer.Rearm` looked at the
+  timed action, then switched it off and on; a save whose `UiTimer.Sync` switched it off in between found it on
+  again. The two now take turns.
+- **The game hears of every save (stub 0.3.1).** The "saved" request runs from the settings action's queue; when it
+  found another request still running, the log said "A queued step failed" and the game never heard of the save,
+  so its overlay and timed action went on with the old settings. It is now sent again (three tries in all), and what
+  still fails is said in the log and in a note beside the window.
+- **An unreadable `loader.json` is not written over (stub 0.3.1).** A damaged or locked `UIFramework\loader.json`
+  counted as empty, and *No* in the update dialog replaced it with a file holding only `skipVersion`. It now counts
+  as empty without being written over, as the layout file already did; *No* keeps the skip in the game's layout
+  file then, and the log says where it went and that `loader.json` cannot be read.
+- **A DLL in a folder named `1.9` gets the no-answer marker (stub 0.3.1).** It was compared as older than 1.9.0 and
+  got null instead.
+
 ## [1.9.0] - 2026-11-12
 
 The Log page's colours can be declared, and what the audit of 2026-11-08 had left open is done. The window's

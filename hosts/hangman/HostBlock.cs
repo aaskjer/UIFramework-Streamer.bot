@@ -293,7 +293,7 @@ public static class UiSchema
                 Cmd("!hml bob", "looks up another viewer's stats (also !hmlookup).")),
             H("For your own actions",
                 Note("Custom triggers (Custom > Chat Game > Hangman Game): Hangman: Game Start, Game Win, Game Loss, Game Stopped and Timeout fire with the round as arguments - roundOutcome, roundWord, roundCategory, roundDifficulty, roundPlatform, roundWinner, roundWinnerId, roundPoints, roundWrongGuesses, roundMaxWrong, roundBlitz, roundParticipants; Hangman: Free Game Start and Free Game End when Free mode is switched. GetLastRoundResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action; StartFreeGame and EndFreeGame switch Free mode from there."),
-                Note("Per viewer, on the platform they played on (Streamer.bot's user variables): hm_wins, hm_losses, hm_played, hm_pointsEarned, hm_lettersGuessed, hm_wordsGuessed, hm_streak, hm_bestStreak.")),
+                Note("Per viewer, on the platform they played on (Streamer.bot's user variables): hm_wins, hm_losses, hm_gamesPlayed, hm_pointsEarned, hm_lettersFound, hm_wordsGuessed, hm_streak, hm_bestStreak.")),
             H("Where things are kept",
                 Cmd("configs.json", "everything on these pages, in Chat Games\\Hangman Game."),
                 Cmd("Hangman-Wordlist.json", "the word list, next to it; the Words page edits it."),
@@ -403,7 +403,7 @@ public static class UiSchema
             K("overlaySample", "Beispielrunde zeigen", "Spielt eine erfundene Runde auf dem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht, mit einem Evil-Hangman-Tausch und einem Sieg. Bist du live, sehen es deine Zuschauer auch. Nimmt die gespeicherten Einstellungen; nicht, solange eine echte Runde läuft."),
             K("overlayDemo", "Demo ansehen", "Öffnet das Overlay im Browser und spielt erfundene Runden, wie die gespeicherten Einstellungen es sagen, ohne Streamer.bot. In OBS tut &demo=1 am Ende der Adresse der Quelle dasselbe, um sie zu platzieren und ihre Größe einzustellen."),
             K("requireModToStart", "Nur Moderatoren starten eine Runde", "Nur Moderatoren und der Broadcaster starten eine Runde; raten darf in einer laufenden Runde weiter jeder."),
-            K("allowChannelPointStart", "Eine Belohnung startet die Runde", "Auf Twitch startet eine Kanalpunkte-Einlösung die Runde statt des Chat-Befehls, der auf Twitch dann aus ist. Raten darf weiter jeder wie gewohnt."),
+            K("allowChannelPointStart", "Eine Belohnung startet die Runde", "Auf Twitch startet eine Kanalpunkte-Einlösung die Runde statt des Chat-Befehls, der auf Twitch dann nur noch Moderatoren startet. Raten darf weiter jeder wie gewohnt."),
             K("channelPointRewardId", "Belohnungs-ID", "Die ID der Belohnung. Zu finden unter ayrtonalexis.com/reward_checker: autorisieren, 'Get Rewards', die ID deiner Belohnung kopieren."),
             K("channelPointFixedBet", "Fester Einsatz", "0 liest den Einsatz aus der Einlösung: eine getippte Zahl, sonst der Preis der Belohnung, sonst kein Einsatz. Über 0 setzt jede Einlösung genau so viel."),
             K("channelPointPayoutMultiplier", "Multiplikator des Einsatzes", "Streamer.bot kann keine Kanalpunkte auszahlen, ein Gewinn zahlt also immer in deiner Währung: der Einsatz mal dieser Wert, auf den Gewinn drauf. 1 zahlt ihn einmal zurück, 2 verdoppelt ihn, 0 zahlt keinen Einsatzbonus."),
@@ -423,12 +423,12 @@ public static class UiSchema
             K("streakBonusPercent", "Serienbonus", "Kommt für jeden Gewinn in Folge nach dem ersten auf den Gewinn drauf. 10 heißt: der 3. Gewinn in Folge zahlt +20 %. 0 = kein Bonus."),
             K("streakBonusMaxPercent", "Höchster Serienbonus", "Obergrenze für den Serienbonus. 0 = keine Grenze."),
             K("resetAllMonthly", "Alle Plattformen monatlich zurücksetzen", "Leert die Ranglisten aller Plattformen am Monatsende."),
-            K("resetTwitchMonthly", "Twitch: monatlich zurücksetzen", "Leert die Twitch-Rangliste am Monatsende."),
-            K("resetTwitchDay", "Twitch: nach Tagen zurücksetzen", "Leert die Twitch-Rangliste alle so viele Tage. 0 = nie."),
-            K("resetYouTubeMonthly", "YouTube: monatlich zurücksetzen", "Leert die YouTube-Rangliste am Monatsende."),
-            K("resetYouTubeDay", "YouTube: nach Tagen zurücksetzen", "Leert die YouTube-Rangliste alle so viele Tage. 0 = nie."),
-            K("resetKickMonthly", "Kick: monatlich zurücksetzen", "Leert die Kick-Rangliste am Monatsende."),
-            K("resetKickDay", "Kick: nach Tagen zurücksetzen", "Leert die Kick-Rangliste alle so viele Tage. 0 = nie."),
+            K("resetTwitchMonthly", "Twitch: monatlich zurücksetzen", "Leert die Twitch-Rangliste zu Beginn jedes Monats."),
+            K("resetTwitchDay", "Twitch: zurücksetzen am Tag", "Leert die Twitch-Rangliste jeden Monat an diesem Tag (in kürzeren Monaten am letzten). 0 = am 1., solange monatlich an ist, sonst nie."),
+            K("resetYouTubeMonthly", "YouTube: monatlich zurücksetzen", "Leert die YouTube-Rangliste zu Beginn jedes Monats."),
+            K("resetYouTubeDay", "YouTube: zurücksetzen am Tag", "Leert die YouTube-Rangliste jeden Monat an diesem Tag (in kürzeren Monaten am letzten). 0 = am 1., solange monatlich an ist, sonst nie."),
+            K("resetKickMonthly", "Kick: monatlich zurücksetzen", "Leert die Kick-Rangliste zu Beginn jedes Monats."),
+            K("resetKickDay", "Kick: zurücksetzen am Tag", "Leert die Kick-Rangliste jeden Monat an diesem Tag (in kürzeren Monaten am letzten). 0 = am 1., solange monatlich an ist, sonst nie."),
             K("msgGameStart", "Rundenstart", "Wenn eine Runde beginnt."),
             K("msgAlreadyRunning", "Läuft schon", "Wenn jemand starten will, während eine Runde läuft."),
             K("msgNoGameActive", "Keine Runde aktiv", "Wenn jemand rät, obwohl keine Runde läuft."),
@@ -679,7 +679,7 @@ public static class UiSchema
         S("requireModToStart", true, page: "access", label: "Only moderators start a round", help: "Only moderators and the broadcaster can start a round; everyone can still guess in a round that is running.", section: "Who can start a round", aliases: new[] { "RequireModToStart" }),
         S("blockedUsers", "", page: "access", section: "Who may not play", aliases: new[] { "BlockedUsers" }),
         S("blockedGroups", "", page: "access", section: "Who may not play", aliases: new[] { "BlockedGroups" }),
-        S("allowChannelPointStart", false, page: "access", label: "A reward starts the round", help: "On Twitch a channel point redemption starts the round instead of the chat command, which is then off on Twitch. Everyone still guesses as usual.", section: "Channel points (Twitch)", aliases: new[] { "AllowChannelPointStart" }, twitchOnly: true),
+        S("allowChannelPointStart", false, page: "access", label: "A reward starts the round", help: "On Twitch a channel point redemption starts the round instead of the chat command, which then starts a round on Twitch for moderators only. Everyone still guesses as usual.", section: "Channel points (Twitch)", aliases: new[] { "AllowChannelPointStart" }, twitchOnly: true),
         S("channelPointRewardId", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", page: "access", label: "Reward ID", help: "The reward's id. Find it at ayrtonalexis.com/reward_checker: authorize, 'Get Rewards', copy the id of your reward.", section: "Channel points (Twitch)", requires: "allowChannelPointStart", aliases: new[] { "ChannelPointRewardId" }),
         S("channelPointFixedBet", 0, page: "access", label: "Fixed stake", help: "0 reads the stake from the redemption: a number the viewer typed, else the reward's cost, else no stake. Above 0 every redemption stakes exactly this much.", section: "Channel points (Twitch)", min: 0.0, requires: "allowChannelPointStart", aliases: new[] { "ChannelPointFixedBet" }),
         S("channelPointPayoutMultiplier", 1.0, page: "access", label: "Stake payout multiplier", help: "Streamer.bot cannot pay channel points back out, so a win always pays in your currency: the stake times this, added to the winner's payout. 1 pays it back once, 2 doubles it, 0 pays no stake bonus.", kind: "double", section: "Channel points (Twitch)", min: 0.0, requires: "allowChannelPointStart", aliases: new[] { "ChannelPointPayoutMultiplier" }),
@@ -710,12 +710,12 @@ public static class UiSchema
         S("streakBonusPercent", 10.0, page: "board", label: "Streak bonus", help: "Added to the win payout for every win in a row after the first. 10 means the 3rd win in a row pays +20%. 0 = no bonus.", kind: "double", section: "Streaks", min: 0.0, unit: "%", requires: "streaksEnabled", aliases: new[] { "StreakBonusPercent" }),
         S("streakBonusMaxPercent", 50.0, page: "board", label: "Most streak bonus", help: "Upper limit for the streak bonus. 0 = no cap.", kind: "double", section: "Streaks", min: 0.0, unit: "%", unlimitedAtZero: true, requires: "streaksEnabled", aliases: new[] { "StreakBonusMaxPercent" }),
         S("resetAllMonthly", false, page: "board", label: "Reset every platform monthly", help: "Clears the scoreboards of every platform at the end of the month.", section: "Auto reset", aliases: new[] { "ResetAllMonthly" }),
-        S("resetTwitchMonthly", false, page: "board", label: "Twitch: reset monthly", help: "Clears the Twitch scoreboard at the end of the month.", section: "Auto reset", requires: "resetAllMonthly=false", aliases: new[] { "ResetTwitchMonthly" }, row: "resetTwitch"),
-        S("resetTwitchDay", 0, page: "board", label: "Twitch: reset after days", help: "Clears the Twitch scoreboard every so many days. 0 = never.", section: "Auto reset", min: 0.0, max: 31.0, unlimitedAtZero: true, requires: "resetAllMonthly=false", aliases: new[] { "ResetTwitchDay" }, row: "resetTwitch"),
-        S("resetYouTubeMonthly", false, page: "board", label: "YouTube: reset monthly", help: "Clears the YouTube scoreboard at the end of the month.", section: "Auto reset", requires: "resetAllMonthly=false", aliases: new[] { "ResetYouTubeMonthly" }, row: "resetYouTube"),
-        S("resetYouTubeDay", 0, page: "board", label: "YouTube: reset after days", help: "Clears the YouTube scoreboard every so many days. 0 = never.", section: "Auto reset", min: 0.0, max: 31.0, unlimitedAtZero: true, requires: "resetAllMonthly=false", aliases: new[] { "ResetYouTubeDay" }, row: "resetYouTube"),
-        S("resetKickMonthly", false, page: "board", label: "Kick: reset monthly", help: "Clears the Kick scoreboard at the end of the month.", section: "Auto reset", requires: "resetAllMonthly=false", aliases: new[] { "ResetKickMonthly" }, row: "resetKick"),
-        S("resetKickDay", 0, page: "board", label: "Kick: reset after days", help: "Clears the Kick scoreboard every so many days. 0 = never.", section: "Auto reset", min: 0.0, max: 31.0, unlimitedAtZero: true, requires: "resetAllMonthly=false", aliases: new[] { "ResetKickDay" }, row: "resetKick"),
+        S("resetTwitchMonthly", false, page: "board", label: "Twitch: reset monthly", help: "Clears the Twitch scoreboard as a new month begins.", section: "Auto reset", requires: "resetAllMonthly=false", aliases: new[] { "ResetTwitchMonthly" }, row: "resetTwitch"),
+        S("resetTwitchDay", 0, page: "board", label: "Twitch: reset on day", help: "Clears the Twitch scoreboard every month on this day (the last day in a shorter month). 0 = on the 1st while monthly is on, else never.", section: "Auto reset", min: 0.0, max: 31.0, requires: "resetAllMonthly=false", aliases: new[] { "ResetTwitchDay" }, row: "resetTwitch"),
+        S("resetYouTubeMonthly", false, page: "board", label: "YouTube: reset monthly", help: "Clears the YouTube scoreboard as a new month begins.", section: "Auto reset", requires: "resetAllMonthly=false", aliases: new[] { "ResetYouTubeMonthly" }, row: "resetYouTube"),
+        S("resetYouTubeDay", 0, page: "board", label: "YouTube: reset on day", help: "Clears the YouTube scoreboard every month on this day (the last day in a shorter month). 0 = on the 1st while monthly is on, else never.", section: "Auto reset", min: 0.0, max: 31.0, requires: "resetAllMonthly=false", aliases: new[] { "ResetYouTubeDay" }, row: "resetYouTube"),
+        S("resetKickMonthly", false, page: "board", label: "Kick: reset monthly", help: "Clears the Kick scoreboard as a new month begins.", section: "Auto reset", requires: "resetAllMonthly=false", aliases: new[] { "ResetKickMonthly" }, row: "resetKick"),
+        S("resetKickDay", 0, page: "board", label: "Kick: reset on day", help: "Clears the Kick scoreboard every month on this day (the last day in a shorter month). 0 = on the 1st while monthly is on, else never.", section: "Auto reset", min: 0.0, max: 31.0, requires: "resetAllMonthly=false", aliases: new[] { "ResetKickDay" }, row: "resetKick"),
         // ---- messages ----
         Msg("Round", "msgGameStart", "🎮 Hangman started! Category: {category} | Word: {masked} | ❤️ Lives: {lives}/{maxlives} | Guess with !g <letter or word>", "Game start", "Sent when a round starts.", new[] { "category", "masked", "lives", "maxlives" }, alias: "MsgGameStart"),
         Msg("Round", "msgAlreadyRunning", "⚠️ A Hangman round is already running! Word: {masked} | ❤️ Lives: {lives}/{maxlives}", "Already running", "Sent when someone tries to start while a round is already running.", new[] { "masked", "lives", "maxlives" }, alias: "MsgAlreadyRunning"),
@@ -1162,6 +1162,7 @@ public static class UiHost
         foreach (var key in new[] { "uiframework.request", "uiframework.describe", "uiframework.name", "uiframework.values", "uiframework.var" })
             if (args != null && args.ContainsKey(key)) CPH.SetArgument(key, "");
         string answer = null;
+        System.Threading.Volatile.Write(ref _answering, var);
         try
         {
             switch (request)
@@ -1180,9 +1181,27 @@ public static class UiHost
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
         }
+        finally { System.Threading.Volatile.Write(ref _answering, null); }
         CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
         return true;
     }
+
+    // The variable of the request being answered now, which StillWorking names to the settings action.
+    private static string _answering;
+
+    /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
+    /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
+    /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
+    /// from before stub 0.3.1, it does nothing.</summary>
+    public static void StillWorking()
+    {
+        string var = System.Threading.Volatile.Read(ref _answering);
+        if (!string.IsNullOrEmpty(var)) System.AppDomain.CurrentDomain.SetData(WorkingKey(var), System.DateTime.UtcNow.Ticks);
+    }
+
+    /// <summary>Where StillWorking leaves the time for the settings action: this AppDomain's data, under the request's
+    /// own variable. Not a global: one that changes every few seconds would only fill Streamer.bot's variables.</summary>
+    public static string WorkingKey(string var) => var + ".working";
 
     private static string Arg(System.Collections.Generic.IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
 }
@@ -1190,11 +1209,11 @@ public static class UiHost
 /// <summary>The update notice, once per Streamer.bot start (docs/Schema.md, "Update notice"). Call
 /// <c>UiUpdateNotice.Startup(CPH, ...)</c> from the game action's <c>Init()</c> and tick "Precompile on Application Start"
 /// on its Execute Code sub-action: Streamer.bot then runs it as it starts. In the background it asks UIFramework.dll (the
-/// newest under &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings loaded) every few seconds until the notice
-/// is due, waits up to a minute for a broadcaster account to connect, then sends the chat line to Twitch, YouTube and
-/// Kick, whichever is connected, and shows a Windows toast when no broadcaster account is (or always, as the window's
-/// <c>Updates</c> says). Every game asks; one of them gets the whole notice. Without the DLL (the settings never opened)
-/// nothing happens.</summary>
+/// newest under &lt;Streamer.bot&gt;\UIFramework\lib that this game's settings action fits, or the one the settings
+/// loaded) every few seconds until the notice is due, waits up to a minute for a broadcaster account to connect, then
+/// sends the chat line to Twitch, YouTube and Kick, whichever is connected, and shows a Windows toast when no
+/// broadcaster account is (or always, as the window's <c>Updates</c> says). Every game asks; one of them gets the whole
+/// notice. Without the DLL (the settings never opened) nothing happens.</summary>
 public static class UiUpdateNotice
 {
     private static readonly object Gate = new object();
@@ -1272,21 +1291,30 @@ public static class UiUpdateNotice
         else CPH.SendMessage(text, bot, true);
     }
 
-    /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
+    // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
+    // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
+    internal const string StubVersion = "0.3.1";
+
+    /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
+    /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
     internal static System.Type FrameworkType()
     {
+        // One UIFramework per Streamer.bot: once one is loaded, .NET answers every later load of a UIFramework.dll, of
+        // whichever version, with that one.
+        bool anyLoaded = false;
         System.Type loaded = null;
         System.Version loadedVersion = null;
         foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
         {
             var name = assembly.GetName();
             if (name.Name != "UIFramework") continue;
+            anyLoaded = true;
             var type = assembly.GetType("UIFramework.UpdateNotices", false);
             if (type != null && (loadedVersion == null || Full(name.Version) > loadedVersion)) { loaded = type; loadedVersion = Full(name.Version); }
         }
+        if (anyLoaded) return loaded;
         string lib = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
-        string newestFile = null;
-        System.Version newest = null;
+        var installed = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Version, string>>();
         if (System.IO.Directory.Exists(lib))
             foreach (var dir in System.IO.Directory.GetDirectories(lib))
             {
@@ -1294,30 +1322,36 @@ public static class UiUpdateNotice
                 string file = System.IO.Path.Combine(dir, "UIFramework.dll");
                 // "v1.8.0" is a folder too, as it is to the settings action.
                 string folder = System.IO.Path.GetFileName(dir).TrimStart('v', 'V');
-                if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
-                {
-                    newest = Full(version);
-                    newestFile = file;
-                }
+                if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file))
+                    installed.Add(new System.Collections.Generic.KeyValuePair<System.Version, string>(Full(version), file));
             }
-        if (newestFile != null && newestFile != _refused && (loadedVersion == null || newest > loadedVersion))
+        installed.Sort((a, b) => b.Key.CompareTo(a.Key));
+        foreach (var candidate in installed)
         {
+            string file = candidate.Value, seen;
+            try { seen = file + "|" + System.IO.File.GetLastWriteTimeUtc(file).Ticks; }
+            catch (System.Exception) { continue; }
+            lock (Refused) if (Refused.Contains(seen)) continue;
             try
             {
-                // As the settings action loads it: not a file that no longer matches the hash it was downloaded with
-                // (that one is left for the settings action to set aside), and with UnsafeLoadFrom, since LoadFrom
-                // refuses a DLL saved from a browser (Windows' "downloaded from the internet" mark).
-                if (!Intact(newestFile)) { _refused = newestFile; return loaded; }
-                var type = System.Reflection.Assembly.UnsafeLoadFrom(newestFile).GetType("UIFramework.UpdateNotices", false);
-                if (type != null) return type;
+                // As the settings action loads it: not one that asks for a newer settings action than this game's, not a
+                // file that no longer matches the hash it was downloaded with (that one is left for the settings action
+                // to set aside), and with UnsafeLoadFrom, since LoadFrom refuses a DLL saved from a browser (Windows'
+                // "downloaded from the internet" mark).
+                if (NeedsNewerStub(file) || !Intact(file)) { Refuse(seen); continue; }
+                // The one this Streamer.bot runs from now on, also when it is too old for notices.
+                return System.Reflection.Assembly.UnsafeLoadFrom(file).GetType("UIFramework.UpdateNotices", false);
             }
-            catch (System.Exception) { _refused = newestFile; }
+            catch (System.Exception) { Refuse(seen); }
         }
-        return loaded;
+        return null;
     }
 
-    // The newest DLL once it was found damaged or would not load: not hashed and tried again on every call.
-    private static string _refused;
+    // The DLLs found damaged, not fitting or not loading, by path and time written: not hashed and tried again on every
+    // call. A file downloaded again (the settings action sets a damaged one aside) is written anew and tried anew.
+    private static readonly System.Collections.Generic.HashSet<string> Refused = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
+    private static void Refuse(string seen) { lock (Refused) Refused.Add(seen); }
 
     /// <summary>Whether the DLL still is what was downloaded: its SHA-256 against the .sha256 file the settings action
     /// wrote beside it. A DLL put in by hand has no such file and counts as it is.</summary>
@@ -1332,6 +1366,22 @@ public static class UiUpdateNotice
             foreach (byte b in sha.ComputeHash(stream))
                 text.Append(b.ToString("x2"));
         return text.ToString() == expected;
+    }
+
+    /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
+    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    internal static bool NeedsNewerStub(string dll)
+    {
+        try
+        {
+            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
+            if (at < 0) return false;
+            string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
+            System.Version needs;
+            return System.Version.TryParse(named.Contains(".") ? named : named + ".0", out needs) && Full(needs) > Full(System.Version.Parse(StubVersion));
+        }
+        catch (System.Exception) { return false; }
     }
 
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
@@ -1676,6 +1726,16 @@ public static class UiTimer
     public static void Sync(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
         bool restart = false, System.Action<string> log = null)
     {
+        lock (Switching) SyncLocked(CPH, timerId, enabled, minutes, random, maxMinutes, restart, log);
+    }
+
+    // Sync and Rearm look at the timer, then switch it: one at a time, or a save that switches it off between Rearm's
+    // look and its switching on would find it on again.
+    private static readonly object Switching = new object();
+
+    private static void SyncLocked(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
+        bool restart, System.Action<string> log)
+    {
         try
         {
             bool running = CPH.GetTimerState(timerId);
@@ -1701,16 +1761,20 @@ public static class UiTimer
     }
 
     /// <summary>When the timed action has fired: a random timer draws its next wait and starts over with it. A fixed one
-    /// simply runs on, and one that was switched off meanwhile (a save between the tick and this run) stays off.</summary>
+    /// simply runs on, and one that was switched off meanwhile (a save between the tick and this run, or during it)
+    /// stays off.</summary>
     public static void Rearm(IInlineInvokeProxy CPH, string timerId, int minutes, bool random, int maxMinutes, System.Action<string> log = null)
     {
         if (!random) return;
         try
         {
-            if (!CPH.GetTimerState(timerId)) return;
-            CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
-            CPH.DisableTimerById(timerId);
-            CPH.EnableTimerById(timerId);
+            lock (Switching)
+            {
+                if (!CPH.GetTimerState(timerId)) return;
+                CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
+                CPH.DisableTimerById(timerId);
+                CPH.EnableTimerById(timerId);
+            }
         }
         catch (System.Exception ex)
         {
@@ -1805,15 +1869,25 @@ public sealed class UiSettings
     public bool FromBackup { get; private set; }
 
     /// <summary>Never throws: an unreadable file gives the .bak the window's last save kept, else the defaults, and
-    /// the game keeps running; Problem says so, and log (CPH.LogWarn, say) hears it. A relative path starts in the
-    /// Streamer.bot folder, whatever the current directory.</summary>
+    /// the game keeps running; Problem says so, and log (CPH.LogWarn, say) hears it. A file that is missing while a
+    /// save is under way is waited for a moment, and one still missing beside its .bak is read from that; only a file
+    /// never saved gives the defaults without a word. A relative path starts in the Streamer.bot folder, whatever the
+    /// current directory.</summary>
     public static UiSettings Load(string path, System.Action<string> log = null)
     {
         if (string.IsNullOrEmpty(path)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
         try
         {
             if (!System.IO.Path.IsPathRooted(path)) path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, path);
-            if (!System.IO.File.Exists(path)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+            // The window saves beside the file and swaps it in (File.Replace, the old one becoming the .bak): for a
+            // moment there is no file, and a swap that failed halfway leaves only the .bak.
+            for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
+            {
+                bool backup = System.IO.File.Exists(path + ".bak");
+                if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
+                System.Threading.Thread.Sleep(40);
+            }
             return new UiSettings(Read(path));
         }
         catch (System.Exception ex)

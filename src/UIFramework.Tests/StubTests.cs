@@ -28,7 +28,12 @@ namespace UIFramework.Tests
             try { Directory.Delete(_folder, true); } catch (IOException) { }
             Set("_latestSeen", null);
             Set("_latestFailed", false);
+            Set("_toStart", TimeSpan.FromSeconds(5));
+            Set("_toFinish", TimeSpan.FromSeconds(30));
+            Set("_tell", OriginalTell);
         }
+
+        private static readonly object OriginalTell = Field("_tell").GetValue(null);
 
         private static FieldInfo Field(string name) => typeof(StubUnderTest).GetField(name, Any) ?? throw new MissingFieldException(name);
         private static void Set(string name, object value) => Field(name).SetValue(null, value);
@@ -166,7 +171,7 @@ namespace UIFramework.Tests
         public void AVersionSkippedInOneGameIsSkippedInEveryGame()
         {
             Assert.False((bool)Call(null, "Skipped", new Version(1, 9, 0)));
-            Call(null, "SkipVersion", "1.9.0");
+            Assert.Equal("UIFramework\\loader.json", Call(null, "SkipVersion", "1.9.0"));
             Assert.Equal("1.9.0", (string)JObject.Parse(File.ReadAllText(_loader))["skipVersion"]);
             Assert.True((bool)Call(null, "Skipped", new Version(1, 9, 0)));
             Assert.True((bool)Call(null, "Skipped", new Version(1, 9)));
@@ -309,6 +314,101 @@ namespace UIFramework.Tests
                 Assert.Single(lines);
                 Assert.Contains("alice", lines[0]);
             }
+        }
+
+        // ---- the fixes of 2026-11-13 ----
+
+        [Fact]
+        public void TheHostBlockKnowsTheSettingsActionItIsReleasedWith() =>
+            Assert.Equal(UiUpdateNotice.StubVersion, Constant("StubVersion"));
+
+        [Fact]
+        public void ALoaderJsonThatCannotBeReadIsNotWrittenOver()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_loader));
+            const string damaged = "{ \"autoUpdate\": false, \"skipV";
+            File.WriteAllText(_loader, damaged);
+            Assert.Equal("this game's uiframework.layout.json", Call(null, "SkipVersion", "1.9.0"));
+            Assert.Equal(damaged, File.ReadAllText(_loader));                          // the user's file, as it was
+            Assert.True((bool)Call(null, "Skipped", new Version(1, 9, 0)));            // skipped for this game at least
+        }
+
+        [Fact]
+        public void ARequestTheGameStillWorksOnIsWaitedFor()
+        {
+            Set("_toStart", TimeSpan.FromMilliseconds(500));
+            Set("_toFinish", TimeSpan.FromMilliseconds(400));
+            var stub = new StubUnderTest();
+            bool beats = true;
+            stub.CPH.Game = cph =>
+            {
+                // An import that takes 1.5 s, far longer than the 0.4 s a request has here.
+                string var = (string)cph.Arguments["uiframework.var"];
+                for (int i = 0; i < 30; i++)
+                {
+                    Thread.Sleep(50);
+                    if (beats) AppDomain.CurrentDomain.SetData(UiHost.WorkingKey(var), DateTime.UtcNow.Ticks);
+                }
+                cph.SetGlobalVar(var, "imported", false);
+                return true;
+            };
+            using (Pumping(stub))
+            {
+                Assert.Equal("imported", Call(stub, "AskGame", "test", "importWords", "{}", Constant("NoAnswer")));
+                beats = false;
+                string late = (string)Call(stub, "AskGame", "test", "importWords", "{}", Constant("NoAnswer"));
+                Assert.StartsWith(Constant("NoAnswer"), late);
+                Assert.Contains("did not finish", late);
+            }
+            Assert.Null(Field("_beatKey").GetValue(null));
+        }
+
+        [Fact]
+        public void TheGameHearsOfASaveAlsoWhenItWasBusyAtFirst()
+        {
+            var stub = new StubUnderTest();
+            var heard = new List<string>();
+            stub.CPH.Game = cph =>
+            {
+                heard.Add((string)cph.Arguments["uiframework.request"]);
+                if (heard.Count == 1) throw new TimeoutException("another request to the action has not finished.");
+                return true;
+            };
+            new StubUnderTest.Host(stub).OnSaved("{}");
+            Call(stub, "Pump");
+            Assert.Equal(new[] { "saved", "saved" }, heard);
+            Assert.Contains(stub.CPH.Log, line => line.StartsWith("warn") && line.Contains("telling it again"));
+            Assert.DoesNotContain(stub.CPH.Log, line => line.StartsWith("error"));
+        }
+
+        [Fact]
+        public void ASaveTheGameCannotHearOfIsSaidBesideTheWindow()
+        {
+            var stub = new StubUnderTest();
+            string told = null;
+            Set("_tell", new Action<string>(text => told = text));
+            stub.CPH.Game = cph => false;                                          // the action is switched off
+            new StubUnderTest.Host(stub).OnSaved("{}");
+            Call(stub, "Pump");
+            Assert.Contains("did not hear of it", told);
+            Assert.Contains(stub.CPH.Log, line => line.StartsWith("error") && line.Contains("did not hear of the save"));
+            Assert.DoesNotContain(stub.CPH.Log, line => line.Contains("A queued step failed"));
+        }
+
+        // Streamer.bot's thread for a test: runs the queue until the test is done with it, then waits for the job it is in.
+        private static IDisposable Pumping(StubUnderTest stub)
+        {
+            var stop = new ManualResetEventSlim(false);
+            var thread = new Thread(() => { while (!stop.IsSet) { Call(stub, "Pump"); Thread.Sleep(10); } });
+            thread.Start();
+            return new Done(() => { stop.Set(); thread.Join(); });
+        }
+
+        private sealed class Done : IDisposable
+        {
+            private readonly Action _then;
+            public Done(Action then) { _then = then; }
+            public void Dispose() => _then();
         }
     }
 

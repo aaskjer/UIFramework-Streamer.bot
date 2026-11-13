@@ -829,6 +829,7 @@
             foreach (var key in new[] { "uiframework.request", "uiframework.describe", "uiframework.name", "uiframework.values", "uiframework.var" })
                 if (args != null && args.ContainsKey(key)) CPH.SetArgument(key, "");
             string answer = null;
+            System.Threading.Volatile.Write(ref _answering, var);
             try
             {
                 switch (request)
@@ -847,9 +848,27 @@
                 CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
                 answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
             }
+            finally { System.Threading.Volatile.Write(ref _answering, null); }
             CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
             return true;
         }
+
+        // The variable of the request being answered now, which StillWorking names to the settings action.
+        private static string _answering;
+
+        /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
+        /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
+        /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
+        /// from before stub 0.3.1, it does nothing.</summary>
+        public static void StillWorking()
+        {
+            string var = System.Threading.Volatile.Read(ref _answering);
+            if (!string.IsNullOrEmpty(var)) System.AppDomain.CurrentDomain.SetData(WorkingKey(var), System.DateTime.UtcNow.Ticks);
+        }
+
+        /// <summary>Where StillWorking leaves the time for the settings action: this AppDomain's data, under the request's
+        /// own variable. Not a global: one that changes every few seconds would only fill Streamer.bot's variables.</summary>
+        public static string WorkingKey(string var) => var + ".working";
 
         private static string Arg(System.Collections.Generic.IDictionary<string, object> args, string key) => args != null && args.TryGetValue(key, out var value) ? value as string : null;
     }
@@ -857,11 +876,11 @@
     /// <summary>The update notice, once per Streamer.bot start (docs/Schema.md, "Update notice"). Call
     /// <c>UiUpdateNotice.Startup(CPH, ...)</c> from the game action's <c>Init()</c> and tick "Precompile on Application Start"
     /// on its Execute Code sub-action: Streamer.bot then runs it as it starts. In the background it asks UIFramework.dll (the
-    /// newest under &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings loaded) every few seconds until the notice
-    /// is due, waits up to a minute for a broadcaster account to connect, then sends the chat line to Twitch, YouTube and
-    /// Kick, whichever is connected, and shows a Windows toast when no broadcaster account is (or always, as the window's
-    /// <c>Updates</c> says). Every game asks; one of them gets the whole notice. Without the DLL (the settings never opened)
-    /// nothing happens.</summary>
+    /// newest under &lt;Streamer.bot&gt;\UIFramework\lib that this game's settings action fits, or the one the settings
+    /// loaded) every few seconds until the notice is due, waits up to a minute for a broadcaster account to connect, then
+    /// sends the chat line to Twitch, YouTube and Kick, whichever is connected, and shows a Windows toast when no
+    /// broadcaster account is (or always, as the window's <c>Updates</c> says). Every game asks; one of them gets the whole
+    /// notice. Without the DLL (the settings never opened) nothing happens.</summary>
     public static class UiUpdateNotice
     {
         private static readonly object Gate = new object();
@@ -939,21 +958,30 @@
             else CPH.SendMessage(text, bot, true);
         }
 
-        /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
+        // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
+        // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
+        internal const string StubVersion = "0.3.1";
+
+        /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
+        /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
         internal static System.Type FrameworkType()
         {
+            // One UIFramework per Streamer.bot: once one is loaded, .NET answers every later load of a UIFramework.dll, of
+            // whichever version, with that one.
+            bool anyLoaded = false;
             System.Type loaded = null;
             System.Version loadedVersion = null;
             foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
             {
                 var name = assembly.GetName();
                 if (name.Name != "UIFramework") continue;
+                anyLoaded = true;
                 var type = assembly.GetType("UIFramework.UpdateNotices", false);
                 if (type != null && (loadedVersion == null || Full(name.Version) > loadedVersion)) { loaded = type; loadedVersion = Full(name.Version); }
             }
+            if (anyLoaded) return loaded;
             string lib = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "UIFramework", "lib");
-            string newestFile = null;
-            System.Version newest = null;
+            var installed = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Version, string>>();
             if (System.IO.Directory.Exists(lib))
                 foreach (var dir in System.IO.Directory.GetDirectories(lib))
                 {
@@ -961,30 +989,36 @@
                     string file = System.IO.Path.Combine(dir, "UIFramework.dll");
                     // "v1.8.0" is a folder too, as it is to the settings action.
                     string folder = System.IO.Path.GetFileName(dir).TrimStart('v', 'V');
-                    if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
-                    {
-                        newest = Full(version);
-                        newestFile = file;
-                    }
+                    if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file))
+                        installed.Add(new System.Collections.Generic.KeyValuePair<System.Version, string>(Full(version), file));
                 }
-            if (newestFile != null && newestFile != _refused && (loadedVersion == null || newest > loadedVersion))
+            installed.Sort((a, b) => b.Key.CompareTo(a.Key));
+            foreach (var candidate in installed)
             {
+                string file = candidate.Value, seen;
+                try { seen = file + "|" + System.IO.File.GetLastWriteTimeUtc(file).Ticks; }
+                catch (System.Exception) { continue; }
+                lock (Refused) if (Refused.Contains(seen)) continue;
                 try
                 {
-                    // As the settings action loads it: not a file that no longer matches the hash it was downloaded with
-                    // (that one is left for the settings action to set aside), and with UnsafeLoadFrom, since LoadFrom
-                    // refuses a DLL saved from a browser (Windows' "downloaded from the internet" mark).
-                    if (!Intact(newestFile)) { _refused = newestFile; return loaded; }
-                    var type = System.Reflection.Assembly.UnsafeLoadFrom(newestFile).GetType("UIFramework.UpdateNotices", false);
-                    if (type != null) return type;
+                    // As the settings action loads it: not one that asks for a newer settings action than this game's, not a
+                    // file that no longer matches the hash it was downloaded with (that one is left for the settings action
+                    // to set aside), and with UnsafeLoadFrom, since LoadFrom refuses a DLL saved from a browser (Windows'
+                    // "downloaded from the internet" mark).
+                    if (NeedsNewerStub(file) || !Intact(file)) { Refuse(seen); continue; }
+                    // The one this Streamer.bot runs from now on, also when it is too old for notices.
+                    return System.Reflection.Assembly.UnsafeLoadFrom(file).GetType("UIFramework.UpdateNotices", false);
                 }
-                catch (System.Exception) { _refused = newestFile; }
+                catch (System.Exception) { Refuse(seen); }
             }
-            return loaded;
+            return null;
         }
 
-        // The newest DLL once it was found damaged or would not load: not hashed and tried again on every call.
-        private static string _refused;
+        // The DLLs found damaged, not fitting or not loading, by path and time written: not hashed and tried again on every
+        // call. A file downloaded again (the settings action sets a damaged one aside) is written anew and tried anew.
+        private static readonly System.Collections.Generic.HashSet<string> Refused = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
+        private static void Refuse(string seen) { lock (Refused) Refused.Add(seen); }
 
         /// <summary>Whether the DLL still is what was downloaded: its SHA-256 against the .sha256 file the settings action
         /// wrote beside it. A DLL put in by hand has no such file and counts as it is.</summary>
@@ -999,6 +1033,22 @@
                 foreach (byte b in sha.ComputeHash(stream))
                     text.Append(b.ToString("x2"));
             return text.ToString() == expected;
+        }
+
+        /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
+        /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+        internal static bool NeedsNewerStub(string dll)
+        {
+            try
+            {
+                string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+                int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
+                if (at < 0) return false;
+                string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
+                System.Version needs;
+                return System.Version.TryParse(named.Contains(".") ? named : named + ".0", out needs) && Full(needs) > Full(System.Version.Parse(StubVersion));
+            }
+            catch (System.Exception) { return false; }
         }
 
         private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
@@ -1343,6 +1393,16 @@
         public static void Sync(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
             bool restart = false, System.Action<string> log = null)
         {
+            lock (Switching) SyncLocked(CPH, timerId, enabled, minutes, random, maxMinutes, restart, log);
+        }
+
+        // Sync and Rearm look at the timer, then switch it: one at a time, or a save that switches it off between Rearm's
+        // look and its switching on would find it on again.
+        private static readonly object Switching = new object();
+
+        private static void SyncLocked(IInlineInvokeProxy CPH, string timerId, bool enabled, int minutes, bool random, int maxMinutes,
+            bool restart, System.Action<string> log)
+        {
             try
             {
                 bool running = CPH.GetTimerState(timerId);
@@ -1368,16 +1428,20 @@
         }
 
         /// <summary>When the timed action has fired: a random timer draws its next wait and starts over with it. A fixed one
-        /// simply runs on, and one that was switched off meanwhile (a save between the tick and this run) stays off.</summary>
+        /// simply runs on, and one that was switched off meanwhile (a save between the tick and this run, or during it)
+        /// stays off.</summary>
         public static void Rearm(IInlineInvokeProxy CPH, string timerId, int minutes, bool random, int maxMinutes, System.Action<string> log = null)
         {
             if (!random) return;
             try
             {
-                if (!CPH.GetTimerState(timerId)) return;
-                CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
-                CPH.DisableTimerById(timerId);
-                CPH.EnableTimerById(timerId);
+                lock (Switching)
+                {
+                    if (!CPH.GetTimerState(timerId)) return;
+                    CPH.SetTimerInterval(timerId, NextSeconds(minutes, true, maxMinutes));
+                    CPH.DisableTimerById(timerId);
+                    CPH.EnableTimerById(timerId);
+                }
             }
             catch (System.Exception ex)
             {
@@ -1472,15 +1536,25 @@
         public bool FromBackup { get; private set; }
 
         /// <summary>Never throws: an unreadable file gives the .bak the window's last save kept, else the defaults, and
-        /// the game keeps running; Problem says so, and log (CPH.LogWarn, say) hears it. A relative path starts in the
-        /// Streamer.bot folder, whatever the current directory.</summary>
+        /// the game keeps running; Problem says so, and log (CPH.LogWarn, say) hears it. A file that is missing while a
+        /// save is under way is waited for a moment, and one still missing beside its .bak is read from that; only a file
+        /// never saved gives the defaults without a word. A relative path starts in the Streamer.bot folder, whatever the
+        /// current directory.</summary>
         public static UiSettings Load(string path, System.Action<string> log = null)
         {
             if (string.IsNullOrEmpty(path)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
             try
             {
                 if (!System.IO.Path.IsPathRooted(path)) path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, path);
-                if (!System.IO.File.Exists(path)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                // The window saves beside the file and swaps it in (File.Replace, the old one becoming the .bak): for a
+                // moment there is no file, and a swap that failed halfway leaves only the .bak.
+                for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
+                {
+                    bool backup = System.IO.File.Exists(path + ".bak");
+                    if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                    if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
+                    System.Threading.Thread.Sleep(40);
+                }
                 return new UiSettings(Read(path));
             }
             catch (System.Exception ex)

@@ -62,7 +62,9 @@ namespace UIFramework.Tests
         public readonly List<string> TimerCalls = new List<string>();
         private void NeedTimer() { if (TimerRunning == null) throw new System.InvalidOperationException("no such timer"); }
         public void SetTimerInterval(string timerId, int interval) { NeedTimer(); TimerInterval = interval; TimerCalls.Add("interval " + interval); }
-        public bool GetTimerState(string timerId) { NeedTimer(); return TimerRunning.Value; }
+        // Runs as the timer's state is read: a test lets a save land just then.
+        public System.Action OnTimerState;
+        public bool GetTimerState(string timerId) { NeedTimer(); bool running = TimerRunning.Value; OnTimerState?.Invoke(); return running; }
         public void EnableTimerById(string timerId) { NeedTimer(); TimerRunning = true; TimerCalls.Add("enable"); }
         public void DisableTimerById(string timerId) { NeedTimer(); TimerRunning = false; TimerCalls.Add("disable"); }
         public readonly List<string> Registered = new List<string>(), Fired = new List<string>();
