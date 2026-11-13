@@ -1399,7 +1399,7 @@
       "page": "access",
       "section": "Channel points (Twitch)",
       "label": "A reward starts the round",
-      "help": "On Twitch a channel point redemption starts the round instead of the chat command, which is then off on Twitch. Everyone still guesses as usual.",
+      "help": "On Twitch a channel point redemption starts the round instead of the chat command, which then starts a round on Twitch for moderators only. Everyone still guesses as usual.",
       "twitchOnly": true,
       "aliases": [
         "AllowChannelPointStart"
@@ -1720,7 +1720,7 @@
       "page": "board",
       "section": "Auto reset",
       "label": "Twitch: reset monthly",
-      "help": "Clears the Twitch scoreboard at the end of the month.",
+      "help": "Clears the Twitch scoreboard as a new month begins.",
       "requires": "resetAllMonthly=false",
       "row": "resetTwitch",
       "aliases": [
@@ -1732,11 +1732,10 @@
       "default": 0,
       "page": "board",
       "section": "Auto reset",
-      "label": "Twitch: reset after days",
-      "help": "Clears the Twitch scoreboard every so many days. 0 = never.",
+      "label": "Twitch: reset on day",
+      "help": "Clears the Twitch scoreboard every month on this day (the last day in a shorter month). 0 = on the 1st while monthly is on, else never.",
       "min": 0.0,
       "max": 31.0,
-      "unlimitedAtZero": true,
       "requires": "resetAllMonthly=false",
       "row": "resetTwitch",
       "aliases": [
@@ -1749,7 +1748,7 @@
       "page": "board",
       "section": "Auto reset",
       "label": "YouTube: reset monthly",
-      "help": "Clears the YouTube scoreboard at the end of the month.",
+      "help": "Clears the YouTube scoreboard as a new month begins.",
       "requires": "resetAllMonthly=false",
       "row": "resetYouTube",
       "aliases": [
@@ -1761,11 +1760,10 @@
       "default": 0,
       "page": "board",
       "section": "Auto reset",
-      "label": "YouTube: reset after days",
-      "help": "Clears the YouTube scoreboard every so many days. 0 = never.",
+      "label": "YouTube: reset on day",
+      "help": "Clears the YouTube scoreboard every month on this day (the last day in a shorter month). 0 = on the 1st while monthly is on, else never.",
       "min": 0.0,
       "max": 31.0,
-      "unlimitedAtZero": true,
       "requires": "resetAllMonthly=false",
       "row": "resetYouTube",
       "aliases": [
@@ -1778,7 +1776,7 @@
       "page": "board",
       "section": "Auto reset",
       "label": "Kick: reset monthly",
-      "help": "Clears the Kick scoreboard at the end of the month.",
+      "help": "Clears the Kick scoreboard as a new month begins.",
       "requires": "resetAllMonthly=false",
       "row": "resetKick",
       "aliases": [
@@ -1790,11 +1788,10 @@
       "default": 0,
       "page": "board",
       "section": "Auto reset",
-      "label": "Kick: reset after days",
-      "help": "Clears the Kick scoreboard every so many days. 0 = never.",
+      "label": "Kick: reset on day",
+      "help": "Clears the Kick scoreboard every month on this day (the last day in a shorter month). 0 = on the 1st while monthly is on, else never.",
       "min": 0.0,
       "max": 31.0,
-      "unlimitedAtZero": true,
       "requires": "resetAllMonthly=false",
       "row": "resetKick",
       "aliases": [
@@ -2966,7 +2963,7 @@
             "note": "Custom triggers (Custom > Chat Game > Hangman Game): Hangman: Game Start, Game Win, Game Loss, Game Stopped and Timeout fire with the round as arguments - roundOutcome, roundWord, roundCategory, roundDifficulty, roundPlatform, roundWinner, roundWinnerId, roundPoints, roundWrongGuesses, roundMaxWrong, roundBlitz, roundParticipants; Hangman: Free Game Start and Free Game End when Free mode is switched. GetLastRoundResult, run with an Execute C# Method sub-action on the game action, hands the same arguments to any other action; StartFreeGame and EndFreeGame switch Free mode from there."
           },
           {
-            "note": "Per viewer, on the platform they played on (Streamer.bot's user variables): hm_wins, hm_losses, hm_played, hm_pointsEarned, hm_lettersGuessed, hm_wordsGuessed, hm_streak, hm_bestStreak."
+            "note": "Per viewer, on the platform they played on (Streamer.bot's user variables): hm_wins, hm_losses, hm_gamesPlayed, hm_pointsEarned, hm_lettersFound, hm_wordsGuessed, hm_streak, hm_bestStreak."
           }
         ]
       },
@@ -3841,7 +3838,7 @@
         },
         "allowChannelPointStart": {
           "label": "Eine Belohnung startet die Runde",
-          "help": "Auf Twitch startet eine Kanalpunkte-Einlösung die Runde statt des Chat-Befehls, der auf Twitch dann aus ist. Raten darf weiter jeder wie gewohnt."
+          "help": "Auf Twitch startet eine Kanalpunkte-Einlösung die Runde statt des Chat-Befehls, der auf Twitch dann nur noch Moderatoren startet. Raten darf weiter jeder wie gewohnt."
         },
         "channelPointRewardId": {
           "label": "Belohnungs-ID",
@@ -3921,27 +3918,27 @@
         },
         "resetTwitchMonthly": {
           "label": "Twitch: monatlich zurücksetzen",
-          "help": "Leert die Twitch-Rangliste am Monatsende."
+          "help": "Leert die Twitch-Rangliste zu Beginn jedes Monats."
         },
         "resetTwitchDay": {
-          "label": "Twitch: nach Tagen zurücksetzen",
-          "help": "Leert die Twitch-Rangliste alle so viele Tage. 0 = nie."
+          "label": "Twitch: zurücksetzen am Tag",
+          "help": "Leert die Twitch-Rangliste jeden Monat an diesem Tag (in kürzeren Monaten am letzten). 0 = am 1., solange monatlich an ist, sonst nie."
         },
         "resetYouTubeMonthly": {
           "label": "YouTube: monatlich zurücksetzen",
-          "help": "Leert die YouTube-Rangliste am Monatsende."
+          "help": "Leert die YouTube-Rangliste zu Beginn jedes Monats."
         },
         "resetYouTubeDay": {
-          "label": "YouTube: nach Tagen zurücksetzen",
-          "help": "Leert die YouTube-Rangliste alle so viele Tage. 0 = nie."
+          "label": "YouTube: zurücksetzen am Tag",
+          "help": "Leert die YouTube-Rangliste jeden Monat an diesem Tag (in kürzeren Monaten am letzten). 0 = am 1., solange monatlich an ist, sonst nie."
         },
         "resetKickMonthly": {
           "label": "Kick: monatlich zurücksetzen",
-          "help": "Leert die Kick-Rangliste am Monatsende."
+          "help": "Leert die Kick-Rangliste zu Beginn jedes Monats."
         },
         "resetKickDay": {
-          "label": "Kick: nach Tagen zurücksetzen",
-          "help": "Leert die Kick-Rangliste alle so viele Tage. 0 = nie."
+          "label": "Kick: zurücksetzen am Tag",
+          "help": "Leert die Kick-Rangliste jeden Monat an diesem Tag (in kürzeren Monaten am letzten). 0 = am 1., solange monatlich an ist, sonst nie."
         },
         "msgGameStart": {
           "label": "Rundenstart",
