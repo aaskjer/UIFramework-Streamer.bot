@@ -375,15 +375,20 @@ public class CPHInline
     /// (every one before 1.8.4) fits.</summary>
     private static Version StubNeededBy(string dllPath)
     {
-        try
-        {
-            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dllPath).ProductVersion ?? "";
-            int at = product.IndexOf("+stub.", StringComparison.Ordinal);
-            if (at < 0) return null;
-            var needs = Full(ParseVersion(product.Substring(at + 6).Trim()));
-            return needs != null && needs > Full(ParseVersion(StubVersion)) ? needs : null;
-        }
+        try { return StubNeededFor(System.Diagnostics.FileVersionInfo.GetVersionInfo(dllPath).ProductVersion); }
         catch (Exception) { return null; }
+    }
+
+    /// <summary>The settings action a product version ("1.9.0+stub.0.3.0") asks for when that is newer than this one,
+    /// else null: for an installed DLL (<see cref="StubNeededBy"/>) and for one that is running already
+    /// (<see cref="SharedRefusal"/>) alike.</summary>
+    private static Version StubNeededFor(string product)
+    {
+        product = product ?? "";
+        int at = product.IndexOf("+stub.", StringComparison.Ordinal);
+        if (at < 0) return null;
+        var needs = Full(ParseVersion(product.Substring(at + 6).Trim()));
+        return needs != null && needs > Full(ParseVersion(StubVersion)) ? needs : null;
     }
 
     private static Version ParseVersion(string text)
@@ -893,6 +898,29 @@ public class CPHInline
         catch (Exception) { return "?"; }
     }
 
+    /// <summary>Why this settings action cannot use the UIFramework that is running already, or null when it can. One
+    /// that needs a newer settings action (its product version, as for an installed DLL) would refuse it the window,
+    /// and the DLL this one fits cannot run beside it until Streamer.bot restarts. A game's host block of 1.9.0 or
+    /// before loads the newest DLL installed as Streamer.bot starts, whichever settings action it needs.</summary>
+    private static string SharedRefusal(Assembly loaded)
+    {
+        Version needs;
+        try { needs = StubNeededFor(loaded?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion); }
+        catch (Exception) { return null; }
+        if (needs == null) return null;
+        string version = VersionOf(loaded);
+        return "UIFramework " + version + " is running in this Streamer.bot already (another game loaded it) and needs a newer settings action (stub " +
+               needs.ToString(needs.Revision > 0 ? 4 : 3) + ", this game's is " + StubVersion + "). Only one UIFramework runs at a time, so update this game to open its settings; " +
+               "a restart of Streamer.bot helps only when no game loads " + version + " again as it starts.";
+    }
+
+    /// <summary><see cref="Bind"/> leaves the running UIFramework alone (<see cref="SharedRefusal"/>): no installed DLL
+    /// can stand in for it, so the open ends here.</summary>
+    private sealed class SharedFrameworkRefused : InvalidOperationException
+    {
+        public SharedFrameworkRefused(string message) : base(message) { }
+    }
+
     private static bool Bind(string dllPath)
     {
         lock (BridgeGate)
@@ -900,7 +928,10 @@ public class CPHInline
             if (_show != null) return true;
             var signature = new[] { typeof(string), typeof(string), typeof(string), typeof(object), typeof(Action) };
             // Another game's UIFramework is already running: this one uses it too, and a newer DLL waits for the next start.
+            // Not one this settings action is too old for: that one is passed over as an installed one would be.
             var loaded = LoadedFramework();
+            string refusal = SharedRefusal(loaded);
+            if (refusal != null) throw new SharedFrameworkRefused(refusal);
             var shared = loaded?.GetType("UIFramework.Entry")?.GetMethod("Show", signature);
             if (shared != null)
             {
@@ -1072,12 +1103,20 @@ public class CPHInline
             // The chosen DLL first, then every other installed one, newest first: one that cannot be loaded leaves the
             // window to an older one instead of locking every game out.
             bool bound = false;
+            string refused = null;
             foreach (var candidate in new[] { dll }.Concat(FrameworkCandidates().Where(c => !string.Equals(c, dll, StringComparison.OrdinalIgnoreCase))))
             {
                 try
                 {
                     if (Bind(candidate)) { bound = true; break; }
                     CPH.LogError(LogPrefix + " " + candidate + " has no UIFramework.Entry.Show; a newer or older build than this action expects.");
+                }
+                catch (SharedFrameworkRefused ex)
+                {
+                    // The same for every candidate: said once.
+                    refused = ex.Message;
+                    CPH.LogWarn(LogPrefix + " " + refused);
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -1086,7 +1125,7 @@ public class CPHInline
             }
             if (!bound)
             {
-                Ask("No installed UIFramework.dll could be loaded; the log names each one and why.\n\nReleases: " + FrameworkReleasesUrl, MbOk, MbIconWarning);
+                Ask(refused ?? "No installed UIFramework.dll could be loaded; the log names each one and why.\n\nReleases: " + FrameworkReleasesUrl, MbOk, MbIconWarning);
                 return false;
             }
             Volatile.Write(ref _shownSchema, schema);
