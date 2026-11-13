@@ -130,6 +130,26 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void A_save_that_switches_the_timer_off_while_Rearm_runs_leaves_it_off()
+        {
+            // Rearm has seen the timer on; the save turns automatic rounds off right then. Without a lock between the
+            // two, Rearm switched the timer on again after the save.
+            var cph = new FakeCph { TimerRunning = true };
+            System.Threading.Thread save = null;
+            cph.OnTimerState = () =>
+            {
+                if (save != null) return;
+                save = new System.Threading.Thread(() => UiTimer.Sync(cph, "t", false, 15, true, 30));
+                save.Start();
+                save.Join(300);
+            };
+            UiTimer.Rearm(cph, "t", 15, true, 30);
+            save.Join();
+            Assert.False(cph.TimerRunning);
+            Assert.Equal("disable", cph.TimerCalls.Last());
+        }
+
+        [Fact]
         public void Declared_with_key_and_default_alone_the_intervals_get_row_unit_and_switch()
         {
             var max = Conventions.Default.Complete(new Setting { Key = "autoStartIntervalMaxMinutes" });
