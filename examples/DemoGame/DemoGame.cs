@@ -869,12 +869,15 @@ public static class UiUpdateNotice
     }
 
     /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+    /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
     internal static bool NeedsNewerStub(string dll)
     {
         try
         {
-            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+            string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
             int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
             if (at < 0) return false;
             string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');

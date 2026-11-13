@@ -101,6 +101,30 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void The_host_block_names_no_type_from_System_dll()
+        {
+            // Streamer.bot compiles a sub-action with exactly the references it lists, and a game's second action (a
+            // scoreboard) may list mscorlib, System.Core, Newtonsoft.Json and Streamer.bot's interface only. The block
+            // names every type in full, so a full name of a System.dll type in its code (not in a comment or a string)
+            // is a compile error there. tools\check-stub.ps1 cannot see it: its compiler adds System.dll on its own.
+            string root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
+            while (root != null && !File.Exists(Path.Combine(root, "UIFramework.slnx"))) root = Path.GetDirectoryName(root);
+            Assert.NotNull(root);
+            string code = System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(Path.Combine(root, "stub", "HostSchema.cs")),
+                @"//[^\n]*|@""(?:[^""]|"""")*""|""(?:[^""\\\n]|\\.)*""|'(?:[^'\\\n]|\\.)+'", "");
+            var named = new SortedSet<string>();
+            foreach (var type in typeof(Uri).Assembly.GetExportedTypes().Where(t => !t.IsNested && t.Namespace != null))
+            {
+                // A type of the same full name in mscorlib or System.Core is fine: the compiler takes that one.
+                if (typeof(object).Assembly.GetType(type.FullName) != null || typeof(Enumerable).Assembly.GetType(type.FullName) != null) continue;
+                string name = type.Namespace + "." + type.Name.Split('`')[0];
+                if (System.Text.RegularExpressions.Regex.IsMatch(code, @"(?<![\w.])" + System.Text.RegularExpressions.Regex.Escape(name) + @"(?![\w])"))
+                    named.Add(name);
+            }
+            Assert.Empty(named);
+        }
+
+        [Fact]
         public void The_update_notice_passes_over_the_newest_DLL_when_it_needs_a_newer_settings_action()
         {
             // As Streamer.bot starts: the newest DLL installed was put there by a game with a newer settings action,
