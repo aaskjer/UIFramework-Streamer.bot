@@ -718,11 +718,11 @@ public static class UiHost
 /// <summary>The update notice, once per Streamer.bot start (docs/Schema.md, "Update notice"). Call
 /// <c>UiUpdateNotice.Startup(CPH, ...)</c> from the game action's <c>Init()</c> and tick "Precompile on Application Start"
 /// on its Execute Code sub-action: Streamer.bot then runs it as it starts. In the background it asks UIFramework.dll (the
-/// newest under &lt;Streamer.bot&gt;\UIFramework\lib, or the one the settings loaded) every few seconds until the notice
-/// is due, waits up to a minute for a broadcaster account to connect, then sends the chat line to Twitch, YouTube and
-/// Kick, whichever is connected, and shows a Windows toast when no broadcaster account is (or always, as the window's
-/// <c>Updates</c> says). Every game asks; one of them gets the whole notice. Without the DLL (the settings never opened)
-/// nothing happens.</summary>
+/// newest under &lt;Streamer.bot&gt;\UIFramework\lib that this game's settings action fits, or the one the settings
+/// loaded) every few seconds until the notice is due, waits up to a minute for a broadcaster account to connect, then
+/// sends the chat line to Twitch, YouTube and Kick, whichever is connected, and shows a Windows toast when no
+/// broadcaster account is (or always, as the window's <c>Updates</c> says). Every game asks; one of them gets the whole
+/// notice. Without the DLL (the settings never opened) nothing happens.</summary>
 public static class UiUpdateNotice
 {
     private static readonly object Gate = new object();
@@ -800,7 +800,12 @@ public static class UiUpdateNotice
         else CPH.SendMessage(text, bot, true);
     }
 
-    /// <summary>UIFramework's UpdateNotices: from the newest DLL installed when no loaded one is as new.</summary>
+    // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
+    // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
+    internal const string StubVersion = "0.3.1";
+
+    /// <summary>UIFramework's UpdateNotices: from the newest DLL installed that this game's settings action fits, when
+    /// no loaded one is as new.</summary>
     internal static System.Type FrameworkType()
     {
         System.Type loaded = null;
@@ -822,7 +827,8 @@ public static class UiUpdateNotice
                 string file = System.IO.Path.Combine(dir, "UIFramework.dll");
                 // "v1.8.0" is a folder too, as it is to the settings action.
                 string folder = System.IO.Path.GetFileName(dir).TrimStart('v', 'V');
-                if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest))
+                if (System.Version.TryParse(folder, out version) && System.IO.File.Exists(file) && (newest == null || Full(version) > newest) &&
+                    (loadedVersion == null || Full(version) > loadedVersion) && !NeedsNewerStub(file))
                 {
                     newest = Full(version);
                     newestFile = file;
@@ -860,6 +866,22 @@ public static class UiUpdateNotice
             foreach (byte b in sha.ComputeHash(stream))
                 text.Append(b.ToString("x2"));
         return text.ToString() == expected;
+    }
+
+    /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
+    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    internal static bool NeedsNewerStub(string dll)
+    {
+        try
+        {
+            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
+            if (at < 0) return false;
+            string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
+            System.Version needs;
+            return System.Version.TryParse(named.Contains(".") ? named : named + ".0", out needs) && Full(needs) > Full(System.Version.Parse(StubVersion));
+        }
+        catch (System.Exception) { return false; }
     }
 
     private static System.Version Full(System.Version v) => new System.Version(v.Major, v.Minor, System.Math.Max(0, v.Build), System.Math.Max(0, v.Revision));
