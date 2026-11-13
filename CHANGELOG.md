@@ -18,6 +18,19 @@ follows it go to `lib/v2/latest.json`.
   hurry, it can wait until after the stream): the window opened as before and only the log told. Nothing changes
   in the DLL; a game gets it with its next release.
 
+### Fixed
+
+- **A DLL that needs a newer settings action no longer locks a game's window (host block).** The update notice
+  and `UiLive` loaded the newest `UIFramework.dll` under `lib\`, also one another game had installed for a newer
+  stub. Only one UIFramework runs in a Streamer.bot, so the game's settings window then failed on every start,
+  although the stub passes such a DLL over. The host block now loads the newest DLL that fits the settings action
+  released with it (`StubVersion` in the host block, 0.3.1); a DLL that names no stub fits.
+- **A running UIFramework that needs a newer settings action is not taken (stub 0.3.1).** A host block of 1.9.0
+  or before, in another game, still loads the newest DLL as Streamer.bot starts. The stub passed such a DLL over
+  when it was installed but used it when it was running, and the DLL then refused the window with the advice to
+  remove its folder. The stub now leaves it alone in both cases; its dialog names the running version and the stub
+  it needs, and says that updating the game opens the window.
+
 ## [1.9.0] - 2026-11-12
 
 The Log page's colours can be declared, and what the audit of 2026-11-08 had left open is done. The window's

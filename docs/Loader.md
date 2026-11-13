@@ -58,14 +58,20 @@ DLL (`UIFramework.dll.sha256`, written before the DLL is moved in) and checked o
 since is set aside as `UIFramework.dll.broken`, an older one opens the window, and the next open offers that
 version again. A game's host block checks the same hash before it loads the DLL for the update notice or the live
 check (host block of 1.8.1 and on; an older one loaded it unchecked, and the settings action then used what was
-loaded); it leaves a damaged file where it is, for the settings action to set aside. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
+loaded); it leaves a damaged file where it is, for the settings action to set aside. It also leaves out a DLL that
+needs a newer settings action than the one released with it (`StubVersion` in the host block, kept equal to the
+stub's): only one UIFramework runs in a Streamer.bot, and once the notice had loaded such a DLL, the game's own
+window could not open until a restart (an older host block took the newest DLL). This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
 has no hash file and is loaded as it is. A release
 whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.1 now) is not offered to
 that stub; the game has to ship the newer settings action first. The same holds for a DLL that is there already,
 installed by another game: a DLL names the stub it needs in its product version (`1.8.4+stub.0.1.0`, from
 `MinHostStub` in `UIFramework.csproj`), a stub from 0.2.1 on reads that without loading the file and passes such a
 DLL over for an older one that fits, and the DLL itself (1.8.4 and on) opens no window for an older stub but says
-which one it needs. That also covers a stub before 0.2.1 and a DLL another game has loaded already. Nothing from `latest.json` is taken unchecked: a
+which one it needs. That also covers a stub before 0.2.1 and a DLL another game has loaded already. A stub from
+0.3.1 on does not take such a DLL that is running already either (a host block of 1.9.0 or before loads the newest
+DLL as Streamer.bot starts, whichever stub it needs): its dialog names the running version and the stub it needs,
+and says that updating the game opens the window. Nothing from `latest.json` is taken unchecked: a
 release without a `sha256` is not installed, a `url` that is not `https://` is not fetched, and a `version` that is
 not two to four numbers with dots (`1.2.0`, a leading `v` allowed) never becomes a folder name.
 
