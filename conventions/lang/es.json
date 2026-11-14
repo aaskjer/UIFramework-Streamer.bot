@@ -300,6 +300,7 @@
     "dialog.damaged.defaults": "La ventana muestra los valores predeterminados y Guardar escribe un archivo nuevo.",
     "dialog.damaged.kept": " El archivo dañado se conservó a su lado como {0}.broken.",
     "dialog.damaged.title": "Ajustes dañados",
+    "settings.fromBackup": "Falta {0}. La ventana muestra los ajustes de antes del último guardado ({0}.bak), que también usa la extensión. El próximo guardado vuelve a escribir {0}.",
     "dialog.unsaved.title": "Cambios sin guardar",
     "dialog.unsaved.customise": "¿Guardar los cambios antes de personalizar?\nLas páginas se reconstruyen y se pierde todo lo que no esté guardado.",
     "dialog.unsaved.switch": "¿Guardar los cambios antes de cambiar?\nLas páginas se reconstruyen y se pierde todo lo que no esté guardado.",

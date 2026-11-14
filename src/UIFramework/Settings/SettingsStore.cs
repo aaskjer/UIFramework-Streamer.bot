@@ -63,10 +63,20 @@ namespace UIFramework
         }
 
         /// <summary>Throws IOException/UnauthorizedAccessException when the file cannot be opened, so the caller
-        /// leaves it alone; falls back to the backup, then the defaults, when its contents are damaged.</summary>
+        /// leaves it alone; falls back to the backup, then the defaults, when its contents are damaged. A file
+        /// missing beside its backup is read from the backup too.</summary>
         public SettingsLoad Load()
         {
             var result = new SettingsLoad();
+            // Nothing is damaged here, so there is no .broken copy and Damaged stays null: the later loads of a
+            // save, an import and Reset all lay their changes over the backup's values, not over the defaults.
+            var kept = BackupOfMissingFile();
+            if (kept != null)
+            {
+                result.Settings = kept;
+                result.FromBackup = true;
+                return result;
+            }
             try
             {
                 result.Settings = LoadFile(Path);
@@ -83,9 +93,17 @@ namespace UIFramework
             }
         }
 
-        /// <summary>Never throws; a damaged file falls back to the backup, then the defaults.</summary>
+        /// <summary>Never throws; a damaged file falls back to the backup, then the defaults, and a missing one to
+        /// the backup.</summary>
         public JObject LoadOrDefaults(IHostLog log, string prefix)
         {
+            var kept = BackupOfMissingFile();
+            if (kept != null)
+            {
+                string name = System.IO.Path.GetFileName(Path);
+                log?.Warn(prefix + " " + name + " is missing; the backup of the last save (" + name + ".bak) is used.");
+                return kept;
+            }
             try { return LoadFile(Path); }
             catch (Exception ex)
             {
@@ -99,6 +117,11 @@ namespace UIFramework
             try { return File.Exists(BackupPath) ? LoadFile(BackupPath) : null; }
             catch (Exception) { return null; }
         }
+
+        /// <summary>The backup when the file itself is gone beside it (a swap that was cut off, or the file deleted),
+        /// else null. The project's UiSettings.Load reads the backup then and runs on it, so the window shows the
+        /// same; with the defaults instead, its first save wrote them over what the project used.</summary>
+        private JObject BackupOfMissingFile() => File.Exists(Path) ? null : LoadBackup();
 
         private JObject LoadFile(string path)
         {
