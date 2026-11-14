@@ -599,6 +599,9 @@ namespace UIFramework
                 {
                     ResultPanel.Render(panel, result ?? "", ctx.Hooks);
                     ShowAnswerBox(panel);
+                    // `status` is the footer's line beside a panel too: one answer may carry lines, a bar and a status.
+                    if (status != null)
+                        ctx.SetStatus(status, Theme.SuccessText, null);
                 }
                 else if (structured != null)
                 {

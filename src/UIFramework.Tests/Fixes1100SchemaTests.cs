@@ -127,5 +127,31 @@ namespace UIFramework.Tests
             // The answer for "medium" came last and was put over the one for "hard", which the field shows.
             Assert.Equal("2", parts.Boxes["bet"].Text);
         });
+
+        // ---- An action's answer -------------------------------------------------------------------------------
+
+        private static IEnumerable<T> Find<T>(DependencyObject root) where T : DependencyObject
+        {
+            if (root is T hit) yield return hit;
+            foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+                foreach (var found in Find<T>(child))
+                    yield return found;
+        }
+
+        private static void Click(Button button) =>
+            button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+
+        [Fact]
+        public void AnActionsStatusReachesTheFooterBesideItsPanel() => Sta(() =>
+        {
+            var spec = Prepared(Head + @"{ ""key"": ""fleet"", ""default"": """", ""kind"": ""action"", ""panel"": true } ] }");
+            var game = new Game((name, values) => @"{ ""lines"": [ ""Five ships."" ], ""status"": ""Fleet preset applied."" }");
+            var status = new List<string>();
+            var (_, _, page) = Built(spec, game, status);
+            Click(Find<Button>(page).Single());
+            // The panel showed the lines and the status went nowhere: docs/Schema.md has both from one answer.
+            Assert.Equal(new[] { "Fleet preset applied." }, status);
+            Assert.Contains(Find<TextBlock>(page), line => line.Text == "Five ships.");
+        });
     }
 }
