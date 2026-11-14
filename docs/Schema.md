@@ -68,7 +68,7 @@ conventions cannot know.
 | `twitchOnly`   | no       | a switch carries a "Twitch only" pill; any other field with a label says "(Twitch only)" in it (a reward's id, a button)                                         |
 | `transient`    | no       | true: shown, never saved, never counted as a change; only a live snapshot for the project carries it (the inputs of a Try button) |
 | `live`         | no       | for `action`: the project gets the values as they stand in the window, unsaved and transient ones included |
-| `ask`          | no       | on a field that is no button: the project is asked whenever the field changes (`test` with the field's key and the live values), and `set` in its answer fills other fields (a preset slider that sets five numbers). `live` on such a field meant the same before `ask` had a name and is still read. UIFramework 1.9.0 hands `ask` alone the saved values and the live ones only with `live` beside it |
+| `ask`          | no       | on a field that is no button: the project is asked whenever the field changes (`test` with the field's key and the live values), and `set` in its answer fills other fields (a preset slider that sets five numbers). `live` on such a field meant the same before `ask` had a name and is still read. UIFramework 1.9.0 hands `ask` alone the saved values and the live ones only with `live` beside it; the host block writes `live` beside `ask`, so a 1.9.0 window asks with the live values too |
 | `panel`        | no       | for `action`: the answer is shown in a box under the button instead of the footer; its `status` still goes to the footer |
 | `auto`         | no       | for `action`: no button; the project is asked when the page is shown and shortly after every change in the window (odds that follow the settings). It always gets the values as they stand in the window and has its own box: `live` and `panel` come with it |
 | `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `long`, `double` (half as wide), `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the project's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself). A trailing `|readonly` (`readOnly: true` in JSON) makes a column the project fills and the user only reads; a flag right after the kind (`"wins|int|readonly"`, `"face|emote|twitch"`) leaves the key as the header. A number column takes only a number: anything else puts the cell back to what it held. From eight rows a list gets a search box that hides the rows the text does not occur in |
@@ -79,14 +79,14 @@ conventions cannot know.
 Without `kind`: bool → `bool`, whole number → `int` (`long` when it does not fit an int, also where the conventions
 say `int`), decimal → `double`, string → `string`, array → `list` (which then needs `columns`).
 
-A value in the settings file that does not fit its field never stops the window from opening: a number field whose
-value is no number (`""`, `"abc"`) shows its default, a number stored as text is read (`"0,5"` is 0.5, from a German
-Windows), and a whole-number field holding a fraction shows it as it is, so the check before saving names it
-instead of cutting it. A `null` stands for the setting's default (or an old key's value), as it does for
-`UiSettings` in the host block, and the next save writes that in its place. A dropdown or a slider over stops whose
-stored value none of its options has keeps it as an extra entry (the slider names it beside its label) and saves it
-back unchanged until the user picks another. Numbers are written and compared with a point whatever the system's
-language.
+A value in the settings file that does not fit its field never stops the window from opening: a number field or a
+slider over a range whose value is no number (`""`, `"abc"`) shows its default, a number stored as text is read
+(`"0,5"` is 0.5, from a German Windows), and a whole-number field holding a fraction shows it as it is, so the check
+before saving names it instead of cutting it. A `null` stands for the setting's default (or an old key's value), as
+it does for `UiSettings` in the host block, and the next save writes that in its place. A dropdown or a slider over
+stops whose stored value none of its options has keeps it as an extra entry (the slider names it beside its label)
+and saves it back unchanged until the user picks another. The slider finds a number's stop by its value: a stored 2
+is the stop `"2.0"`. Numbers are written and compared with a point whatever the system's language.
 
 A list's `columns` are objects in the schema, `{ "key": "word", "kind": "text", "label": "Word", "readOnly": true,
 "platform": "kick" }`; the host block's `"word|text|Word|readonly"` is read from a schema written by hand too. So is
@@ -95,13 +95,15 @@ A list's `columns` are objects in the schema, `{ "key": "word", "kind": "text", 
 What the red **i** names in a declaration, beyond a key or an option that does not exist: `panel`, `auto` or
 `confirm` on a field that is no button; `placeholders` on one that is no message; a `platform` other than twitch,
 youtube or kick; a `{placeholder}` in a message's default text that its `placeholders` do not list; `twitchOnly` on
-a note; an `options` field without options, a slider with neither options nor both `min` and `max`, a `list` without
-columns; a page the window names by its id alone that no setting is on (`"mesages"`); a page that names a switch the
-Messages or the Log page draws (the switch stays there); a `custom` page behind the generic settings action, which
-builds none; a `Cmd`, `Link` or `Note` where the tour wants a `Tip`, and a `Tip` among a help section's lines (the
-host block hands all four as one type, so the wrong one compiles); a style of the Log page's colours that is none; a
-log declared with its folder and files whose page the window does not name (there is then no Log page, and no switch
-for the log). An unknown kind is told the kinds there are.
+a note; an `options` field without options, a slider with neither options nor both `min` and `max`, a slider over a
+range whose default is a whole number while its `step`, `min` or `max` has a fraction (such a slider holds whole
+numbers; a default written `1.0` makes one of decimals), a `list` without columns; a page the window names by its id
+alone that no setting is on (`"mesages"`); a page that names a switch the Messages or the Log page draws (the switch
+stays there); a `custom` page behind the generic settings action, which builds none; a `Cmd`, `Link` or `Note` where
+the tour wants a `Tip`, and a `Tip` among a help section's lines (the host block hands all four as one type, so the
+wrong one compiles); a style of the Log page's colours that is none; a log declared with its folder and files whose
+page the window does not name (there is then no Log page, and no switch for the log). An unknown kind is told the
+kinds there are.
 
 ## Kinds
 
@@ -146,7 +148,8 @@ The project answers `test` with a line of text, or with a JSON object:
 ```
 
 - `lines` are drawn one under the other in the action's box, so they need `panel` or `auto`; a line with `emotes`
-  shows them as pictures with their names beneath (YouTube as the emoji), after its `text` when there is one.
+  shows them as pictures with their names beneath (on YouTube a Unicode emoji shows itself, and a shortcode without
+  a picture its text), after its `text` when there is one.
 - `bar` is a stacked bar with a legend, in the same box.
 - `set` puts values into other fields of the window as if typed (nothing is saved until Save: a preset button). A
   field whose value changes glows in the accent colour for a moment. An answer that arrives while a save waits for
@@ -388,8 +391,9 @@ settings file as the window does, old keys through the aliases; unlike the windo
 another setting's key (the red **i** names such a declaration). A relative path starts in the Streamer.bot folder.
 A file that cannot be read gives the `.bak` of the window's last save, else the defaults, and `Problem` says so
 (`FromBackup` which); `UiSettings.Load(path, CPH.LogWarn)` also logs it. A file that is missing while the window
-saves (it swaps the new file in, the old one becoming the `.bak`) is waited for a moment, and one still missing
-beside its `.bak` is read from that; only a file never saved gives the defaults without a word.
+saves (it swaps the new file in, the old one becoming the `.bak`) is waited for a moment; one missing beside its
+`.bak` is read from that, at once when no save is under way. Only a file never saved gives the defaults without a
+word. The window shows that `.bak` as well and says so under the red **i**; its next save writes the file again.
 
 **What the host block does not know: the conventions.** `UiSettings` reads what the `Table` declares, and nothing
 else. For a key the conventions know (`S("globalCooldown", 30)`) the label, the page, the limits and the old keys

@@ -117,11 +117,11 @@ answer. A handler that takes long on purpose (an import) calls `UiHost.StillWork
 stub waits 30 seconds from each call (stub 0.3.2 and on; with an older one the call does nothing). The window does
 not stand still meanwhile (UIFramework 1.9.0 and on, with any stub): the DLL asks the project from another thread.
 The answers to a Try button and to a trigger's Fire button on the Help page, the emote sources of emote fields and
-a table's rows arrive when they arrive (the Fire button and the emote sources from 1.10.0), the button greyed and
-the table saying that it is asking. The check before a save waits for its answer with the window alive: it paints
-and moves but takes no input, since what the answer decides must not be overtaken. A value that reaches a field
-meanwhile stays unsaved, and the questions that follow are modal to the window. Before 1.9.0 the window's own
-thread waited, and Windows called a window "not responding" whose project took its time.
+of an answer's emotes, and a table's rows arrive when they arrive (the Fire button and the emote sources from
+1.10.0), the button greyed and the table saying that it is asking. The check before a save waits for its answer
+with the window alive: it paints and moves but takes no input, since what the answer decides must not be overtaken.
+A value that reaches a field meanwhile stays unsaved, and the questions that follow are modal to the window. Before
+1.9.0 the window's own thread waited, and Windows called a window "not responding" whose project took its time.
 
 No answer is not taken for an answer. A check before saving that got none (a timeout, a disabled action, an action
 that ran without answering) does not count as "no problems": the window asks whether to save unchecked. A Try

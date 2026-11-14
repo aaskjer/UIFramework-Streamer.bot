@@ -19,17 +19,20 @@ stay the user's.
   edge shows which side); dropped on its top or bottom half, above or below it on a line of its own. Over a
   heading or a gap it lands between the fields there, below the last field at the end. Near the top or bottom
   edge the page scrolls slowly along. A field dropped among the fields of another section joins that section, so
-  no heading shows twice. Dropped on a page in the rail, it moves to that page, on a line of its own if it sat in a
-  row. About, Help, Log, Messages and pages the extension draws itself take no fields; *Move to page* leaves them
-  out too. Right-click: *Rename*, *Hide* / *Show*, *Move to page*, *Move up*, *Move down*, *Reset this field*.
-  Values cannot be edited in the mode.
+  no heading shows twice. Dropped on a page in the rail, it moves there as *Move to page* moves it: behind the last
+  field of its own section there, else to the end of the page, on a line of its own if it sat in a row. About,
+  Help, Log, Messages and pages the extension draws itself take no fields; *Move to page* leaves them out too.
+  Right-click: *Rename*, *Hide* / *Show*, *Move to page*, *Move up*, *Move down*, *Reset this field*. Values cannot
+  be edited in the mode.
 - **Pages** in the rail: dragging sorts the top group. Right-click: *Rename*, *Change icon* (an emoji, or a name
   like `gear`, `dice`, `coins`; a name the window does not know shows a dot), *Hide* / *Show*, *Move up*,
   *Move down*, *Reset this page*. *About* cannot be hidden. *Help* (*How to play* in the games), *Log* and *About*
   stay at the foot of the page list, under any page the extension puts there.
 - **Without the mouse:** Tab reaches every field and every page. The Menu key (or Shift+F10) opens its menu;
-  Alt+Up and Alt+Down move it one place and leave the keyboard on it, so it can be moved further. In the rail, Up
-  and Down step through the pages and Enter or Space opens one, in the mode and outside it.
+  Alt+Up and Alt+Down move it one place and leave the keyboard on it, so it can be moved further. A field next to a
+  section heading crosses it in one step, by key or menu alike: the first field of a section moves up into the
+  section above, the last one down into the next. In the rail, Up and Down step through the pages and Enter or
+  Space opens one, in the mode and outside it.
 - **Hidden things** stay in view in the mode, half-transparent, so they can be shown again: a hidden field with
   the note `hidden`, a hidden page in the rail. Fields the extension hides by itself are among them and can be
   shown the same way. A hidden field keeps its value in the settings file.
@@ -90,7 +93,7 @@ instead. The window itself stays where it is.
 | `pages.<id>.order`             | the order in the top group; pages with an `order` come first                 |
 | `pages.<id>.hidden`            | the page is gone (except `about`)                                            |
 | `fields.<key>.page`            | which page the field belongs to                                              |
-| `fields.<key>.order`           | the order within the page                                                    |
+| `fields.<key>.order`           | the order within the page. On a page with orders, a field that has none (new in an update, or given back by *Reset this field*) goes behind the field the extension declares before it. When that field sits in another section, it goes to the end of its own section instead, or to the end of the page when the page lacks that section |
 | `fields.<key>.row`             | the line the field sits on, beside the fields with the same name; `""` puts it on a line of its own, out of a row the extension declared |
 | `fields.<key>.label`, `.section` | the label, the section heading                                             |
 | `fields.<key>.hidden`          | `true`: the field is gone, its value stays in the settings file; `false`: a field the extension hides is shown |
