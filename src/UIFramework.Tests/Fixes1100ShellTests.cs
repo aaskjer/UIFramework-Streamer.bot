@@ -139,6 +139,53 @@ namespace UIFramework.Tests
             }
         }
 
+        // ---- Reset all and a list in a file of its own --------------------------------------------------------
+
+        [Fact]
+        public void ResetAllKeepsTheUnsavedRowsOfAListInAFileOfItsOwn()
+        {
+            using (var w = new Opened(Schema, folder => File.WriteAllText(Path.Combine(folder, "words.json"), @"[ { ""word"": ""from the file"" } ]")))
+            {
+                Assert.Contains("from the file", w.On(() => w.Context.Parts.Lists["words"].Serialized));
+                w.On(() =>
+                {
+                    w.Context.Parts.Lists["words"].Set(new JArray(new JObject { ["word"] = "typed" }));
+                    w.Box("bet").Text = "30";
+                });
+                var done = w.Later(() => w.Click(w.On(() => Text.T("tip.resetAll")), byTip: true));
+                var question = w.Dialog(5000);
+                Assert.NotEqual(IntPtr.Zero, question);
+                Opened.Answer(question, Opened.IdYes);
+                Assert.True(done.Wait(10000));
+
+                // The settings file is reset and written; the list's file is neither, and its editor keeps what it showed.
+                Assert.Equal(10, (int)w.Saved()["bet"]);
+                Assert.Equal("10", w.On(() => w.Box("bet").Text));
+                Assert.Contains("from the file", File.ReadAllText(Path.Combine(w.Folder, "words.json")));
+                Assert.Equal(@"[{""word"":""typed""}]", w.On(() => w.Context.Parts.Lists["words"].Serialized));
+                // Still unsaved: the status counts it, and a save writes it.
+                Assert.True(w.On(() => w.Shows(Text.T("status.unsaved.one"))), "the list's rows do not count as unsaved");
+                w.On(() => w.Click(Text.T("btn.save")));
+                Assert.Contains("typed", File.ReadAllText(Path.Combine(w.Folder, "words.json")));
+            }
+        }
+
+        [Fact]
+        public void ResetAllWithoutUnsavedRowsShowsTheListAsItsFileHasIt()
+        {
+            using (var w = new Opened(Schema, folder => File.WriteAllText(Path.Combine(folder, "words.json"), @"[ { ""word"": ""from the file"" } ]")))
+            {
+                w.On(() => w.Box("bet").Text = "30");
+                var done = w.Later(() => w.Click(w.On(() => Text.T("tip.resetAll")), byTip: true));
+                var question = w.Dialog(5000);
+                Assert.NotEqual(IntPtr.Zero, question);
+                Opened.Answer(question, Opened.IdYes);
+                Assert.True(done.Wait(10000));
+                Assert.Equal(@"[{""word"":""from the file""}]", w.On(() => w.Context.Parts.Lists["words"].Serialized));
+                Assert.True(w.On(() => w.Shows(Text.T("status.clean"))));
+            }
+        }
+
         // ---- The window, opened as a game opens it ---------------------------------------------------------
 
         /// <summary>Shell.Run on a thread of its own, which starts the window's thread, as the settings action does. A

@@ -285,6 +285,8 @@ namespace UIFramework
             Func<int> changes = () => 0;
             Func<(string Id, double Offset)> currentPage = () => (null, 0);
             double? keepOffset = null;
+            // What a list in a file of its own showed unsaved when Reset all ran: the next build puts it back.
+            JObject keepUnsaved = null;
             DispatcherTimer rainbowTimer = null;
             KeyEventHandler keyHandler = null;
             bool captureStarted = false;
@@ -589,6 +591,12 @@ namespace UIFramework
                     listener();
             });
             ShowChanges();
+            // Over the baseline, which has the list as its file has it: it counts as unsaved, as it did before Reset all.
+            if (keepUnsaved != null)
+            {
+                FieldBinding.Apply(pageHost, keepUnsaved, true);
+                keepUnsaved = null;
+            }
             // What the window shows right now, read without touching it: a name half typed or a cell being edited
             // stays as it is (an action that follows the fields asks 350 ms after a change, in the middle of typing).
             ctx.LiveSettings = () =>
@@ -839,6 +847,13 @@ namespace UIFramework
                 // The lists in their own files are not reset: the game hears of them as they are in those files.
                 Sidecars.Load(fresh, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
                 SafeHook(() => _hooks.OnSaved(fresh));
+                // Nor are they written: rows the user changed in one and has not saved go back into its editor after the
+                // rebuild, still unsaved, as Reset page leaves them. The rebuild alone dropped them without a word.
+                var unsaved = FieldBinding.ChangedKeys(pageHost, baseline);
+                var shown = new JObject();
+                FieldBinding.Save(shown, pageHost);
+                keepUnsaved = new JObject(Sidecars.Of(_spec.ResolvedSettings).Where(st => unsaved.Contains(st.Key) && shown[st.Key] != null)
+                    .Select(st => new JProperty(st.Key, shown[st.Key].DeepClone())));
                 settings = fresh;
                 Rebuild(null);
             };
