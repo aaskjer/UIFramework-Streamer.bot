@@ -130,11 +130,27 @@ namespace UIFramework
             List<string> OnPage() => FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             void Move(int by)
             {
-                var keys = OnPage();
+                var fields = FieldsOn(ctx.Spec, pageId);
+                var keys = fields.Select(s => s.Key).ToList();
                 int at = keys.IndexOf(setting.Key), to = at + by;
                 if (at < 0 || to < 0 || to >= keys.Count) return;
                 _focusField = setting.Key;
-                ReorderFields(ctx, pageId, setting.Key, by < 0 ? keys[to] : to + 1 < keys.Count ? keys[to + 1] : null);
+                // A heading between the field and the next one that way: the step takes the field across it, into the
+                // section on the other side, and leaves it where it is. Swapped with that field, it landed past the
+                // last field of the section above or the first of the one below, and never next to the heading.
+                var lower = fields[Math.Max(at, to)];
+                var heading = fields.Take(Math.Min(at, to) + 1).LastOrDefault(s => s.Section != null);
+                var across = by < 0 ? heading : lower;
+                if (pageId != "messages" && lower.Section != null && lower.Section != heading?.Section && across?.SectionId != null)
+                {
+                    TakeSection(ctx, pageId, setting, across);
+                    Commit(ctx, pageId);
+                    return;
+                }
+                // Down is the next field going up past this one, so the two keep the section they share. Put in front of
+                // the field after the next, this one took that field's section, the next section's at the end of its own.
+                if (by < 0) ReorderFields(ctx, pageId, setting.Key, keys[to]);
+                else ReorderFields(ctx, pageId, keys[to], setting.Key);
             }
             var here = OnPage();
             var up = Item(Text.T("cust.moveUp"), () => Move(-1));

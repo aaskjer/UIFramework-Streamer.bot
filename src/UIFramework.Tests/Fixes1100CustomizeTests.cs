@@ -93,5 +93,44 @@ namespace UIFramework.Tests
             // Nothing to move past: nothing written, and no section taken from a switch the page does not show.
             Assert.Null(LayoutFile.Load(spec.SettingsPath).Field("b"));
         });
+
+        // ---- A heading is a place of its own ------------------------------------------------------------
+
+        /// <summary>A page's fields as it draws them, each with the section it sits in: "b1:A".</summary>
+        private static string[] Drawn(WindowSpec spec, string pageId) =>
+            spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key + ":" + s.Section).ToArray();
+
+        [Fact]
+        public void One_press_takes_a_field_across_a_heading_and_no_further() => Sta(() =>
+        {
+            var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
+                { ""key"": ""a1"", ""default"": ""x"", ""page"": ""game"", ""section"": ""A"" },
+                { ""key"": ""a2"", ""default"": ""x"", ""page"": ""game"", ""section"": ""A"" },
+                { ""key"": ""b1"", ""default"": ""x"", ""page"": ""game"", ""section"": ""B"" },
+                { ""key"": ""b2"", ""default"": ""x"", ""page"": ""game"", ""section"": ""B"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"" ] } }");
+            var spec = Customising(schema);
+            void Press(string key, string text)
+            {
+                Click(MenuEntry(spec, key, "game", Text.T(text)));
+                Entry.Prepare(spec, schema);
+            }
+
+            // The first field under B goes up: the last of A, right where it was. Before, it went between a1 and a2,
+            // and the last place of A could not be reached from the keyboard.
+            Press("b1", "cust.moveUp");
+            Assert.Equal(new[] { "a1:A", "a2:A", "b1:A", "b2:B" }, Drawn(spec, "game"));
+            Press("b1", "cust.moveUp");
+            Assert.Equal(new[] { "a1:A", "b1:A", "a2:A", "b2:B" }, Drawn(spec, "game"));
+            Press("b1", "cust.moveDown");
+            Assert.Equal(new[] { "a1:A", "a2:A", "b1:A", "b2:B" }, Drawn(spec, "game"));
+            // The last field of A goes down: the first under B, which a press could not reach either.
+            Press("b1", "cust.moveDown");
+            Assert.Equal(new[] { "a1:A", "a2:A", "b1:B", "b2:B" }, Drawn(spec, "game"));
+            Press("a2", "cust.moveDown");
+            Assert.Equal(new[] { "a1:A", "a2:B", "b1:B", "b2:B" }, Drawn(spec, "game"));
+            Press("a2", "cust.moveDown");
+            Assert.Equal(new[] { "a1:A", "b1:B", "a2:B", "b2:B" }, Drawn(spec, "game"));
+        });
     }
 }
