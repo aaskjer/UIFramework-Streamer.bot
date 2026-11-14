@@ -109,7 +109,7 @@ namespace UIFramework
             Func<string, string> outcome = r => OutcomeOf(spec, r);
 
             var root = new DockPanel { Margin = new Thickness(16, 12, 16, 12) };
-            var entries = new ObservableCollection<LogEntry>(read.OrderByDescending(x => x.Timestamp));
+            var entries = new ObservableCollection<LogEntry>(NewestFirst(read));
             var view = CollectionViewSource.GetDefaultView(entries);
 
             var search = new TextBox { ToolTip = Text.T("log.search.tip") };
@@ -300,7 +300,7 @@ namespace UIFramework
                 // Not inside view.DeferRefresh(): the grid reads the view with every line that comes in, and a view
                 // whose refresh is deferred throws on that.
                 entries.Clear();
-                foreach (var item in reloaded.OrderByDescending(x => x.Timestamp))
+                foreach (var item in NewestFirst(reloaded))
                     entries.Add(item);
                 FillDates(keepDay);
                 FillResults(keepResult);
@@ -382,6 +382,12 @@ namespace UIFramework
             dispatcher.ShutdownStarted += closing;
             page.Unloaded += (sender, e) => Stop();
         }
+
+        /// <summary>The entries with the newest first. The host hands them over in the order they were written (the
+        /// settings action: file by file, line by line) and a time has whole seconds, so a round's end writes several
+        /// lines of one second. The sort keeps the order it is given for equal times: given the other way round, the
+        /// last of them is the first row, as in every other second.</summary>
+        private static IEnumerable<LogEntry> NewestFirst(IEnumerable<LogEntry> read) => read.Reverse().OrderByDescending(x => x.Timestamp);
 
         /// <summary>The row that holds the entry with this raw line, or -1. Two entries can read the same (a line
         /// without a time): the one nearest to where it was is meant.</summary>

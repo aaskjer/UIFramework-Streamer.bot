@@ -13,7 +13,8 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot.</summary>
+    /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, and lines
+    /// of one second stand newest first.</summary>
     public class Fixes1100PagesTests
     {
         private static void Sta(Action body)
@@ -92,6 +93,26 @@ namespace UIFramework.Tests
                 if (Directory.Exists(full)) Directory.Delete(full, true);
                 Directory.Delete(elsewhere, true);
             }
+        });
+
+        [Fact]
+        public void Lines_of_the_same_second_stand_newest_first_like_all_the_others() => Sta(() =>
+        {
+            // As the settings action hands them over: oldest first, a round's end three lines in one second.
+            var hooks = new LogHooks();
+            hooks.Lines.Add("[2026-11-14 20:04:58] START | User: alice | Platform: twitch");
+            hooks.Lines.Add("[2026-11-14 20:05:10] ROUND-END | User: alice | Platform: twitch");
+            hooks.Lines.Add("[2026-11-14 20:05:10] WIN | User: alice | Platform: twitch");
+            hooks.Lines.Add("[2026-11-14 20:05:10] AWARD | User: alice | Platform: twitch | Change: +300");
+            var page = LogPageOf(hooks);
+            var grid = Find<DataGrid>(page).Single();
+            string[] Results() => grid.Items.OfType<LogEntry>().Select(e => e.Result).ToArray();
+            Assert.Equal(new[] { "AWARD", "WIN", "ROUND-END", "START" }, Results());
+
+            // The reload sorts them the same way.
+            hooks.Lines.Add("[2026-11-14 20:05:10] STATS | User: alice | Platform: twitch");
+            Click(Find<Button>(page).Single(b => AutomationProperties.GetName(b) == Text.T("log.reload")));
+            Assert.Equal(new[] { "STATS", "AWARD", "WIN", "ROUND-END", "START" }, Results());
         });
     }
 }
