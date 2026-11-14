@@ -95,6 +95,9 @@ namespace UIFramework
         private static int? Int(JToken parent, string key)
         {
             var token = At(parent, key);
+            // A whole number with more digits than a long holds (a hand edit) is read as a BigInteger, which (long) throws
+            // on, and the window did not open; as a double it is the largest order.
+            if (token?.Type == JTokenType.Integer && !(((JValue)token).Value is long)) return (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (double)token));
             if (token?.Type == JTokenType.Integer) return (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (long)token));
             if (token?.Type == JTokenType.Float) return (int)Math.Round(Math.Max(int.MinValue, Math.Min(int.MaxValue, (double)token)));
             return null;
