@@ -1073,20 +1073,24 @@ public class CPHInline
             var loaded = LoadedFramework();
             string refusal = SharedRefusal(loaded);
             if (refusal != null) throw new SharedFrameworkRefused(refusal);
+            // The hash the download checked, kept beside the file: a damaged DLL is not loaded but set aside, and its
+            // version is offered again. Also while another UIFramework runs (a game's host block loaded an older one as
+            // Streamer.bot started, passing the damaged one over): the file is not the running one, so it can be moved,
+            // and left where it is it would be passed over at every start. (A file put in by hand has no hash file and
+            // is loaded as it is.)
+            string hashFile = dllPath + ".sha256";
+            if (!string.Equals(loaded?.Location, dllPath, StringComparison.OrdinalIgnoreCase) && File.Exists(hashFile) &&
+                HashOf(dllPath) != File.ReadAllText(hashFile).Trim().ToLowerInvariant())
+            {
+                SetAside(dllPath);
+                throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with; it was set aside as .broken and is offered again next time.");
+            }
             var shared = loaded?.GetType("UIFramework.Entry")?.GetMethod("Show", signature);
             if (shared != null)
             {
                 _show = shared;
                 _close = loaded.GetType("UIFramework.Entry").GetMethod("Close", new[] { typeof(string) });
                 return true;
-            }
-            // The hash the download checked, kept beside the file: a damaged DLL is not loaded but set aside, and its
-            // version is offered again. (A file put in by hand has no hash file and is loaded as it is.)
-            string hashFile = dllPath + ".sha256";
-            if (File.Exists(hashFile) && HashOf(dllPath) != File.ReadAllText(hashFile).Trim().ToLowerInvariant())
-            {
-                SetAside(dllPath);
-                throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with; it was set aside as .broken and is offered again next time.");
             }
             // UnsafeLoadFrom: a DLL saved from a browser carries Windows' "downloaded from the internet" mark, which
             // LoadFrom refuses in Streamer.bot (NotSupportedException); this loads it like any other.
@@ -1254,8 +1258,9 @@ public class CPHInline
         try
         {
             dll = OfferUpdate(dll);
-            // The UIFramework that ran before this open: only beside that one does the chosen DLL wait for the next start.
-            // One this open loads because the chosen one failed is no such case.
+            // The UIFramework that ran before this open: only beside that one does the chosen DLL wait for the next start,
+            // and only while it is there (Bind sets a damaged one aside). One this open loads because the chosen one
+            // failed is no such case.
             var running = LoadedFramework();
             // The chosen DLL first, then every other installed one, newest first: one that cannot be loaded leaves the
             // window to an older one instead of locking every game out.
@@ -1288,7 +1293,7 @@ public class CPHInline
             Volatile.Write(ref _shownSchema, schema);
             // False: a window for this settings file was open already and came to the front; the run that serves it
             // pumps for it, so this one does not drain the queue beside it.
-            if (running != null && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
+            if (running != null && File.Exists(dll) && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
                 CPH.LogInfo(LogPrefix + " UIFramework " + VersionOf(running) + " is running already in this Streamer.bot; " + Path.GetFileName(Path.GetDirectoryName(dll)) + " is used from the next start of Streamer.bot.");
             if (Serve(schema))
                 Pump();
