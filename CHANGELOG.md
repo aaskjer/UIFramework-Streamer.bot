@@ -8,32 +8,324 @@ follows it go to `lib/v2/latest.json`.
 
 ## [Unreleased]
 
-### Changed
-
-- **The update dialog says when Streamer.bot needs a restart (settings action, stub 0.3.1).** A newer UIFramework
-  can only be used at once while none is running in this Streamer.bot; a game that loads it at the start (the
-  update notice, `UiLive`) or a window opened before keeps the running one in use. The dialog now says which case
-  it is: "Streamer.bot needs no restart", or "takes effect once Streamer.bot is restarted", with the version that
-  runs until then. After a download that has to wait, a second note says it once more (restart Streamer.bot; no
-  hurry, it can wait until after the stream): the window opened as before and only the log told. Nothing changes
-  in the DLL; a game gets it with its next release.
+The window comes in French and Brazilian Portuguese, a path field opens Windows' file dialog, and a group field
+suggests Streamer.bot's groups. The DLL's part, the window and the update notice, comes to every project with the
+next UIFramework release; the window still works with every settings action from stub 0.1.0 on. Stub 0.3.2 and its
+host block reach a project when it ships them.
 
 ### Added
 
-- **`UiHost.StillWorking()` (host block, stub 0.3.2):** a request that takes long on purpose (a Try button that
-  imports a word list) says that it is still at work, and the settings action waits 30 seconds from then for its
-  answer. It gave every request 30 seconds after it started and then dropped the answer while the work went on;
-  Hangman stopped its import at 28 seconds for that. 30 seconds stays what a request gets without the call. See
-  *The game's side* in [docs/Schema.md](docs/Schema.md).
+- **French and Brazilian Portuguese.** `fr.json` and `pt-BR.json` carry every page, key, placeholder, text and
+  window text, translated from the revised English and read a second time; no native speaker has read them yet. The
+  language picker takes the width of its longest name now, at least the 110 px it had and at most 220, so "Português
+  (Brasil)" is no longer cut off. A test holds every language file the DLL carries to English's entries and
+  placeholders.
+- **"Fix a translation", an issue form for the window's texts in any language.** It asks for the language, what the
+  window says now and what it should say. It links the new section *Proofreading a language* in
+  [docs/Conventions.md](docs/Conventions.md#proofreading-a-language), which shows how to try a wording first in a
+  `UIFramework\lang\<code>.json` beside Streamer.bot.
+- **A `path` field has a button for Windows' file or folder dialog.** [docs/Schema.md](docs/Schema.md) promised "a
+  folder/file dialog", but the field was a text box with a button that only opened the folder in Explorer. The new
+  button opens a file dialog when the value or the default names a file (it has an extension, or a file of that name
+  exists), otherwise a folder dialog. The dialog starts where the value points, or where the default points while
+  the value is empty; a relative value counts from the Streamer.bot folder. A file the action has not written yet
+  can be chosen. A choice under the Streamer.bot folder is written relative to it (`overlay\state.json`), anything
+  else as a full path.
+- **A `grouplist` field suggests Streamer.bot's groups (stub 0.3.2).** docs/Schema.md promised "chips with
+  Streamer.bot's groups suggested"; the field had the hint "Add a Streamer.bot group" and took what was typed. The
+  first time a group field gets the cursor, the window asks the settings action for the groups, once. The action
+  reads them with `CPH.GetGroups()` on Streamer.bot's thread, and the window stays usable meanwhile. A list under
+  the box then shows the groups not added yet, narrowed by what is typed: Up and Down pick one, Enter or a click
+  adds it, Esc closes the list. Enter without a picked group adds what was typed, as before. The list comes with the
+  DLL, the groups with stub 0.3.2; with an older settings action, and in the preview, the field works as it did.
+- **A request that takes long on purpose says it is still at work: `UiHost.StillWorking()` (host block, stub
+  0.3.2).** The project calls it while such a request runs (a Try button that imports a word list), and the settings
+  action waits 30 seconds from then for the answer. It gave every request 30 seconds from its start and then dropped
+  the answer while the work went on; Hangman stopped its import at 28 seconds for that. Without the call, a request
+  still gets 30 seconds. A request from a window opened again meanwhile waits for one that says it still works
+  instead of starting beside it after 35 seconds, and a request that hung before it no longer takes its
+  `StillWorking()` away when it ends. See *The game's side* in [docs/Schema.md](docs/Schema.md).
+
+### Changed
+
+- **The update dialog says when Streamer.bot needs a restart (stub 0.3.1).** A newer UIFramework can be used at once
+  only while none runs in this Streamer.bot; a project that loads it at the start (the update notice, `UiLive`) or a
+  window opened before keeps the running one in use. The dialog now says which case it is: "Streamer.bot needs no
+  restart", or "takes effect once Streamer.bot is restarted" with the version that runs until then. After a download
+  that has to wait, a second note says it once more (restart Streamer.bot; no hurry, it can wait until after the
+  stream). Before, the window opened as usual and only the log told. Nothing changes in the DLL; a project gets it
+  when it ships stub 0.3.1 or later.
+- **A language code means its language in any case, and across a region.** The layout file's `language`, a project's
+  fixed language (`InLanguage`), the codes of its `Lang` and the names of the files in `UIFramework\lang` were
+  matched letter for letter. `"language": "DE"` or `"de-AT"` opened the window in English, and a project's
+  `Lang("pt-br", …)` beside the DLL's `pt-BR`, or a `pt-br.json` beside Streamer.bot, added a second Portuguese to
+  the picker whose words never reached the framework's. Now a code matches a language in any case. A regional code
+  falls back to its language (`de-AT` is German), a language to its only regional file (`pt` is `pt-BR`), and
+  anything else to English. The picker, the layout file and the update notice keep the language file's spelling.
+- **An `en.json` in `UIFramework\lang` corrects English.** A file there was laid over every language the DLL carries
+  except English, which always came from the DLL, so a proofreader's corrections to English never showed. It is now
+  read when the window opens, as `de.json` there is. Without such a file, English is the DLL's own, loaded once.
+- **The window's texts in English, German and Spanish are read again.** Stiff wording is plainer now, and a text
+  that meant whatever the window belongs to, rather than a game, says "extension". Three said what the window does
+  not do and are corrected: the accent colour holds for this extension's window only, *Reset layout* also takes the
+  help under the fields back into the tooltips, and a newer version shows as a red label at the top of the window,
+  not on the About page.
+- **The Help page comes by itself** when the window declares help sections, custom triggers or methods and does not
+  name `help` among its pages, as Messages and About already did. The triggers with their Fire buttons and the
+  method list had no page.
+- **The red "i" names a log declared without its page, and a range slider whose whole default meets a fraction.** A
+  window with `Log(folder, files)` that does not name `log` had no Log page and no switch for the log, without a
+  word. A range slider's default decides what it holds ([docs/Schema.md](docs/Schema.md)), so `S("x", 1, kind:
+  "slider", min: 0, max: 2, step: 0.5)` is a slider of whole numbers on a 0.5 grid: it saves 0.5 as 0 and 1.5 as 2,
+  the same as the place next to each, and nothing said so. The rule stays; the check names a slider whose default is
+  a whole number while its step, minimum or maximum has a fraction, and says to write the default as `1.0` for a
+  slider of decimals.
+- **An action's `status` reaches the footer also when the action has a `panel`.** With a panel, and so with every
+  `auto` action, the status went nowhere, or into the panel only while the panel was empty, and the documented
+  answer with `lines`, `bar`, `set` and `status` could not be shown whole. The footer now shows the status beside
+  the panel.
+- **An `emote` field with `platform: youtube` shows its picture,** as a list's emote column does: YouTube's own
+  emojis (`:name:`) from the table inside the DLL. The single field had no picture at all.
+- **The docs are read again,** README and docs/ alike, as the code now is and for any project: plainer wording,
+  "project" or "extension" where any user of the framework is meant, "game" only where a game is. Corrected where
+  text and code disagreed: field help as a tooltip, units in the label, `step` only for sliders, a percent compared
+  as stored, `path` and `grouplist` as they now work, the accent colour per extension, `Lock()`, the Log page's
+  order, what keeps a 2.x DLL from a 1.x settings action, the troubleshooting rows. README's tree and tool list
+  follow the repository. The demo's README counts the settings it declares as they are and names the tick on
+  *Precompile on Application Start* that the update notice needs.
+- **The demo and the mirrors in `hosts/` carry the host block of stub 0.3.2,** and the demo's import is built again.
+- **CI runs once per commit and checks what is made from the sources.** It ran on every push to every branch, and a
+  branch with a pull request had each check run twice; it now runs on pushes to `main` and on pull requests. Beside
+  the build, the tests and `docs/Conventions.md`, it checks that the demo and the eight games' copies in `hosts/`
+  carry the template's host block and that the demo's import carries the demo and the stub.
+- **The release workflow runs CI's checks as well.** It does not wait for CI, and 1.6.0 was published while CI
+  failed on its `docs/Conventions.md`. A tag is released only when the conventions doc, the demo's host block and
+  the demo's import pass there too.
+- **Leftovers are gone.** The seven facades in `hosts/` (six games' `SettingsFacade.cs` and Blackjack's
+  `StatsFacade.cs`) were copies of the games' settings classes from the port to the generic stub; nothing read them,
+  and they had drifted from the games. Three empty `.gitkeep` files are gone with them, and
+  `tools/spec-to-window.ps1` leaves too: no project has had a `spec.json` of its own since 1.9.0.
 
 ### Fixed
 
-- **A DLL that needs a newer settings action no longer locks a game's window (host block).** The update notice
-  and `UiLive` loaded the newest `UIFramework.dll` under `lib\`, also one another game had installed for a newer
-  stub. Only one UIFramework runs in a Streamer.bot, so the game's settings window then failed on every start,
+In the DLL, for every project with the next UIFramework release:
+
+- **A save keeps what changed while the project checked it.** A save waits for the project's `validate`. An answer
+  that came in meanwhile (a preset button's or an `ask` field's `set`) or a timer put its values into the fields
+  after the save had taken its copy, and the window said "Saved" with no unsaved change while the file held the old
+  values: closing asked nothing, and the values were gone. They now count as unsaved, the status line says how many,
+  *Save & Exit* asks before it closes, and the next save writes them.
+- **The questions after the project's check belong to the window.** When the project took its time and the user went
+  to another window meanwhile, *Not checked* and *Check your settings* (and the notes after a save or an import that
+  failed) had no owner. The settings window took clicks again with the save still open, its X closed it while the
+  question stayed up, and the settings could not be opened again until that question was answered. The questions are
+  now modal to the settings window.
+- **Reset all keeps the unsaved rows of a list in a file of its own.** Such a list is not reset, as the question
+  says, but rows typed into it and not yet saved were replaced by the file's without a word, and the status said "No
+  unsaved changes". They stay in the list now, still unsaved, as *Reset page* leaves them.
+- **The red "i" speaks of an unreadable list file in the window's language.** The line was English in every window.
+  It now names the list and its file, followed by the list's own tooltip (`list.unreadable`).
+- **A settings file gone beside its `.bak` is shown from the `.bak`, as the project reads it.** When the settings
+  file was missing and its `.bak` lay beside it (a swap that was cut off, or a file deleted by hand), the project's
+  `UiSettings.Load` ran on the `.bak`, but the window showed the defaults, and its first save, an import or *Reset
+  all* wrote them over what the project was using. The window now reads the `.bak` too and says so in the log and in
+  a line under the red "i"; its next save writes the settings file from the values it shows. A file that was never
+  saved still gives the defaults on both sides.
+- **A `null` in the settings file stands for the setting's default, in the window as in the project.** The host
+  block's `UiSettings` reads past a `null` to an old key, then to the default. The window took the `null` as the
+  value and showed 0, an empty box or a switch that is off, none of which the project went by, and dropped an old
+  key's value beside it. It now reads the default (or the old key's value) as the host block does, and the next save
+  writes that in place of the `null`. An import that names a setting with `null` brings nothing for it.
+- **An old key's factor leaves no float noise in the settings file.** An old fraction moved to a percent with its
+  factor of 100, such as 0.29, was written as `28.999999999999996` while the box showed 29 (Hangman's overlay
+  opacity, whose default is a decimal). The moved value is now rounded to ten decimals, as a number box saves it.
+  The host block rounds it the same way (below).
+- **An import takes a slider's value through the slider.** It wrote whatever the file named for a slider: a number
+  beyond its range, text where its number belongs, a stop it does not have. The window then showed the slider at its
+  end and called the value corrected, while the project read the file's value until the next save. A number is now
+  pulled into the range (to a whole number on a whole-number slider); text or a stop the slider lacks is not taken,
+  and the dialog says why, as for a dropdown. If the import names the value the slider already holds, one none of
+  its stops offers, that value stays.
+- **An import trims a token, a path, a colour and an emote as a save does.** A token with a line break after it in
+  the imported file was written with it and stayed so until the field was changed. A plain text field still keeps
+  the spaces at either end, as typed.
+- **A click on the stop a slider sits on chooses it.** A slider over stops that holds a value none of them offers
+  names that value beside its label and sits on its first stop. A click on that stop's caption or on the thumb chose
+  the stop without the window noticing: the count of unsaved changes stayed the same, a condition on the slider did
+  not follow, and a field with `ask` did not ask the project. It now counts as one change.
+- **A slider over decimal stops finds the stop of its number.** A default or a `set` of 2.0 arrives as 2, and with
+  the stops `"0.5"`, `"2.0"` and `"5.0"` it was taken for the index of the third stop: the slider showed *Fast* and
+  the next save wrote `"5.0"`. A number now finds the stop of the same value however either is written (`"0.50"` is
+  the stop `"0.5"`); an index finds a stop only among stops that are no numbers.
+- **A slider over a range starts on its default when the file holds no number.** With `""` or `"abc"` stored, it sat
+  on its minimum, and the next save wrote that minimum. It now does what a number box does: it shows the default,
+  and the save writes it.
+- **A field with `ask` asks with the values the window shows.** It sent the saved ones. A preset slider that moved
+  from `live` to `ask` (the name 1.9.0 gave it) was answered for the stop it was saved on, and `set` put that stop's
+  numbers back. On such a field `ask` now means what `live` meant, as docs/Schema.md says. A window of 1.9.0 does it
+  with `live` beside `ask`, which the host block of stub 0.3.2 writes by itself (below).
+- **An `ask` field's answers land in the order it asked.** An answer that waited behind another request of the
+  settings action and came after a later one put its values over the later one's: the slider stood on one stop and
+  the fields held another stop's numbers. The field numbers its questions as a button does, and a late answer to an
+  earlier one is dropped.
+- **An action's box no longer says it failed after an answer came.** When a Try button's ask failed (the project did
+  not answer in time) and the next answer only set fields or brought a `status`, the box went on showing the
+  failure. That answer takes the failure's place now: its status shows, or the box hides when there is none. The
+  lines of an earlier answer still stay under one that only sets fields.
+- **An answer under a row hides with its action also with the help under the fields.** With help lines on, a button
+  in a named row whose condition hid it left its answer box showing under the row.
+- **The Help page's Fire button no longer freezes the window, and it says why the action did not answer.** It asked
+  the project's action on the window's own thread: with another request still running, the window froze for five
+  seconds, and the settings action's reason for no answer was replaced by the hint that the action may run an older
+  version. It now asks the way a Try button has since 1.9.0. The button stays greyed until the answer comes, and no
+  answer shows the settings action's reason. An answer that is none at all (a host block that does not know the
+  request) keeps the older-version hint.
+- **The project's emote sources are asked without holding the window still.** The window asked for them (the
+  broadcaster's Twitch id and token, the project's own YouTube pictures) on its own thread. As the first emote field
+  was built, that froze the window for up to five seconds while the action was busy; a Try box with YouTube emotes
+  (`:name:`), asking before any emote field had, waited up to 35 seconds when the project's handler hung. They are
+  now asked once per window on another thread, and each picture shows once the answer has come. A shortcode holds
+  its picture's place until then and is drawn as text when it has none. A Unicode emoji still shows at once.
+- **The tooltip of a 7TV, BTTV or FFZ emote picture is in the window's language.** It was built in English in code;
+  it is now the window text `field.emote.extension`, in every language the DLL carries.
+- **A sender switch the Messages page does not draw is a field on its page.** The window kept `useBot`,
+  `sendAction`, `numberSeparator` and the two cooldown switches for the Messages page, which draws them only while
+  it has messages, and the cooldown pair only while a message is in the cooldown group. A project without messages,
+  or one whose cooldown messages have no group (Blackjack's), had settings its action reads and no field for them.
+  Such a switch is now a field on its own page (`general`, `cooldowns`, or the page it declares), and a page that
+  names one shows it. A standard page with nothing of its own (Messages without messages, Help without help) now
+  shows the fields declared for it; before, it was left out together with them.
+- **`hidden` hides the sender switches, the number format and the log switch.** The Messages and Log pages drew them
+  hidden or not; only `Senders(useBot: null)` left one out. A setting the project hides (`hidden`, `Override(key,
+  hidden: true)`) has no field there now, and its value stays in the file.
+- **A page's own title stays in a language that does not title its id.** In a language with only the project's own
+  texts (`Lang("nl", …)`) or a language file without page titles, the conventions' English title replaced the
+  declared one: "How to play" read "Help", "Scoreboard" read "Leaderboard". As with a key's label, the conventions'
+  title for the id is taken only where it is a translation.
+- **The red "i" looks for split sections on the page a field ends up on.** It read the page each setting declared,
+  before the window's pages claimed their fields. So it called a section split that a page's claim had put back
+  together, and missed one that a page collecting the fields of two pages split.
+- **The timer's random switch sits on the row of its two intervals, and the longest wait greys out with the timer's
+  switch too,** as docs/Schema.md says. The random switch stood on a line of its own, and with it on, the longest
+  wait stayed open while the timer was off.
+- **The About page translates the credits and the project's own links.** The `Tx` translations of the credits under
+  the name and of the texts in `About(links:)` were not used, although the page's sections and the links inside them
+  were translated and docs/Schema.md said `Tx` translates the credits. They now go through the same lookup as every
+  other declared text.
+- **Customise mode: *Move up* and *Move down* move a field on the page it is shown on.** The sender switches, the
+  number format and the log switch, which the Messages and Log pages draw wherever they are declared, counted among
+  a page's fields. On High-Low's Cooldowns page and Blackjack's Messages page a press went past one of them and
+  nothing moved, the first field shown could still be moved up, and a field moved next to one took a section the
+  page does not show. They are left out now.
+- **Customise mode: *Move up* and *Move down* cross a heading one place at a time.** The first field under a
+  heading, moved up, landed between the last two fields of the section above; the last field of a section, moved
+  down, went past the first field of the next. The places next to a heading could only be reached with the mouse. A
+  step over a heading now takes the field into that section and leaves it where it stands.
+- **Customise mode: a field moved to another page no longer splits a section there.** *Move to page* and a drop on a
+  page in the rail left the field at its declared place among all settings, which on a page the user had sorted fell
+  anywhere, often between two fields of one section, whose heading then showed twice. The field now goes to the end
+  of its own section when that page has it, else to the end of the page, on a line of its own. The menu takes it out
+  of its row too, as the drop did.
+- **Customise mode: on a page the user sorted, a field the user never placed goes where the project declares it.**
+  Sorting a page gives each of its fields an order in the layout file. A field without one, which the project added
+  in an update or *Reset this field* gave back, kept its place among all the project's settings; on a sorted page
+  that place could be anywhere, often inside another section, whose heading then showed twice. It now goes behind
+  the field the project declares before it on that page when the two share a section, else to the end of its own
+  section there, else to the end of the page.
+- **An order typed into the layout file with too many digits no longer keeps the window from opening.** A whole
+  number longer than 19 digits made every open fail. It now reads as the largest order, as a value of the wrong kind
+  reads as not set.
+- **The folder button of a `path` field opens the folder a file is in.** For a value that names a file
+  (`overlay\state.json`), the button made a folder with the file's name, after which the action could not write its
+  file there; for a file that already existed it failed, and only the log said so. It now opens the file's folder,
+  and creates that folder when it is missing, as it does for a folder.
+- **Log page: the folder button opens the log folder beside Streamer.bot.** It opened the declared folder (`Chat
+  Games/Logs`) relative to the process's current directory, which a file dialog moves (the window's own Export and
+  Import, any dialog of Streamer.bot). After an export to the Desktop it created and opened an empty `Desktop\Chat
+  Games\Logs`. It now opens the folder the page follows and the settings action reads, under the Streamer.bot
+  folder.
+- **Log page: lines written in the same second show newest first.** The page sorts by time, which has whole seconds,
+  and kept lines of equal time in the order it got them. The settings action hands them over as they were written,
+  so lines written together, several in one second, showed oldest first inside a list that is newest first. The last
+  line written is now the first row, on open and on every reload.
+- **Log page: a line without a readable time leaves the Time column empty.** It showed `0001-01-01 00:00:00`. A
+  click on the column header still sorts by time.
+- **The update notice leaves out a UIFramework release the settings would not offer.** A release skipped with *No*
+  in the update dialog, or any release while the release check is off (`skipVersion`, `"autoUpdate": false` in
+  `UIFramework\loader.json`), was named in chat at every Streamer.bot start, and the log line sent the streamer to
+  settings that did not offer it. The notice now follows the settings action's rules. A project whose own
+  `uiframework.layout.json` skips the release or switches the check off counts as not offering it, and UIFramework
+  is named while at least one project of the run would offer it. An unreadable `loader.json` counts as empty, as in
+  the settings action. The projects' own releases are named as before.
+- **A language file with broken braces no longer costs the update notice.** A file in `UIFramework\lang` beside
+  Streamer.bot whose *import it again* text had lost a brace made the notice throw while it was put together, and
+  that Streamer.bot run had no notice. The text is now filled the way the window fills its own, and a text with
+  broken braces is used as it stands.
+- **The update notice uses the language a project fixes for its window.** It followed the language in the layout
+  file, which a window with `InLanguage("de")` never writes, so that project's notice came in English or in a
+  language picked before. The window now tells the notice its fixed language when it opens, and the notice keeps it
+  for the Streamer.bot starts that follow.
+- **The chat preview groups amounts as the window's language does,** for a project without a thousands-separator
+  setting. It wrote 1,500 in English and 1.500 in every other language. Now it takes the separator Windows gives the
+  language: 1.500 in German, Spanish and Brazilian Portuguese, 1 500 in French. French officially uses a narrow
+  no-break space; the preview writes a plain space, which chat and the text box both show. A language Windows does
+  not know keeps the point.
+
+In the settings action, for a project that ships stub 0.3.2:
+
+- **A running UIFramework that needs a newer settings action is not taken (stub 0.3.2).** A host block of 1.9.0 or
+  before, in another project, still loads the newest DLL as Streamer.bot starts. The stub passed such a DLL over
+  when it was installed but used it when it was running, and the DLL then refused the window with the advice to
+  remove its folder. The stub now leaves it alone in both cases; its dialog names the running version and the stub
+  it needs, and says that updating the project opens the window.
+- **A damaged DLL is set aside also while an older UIFramework runs (stub 0.3.2).** As Streamer.bot starts, the host
+  block passes over a newest `UIFramework.dll` that fails its hash and loads the next older one. The settings action
+  then used the running one without checking the newest, so the damaged file stayed where it was: its version was
+  never offered again, and at every start the log said it would be used from the next one. The settings action now
+  checks the hash of the DLL it chose also beside a running UIFramework and sets a damaged file aside as `.broken`;
+  the next open offers that version again.
+- **The release check's log line calls the installed version installed (stub 0.3.2).** With a project that loads
+  UIFramework as Streamer.bot starts, the line called the newest installed version "in use" while an older one ran,
+  and when the chosen DLL had failed and been set aside, the log still said it would be used from the next start.
+  The line now says "installed". The next-start line comes only when the chosen DLL is still there beside a
+  UIFramework that ran before the window opened.
+- **The project hears of every save (stub 0.3.2).** The "saved" request runs from the settings action's queue. When
+  it found another request still running, the log said "A queued step failed" and the project never heard of the
+  save, so its overlay and timed action went on with the old settings. It is now sent again, three tries in all, and
+  what still fails is said in the log and in a note beside the window. A run of the project's action that ended
+  without answering counts as not heard too.
+- **A download that breaks off is tried again (stub 0.3.2).** A connection reset while the file came in was not
+  counted as a broken connection, and a connection closed early left a short file that failed the hash check with a
+  message that read like tampering. Both get the three tries now, as does a connection that cannot be made; only
+  after the last one does the dialog say that the file does not match.
+- **A project's action that runs without answering is "no answer" (stub 0.3.2).** One whose `Execute()` never
+  reached `UiHost.Handle` counted as an empty answer: a Try button said "done", and a save went on as checked.
+  Streamer.bot reads a global set to empty text back as null, so the stub now marks the answer's variable before the
+  run and sees whether the project wrote it.
+- **A DLL in a folder named `1.9` gets the no-answer marker (stub 0.3.2).** It was compared as older than 1.9.0 and
+  got null instead.
+- **A list or an object where a version belongs no longer breaks every open (stub 0.3.2).** `skipVersion` in
+  `loader.json` or the layout file, or `minHostStub` in `latest.json`, made the window fail. Such a value counts as
+  missing now, and the log says so.
+- **An unreadable `loader.json` is not written over (stub 0.3.2).** A damaged or locked `UIFramework\loader.json`
+  counted as empty, and *No* in the update dialog replaced it with a file holding only `skipVersion`. It now counts
+  as empty without being written over, as the layout file already did; *No* keeps the skip in the project's layout
+  file then, and the log says where it went (or that it could not be kept) and that `loader.json` cannot be read.
+- **A run that a later one took over ends there (stub 0.3.2).** When a project's action that had hung for a minute
+  answered after all, its first run went on to the update dialog and the window, beside the run that had opened it.
+- **Two runs that end together leave the window free (stub 0.3.2).** If the run that opened the window ended just as
+  another run's window closed, neither handed the window back, and the next open reused the old schema without
+  asking the project or GitHub.
+
+In the host block, for a project that ships the host block of stub 0.3.2:
+
+- **A DLL that needs a newer settings action no longer locks a project's window (host block).** The update notice
+  and `UiLive` loaded the newest `UIFramework.dll` under `lib\`, also one another project had installed for a newer
+  stub. Only one UIFramework runs in a Streamer.bot, so the project's settings window then failed on every start,
   although the stub passes such a DLL over. The host block now loads the newest DLL that fits the settings action
   released with it (`StubVersion` in the host block, 0.3.2, kept equal to the stub's); a DLL that names no stub
-  fits.
+  fits. The block reads the DLL's version without `System.dll`, so it still compiles in an action that lists only
+  mscorlib, System.Core, Newtonsoft.Json and Streamer.bot's interface.
 - **The update notice takes the next older DLL when the newest cannot be used (host block).** When the newest
   `UIFramework.dll` under `lib\` failed its hash or threw once while loading, the block gave up on every DLL for the
   rest of the run: no update notice, and `UiLive` said Unknown for Twitch and Kick until Streamer.bot restarted. It
@@ -41,45 +333,42 @@ follows it go to `lib/v2/latest.json`.
   settings action (the entry above); a file downloaded again is tried again. Once a UIFramework is loaded, the block
   takes that one: .NET answers every later load of a `UIFramework.dll`, whichever version, with the one already
   loaded.
-- **A round that starts while the window saves reads the saved settings (host block).** The window swaps the new
-  settings file in, the old one becoming the `.bak`, and for that moment there is no file; `UiSettings.Load` took
-  the missing file for one never saved and gave the defaults without a word. It now waits a moment for a file that
-  is being swapped in, and reads the `.bak` (saying so in `Problem`) when only that is left; a game whose settings
-  were never saved still gets the defaults at once.
-- **A save that switches automatic rounds off keeps the timer off (host block).** `UiTimer.Rearm` looked at the
-  timed action, then switched it off and on; a save whose `UiTimer.Sync` switched it off in between found it on
-  again. The two now take turns.
-- **A running UIFramework that needs a newer settings action is not taken (stub 0.3.2).** A host block of 1.9.0
-  or before, in another game, still loads the newest DLL as Streamer.bot starts. The stub passed such a DLL over
-  when it was installed but used it when it was running, and the DLL then refused the window with the advice to
-  remove its folder. The stub now leaves it alone in both cases; its dialog names the running version and the stub
-  it needs, and says that updating the game opens the window.
-- **The game hears of every save (stub 0.3.2).** The "saved" request runs from the settings action's queue; when it
-  found another request still running, the log said "A queued step failed" and the game never heard of the save,
-  so its overlay and timed action went on with the old settings. It is now sent again (three tries in all), and what
-  still fails is said in the log and in a note beside the window.
-- **A download that breaks off is tried again (stub 0.3.2).** A connection reset while the file came in was not
-  counted as a broken connection, and a connection closed early left a short file that failed the hash check with a
-  message that read like tampering. Both get the three tries now, as does a connection that cannot be made; only
-  after the last one does the dialog say that the file does not match.
-- **A game action that runs without answering is "no answer" (stub 0.3.2).** One whose `Execute()` never reached
-  `UiHost.Handle` counted as an empty answer: a Try button said "done" and a save went on as checked. Streamer.bot
-  reads a global set to empty text back as null, so the stub now marks the answer's variable before the run
-  and sees whether the game wrote it.
-- **A DLL in a folder named `1.9` gets the no-answer marker (stub 0.3.2).** It was compared as older than 1.9.0 and
-  got null instead.
-- **A list or an object where a version belongs no longer breaks every open (stub 0.3.2).** `skipVersion` in
-  `loader.json` or the layout file, or `minHostStub` in `latest.json`, made the window fail; such a value counts as
-  missing, and the log says so.
-- **An unreadable `loader.json` is not written over (stub 0.3.2).** A damaged or locked `UIFramework\loader.json`
-  counted as empty, and *No* in the update dialog replaced it with a file holding only `skipVersion`. It now counts
-  as empty without being written over, as the layout file already did; *No* keeps the skip in the game's layout
-  file then, and the log says where it went (or that it could not be kept) and that `loader.json` cannot be read.
-- **A run that a later one took over ends there (stub 0.3.2).** When a game that had hung for a minute answered
-  after all, its first run went on to the update dialog and the window, beside the run that had opened it.
-- **Two runs that end together leave the window free (stub 0.3.2).** If the run that opened the window ended just
-  as another run's window closed, neither handed the window back, and the next open reused the old schema without
-  asking the game or GitHub.
+- **`UiSettings.Load` during a save reads the saved settings (host block).** The window swaps the new settings file
+  in, the old one becoming the `.bak`, and for that moment there is no file. `UiSettings.Load` took the missing file
+  for one never saved and gave the defaults without a word. It now waits a moment for a file that is being swapped
+  in, and reads the `.bak` (saying so in `Problem`) when only that is left. A file missing beside its `.bak` with no
+  save under way is read from the `.bak` at once, without the wait; a project whose settings were never saved still
+  gets the defaults at once.
+- **A save that switches the timer off keeps it off (host block).** `UiTimer.Rearm` looked at the timed action, then
+  switched it off and on; a save whose `UiTimer.Sync` switched it off in between found it on again. The two now take
+  turns.
+- **`UiSettings` reads an old key that is a setting of its own for that setting only (host block).** A setting whose
+  `aliases` named another setting's key read that setting's value while its own key was not in the file yet. The
+  window leaves such an old key alone (the red "i" names it) and showed the default, so the project ran on another
+  setting's value until the first save. It now gets the default, as the window shows.
+- **An old value moved with `aliasFactor` is read as the window stores it (host block).** `UiSettings` multiplied it
+  as it was, so an old fraction of 0.07 became 7.000000000000001 percent in the project, also in a message that
+  prints it. It is now rounded to ten decimals, as the window's store does.
+- **A field with `ask` is asked with what the window shows, also in a window of 1.9.0 (host block).** The released
+  DLL hands a request the window's current values only for a setting marked `live`, so a field declared with `ask`
+  alone (a preset slider) was answered from the values saved last, not from where the slider stood. The host block
+  now writes `live` beside `ask` for every field that is no button.
+
+In this repository's tools and workflows:
+
+- **The release workflow refuses an empty changelog section also when the next heading follows at once.** PowerShell
+  counts a range down as well: with no line between the version's heading and the next one, both headings were taken
+  as the notes, and an empty section was released.
+- **`tools/check-stub.ps1` compiles into a folder of its own per checkout.** Two checkouts (worktrees) checked at
+  once compiled into the same `Stub.dll` and `Demo.dll`, so one failed on a file the other had open, or read the
+  other's demo for its `schema.json`.
+- **`tools/update-host-block.ps1` knows the earlier templates of every branch.** It read the lines of earlier host
+  blocks from the checked-out history only. A project can carry the block of a branch not merged yet, and a plain
+  `git log` also leaves out a merged branch whose merge kept the other side's file; such lines counted as the
+  project's own.
+- **`tools/docs-shots.ps1` takes Newtonsoft.Json from the preview's build.** It loaded it from a Streamer.bot folder
+  that was its default on one machine only, and elsewhere the run stopped after seven of its eight windows.
+  `-StreamerBotPath` is gone; no Streamer.bot folder is needed.
 
 ## [1.9.0] - 2026-11-12
 
