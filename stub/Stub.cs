@@ -159,7 +159,10 @@ public class CPHInline
         {
             try
             {
-                AskGameNow("saved", null, settingsJson);
+                // UiHost.Handle answers "saved" too: a game action that ran without answering did not hear of it, and
+                // another run would not answer either.
+                if (AskGameNow("saved", null, settingsJson) == null)
+                    throw new InvalidOperationException("the action '" + GameActionName + "' ran but did not answer.");
                 return;
             }
             catch (TimeoutException ex) when (attempt < 3)

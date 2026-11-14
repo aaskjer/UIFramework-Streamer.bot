@@ -617,6 +617,7 @@ namespace UIFramework.Tests
             {
                 heard.Add((string)cph.Arguments["uiframework.request"]);
                 if (heard.Count == 1) throw new TimeoutException("another request to the action has not finished.");
+                cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "", false);   // UiHost.Handle answers "saved" too
                 return true;
             };
             new StubUnderTest.Host(stub).OnSaved("{}");
@@ -638,6 +639,25 @@ namespace UIFramework.Tests
             Assert.Contains("did not hear of it", told);
             Assert.Contains(stub.CPH.Log, line => line.StartsWith("error") && line.Contains("did not hear of the save"));
             Assert.DoesNotContain(stub.CPH.Log, line => line.Contains("A queued step failed"));
+        }
+
+        [Fact]
+        public void ASaveTheGameActionRanForWithoutAnsweringIsSaidBesideTheWindow()
+        {
+            // Its Execute() never reached UiHost.Handle: the game did not hear of the save, and its overlay and timed
+            // action go on with the old settings.
+            var stub = new StubUnderTest();
+            string told = null;
+            int runs = 0;
+            Set("_tell", new Action<string>(text => told = text));
+            stub.CPH.Game = cph => { runs++; return true; };
+            new StubUnderTest.Host(stub).OnSaved("{}");
+            Call(stub, "Pump");
+            Assert.Equal(1, runs);                                                       // another run would not answer either
+            Assert.Contains("did not hear of it", told);
+            Assert.Contains("ran but did not answer", told);
+            Assert.Contains(stub.CPH.Log, line => line.StartsWith("error") && line.Contains("did not hear of the save"));
+            Assert.Empty(stub.CPH.Globals);
         }
 
         // ---- one window ----
