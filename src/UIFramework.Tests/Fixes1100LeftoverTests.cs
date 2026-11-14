@@ -6,7 +6,8 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, what was left: a field the user never placed on a page the user sorted.</summary>
+    /// <summary>1.10.0, what was left: a field the user never placed on a page the user sorted, and a range slider whose
+    /// default makes it hold whole numbers while its step or limits have a fraction.</summary>
     public class Fixes1100LeftoverTests
     {
         /// <summary>A window with its settings file in a folder of its own, so its layout file is its own too.</summary>
@@ -112,6 +113,40 @@ namespace UIFramework.Tests
                 ""window"": { ""title"": ""Demo"", ""pages"": [ ""one"" ] } }");
             spec = Opened(plain, layout => { layout.SetField("c", "order", 0); layout.SetField("a", "order", 10); });
             Assert.Equal(new[] { "c:B", "a:A", "p:" }, Drawn(spec, "one"));
+        }
+
+        // ---- The declaration check ------------------------------------------------------------------------------
+
+        /// <summary>What the red "i" names for these settings.</summary>
+        private static List<string> Problems(string settings)
+        {
+            var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [ " + settings + @" ] }");
+            var spec = Entry.SpecFor(null, schema, null);
+            Entry.Prepare(spec, schema);
+            return spec.Problems.ToList();
+        }
+
+        [Fact]
+        public void A_range_slider_with_a_whole_default_and_a_fraction_in_its_step_or_limits_is_named()
+        {
+            // The default 1 makes a slider of whole numbers. On a grid of 0.5 its places 0.5 and 1.5 were saved as 0 and
+            // 2, the same as their neighbours, and nothing said why.
+            Assert.Contains("'x' has the step 0.5, but its default 1 is a whole number, so the slider holds whole numbers and saves"
+                + " a place between two of them rounded. Write the default as 1.0 for a slider of decimals.",
+                Problems(@"{ ""key"": ""x"", ""default"": 1, ""kind"": ""slider"", ""min"": 0, ""max"": 2, ""step"": 0.5 }"));
+            Assert.Contains(Problems(@"{ ""key"": ""x"", ""default"": 1, ""kind"": ""slider"", ""min"": 0.5, ""max"": 3 }"),
+                p => p.StartsWith("'x' has the minimum 0.5, but its default 1 is a whole number", StringComparison.Ordinal));
+            Assert.Contains(Problems(@"{ ""key"": ""x"", ""default"": 1, ""kind"": ""slider"", ""min"": 0, ""max"": 2.5 }"),
+                p => p.StartsWith("'x' has the maximum 2.5, but its default 1 is a whole number", StringComparison.Ordinal));
+
+            // A default with a decimal makes a slider of decimals, whole limits and steps fit whole numbers, and a slider
+            // over stops stores the stop's value.
+            Assert.DoesNotContain(Problems(@"{ ""key"": ""x"", ""default"": 1.0, ""kind"": ""slider"", ""min"": 0, ""max"": 2, ""step"": 0.5 }"),
+                p => p.StartsWith("'x'", StringComparison.Ordinal));
+            Assert.DoesNotContain(Problems(@"{ ""key"": ""x"", ""default"": 2, ""kind"": ""slider"", ""min"": 0, ""max"": 10, ""step"": 2.0 }"),
+                p => p.StartsWith("'x'", StringComparison.Ordinal));
+            Assert.DoesNotContain(Problems(@"{ ""key"": ""x"", ""default"": 1, ""kind"": ""slider"", ""options"": [ 0.5, 1, 1.5 ] }"),
+                p => p.StartsWith("'x'", StringComparison.Ordinal));
         }
     }
 }

@@ -462,6 +462,9 @@ namespace UIFramework
             }
         }
 
+        /// <summary>A number as a declaration writes it, whatever the system's decimal mark: 0.5.</summary>
+        private static string Number(double value) => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
         /// <summary>Kinds that hold the same sort of value: a whole number, a decimal, text, a switch, a list, a colour.</summary>
         private static string KindFamily(string kind)
         {
@@ -541,6 +544,18 @@ namespace UIFramework
                     CheckCondition(spec, byKey, "'" + s.Key + "'", "is shown when", s.ShowWhen);
                 if (s.Min.HasValue && s.Max.HasValue && s.Min > s.Max)
                     spec.Problems.Add("'" + s.Key + "' has a minimum above its maximum.");
+                // A slider over a range holds what its default is (docs/Schema.md): a whole number keeps it on whole numbers,
+                // so a place a step, minimum or maximum with a fraction gives it is saved rounded (0.5 as 0, 1.5 as 2), the
+                // same as the place beside it.
+                if (s.Kind == "slider" && (s.Options == null || s.Options.Count == 0) && s.Default?.Type == Newtonsoft.Json.Linq.JTokenType.Integer)
+                {
+                    bool Fraction(double? v) => v.HasValue && v.Value != Math.Floor(v.Value);
+                    string limit = Fraction(s.Step) ? "step " + Number(s.Step.Value) : Fraction(s.Min) ? "minimum " + Number(s.Min.Value)
+                        : Fraction(s.Max) ? "maximum " + Number(s.Max.Value) : null;
+                    if (limit != null)
+                        spec.Problems.Add("'" + s.Key + "' has the " + limit + ", but its default " + FieldBinding.Invariant(s.Default) + " is a whole number, so the slider"
+                            + " holds whole numbers and saves a place between two of them rounded. Write the default as " + FieldBinding.Invariant(s.Default) + ".0 for a slider of decimals.");
+                }
                 foreach (var alias in s.Aliases)
                     if (alias != s.Key && keys.Contains(alias))
                         spec.Problems.Add("'" + s.Key + "' has the old key '" + alias + "', which is a setting of its own; that old key is not moved.");
