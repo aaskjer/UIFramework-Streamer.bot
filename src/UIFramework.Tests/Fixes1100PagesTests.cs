@@ -14,7 +14,8 @@ using Xunit;
 namespace UIFramework.Tests
 {
     /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, lines of
-    /// one second stand newest first, a line without a time has no time.</summary>
+    /// one second stand newest first, a line without a time has no time; the Help page's Fire button asks the game
+    /// without holding the window still.</summary>
     public class Fixes1100PagesTests
     {
         private static void Sta(Action body)
@@ -136,6 +137,69 @@ namespace UIFramework.Tests
             Assert.Equal("", Shown(entries[1]));                  // was 0001-01-01 00:00:00
             Assert.Equal("", Shown(entries[2]));
             Assert.Equal("Timestamp", time.SortMemberPath);       // a click on the header still sorts by the time
+        });
+
+        // ---- The Help page's Fire button ---------------------------------------------------------------------
+
+        private static void Pump(int milliseconds)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            do
+            {
+                var frame = new DispatcherFrame();
+                Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => frame.Continue = false));
+                Dispatcher.PushFrame(frame);
+                Thread.Sleep(10);
+            }
+            while (watch.ElapsedMilliseconds < milliseconds);
+        }
+
+        private sealed class SlowGame : NoHooks
+        {
+            public string Answer;
+            public int Thread;
+            public override string Test(string name, JObject settings)
+            {
+                Thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                System.Threading.Thread.Sleep(Patient.QuickMs + 1500);
+                return Answer;
+            }
+        }
+
+        [Fact]
+        public void The_Fire_button_leaves_the_window_free_and_says_why_the_game_did_not_answer() => Sta(() =>
+        {
+            const string why = "the action 'Demo Game' did not answer within five seconds.";
+            var hooks = new SlowGame { Answer = Patient.NoAnswer + ": " + why };
+            var said = new List<(string Text, string Why)>();
+            var parts = new WindowParts();
+            var ctx = new PageContext();
+            typeof(PageContext).GetProperty("Spec").SetValue(ctx, SpecJson.Parse(new UiWindow("Demo Game").Trigger("Demo: Round Won", "demo_onWin").ToJson()));
+            typeof(PageContext).GetProperty("Parts").SetValue(ctx, parts);
+            typeof(PageContext).GetProperty("Settings").SetValue(ctx, new JObject());
+            typeof(PageContext).GetProperty("Hooks").SetValue(ctx, hooks);
+            typeof(PageContext).GetProperty("SetStatus").SetValue(ctx, (Action<string, System.Windows.Media.Color, string>)((text, colour, reason) => said.Add((text, reason))));
+            typeof(PageContext).GetProperty("Fields").SetValue(ctx, new Fields(parts, new JObject(), new JObject(), url => { }));
+            var fire = Find<Button>(StandardPages.BuildHelp(ctx)).Single(b => b.Tag as string == StandardPages.FireButtonTag);
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            Click(fire);
+            // Back long before the game answered: the window's thread is free, the button waits greyed.
+            Assert.True(watch.ElapsedMilliseconds < Patient.QuickMs + 1000, "the click held the window for " + watch.ElapsedMilliseconds + " ms");
+            Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, hooks.Thread);
+            Assert.False(fire.IsEnabled);
+            Assert.Equal(Text.T("action.waiting", "Demo: Round Won"), said.Last().Text);
+
+            Pump(2500);
+            Assert.True(fire.IsEnabled);
+            Assert.Equal(Text.T("help.trigger.notFired", "Demo: Round Won"), said.Last().Text);
+            Assert.Equal(why, said.Last().Why);                   // the settings action's reason, not a guess
+
+            // An answer that is no answer at all (an older host block) keeps the hint at an older version.
+            hooks.Answer = null;
+            Click(fire);
+            Pump(2500);
+            Assert.Equal(Text.T("help.trigger.notFired.why"), said.Last().Why);
         });
     }
 }
