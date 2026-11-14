@@ -619,11 +619,11 @@ namespace UIFramework
                     SetStatus(Text.T("status.notSaved"), Theme.DangerText);
                     return false;
                 }
-                baseline.Clear();
-                FieldBinding.Snapshot(pageHost, baseline);
                 repairs.Clear();
                 corrected.Clear();
-                SetStatus(Text.T("status.saved"), Theme.SuccessText);
+                // What reached the fields while the game checked (an answer's `set`) was not written: it is still unsaved.
+                if (Changes() > 0) ShowChanges();
+                else SetStatus(Text.T("status.saved"), Theme.SuccessText);
                 return true;
             }
 
@@ -790,7 +790,8 @@ namespace UIFramework
             }
 
             btnSave.Click += (s, e) => SaveNow();
-            btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = true; window.Close(); } };
+            // What reached the fields while the game checked is asked about, as on any close with unsaved changes.
+            btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = Changes() == 0; window.Close(); } };
             btnCancel.Click += (s, e) =>
             {
                 int n = Changes();
@@ -1319,6 +1320,11 @@ namespace UIFramework
                 // warning, a game that did not check) leaves nothing behind that a rebuild would show as saved.
                 var draft = (JObject)settings.DeepClone();
                 FieldBinding.Save(draft, root);
+                // The fields as the draft has them become the baseline once it is written. The game's check below runs
+                // the window's dispatcher, and what reaches the fields meanwhile (an answer's `set`, a timer) is not in
+                // the draft: it stays unsaved instead of counting as saved.
+                var drafted = new Dictionary<object, string>();
+                FieldBinding.Snapshot(root, drafted);
                 // After that save: a number it pulled into its min/max shows the limit now and counts as changed; so do
                 // the numbers the window showed repaired since it opened, and what the window's own clamp changed.
                 var changed = FieldBinding.ChangedKeys(root, baseline);
@@ -1359,6 +1365,12 @@ namespace UIFramework
                 // The window's copy is now what was written, so the next save and a rebuild start from there.
                 foreach (var property in target.Properties().ToList())
                     settings[property.Name] = property.Value.DeepClone();
+                if (baseline != null)
+                {
+                    baseline.Clear();
+                    foreach (var field in drafted)
+                        baseline[field.Key] = field.Value;
+                }
                 SafeHook(() => _hooks.OnSaved(settings));
                 _log.Info(_spec.LogPrefix + " Settings saved.");
                 return true;
