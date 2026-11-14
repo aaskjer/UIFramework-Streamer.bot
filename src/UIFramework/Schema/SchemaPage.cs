@@ -278,7 +278,7 @@ namespace UIFramework
                     element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.namelist.hint"), tip));
                     break;
                 case "grouplist":
-                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip));
+                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip, names => StreamerBotGroups(ctx, names)));
                     break;
                 case "colour":
                 case "color":
@@ -447,6 +447,51 @@ namespace UIFramework
             dock.Children.Add(image);
             dock.Children.Add(box);
             return Ui.Labeled(label, dock);
+        }
+
+        // Streamer.bot's groups, asked of the settings action once per window (one hooks object each, as the emote
+        // sources are), when a grouplist field first gets the cursor; every grouplist field of the window shares the
+        // answer, also after the window rebuilt its pages. The question goes off the window's thread (Patient): a
+        // Streamer.bot that takes its time leaves the box to type in meanwhile.
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, GroupsAnswer> GroupsAsked =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, GroupsAnswer>();
+
+        private sealed class GroupsAnswer
+        {
+            public List<string> Names;
+            public readonly List<Action<List<string>>> Waiting = new List<Action<List<string>>>();
+        }
+
+        private static void StreamerBotGroups(PageContext ctx, Action<List<string>> then)
+        {
+            var hooks = ctx.Hooks;
+            var answer = GroupsAsked.GetValue(hooks, h => new GroupsAnswer());
+            if (answer.Names != null) { then(answer.Names); return; }
+            answer.Waiting.Add(then);
+            if (answer.Waiting.Count > 1) return;   // asked already: the answer goes to every field waiting for it
+            Patient.Ask(() => hooks.Groups(), (json, error) =>
+            {
+                answer.Names = GroupNames(error == null ? json : null);
+                var waiting = answer.Waiting.ToList();
+                answer.Waiting.Clear();
+                foreach (var field in waiting)
+                    field(answer.Names);
+            });
+        }
+
+        /// <summary>The names in the settings action's answer to Groups, a JSON array of strings: sorted, without empty
+        /// and repeated ones. None for no answer (a settings action before stub 0.3.2, a preview) or one that is no
+        /// such array.</summary>
+        public static List<string> GroupNames(string json)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(json) && JsonText.Parse(json) is JArray array)
+                    return array.Where(t => t.Type == JTokenType.String).Select(t => ((string)t).Trim()).Where(n => n.Length > 0)
+                        .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase).ToList();
+            }
+            catch (Exception) { }   // no JSON: nothing to suggest
+            return new List<string>();
         }
 
         private static FrameworkElement PathField(PageContext ctx, Setting s, string label, string help)

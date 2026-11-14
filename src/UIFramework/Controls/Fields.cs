@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Newtonsoft.Json.Linq;
@@ -464,7 +465,10 @@ namespace UIFramework
 
         /// <summary>A comma-separated setting shown as removable chips. The real value lives in a hidden box
         /// carrying the tag, so saving, resetting and change tracking all work on it unchanged.</summary>
-        public FrameworkElement NameList(string label, string key, string hint, string tooltip)
+        /// <param name="suggest">Names to offer under the box (a grouplist's Streamer.bot groups): called once, when the
+        /// box first gets the cursor, with where the names go, at once or when they are there. Null: none, and the
+        /// field is a plain name list.</param>
+        public FrameworkElement NameList(string label, string key, string hint, string tooltip, Action<Action<List<string>>> suggest = null)
         {
             var store = new TextBox { Text = String(key), Tag = new FieldTag(key, FieldKind.String), Visibility = Visibility.Collapsed };
             _parts.Boxes[key] = store;
@@ -507,7 +511,13 @@ namespace UIFramework
                 store.Text = string.Join(",", names);
             }
 
-            input.PreviewKeyDown += (sender, e) => { if (e.Key == Key.Enter) { Commit(); e.Handled = true; } };
+            var offered = suggest == null ? null : new NameSuggestions(input, inputHost, store, name => { input.Text = name; Commit(); }, suggest);
+            // The list takes the keys it uses while it is open; Enter without a name picked in it adds what is typed.
+            input.PreviewKeyDown += (sender, e) =>
+            {
+                if (offered != null && offered.Press(e.Key)) e.Handled = true;
+                else if (e.Key == Key.Enter) { Commit(); e.Handled = true; }
+            };
             input.PreviewTextInput += (sender, e) => { if (e.Text == ",") { Commit(); e.Handled = true; } };
             input.LostKeyboardFocus += (sender, e) => Commit();
             store.TextChanged += (sender, e) => Draw();
@@ -517,7 +527,199 @@ namespace UIFramework
             var panel = new StackPanel();
             panel.Children.Add(wrap);
             panel.Children.Add(store);
+            if (offered != null)
+                panel.Children.Add(offered.Popup);
             return panel;
+        }
+
+        /// <summary>What a name list offers under its box: the names of <paramref name="known"/> not added yet (those in
+        /// <paramref name="chosen"/>, comma-separated, case ignored) that hold what is typed, whatever its case and
+        /// accents; those starting with it first, the rest in the order given.</summary>
+        public static List<string> Suggested(IEnumerable<string> known, string chosen, string typed)
+        {
+            var have = SplitNames(chosen);
+            string word = SearchIndex.Fold((typed ?? "").Trim().TrimStart('@').Trim());
+            var found = new List<(string Name, bool Starts, int Order)>();
+            int order = 0;
+            foreach (string name in (known ?? Enumerable.Empty<string>()).Select(n => (n ?? "").Trim()))
+            {
+                order++;
+                if (name.Length == 0 || ContainsName(have, name) || found.Any(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                int at = SearchIndex.Fold(name).IndexOf(word, StringComparison.Ordinal);
+                if (at >= 0)
+                    found.Add((name, at == 0, order));
+            }
+            return found.OrderBy(f => f.Starts ? 0 : 1).ThenBy(f => f.Order).Select(f => f.Name).ToList();
+        }
+
+        /// <summary>The Tag of a name the list under a name list's box offers, for tests.</summary>
+        public const string SuggestionTag = "uiframework.namelist.suggestion";
+
+        /// <summary>The list under a name list's box, in the look of a dropdown: the names not added yet, narrowed by
+        /// what is typed. Up and Down pick one, Enter or a click adds it, Esc closes the list; what is typed is added as
+        /// before. It shows while the box has the cursor and closes when the window moves or loses the keyboard.</summary>
+        private sealed class NameSuggestions
+        {
+            private readonly TextBox _input, _store;
+            private readonly Action<string> _add;
+            private readonly StackPanel _rows = new StackPanel();
+            private readonly EventHandler _hide;
+            private List<string> _known, _shown = new List<string>();
+            private int _selected = -1;
+            private bool _asked, _active;
+            private Window _window;
+            // Where the pointer was on the screen when it last counted: a row drawn or moved under a pointer at rest (the
+            // list redrawn, the box moved on by a new chip) gets a mouse move too, and must not take the pick, or Enter
+            // adds that name instead of what is typed.
+            private Point _pointerAt;
+
+            public readonly Popup Popup;
+
+            public NameSuggestions(TextBox input, FrameworkElement anchor, TextBox store, Action<string> add, Action<Action<List<string>>> ask)
+            {
+                _input = input;
+                _store = store;
+                _add = add;
+                _hide = (sender, e) => Close();
+                AutomationProperties.SetName(_rows, AutomationProperties.GetName(input));
+                Popup = new Popup
+                {
+                    PlacementTarget = anchor,
+                    Placement = PlacementMode.Bottom,
+                    VerticalOffset = 2,
+                    AllowsTransparency = true,
+                    Focusable = false,
+                    Child = new Border
+                    {
+                        Background = new SolidColorBrush(Theme.PopupBg),
+                        BorderBrush = new SolidColorBrush(Theme.LineStrong),
+                        BorderThickness = new Thickness(1),
+                        Padding = new Thickness(0, 3, 0, 3),
+                        MaxHeight = 220,
+                        MaxWidth = 360,
+                        Child = new ScrollViewer { Content = _rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false }
+                    }
+                };
+                ((Border)Popup.Child).SetBinding(FrameworkElement.MinWidthProperty, new System.Windows.Data.Binding("ActualWidth") { Source = anchor });
+                Popup.Closed += (sender, e) => Unwatch();
+                input.GotKeyboardFocus += (sender, e) =>
+                {
+                    _active = true;
+                    if (_asked) { Refresh(); return; }
+                    _asked = true;
+                    ask(names => { _known = names; Refresh(); });
+                };
+                input.LostKeyboardFocus += (sender, e) => { _active = false; Close(); };
+                input.TextChanged += (sender, e) => Refresh();
+                store.TextChanged += (sender, e) => Refresh();
+            }
+
+            /// <summary>Lists what fits what is typed, or closes the list when nothing does.</summary>
+            public void Refresh()
+            {
+                _shown = _active && _known != null ? Suggested(_known, _store.Text, _input.Text) : new List<string>();
+                _rows.Children.Clear();
+                _selected = -1;
+                _pointerAt = OnScreen(Mouse.GetPosition(_input));
+                for (int i = 0; i < _shown.Count; i++)
+                    _rows.Children.Add(Row(_shown[i], i));
+                if (_shown.Count == 0) Close();
+                else if (!Popup.IsOpen) Open();
+            }
+
+            /// <summary>A key pressed in the box: true when the list took it.</summary>
+            public bool Press(Key key)
+            {
+                if (!Popup.IsOpen)
+                {
+                    // Down brings back a list Esc closed.
+                    if (key != Key.Down || !_active) return false;
+                    Refresh();
+                    return Popup.IsOpen;
+                }
+                switch (key)
+                {
+                    case Key.Down: Select(Math.Min(_selected + 1, _shown.Count - 1)); return true;
+                    // Up from the first name picks none again: Enter then adds what is typed.
+                    case Key.Up: Select(Math.Max(_selected - 1, -1)); return true;
+                    case Key.Escape: Close(); return true;
+                    case Key.Enter:
+                        if (_selected < 0) return false;
+                        _add(_shown[_selected]);
+                        return true;
+                    default: return false;
+                }
+            }
+
+            private Border Row(string name, int index)
+            {
+                var row = new Border
+                {
+                    Tag = SuggestionTag,
+                    Padding = new Thickness(8, 4, 8, 4),
+                    Background = Brushes.Transparent,
+                    Cursor = Cursors.Hand,
+                    Child = new TextBlock { Text = name, FontSize = 12, Foreground = Theme.LabelFg, TextTrimming = TextTrimming.CharacterEllipsis }
+                };
+                AutomationProperties.SetName(row, name);
+                row.MouseMove += (sender, e) =>
+                {
+                    var at = OnScreen(e.GetPosition(_input));
+                    if (at == _pointerAt) return;
+                    _pointerAt = at;
+                    Select(index);
+                };
+                // Before the box could lose the keyboard to the click: the name goes in, the cursor stays in the box.
+                row.PreviewMouseLeftButtonDown += (sender, e) =>
+                {
+                    e.Handled = true;
+                    _add(name);
+                };
+                return row;
+            }
+
+            private Point OnScreen(Point inBox)
+            {
+                try { return _input.PointToScreen(inBox); }
+                catch (InvalidOperationException) { return inBox; }   // not on a window (yet)
+            }
+
+            private void Select(int index)
+            {
+                if (_selected >= 0 && _selected < _rows.Children.Count)
+                    ((Border)_rows.Children[_selected]).Background = Brushes.Transparent;
+                _selected = index;
+                if (index < 0 || index >= _rows.Children.Count) return;
+                var row = (Border)_rows.Children[index];
+                row.Background = new SolidColorBrush(Theme.Hover);
+                row.BringIntoView();
+            }
+
+            private void Open()
+            {
+                // A popup stays where it opened when the window moves under it: the list closes instead.
+                if (_window == null && (_window = Window.GetWindow(_input)) != null)
+                {
+                    _window.LocationChanged += _hide;
+                    _window.Deactivated += _hide;
+                }
+                Popup.IsOpen = true;
+            }
+
+            private void Close()
+            {
+                Popup.IsOpen = false;
+                Unwatch();
+            }
+
+            private void Unwatch()
+            {
+                if (_window == null) return;
+                _window.LocationChanged -= _hide;
+                _window.Deactivated -= _hide;
+                _window = null;
+            }
         }
 
         public static Border NameChip(string name, Action remove)
