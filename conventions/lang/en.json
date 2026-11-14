@@ -212,6 +212,7 @@
     "field.noLimit": "no limit",
     "field.percentRange": "\nBetween {0} and {1}%.",
     "field.twitchOnly": "Twitch only",
+    "field.emote.extension": "A {0} emote: chat only shows it as one to viewers with the {0} extension.",
     "field.remove": "Remove {0}",
     "field.insert": "Insert {0}",
     "colour.pick.tip": "Click to pick a colour",

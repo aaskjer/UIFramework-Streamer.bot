@@ -118,21 +118,34 @@ namespace UIFramework
             var layout = !string.IsNullOrEmpty(spec.SettingsPath) ? LayoutFile.Load(spec.SettingsPath) : new LayoutFile("layout");
             // Every language there are texts for: the conventions' (in the DLL or beside Streamer.bot) and the game's
             // own. Where the game brought none, its own wording stays English and the rest is translated.
-            spec.Languages = Conventions.Available();
+            // A code stands for the language it names, spelt as that language is here: a game's Lang("pt-br"), or
+            // Lang("pt") where the conventions have only pt-BR, is pt-BR, one entry in the picker, with the game's words
+            // over the conventions' pt-BR. Two codes of the game's own that differ only in case are one language.
+            var available = Conventions.Available();
+            spec.Languages = available.ToList();
+            string Offered(string code) => Conventions.Match(code, available) ?? spec.Languages.FirstOrDefault(c => string.Equals(c, code, StringComparison.OrdinalIgnoreCase));
             if (schema.Lang != null)
                 foreach (var code in schema.Lang.Properties().Select(p => p.Name))
-                    if (!spec.Languages.Contains(code)) spec.Languages.Add(code);
-            if (!string.IsNullOrEmpty(spec.Language) && !spec.Languages.Contains(spec.Language))
-                spec.Languages.Add(spec.Language);
-            string language = spec.Language ?? layout.Language;
-            if (string.IsNullOrEmpty(language) || !spec.Languages.Contains(language))
-                language = "en";
-            var conventions = string.IsNullOrEmpty(language) || language == "en" ? Conventions.Default : Conventions.Load(language);
-            if (!ReferenceEquals(conventions, Conventions.Default) && schema.Lang?[language] is JObject mine)
+                    if (Offered(code) == null) spec.Languages.Add(code);
+            if (!string.IsNullOrEmpty(spec.Language))
             {
-                conventions.Lang.Overlay(mine, own: true);   // the game's own translations over the conventions'
-                conventions.Lang.Code = language;
+                spec.Language = Conventions.Match(spec.Language, spec.Languages) ?? spec.Language;
+                if (!spec.Languages.Contains(spec.Language))
+                    spec.Languages.Add(spec.Language);
             }
+            // The layout file's code likewise ("pt-br", "pt", "de-AT"); one that stands for none of them is English.
+            string language = !string.IsNullOrEmpty(spec.Language) ? spec.Language : Conventions.Match(layout.Language, spec.Languages) ?? "en";
+            // English is the DLL's, loaded once, unless UIFramework\lang has an en.json correcting it: that is read at
+            // every open, as any other language's file is.
+            var conventions = language == "en" && !System.IO.File.Exists(System.IO.Path.Combine(Conventions.ExternalFolder, "en.json"))
+                ? Conventions.Default : Conventions.Load(language);
+            if (language != "en" && schema.Lang != null)
+                // The game's own translations over the conventions', its code in this very spelling last.
+                foreach (var mine in schema.Lang.Properties().Where(p => p.Value is JObject && Offered(p.Name) == language).OrderBy(p => p.Name == language))
+                {
+                    conventions.Lang.Overlay((JObject)mine.Value, own: true);
+                    conventions.Lang.Code = language;
+                }
             spec.Schema = schema;
             spec.Conventions = conventions;
             spec.Layout = layout;

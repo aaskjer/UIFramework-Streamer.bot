@@ -831,14 +831,26 @@ namespace UIFramework
             if (spec.Languages == null || spec.Languages.Count < 2 || !string.IsNullOrEmpty(spec.Language))
                 return null;
             var codes = spec.Languages.ToArray();
-            var language = Ui.PlainCombo(Text.T("cust.language"), codes.Select(LanguageName).ToArray());
-            string current = layout.Language;
-            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, current != null && codes.Contains(current) ? current : "en"));
+            var names = codes.Select(LanguageName).ToArray();
+            var language = Ui.PlainCombo(Text.T("cust.language"), names);
+            // The language the window is in: the layout file's code as Entry.Prepare takes it ("pt-br" is pt-BR).
+            string Current() => Conventions.Match(layout.Language, codes) ?? "en";
+            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, Current()));
+            // As wide as the longest name in the font the window gives the combo ("Português (Brasil)" was cut at a
+            // fixed 110 px): the text and what the combo keeps beside it (8 px before, 26 for the arrow, the border),
+            // at least the 110 px it always had, at most 220.
             language.Width = 110;
+            language.Loaded += (s, e) =>
+            {
+                var typeface = new Typeface(language.FontFamily, language.FontStyle, language.FontWeight, language.FontStretch);
+                double dip = VisualTreeHelper.GetDpi(language).PixelsPerDip;
+                double longest = names.Max(name => new FormattedText(name, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, language.FontSize, Brushes.Black, dip).Width);
+                language.Width = Math.Max(110, Math.Min(220, Math.Ceiling(longest) + 8 + 26 + 4));
+            };
             language.SelectionChanged += (s, e) =>
             {
                 string code = language.SelectedIndex >= 0 ? codes[language.SelectedIndex] : "en";
-                if (code == (layout.Language ?? "en")) return;
+                if (code == Current()) return;
                 layout.Language = code == "en" ? null : code;
                 changed();
             };
