@@ -490,6 +490,15 @@ namespace UIFramework
                     if (item == null) problem = Text.T("import.why.option");
                     else result = ComboValue(tag, item.Tag);
                 }
+                else if (node is OptionSlider slider)
+                {
+                    // A twin of the slider takes the value: a number is pulled into its range, a stop must be one of its
+                    // stops. The value the slider keeps from the file (no stop has it) is taken back as it is.
+                    var twin = new OptionSlider { Options = slider.Options, Whole = slider.Whole, Minimum = slider.Minimum, Maximum = slider.Maximum };
+                    if (slider.IsKept && string.Equals(slider.StoredText, Invariant(value), StringComparison.OrdinalIgnoreCase)) result = slider.Stored;
+                    else if (twin.Put(value)) result = twin.Stored;
+                    else problem = Text.T(slider.Options != null ? "import.why.option" : "import.why.number");
+                }
                 else if (node is ListEditor && !(value is JArray))
                     problem = Text.T("import.why.list");
             });
