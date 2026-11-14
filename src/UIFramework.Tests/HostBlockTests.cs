@@ -101,6 +101,19 @@ namespace UIFramework.Tests
             UiSchema.S("sides", 6, aliases: new[] { "count" }), UiSchema.S("count", 3), UiSchema.S("rolls", 1, aliases: new[] { "OldRolls" }));
         }
 
+        [Fact]
+        public void AnOldFractionIsReadAsTheWindowStoresItsPercent()
+        {
+            // 0.07 * 100 is 7.000000000000001 to a double: the game read that where the window shows 7.
+            WithTable(() =>
+            {
+                var settings = UiSettings.Parse(@"{ ""Cut"": 0.07 }");
+                Assert.Equal("7", settings.String("cut"));
+                Assert.Equal(7.0, settings.Double("cut"));
+            },
+            UiSchema.S("cut", 10.0, aliases: new[] { "Cut" }, aliasFactor: 100));
+        }
+
         // The game's table, for one test: the template's own is empty.
         private static void WithTable(Action test, params UiSchema.Setting[] table)
         {

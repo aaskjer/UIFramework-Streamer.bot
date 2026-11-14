@@ -1420,8 +1420,9 @@ public sealed class UiSettings
                 int dot = alias.IndexOf('.');
                 var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                 if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                // Rounded as the window's store rounds it on the move: 0.07 * 100 is 7.000000000000001 to a double.
                 if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
-                    return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                    return System.Math.Round(System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value, 10);
                 return old;
             }
         return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);
