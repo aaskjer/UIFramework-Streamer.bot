@@ -432,6 +432,19 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AFieldThatAsksIsAskedWithWhatTheWindowShows()
+        {
+            // A DLL up to 1.9.0 hands the window's current values only to a setting with "live": with "ask" alone a
+            // preset slider was answered from the values saved last, not from where it stands.
+            var asks = UiSchema.ToJson(UiSchema.S("preset", 1, kind: "slider", ask: true));
+            Assert.True((bool)asks["ask"]);
+            Assert.True((bool)asks["live"]);
+            Assert.True(Schema.Parse(new JObject { ["host"] = "demo", ["version"] = "1", ["settings"] = new JArray(asks) }).Settings[0].Live);
+            Assert.Null(UiSchema.ToJson(UiSchema.S("tryRoll", null, kind: "action", ask: true))["live"]);   // a button says live itself
+            Assert.Null(UiSchema.ToJson(UiSchema.S("sides", 6))["live"]);
+        }
+
+        [Fact]
         public void TheBlockAnswersTheStubsRequests()
         {
             var cph = new FakeCph();

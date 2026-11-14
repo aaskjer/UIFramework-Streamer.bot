@@ -149,7 +149,8 @@ public static class UiSchema
         }
         if (s.File != null) item["file"] = s.File;
         if (s.Transient) item["transient"] = true;
-        if (s.Live) item["live"] = true;
+        // A field that asks is asked with what the window shows: a DLL up to 1.9.0 takes those values only for "live".
+        if (s.Live || (s.Ask && s.Kind != "action")) item["live"] = true;
         if (s.Ask) item["ask"] = true;
         if (s.Panel) item["panel"] = true;
         if (s.Auto) item["auto"] = true;
