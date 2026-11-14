@@ -129,7 +129,9 @@ namespace UIFramework
             {
                 var openFolder = Ui.IconButton(Icons.Folder, Icons.Font, Text.T("log.openFolder"));   // the folder, as on a path field
                 openFolder.Margin = new Thickness(6, 0, 0, 0);
-                openFolder.Click += (sender, e) => Web.OpenFolder(spec.Folder, ctx.Log, ctx.Spec.LogPrefix);
+                // Beside Streamer.bot, where the watcher and the settings action look: the declared "Chat Games/Logs" as
+                // it is was taken from the process's current directory, which a file dialog moves (Export, Import).
+                openFolder.Click += (sender, e) => Web.OpenFolder(spec.FullFolder ?? spec.Folder, ctx.Log, ctx.Spec.LogPrefix);
                 buttons.Children.Add(openFolder);
             }
             var searchRow = new DockPanel();
