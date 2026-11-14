@@ -12,7 +12,9 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, languages: a code means its language in any case, from a region to its language and back.</summary>
+    /// <summary>1.10.0, languages: a code means its language in any case, from a region to its language and back; an
+    /// en.json beside Streamer.bot corrects English; the picker fits its longest name; amounts are grouped as the
+    /// language does; the emote tooltip is a window text; every language file the DLL carries is held to English's.</summary>
     public class Fixes1100LangTests
     {
         private static void Sta(Action body)
@@ -294,6 +296,128 @@ namespace UIFramework.Tests
                 Assert.Contains("extensión FFZ", Text.T("field.emote.extension", "FFZ"));
             }
             finally { Text.Use(Conventions.Default.Lang); }
+        }
+
+        // ---- L6: every language file the DLL carries holds what the window relies on --------------------------------------
+
+        private const string LangResource = "UIFramework.conventions.lang.";
+
+        /// <summary>Every language file embedded in the DLL but English, by code: a new file is checked without being
+        /// named anywhere here.</summary>
+        public static IEnumerable<object[]> EmbeddedLanguages() =>
+            typeof(Conventions).Assembly.GetManifestResourceNames()
+                .Where(n => n.StartsWith(LangResource, StringComparison.Ordinal) && n.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                .Select(n => n.Substring(LangResource.Length, n.Length - LangResource.Length - ".json".Length))
+                .Where(code => code != "en")
+                .Select(code => new object[] { code });
+
+        /// <summary>The file as it ships inside the DLL, not laid over English: an entry left out would pass unseen.</summary>
+        private static JObject Raw(string code)
+        {
+            using (var stream = typeof(Conventions).Assembly.GetManifestResourceStream(LangResource + code + ".json"))
+            {
+                Assert.True(stream != null, code + ".json is not embedded in UIFramework.dll");
+                using (var reader = new StreamReader(stream))
+                    return JObject.Parse(reader.ReadToEnd());
+            }
+        }
+
+        /// <summary>Every text of a section by key, a key's "label" and "help" apart.</summary>
+        private static Dictionary<string, string> Entries(JObject root, string section)
+        {
+            var entries = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var p in (root[section] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())
+            {
+                if (p.Value is JObject o)
+                    foreach (var part in o.Properties())
+                        entries[p.Name + "." + part.Name] = (string)part.Value;
+                else
+                    entries[p.Name] = (string)p.Value;
+            }
+            return entries;
+        }
+
+        /// <summary>{0}, {updates}, {count} in a text, sorted, a repeated one as often as it occurs.</summary>
+        private static string Placeholders(string text) =>
+            string.Join(" ", System.Text.RegularExpressions.Regex.Matches(text ?? "", @"\{[^{}\s]+\}").Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => m.Value).OrderBy(v => v, StringComparer.Ordinal));
+
+        [Fact]
+        public void The_languages_checked_are_those_the_dll_carries()
+        {
+            var codes = EmbeddedLanguages().Select(d => (string)d[0]).ToList();
+            Assert.Contains("de", codes);
+            Assert.Contains("es", codes);
+            Assert.All(codes, c => Assert.Contains(c, Conventions.Available()));   // and every one is offered
+        }
+
+        [Theory]
+        [MemberData(nameof(EmbeddedLanguages))]
+        public void Every_language_file_has_every_entry_of_english_with_its_placeholders(string code)
+        {
+            var english = Raw("en");
+            var other = Raw(code);
+            var wrong = new List<string>();
+            foreach (var section in new[] { "pages", "framework", "keys", "placeholders", "ui" })
+            {
+                var theirs = Entries(english, section);
+                var mine = Entries(other, section);
+                Assert.True(theirs.Count > 0, section + " is empty in en.json");
+                foreach (var entry in theirs)
+                {
+                    if (!mine.TryGetValue(entry.Key, out var text))
+                        wrong.Add(section + "." + entry.Key + ": missing");
+                    else if (string.IsNullOrWhiteSpace(text) && !string.IsNullOrWhiteSpace(entry.Value))
+                        wrong.Add(section + "." + entry.Key + ": blank");
+                    else if (Placeholders(text) != Placeholders(entry.Value))
+                        wrong.Add(section + "." + entry.Key + ": placeholders " + Placeholders(text) + " where English has " + Placeholders(entry.Value));
+                }
+                wrong.AddRange(mine.Keys.Where(k => !theirs.ContainsKey(k)).Select(k => section + "." + k + ": not in en.json"));
+            }
+            Assert.True(wrong.Count == 0, code + ".json:\n" + string.Join("\n", wrong));
+        }
+
+        [Theory]
+        [MemberData(nameof(EmbeddedLanguages))]
+        public void Every_language_files_window_texts_keep_the_shape_the_code_puts_them_in(string code)
+        {
+            var english = Entries(Raw("en"), "ui");
+            var mine = Entries(Raw(code), "ui");
+            var wrong = new List<string>();
+            // The file dialogs take export.filter as it is: label|*.json|label|*.*.
+            foreach (var filter in new[] { ("en", english["export.filter"]), (code, mine.TryGetValue("export.filter", out var own) ? own : "") })
+            {
+                var parts = filter.Item2.Split('|');
+                if (parts.Length != 4 || parts[1] != "*.json" || parts[3] != "*.*" || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[2]))
+                    wrong.Add(filter.Item1 + ".json: export.filter is not label|*.json|label|*.*: " + filter.Item2);
+            }
+            // Texts the window strings together (" – Settings" after the title, "\nBetween 1 and 100%." after a help)
+            // keep the spaces and line breaks at their edges, and every text as many line breaks as English.
+            string Lead(string text) => text.Substring(0, text.Length - text.TrimStart().Length);
+            string Tail(string text) => text.Substring(text.TrimEnd().Length);
+            foreach (var entry in english)
+            {
+                if (!mine.TryGetValue(entry.Key, out var text) || text == null)
+                    continue;   // missing: the test above says so
+                if (Lead(text) != Lead(entry.Value) || Tail(text) != Tail(entry.Value))
+                    wrong.Add(entry.Key + ": other spaces or line breaks at its edges than English");
+                if (text.Count(c => c == '\n') != entry.Value.Count(c => c == '\n'))
+                    wrong.Add(entry.Key + ": " + text.Count(c => c == '\n') + " line breaks where English has " + entry.Value.Count(c => c == '\n'));
+            }
+            Assert.True(wrong.Count == 0, code + ".json:\n" + string.Join("\n", wrong));
+        }
+
+        [Theory]
+        [MemberData(nameof(EmbeddedLanguages))]
+        public void Every_language_with_short_wordings_has_the_ones_german_has(string code)
+        {
+            if (!(Raw(code)["texts"] is JObject texts))
+                return;   // a language without them: the declared wordings stay English
+            var german = (JObject)Raw("de")["texts"];
+            var missing = german.Properties().Select(p => p.Name).Where(k => texts[k] == null || string.IsNullOrWhiteSpace((string)texts[k])).ToList();
+            var extra = texts.Properties().Select(p => p.Name).Where(k => german[k] == null).ToList();
+            Assert.True(missing.Count == 0, code + ".json texts missing or blank: " + string.Join(", ", missing));
+            Assert.True(extra.Count == 0, code + ".json texts German does not have: " + string.Join(", ", extra));
         }
     }
 }
