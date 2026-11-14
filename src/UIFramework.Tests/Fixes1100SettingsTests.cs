@@ -67,6 +67,24 @@ namespace UIFramework.Tests
             Assert.Equal(3.0, parts.Sliders["level"].Value);
         });
 
+        [Fact]
+        public void AnImportedTextIsTrimmedWhereASaveTrimsIt() => Sta(() =>
+        {
+            var (f, parts, page) = Page(@"{ ""token"": """", ""colour"": ""#000000"", ""separator"": "" | "" }");
+            page.Children.Add(f.MaskedField("Token", "token", ""));
+            page.Children.Add(f.ColourField("Colour", "colour", ""));
+            page.Children.Add(f.TextField("Separator", "separator", ""));
+
+            // A token pasted with a line break after it, a colour with a space before it: a save writes them without.
+            Assert.Null(FieldBinding.AsSaved(page, "token", "oauth:abc123\n", out var saved));
+            Assert.Equal("oauth:abc123", (string)saved);
+            Assert.Null(FieldBinding.AsSaved(page, "colour", " #FF0000", out saved));
+            Assert.Equal("#FF0000", (string)saved);
+            // A plain text keeps its spaces, as typed.
+            Assert.Null(FieldBinding.AsSaved(page, "separator", " / ", out saved));
+            Assert.Equal(" / ", (string)saved);
+        });
+
         // ---- A null in the file is read as the game reads it ------------------------------------------------
 
         [Fact]

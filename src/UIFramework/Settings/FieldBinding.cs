@@ -480,8 +480,9 @@ namespace UIFramework
                 }
                 else if (node is TextBox)
                 {
+                    // As a save takes the box's text: a name, path, colour or token without spaces at either end.
                     if (value is JContainer) problem = Text.T("import.why.text");
-                    else if (value == null || value.Type != JTokenType.String) result = Invariant(value);
+                    else result = ValueOf(tag, Invariant(value));
                 }
                 else if (node is ComboBox cmb)
                 {
