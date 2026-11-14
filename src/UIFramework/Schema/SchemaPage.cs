@@ -462,9 +462,29 @@ namespace UIFramework
                 if (folder != null)
                     Web.OpenFolder(folder, ctx.Log, ctx.Spec.LogPrefix);
             };
+            // Windows' own dialog: for a file when the value or the default names one, else for a folder. What is chosen
+            // under the Streamer.bot folder is written relative to it.
+            var browse = Ui.IconButton(PathPicker.BrowseGlyph, Icons.Font, Text.T("field.path.browse"));
+            browse.Margin = new Thickness(6, 0, 0, 0);
+            browse.Click += (sender, e) =>
+            {
+                string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
+                var plan = PathPicker.For(box.Text, s.Default?.Type == JTokenType.String ? (string)s.Default : null, baseFolder);
+                string chosen;
+                try { chosen = PathPicker.Choose(plan, Window.GetWindow(box), Text.T(plan.File ? "field.path.pickFile" : "field.path.pickFolder", label), Text.T("field.path.allFiles")); }
+                catch (Exception ex)
+                {
+                    ctx.Log?.Warn(ctx.Spec.LogPrefix + " The dialog for '" + s.Key + "' could not open: " + ex.Message);
+                    return;
+                }
+                if (chosen != null)
+                    box.Text = PathPicker.Relative(chosen, baseFolder);
+            };
             var dock = new DockPanel();
             DockPanel.SetDock(open, Dock.Right);
+            DockPanel.SetDock(browse, Dock.Right);
             dock.Children.Add(open);
+            dock.Children.Add(browse);
             dock.Children.Add(box);
             return Ui.Labeled(label, dock);
         }
