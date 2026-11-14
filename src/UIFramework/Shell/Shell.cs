@@ -251,9 +251,10 @@ namespace UIFramework
             Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix, _unreadableLists);
             foreach (var key in _unreadableLists)
             {
+                // The list's own tooltip in the window's language, after which list and which file it is.
                 var list = _spec.ResolvedSettings.FirstOrDefault(s => s.Key == key);
-                _problems.Add("'" + (list?.Label ?? key) + "' could not be read from " + (list != null ? System.IO.Path.GetFileName(Sidecars.PathOf(list, _spec.SettingsPath)) : "its file")
-                    + ", so it shows its defaults and this window will not write it. Close the window and open it again once the file is free or repaired.");
+                _problems.Add("'" + (list?.Label ?? key) + "'" + (list != null ? " (" + System.IO.Path.GetFileName(Sidecars.PathOf(list, _spec.SettingsPath)) + ")" : "")
+                    + ": " + Text.T("list.unreadable"));
             }
 
             var window = new Window

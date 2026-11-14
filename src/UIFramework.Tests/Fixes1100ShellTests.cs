@@ -186,6 +186,22 @@ namespace UIFramework.Tests
             }
         }
 
+        // ---- A list file that could not be read --------------------------------------------------------------
+
+        [Fact]
+        public void TheLineForAnUnreadableListFileIsInTheWindowsLanguage()
+        {
+            using (var w = new Opened(Head + @"""language"": ""de"", " + Pages, folder => File.WriteAllText(Path.Combine(folder, "words.json"), "{ not json")))
+            {
+                string reason = w.On(() => Text.T("list.unreadable"));
+                Assert.StartsWith("Die Datei dieser Liste", reason);
+                w.On(() => w.Click(Text.T("problems.title"), byName: true));
+                var lines = w.On(() => w.Texts().Where(t => t.Contains("words.json")).ToList());
+                var line = Assert.Single(lines);
+                Assert.Equal("'Words' (words.json): " + reason, line);
+            }
+        }
+
         // ---- The window, opened as a game opens it ---------------------------------------------------------
 
         /// <summary>Shell.Run on a thread of its own, which starts the window's thread, as the settings action does. A
