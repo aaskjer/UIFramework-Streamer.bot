@@ -206,7 +206,8 @@ namespace UIFramework
             if (value == null) return JValue.CreateNull();
             if (factor != 1.0 && (value.Type == JTokenType.Integer || value.Type == JTokenType.Float) && FieldBinding.ToDouble(((JValue)value).Value, out double number))
             {
-                double scaled = number * factor;
+                // Ten decimals, as a number box saves them: 0.29 times 100 is 28.999999999999996, which the box shows as 29.
+                double scaled = Math.Round(number * factor, 10);
                 if (shape?.Type == JTokenType.Integer && Math.Abs(scaled - Math.Round(scaled)) < 1e-9)
                     return (long)Math.Round(scaled);
                 return scaled;

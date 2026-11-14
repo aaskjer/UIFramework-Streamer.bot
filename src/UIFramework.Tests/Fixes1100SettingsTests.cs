@@ -100,5 +100,22 @@ namespace UIFramework.Tests
             Assert.Equal("50", parts.Boxes["bet"].Text);          // it showed 0 while the game played with 50
             Assert.True(parts.Switches["useBot"].IsChecked);       // and off while the game sent as the bot
         });
+
+        // ---- An old key's factor leaves no float noise ------------------------------------------------------
+
+        [Fact]
+        public void AnOldFractionBecomesTheRoundPercentTheBoxShows()
+        {
+            // Hangman's overlayBackgroundOpacity: a percent with a decimal default, read from the old fraction with 100.
+            var defaults = JObject.Parse(@"{ ""overlayBackgroundOpacity"": 0.0, ""matchChance"": 18 }");
+            var store = new SettingsStore(System.IO.Path.GetTempFileName(), defaults).WithAliases(
+                new Dictionary<string, string> { ["OverlayBackgroundOpacity"] = "overlayBackgroundOpacity", ["Old.match"] = "matchChance" },
+                new Dictionary<string, double> { ["OverlayBackgroundOpacity"] = 100, ["Old.match"] = 100 });
+            var merged = store.Merged(JObject.Parse(@"{ ""OverlayBackgroundOpacity"": 0.29, ""Old"": { ""match"": 0.57 } }"));
+
+            Assert.Equal(29.0, (double)merged["overlayBackgroundOpacity"]);   // not 28.999999999999996, which the next save wrote
+            Assert.Equal(57L, (long)merged["matchChance"]);                   // a whole-number default takes a whole number, as before
+            Assert.Contains("\"overlayBackgroundOpacity\": 29.0", merged.ToString());
+        }
     }
 }
