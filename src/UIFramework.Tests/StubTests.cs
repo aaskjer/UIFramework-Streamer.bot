@@ -31,6 +31,7 @@ namespace UIFramework.Tests
             Set("_toStart", TimeSpan.FromSeconds(5));
             Set("_toFinish", TimeSpan.FromSeconds(30));
             Set("_tell", OriginalTell);
+            Set("_warn", null);
         }
 
         private static readonly object OriginalTell = Field("_tell").GetValue(null);
@@ -151,6 +152,94 @@ namespace UIFramework.Tests
             Assert.Equal(1, tries);
         }
 
+        [Theory]
+        [InlineData("reset")]
+        [InlineData("socket")]
+        [InlineData("connect")]
+        [InlineData("send")]
+        public void AConnectionThatBreaksWhileTheFileComesInIsTriedAgain(string how)
+        {
+            Set("_retryPausesMs", new[] { 0, 0 });
+            int tries = 0;
+            Action<Uri, string> fetch = (uri, target) =>
+            {
+                if (++tries < 3) throw Broken(how);
+                File.WriteAllText(target, "dll");
+            };
+            string file = Path.Combine(_folder, "UIFramework.dll.download");
+            Call(null, "DownloadWithRetry", new Uri("https://example.invalid/UIFramework.dll"), file, fetch);
+            Assert.Equal(3, tries);
+            Assert.Equal("dll", File.ReadAllText(file));
+        }
+
+        // As WebClient says it: a connection reset while the file comes in has no status of its own, only what it wraps.
+        private static WebException Broken(string how)
+        {
+            switch (how)
+            {
+                case "reset": return new WebException("The underlying connection was closed: An unexpected error occurred on a receive.",
+                    new IOException("Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host."), WebExceptionStatus.UnknownError, null);
+                case "socket": return new WebException("An exception occurred during a WebClient request.", new System.Net.Sockets.SocketException(10054), WebExceptionStatus.UnknownError, null);
+                case "connect": return new WebException("Unable to connect to the remote server", WebExceptionStatus.ConnectFailure);
+                default: return new WebException("The underlying connection was closed: An unexpected error occurred on a send.", WebExceptionStatus.SendFailure);
+            }
+        }
+
+        [Fact]
+        public void AnErrorWithoutAStatusThatIsNoBrokenConnectionIsNotTriedAgain()
+        {
+            // The target cannot be written: another try would fail the same way.
+            Set("_retryPausesMs", new[] { 0, 0 });
+            int tries = 0;
+            Action<Uri, string> fetch = (uri, target) =>
+            {
+                tries++;
+                throw new WebException("An exception occurred during a WebClient request.", new UnauthorizedAccessException("Access to the path is denied."), WebExceptionStatus.UnknownError, null);
+            };
+            var ex = Assert.Throws<WebException>(() => Call(null, "DownloadWithRetry", new Uri("https://example.invalid/x"), Path.Combine(_folder, "x.download"), fetch));
+            Assert.IsType<UnauthorizedAccessException>(ex.InnerException);
+            Assert.Equal(1, tries);
+        }
+
+        [Fact]
+        public void AFileCutShortIsFetchedAgain()
+        {
+            // A connection closed early leaves a short file and no error; the hash check in the fetch finds it.
+            Set("_retryPausesMs", new[] { 0, 0 });
+            int tries = 0;
+            Action<Uri, string> fetch = (uri, target) =>
+            {
+                Assert.False(File.Exists(target));                                  // the half file of the try before is gone
+                tries++;
+                File.WriteAllText(target, tries < 3 ? "dl" : "dll");
+                if (tries < 3) throw new InvalidDataException("the downloaded file does not match the published hash (aa vs bb)");
+            };
+            string file = Path.Combine(_folder, "UIFramework.dll.download");
+            Call(null, "DownloadWithRetry", new Uri("https://example.invalid/UIFramework.dll"), file, fetch);
+            Assert.Equal(3, tries);
+            Assert.Equal("dll", File.ReadAllText(file));
+        }
+
+        [Fact]
+        public void AFileThatStillDoesNotMatchSaysSoAfterTheLastTry()
+        {
+            Set("_retryPausesMs", new[] { 0, 0 });
+            int tries = 0;
+            Action<Uri, string> fetch = (uri, target) =>
+            {
+                tries++;
+                File.WriteAllText(target, "dl");
+                throw new InvalidDataException("the downloaded file does not match the published hash (aa vs bb)");
+            };
+            string file = Path.Combine(_folder, "UIFramework.dll.download");
+            var ex = Assert.Throws<InvalidOperationException>(() => Call(null, "DownloadWithRetry", new Uri("https://example.invalid/UIFramework.dll"), file, fetch));
+            Assert.Equal(3, tries);
+            Assert.Contains("does not match the published hash", ex.Message);
+            Assert.Contains("also after 3 tries", ex.Message);
+            Assert.DoesNotContain("GitHub did not deliver", ex.Message);
+            Assert.False(File.Exists(file));
+        }
+
         [Fact]
         public void TheExampleFolderAsksGitHubNoSecondTime()
         {
@@ -193,6 +282,68 @@ namespace UIFramework.Tests
             Directory.CreateDirectory(Path.GetDirectoryName(_loader));
             File.WriteAllText(_loader, @"{ ""autoUpdate"": false }");
             Assert.False((bool)Call(null, "AutoUpdateEnabled"));
+        }
+
+        [Fact]
+        public void AListOrAnObjectWhereAVersionBelongsCountsAsMissing()
+        {
+            var heard = Hearing();
+            Directory.CreateDirectory(Path.GetDirectoryName(_loader));
+            File.WriteAllText(_loader, @"{ ""skipVersion"": [ ""1.9.0"" ] }");
+            File.WriteAllText(Path.Combine(_folder, "uiframework.layout.json"), @"{ ""skipVersion"": { ""version"": ""1.9.0"" } }");
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.False((bool)Call(null, "Skipped", new Version(1, 9, 0)));
+                Assert.Null(Call(null, "NeedsNewerStub", new JObject { ["version"] = "9.9.9", ["minHostStub"] = new JArray("99.0.0") }));
+            }
+            Assert.Equal(3, heard.Count);                                                    // each once in an open
+            Assert.Contains(heard, m => m.Contains("skipVersion in UIFramework\\loader.json holds a list"));
+            Assert.Contains(heard, m => m.Contains("skipVersion in this game's uiframework.layout.json holds an object"));
+            Assert.Contains(heard, m => m.Contains("minHostStub in latest.json holds a list"));
+        }
+
+        [Fact]
+        public void AnUnreadableLoaderJsonIsSaidOncePerOpen()
+        {
+            // The release check is off in the game's layout file, so the check reads loader.json and goes no further.
+            var stub = new StubUnderTest();
+            var heard = Hearing();
+            const string damaged = "{ \"autoUpdate\": false, \"skipV";
+            Directory.CreateDirectory(Path.GetDirectoryName(_loader));
+            File.WriteAllText(_loader, damaged);
+            File.WriteAllText(Path.Combine(_folder, "uiframework.layout.json"), @"{ ""autoUpdate"": false }");
+            string installed = Path.Combine(_folder, "lib", "1.9.0", "UIFramework.dll");
+            Assert.Equal(installed, Call(stub, "OfferUpdate", installed));
+            Assert.False((bool)Call(null, "Skipped", new Version(1, 9, 0)));
+            Assert.Equal("this game's uiframework.layout.json", Call(null, "SkipVersion", "1.9.0"));
+            Assert.Single(heard);
+            Assert.Contains("loader.json cannot be read", heard[0]);
+            Assert.Equal(damaged, File.ReadAllText(_loader));
+        }
+
+        [Fact]
+        public void ASkipThatCanBeKeptNowhereChangesNoFile()
+        {
+            var heard = Hearing();
+            const string loader = "{ \"skipVersion\": \"1.8", layout = "{ \"columns\": ";
+            string layoutFile = Path.Combine(_folder, "uiframework.layout.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(_loader));
+            File.WriteAllText(_loader, loader);
+            File.WriteAllText(layoutFile, layout);
+            Assert.Null(Call(null, "SkipVersion", "1.9.0"));                                // the No button then says it could not be skipped
+            Assert.Equal(loader, File.ReadAllText(_loader));
+            Assert.Equal(layout, File.ReadAllText(layoutFile));
+            Assert.Contains(heard, m => m.Contains("loader.json cannot be read"));
+        }
+
+        // What the stub's static readers find wrong, as an open hears it: from nothing heard yet.
+        private static List<string> Hearing()
+        {
+            var heard = new List<string>();
+            var warned = (HashSet<string>)Field("_warned").GetValue(null);
+            lock (warned) warned.Clear();
+            Set("_warn", new Action<string>(heard.Add));
+            return heard;
         }
 
         // ---- asking the game ----
@@ -241,6 +392,100 @@ namespace UIFramework.Tests
             Assert.Throws<InvalidOperationException>(() => Call(stub, "AskGameNow", "test", "x", "{}"));
             Assert.Empty(stub.CPH.Globals);
         }
+
+        [Fact]
+        public void NothingIsLeftBehindWhenTheGameActionIsMissing()
+        {
+            var stub = new StubUnderTest();
+            stub.CPH.Exists = false;
+            var ex = Assert.Throws<InvalidOperationException>(() => Call(stub, "AskGameNow", "test", "x", "{}"));
+            Assert.Contains("There is no action named", ex.Message);
+            Assert.Empty(stub.CPH.Globals);
+        }
+
+        [Fact]
+        public void AGameActionThatRunsWithoutAnsweringIsNoAnswer()
+        {
+            // Its Execute() never reached UiHost.Handle: no answer, not an empty one, so a Try button does not say "done".
+            var stub = new StubUnderTest();
+            stub.CPH.Game = cph => true;
+            Assert.Null(Call(stub, "AskGameNow", "test", "tryRoll", "{}"));
+            OnBotThread(stub);
+            string answer = (string)Call(stub, "AskGame", "test", "tryRoll", "{}", Constant("NoAnswer"));
+            Assert.StartsWith(Constant("NoAnswer"), answer);
+            Assert.Contains("ran but did not answer", answer);
+            Assert.Contains(stub.CPH.Log, line => line.StartsWith("error") && line.Contains("ran but did not answer"));
+            Assert.Empty(stub.CPH.Globals);
+        }
+
+        [Fact]
+        public void AnEmptyAnswerIsAnAnswer()
+        {
+            // "" as the game writes it, and null as Streamer.bot hands a global set to "" back.
+            var stub = new StubUnderTest();
+            OnBotThread(stub);
+            foreach (string empty in new[] { "", null })
+            {
+                stub.CPH.Game = cph => { cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], empty, false); return true; };
+                Assert.Equal("", Call(stub, "AskGameNow", "test", "tryRoll", "{}"));
+                Assert.Null(Call(stub, "AskGame", "test", "tryRoll", "{}", Constant("NoAnswer")));
+            }
+            Assert.DoesNotContain(stub.CPH.Log, line => line.StartsWith("error"));
+            Assert.Empty(stub.CPH.Globals);
+        }
+
+        [Fact]
+        public void ADescribeWithoutAnAnswerSaysWhatToCheck()
+        {
+            var stub = new StubUnderTest();
+            stub.CPH.Game = cph => true;
+            var ex = Assert.Throws<InvalidOperationException>(() => Call(stub, "AskSchema"));
+            Assert.Contains("ran but did not answer with its settings", ex.Message);
+            Assert.Contains("UiHost.Handle", ex.Message);
+            Assert.Empty(stub.CPH.Globals);
+        }
+
+        [Fact]
+        public void ADllInAFolderNamed1Point9GetsTheNoAnswerMarker()
+        {
+            // The version a loaded DLL came from is its folder's name, and "1.9" is 1.9.0, which knows the marker.
+            var show = Field("_show");
+            object before = show.GetValue(null);
+            try
+            {
+                show.SetValue(null, ShowFrom("1.9"));
+                Assert.True((bool)Call(null, "KnowsNoAnswer", "test"));
+                Assert.True((bool)Call(null, "KnowsNoAnswer", "table"));
+                show.SetValue(null, ShowFrom("1.8.4"));
+                Assert.False((bool)Call(null, "KnowsNoAnswer", "test"));                  // 1.8.4 would show the marker as text
+                Assert.True((bool)Call(null, "KnowsNoAnswer", "validate"));               // its check before a save knows it
+            }
+            finally { show.SetValue(null, before); }
+        }
+
+        // A method of an assembly loaded from a folder named after a version, as the DLL's Show is. The folder is not
+        // the test's: a loaded DLL cannot be deleted.
+        private static MethodInfo ShowFrom(string version)
+        {
+            string name = "Probe" + Guid.NewGuid().ToString("N");
+            string dll = Compile(Path.Combine(Path.GetTempPath(), "UIFramework.Tests", name, version, name + ".dll"), "public static class Probe { public static void Show() { } }");
+            return Assembly.LoadFrom(dll).GetType("Probe").GetMethod("Show");
+        }
+
+        /// <summary>Compiles C# into <paramref name="dll"/>, whose name the assembly takes, without loading it.</summary>
+        internal static string Compile(string dll, string source)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(dll));
+            using (var csc = new Microsoft.CSharp.CSharpCodeProvider())
+            {
+                var result = csc.CompileAssemblyFromSource(new System.CodeDom.Compiler.CompilerParameters { OutputAssembly = dll, GenerateInMemory = false }, source);
+                Assert.False(result.Errors.HasErrors, string.Join("\n", result.Errors.Cast<System.CodeDom.Compiler.CompilerError>()));
+            }
+            return dll;
+        }
+
+        // This thread is Streamer.bot's: the stub asks the game at once instead of through the queue.
+        private static void OnBotThread(StubUnderTest stub) => Field("_botThread").SetValue(stub, Thread.CurrentThread.ManagedThreadId);
 
         [Fact]
         public void NoAnswerIsSaidAsNoAnswerToADllThatKnowsTheMarker()
@@ -395,6 +640,56 @@ namespace UIFramework.Tests
             Assert.DoesNotContain(stub.CPH.Log, line => line.Contains("A queued step failed"));
         }
 
+        // ---- one window ----
+
+        [Fact]
+        public void ARunThatALaterOneTookOverEndsThere()
+        {
+            // The game hung for a minute, a later run took the window over, then the game answered this run after all:
+            // it ends there, without a dialog, and leaves the window to the later run.
+            var stub = new StubUnderTest();
+            stub.CPH.Game = cph =>
+            {
+                Set("_askingSince", (long)Field("_askingSince").GetValue(null) + 1);   // what TakeOver does
+                cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], @"{ ""settingsFile"": ""Demo/settings.json"" }", false);
+                return true;
+            };
+            try
+            {
+                Assert.True(stub.Execute());
+                Assert.Contains(stub.CPH.Log, line => line.StartsWith("info") && line.Contains("a later run took over"));
+                Assert.DoesNotContain(stub.CPH.Log, line => line.StartsWith("error"));
+                Assert.Equal(1, Field("_opening").GetValue(null));                           // still the later run's
+                Assert.Null(Field("_shownSchema").GetValue(null));
+            }
+            finally
+            {
+                Set("_opening", 0);
+                Set("_askingGame", 0);
+                Set("_askingSince", 0L);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TwoRunsThatEndTogetherLeaveTheWindowFree(bool ownerFirst)
+        {
+            // The window closed while the run that opened it was stuck in the game, and a later run opened it again.
+            // Whichever of the two ends last hands the window back: the next run asks the game anew.
+            using (var streamerbot = new ProbeStreamerbot("1.0.0"))
+            {
+                streamerbot.Stub.TwoRuns(ownerFirst);
+                Assert.Equal(0, streamerbot.Stub.Static("_opening"));
+                Assert.Null(streamerbot.Stub.Static("_shownSchema"));
+                Assert.Equal(0, streamerbot.Stub.Static("_serving"));
+                Assert.Equal(0, streamerbot.Stub.Static("_ownerGone"));
+                Assert.True(streamerbot.Stub.Run());
+                Assert.Equal(2, streamerbot.Stub.Described);
+                Assert.DoesNotContain(streamerbot.Stub.Log, line => line.StartsWith("error"));
+            }
+        }
+
         // Streamer.bot's thread for a test: runs the queue until the test is done with it, then waits for the job it is in.
         private static IDisposable Pumping(StubUnderTest stub)
         {
@@ -414,4 +709,121 @@ namespace UIFramework.Tests
 
     [CollectionDefinition("stub", DisableParallelization = true)]
     public class StubCollection { }
+
+    /// <summary>A Streamer.bot of its own for the settings action: an AppDomain whose folder holds UIFramework\lib and a
+    /// loader.json that switches the release check off, and where no UIFramework runs until the stub loads one (or a
+    /// test does, as a game's host block would as Streamer.bot starts). Its UIFramework.dll is a stand-in whose
+    /// Entry.Show runs what the test put into the AppDomain's data under "show", else returns at once.</summary>
+    internal sealed class ProbeStreamerbot : IDisposable
+    {
+        private const string StandIn = @"namespace UIFramework
+{
+    public static class Entry
+    {
+        public static bool Show(string spec, string schema, string settingsPath, object host, System.Action pump)
+        {
+            var show = System.AppDomain.CurrentDomain.GetData(""show"") as System.Func<bool>;
+            return show == null || show();
+        }
+        public static void Close(string settingsPath) { }
+    }
+}";
+        private static readonly Lazy<byte[]> Framework = new Lazy<byte[]>(() =>
+            File.ReadAllBytes(StubTests.Compile(Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "stand-in-" + Guid.NewGuid().ToString("N"), "UIFramework.dll"), StandIn)));
+
+        public readonly string Root, Lib;
+        public readonly StubProbe Stub;
+        private readonly AppDomain _domain;
+
+        public ProbeStreamerbot(params string[] versions)
+        {
+            Root = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "streamerbot-" + Guid.NewGuid().ToString("N"));
+            Lib = Path.Combine(Root, "UIFramework", "lib");
+            Directory.CreateDirectory(Lib);
+            foreach (string version in versions)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Dll(version)));
+                File.WriteAllBytes(Dll(version), Framework.Value);
+            }
+            File.WriteAllText(Path.Combine(Root, "UIFramework", "loader.json"), @"{ ""autoUpdate"": false }");
+            // Streamer.bot's folder has it, and the stub needs it; the test's own folder is not looked in (the runner
+            // may run a shadow copy of the test assembly).
+            File.Copy(typeof(JObject).Assembly.Location, Path.Combine(Root, "Newtonsoft.Json.dll"));
+            _domain = AppDomain.CreateDomain("streamerbot", null, new AppDomainSetup { ApplicationBase = Root });
+            Stub = (StubProbe)_domain.CreateInstanceFromAndUnwrap(typeof(StubProbe).Assembly.Location, typeof(StubProbe).FullName);
+        }
+
+        public string Dll(string version) => Path.Combine(Lib, version, "UIFramework.dll");
+
+        public void Dispose()
+        {
+            AppDomain.Unload(_domain);
+            try { Directory.Delete(Root, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
+    }
+
+    /// <summary>The settings action inside a <see cref="ProbeStreamerbot"/>, with a game that answers describe.</summary>
+    public sealed class StubProbe : MarshalByRefObject
+    {
+        private readonly StubUnderTest _stub = new StubUnderTest();
+        private int _described;
+
+        public StubProbe()
+        {
+            _stub.CPH.Game = cph =>
+            {
+                _described++;
+                cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], @"{ ""settingsFile"": ""Demo/settings.json"" }", false);
+                return true;
+            };
+        }
+
+        /// <summary>How often the game was asked for its schema.</summary>
+        public int Described => _described;
+
+        public string[] Log => _stub.CPH.Log.ToArray();
+
+        /// <summary>A static field of the stub, as the runs left it.</summary>
+        public object Static(string name) => typeof(StubUnderTest).GetField(name, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+
+        /// <summary>Loads a DLL the way a game's host block does as Streamer.bot starts.</summary>
+        public void Preload(string dll) => Assembly.UnsafeLoadFrom(dll);
+
+        /// <summary>One run of the settings action.</summary>
+        public bool Run() => _stub.Execute();
+
+        /// <summary>The run that opened the window, and a later one that opened it again while the first one's window
+        /// was still up. With <paramref name="ownerFirst"/> the first run ends while the later one still serves its
+        /// window, else the later one ends first.</summary>
+        public void TwoRuns(bool ownerFirst)
+        {
+            int shows = 0;
+            var firstShows = new ManualResetEventSlim();
+            var secondShows = new ManualResetEventSlim();
+            Thread first = null, second = null;
+            AppDomain.CurrentDomain.SetData("show", new Func<bool>(() =>
+            {
+                if (Interlocked.Increment(ref shows) == 1)
+                {
+                    firstShows.Set();
+                    secondShows.Wait(10000);
+                    if (!ownerFirst) second.Join(10000);
+                }
+                else
+                {
+                    secondShows.Set();
+                    if (ownerFirst) first.Join(10000);
+                }
+                return true;
+            }));
+            first = new Thread(() => _stub.Execute());
+            first.Start();
+            firstShows.Wait(10000);
+            second = new Thread(() => _stub.Execute());
+            second.Start();
+            first.Join(10000);
+            second.Join(10000);
+            AppDomain.CurrentDomain.SetData("show", null);
+        }
+    }
 }

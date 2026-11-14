@@ -138,6 +138,79 @@ namespace UIFramework.Tests
             }
         }
 
+        [Fact]
+        public void TheUpdateNoticeLoadsNoDllThatNeedsANewerSettingsAction()
+        {
+            // Only one UIFramework runs in a Streamer.bot: one loaded here that the game's settings action does not fit
+            // would keep its window from opening until a restart. Telling it apart reads the file, it loads nothing.
+            InStreamerbot((lib, probe) =>
+            {
+                Installed(lib, "1.0.0");
+                Directory.CreateDirectory(Path.Combine(lib, "3.0.0"));
+                TooNewDll(Path.Combine(lib, "3.0.0"));
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+                Assert.DoesNotContain(probe.Loaded(), location => location.StartsWith(Path.Combine(lib, "3.0.0"), StringComparison.OrdinalIgnoreCase));
+            });
+        }
+
+        [Fact]
+        public void ADllDownloadedAgainIsTriedAgain()
+        {
+            InStreamerbot((lib, probe) =>
+            {
+                string dll = Path.Combine(lib, "2.0.0", "UIFramework.dll");
+                Directory.CreateDirectory(Path.GetDirectoryName(dll));
+                File.WriteAllText(dll, "abc");
+                File.WriteAllText(dll + ".sha256", "0000");
+                File.SetLastWriteTimeUtc(dll, DateTime.UtcNow.AddHours(-1));
+                Assert.Null(probe.Notices());
+                // The settings action set it aside and downloaded it again: a file written anew, matching its hash.
+                Installed(lib, "2.0.0", hashed: true);
+                Assert.Equal(dll, probe.Notices(), StringComparer.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public void ADllInstalledWhileOneRunsWaitsForTheRestart()
+        {
+            InStreamerbot((lib, probe) =>
+            {
+                Installed(lib, "1.0.0");
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+                Installed(lib, "4.0.0");
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+            });
+        }
+
+        // A Streamer.bot of its own: an AppDomain whose folder holds UIFramework\lib, with no UIFramework loaded.
+        private static void InStreamerbot(Action<string, FrameworkProbe> test)
+        {
+            string root = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "lib-" + Guid.NewGuid().ToString("N"));
+            string lib = Path.Combine(root, "UIFramework", "lib");
+            Directory.CreateDirectory(lib);
+            var domain = AppDomain.CreateDomain("probe", null, new AppDomainSetup { ApplicationBase = root });
+            try { test(lib, (FrameworkProbe)domain.CreateInstanceFromAndUnwrap(typeof(FrameworkProbe).Assembly.Location, typeof(FrameworkProbe).FullName)); }
+            finally
+            {
+                AppDomain.Unload(domain);
+                try { Directory.Delete(root, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+        }
+
+        // This build's UIFramework.dll under lib\<version>, written now as a download is, with the hash the settings
+        // action keeps beside it when hashed.
+        private static void Installed(string lib, string version, bool hashed = false)
+        {
+            string folder = Path.Combine(lib, version);
+            Directory.CreateDirectory(folder);
+            byte[] dll = File.ReadAllBytes(typeof(Entry).Assembly.Location);
+            File.WriteAllBytes(Path.Combine(folder, "UIFramework.dll"), dll);
+            File.Copy(typeof(JObject).Assembly.Location, Path.Combine(folder, "Newtonsoft.Json.dll"), true);
+            if (hashed)
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                    File.WriteAllText(Path.Combine(folder, "UIFramework.dll.sha256"), BitConverter.ToString(sha.ComputeHash(dll)).Replace("-", "").ToLowerInvariant());
+        }
+
         // A DLL whose product version asks for a settings action no game has: "9.0.0+stub.99.0".
         private static void TooNewDll(string folder)
         {
@@ -366,5 +439,8 @@ namespace UIFramework.Tests
     public sealed class FrameworkProbe : MarshalByRefObject
     {
         public string Notices() => UiUpdateNotice.FrameworkType()?.Assembly.Location;
+
+        /// <summary>Where every assembly loaded in this AppDomain came from.</summary>
+        public string[] Loaded() => AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray();
     }
 }
