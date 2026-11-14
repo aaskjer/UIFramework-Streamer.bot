@@ -31,7 +31,9 @@ namespace UIFramework
             var settings = new List<Setting>();
             var declaredSections = new HashSet<string>(StringComparer.Ordinal);
             // Where the game put each field, before the user's layout moves it: what the check of split sections reads.
-            var asDeclared = new List<(string Page, int Order, string Section, bool Hidden)>();
+            var asDeclared = new List<(string Key, string Page, int Order, string Section, bool Hidden)>();
+            // What the game hides (`hidden`, Override), before the user's layout: the same with every resolve.
+            var hiddenByGame = new HashSet<string>(StringComparer.Ordinal);
             foreach (var declared in schema.Settings)
             {
                 // A known key declared as another kind of value is most likely the game's own idea under a taken name:
@@ -78,7 +80,8 @@ namespace UIFramework
                         foreach (var option in setting.Options)
                             option.Label = lang.Text(option.Label);
                 }
-                asDeclared.Add((setting.Page, setting.Order, setting.Section, setting.Hidden));
+                asDeclared.Add((setting.Key, setting.Page, setting.Order, setting.Section, setting.Hidden));
+                if (setting.Hidden) hiddenByGame.Add(setting.Key);
                 // The user's layout has the last word on where a field sits and what it is called. A section it names
                 // by a name the game declared reads in the window's language, as the game's own sections do.
                 var mine = layout?.Field(setting.Key);
@@ -104,7 +107,7 @@ namespace UIFramework
             Shows(spec, settings);
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
-            Check(spec, settings, declaredSections, asDeclared);
+            Check(spec, settings, declaredSections);
             CheckCooldowns(spec, schema, settings);
             foreach (var pill in spec.HeaderPills)
                 pill.Tooltip = lang.Text(pill.Declared);
@@ -138,14 +141,18 @@ namespace UIFramework
             if (string.IsNullOrEmpty(spec.Version) && !string.IsNullOrEmpty(schema.Version))
                 spec.Version = schema.Version;
 
-            // 3. Sender switches exist only when the schema declares them.
+            // 3. Sender switches exist only when the schema declares them and the game does not hide them: a hidden one,
+            // like the Log page's switch, is a setting kept in the file without a field. The Messages and the Log page
+            // drew them hidden or not.
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
-            string Present(string key) => key != null && keys.Contains(key) ? key : null;
+            string Present(string key) => key != null && keys.Contains(key) && !hiddenByGame.Contains(key) ? key : null;
             spec.Senders.UseBot = Present(spec.Senders.UseBot);
             spec.Senders.SendAction = Present(spec.Senders.SendAction);
             spec.Senders.CooldownUseBot = Present(spec.Senders.CooldownUseBot);
             spec.Senders.CooldownSendAction = Present(spec.Senders.CooldownSendAction);
             spec.Senders.NumberSeparator = Present(spec.Senders.NumberSeparator);
+            if (spec.Log.WriteLogKey != null && hiddenByGame.Contains(spec.Log.WriteLogKey))
+                spec.Log.WriteLogKey = null;
             var senderKeys = new HashSet<string>(new[] { spec.Senders.UseBot, spec.Senders.SendAction, spec.Senders.CooldownUseBot, spec.Senders.CooldownSendAction, spec.Senders.NumberSeparator }.Where(k => k != null), StringComparer.Ordinal);
 
             // 4. Templates on the messages page become the picker's entries. Their groups are in the window's language,
@@ -164,6 +171,25 @@ namespace UIFramework
             var claimed = new HashSet<string>(StringComparer.Ordinal);
             var pageFields = new Dictionary<string, List<Setting>>(StringComparer.Ordinal);
             var pageOrder = new List<SpecPage>();
+            // A page's claim on a sender switch waits until the Messages page's entries are known, and with them
+            // whether it draws the switch.
+            var senderClaims = new List<(SpecPage Page, string Pattern, Setting Setting)>();
+            // The page that claims each field before the user's layout has its say: where the game puts it.
+            var claimedByWindow = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            void Claim(SpecPage page, Setting setting, List<Setting> mine)
+            {
+                if (!claimedByWindow.ContainsKey(setting.Key))
+                    claimedByWindow[setting.Key] = page.Id;
+                // The user's layout has the last word: a field the user moved to another page stays there.
+                string moved = layout?.Field(setting.Key)?.Page;
+                if (moved != null && moved != page.Id)
+                    return;
+                claimed.Add(setting.Key);
+                // Where it sits now, for the customise mode's menu and everything else that asks.
+                setting.Page = page.Id;
+                mine.Add(setting);
+            }
 
             foreach (var page in spec.SpecPages)
             {
@@ -175,22 +201,20 @@ namespace UIFramework
                         spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which no setting matches.");
                     foreach (var setting in Match(pattern, settings).Where(s => !claimed.Contains(s.Key)))
                     {
-                        // The Messages page builds the sender switches and the Log page its switch whatever a page
-                        // claims: a second field for the key would have the last word on save. They stay there.
-                        if (senderKeys.Contains(setting.Key) || setting.Key == spec.Log.WriteLogKey)
+                        if (senderKeys.Contains(setting.Key))
                         {
-                            if (pattern == setting.Key)
-                                spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the " + (senderKeys.Contains(setting.Key) ? "Messages" : "Log") + " page shows; it stays there.");
+                            senderClaims.Add((page, pattern, setting));
                             continue;
                         }
-                        // The user's layout has the last word: a field the user moved to another page stays there.
-                        string moved = layout?.Field(setting.Key)?.Page;
-                        if (moved != null && moved != page.Id)
+                        // The Log page builds its switch whatever a page claims: a second field for the key would have
+                        // the last word on save. It stays there.
+                        if (setting.Key == spec.Log.WriteLogKey)
+                        {
+                            if (pattern == setting.Key)
+                                spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the Log page shows; it stays there.");
                             continue;
-                        claimed.Add(setting.Key);
-                        // Where it sits now, for the customise mode's menu and everything else that asks.
-                        setting.Page = page.Id;
-                        mine.Add(setting);
+                        }
+                        Claim(page, setting, mine);
                     }
                 }
                 pageFields[page.Id] = mine;
@@ -199,9 +223,32 @@ namespace UIFramework
             // A template a page claimed by its key is that page's field, not also an entry of the Messages picker.
             spec.Messages.RemoveAll(m => claimed.Contains(m.Key) && settings.Any(s => s.Key == m.Key && s.Page != "messages"));
 
+            // The sender switches the Messages page draws, as StandardPages.BuildMessages does: the game's while it has
+            // entries, the cooldown pair while one of them is in the cooldown group and the bot switch for it is
+            // declared. One it does not draw is a field like any other, on its page: a setting the game reads always has
+            // one. Those it draws stay there whatever a page claims, since a second field would have the last word on save.
+            var drawn = new HashSet<string>(StringComparer.Ordinal);
+            if (spec.Messages.Count > 0)
+            {
+                drawn.UnionWith(new[] { spec.Senders.UseBot, spec.Senders.SendAction, spec.Senders.NumberSeparator }.Where(k => k != null));
+                if (spec.Senders.CooldownUseBot != null && spec.Messages.Any(m => spec.Senders.IsCooldownGroup(m.Group)))
+                    drawn.UnionWith(new[] { spec.Senders.CooldownUseBot, spec.Senders.CooldownSendAction }.Where(k => k != null));
+            }
+            foreach (var (page, pattern, setting) in senderClaims)
+            {
+                if (drawn.Contains(setting.Key))
+                {
+                    if (pattern == setting.Key)
+                        spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the Messages page shows; it stays there.");
+                }
+                else if (!claimed.Contains(setting.Key))
+                    Claim(page, setting, pageFields[page.Id]);
+            }
+            CheckSplitSections(spec, asDeclared, claimedByWindow);
+
             foreach (var setting in settings.OrderBy(s => s.Order))
             {
-                if (claimed.Contains(setting.Key) || (setting.Hidden && !customizing) || senderKeys.Contains(setting.Key))
+                if (claimed.Contains(setting.Key) || (setting.Hidden && !customizing) || drawn.Contains(setting.Key))
                     continue;
                 if (setting.Key == spec.Log.WriteLogKey)
                     continue;
@@ -216,11 +263,19 @@ namespace UIFramework
                 pageFields[pageId].Add(setting);
             }
 
-            // Standard pages the spec did not name: messages when there are templates, about always.
+            // Standard pages the spec did not name: messages when there are templates, help when there are help
+            // sections, custom triggers or methods to list, about always.
             if (spec.Messages.Count > 0 && pageOrder.All(p => p.Id != "messages"))
                 pageOrder.Add(new SpecPage { Id = "messages" });
+            if ((spec.Help.Count > 0 || spec.Triggers.Count > 0 || spec.Methods.Count > 0) && pageOrder.All(p => p.Id != "help"))
+                pageOrder.Add(new SpecPage { Id = "help" });
             if (pageOrder.All(p => p.Id != "about"))
                 pageOrder.Add(new SpecPage { Id = "about", Bottom = true });
+            // The Log page comes only where the window names it: a log declared with its folder and files (what the
+            // settings action reads it by) but without the page has none, and its switch no field.
+            if (!string.IsNullOrEmpty(spec.Log.Folder) && !string.IsNullOrEmpty(spec.Log.Files) && pageOrder.All(p => p.Id != "log"))
+                spec.Problems.Add("The window declares a log, but its pages do not name 'log': there is no Log page"
+                    + (string.IsNullOrEmpty(spec.Log.WriteLogKey) ? "" : ", and '" + spec.Log.WriteLogKey + "' has no switch") + ". Add \"log\" to the pages.");
 
             // Pages the spec did not order: by convention order, trailing standard pages last.
             var explicitIds = new HashSet<string>(spec.SpecPages.Select(p => p.Id), StringComparer.Ordinal);
@@ -245,8 +300,13 @@ namespace UIFramework
                 bool hidden = userPage?.Hidden == true && page.Id != "about";
                 if (hidden && !customizing)
                     continue;
+                // The conventions' title for the id where it is a translation: a language without page titles of its own
+                // has the English ones, which never replace what the game titled the page itself (as with a key's label).
+                string idTitle = lang.Page(page.Id);
+                if (page.Title != null && idTitle == Conventions.Default.Lang.Page(page.Id))
+                    idTitle = null;
                 string title = userPage?.Title
-                    ?? (lang.Translates ? lang.OwnPage(page.Id) ?? lang.TextOrNull(page.Title) ?? lang.Page(page.Id) ?? page.Title : page.Title ?? lang.Page(page.Id))
+                    ?? (lang.Translates ? lang.OwnPage(page.Id) ?? lang.TextOrNull(page.Title) ?? idTitle ?? page.Title : page.Title ?? lang.Page(page.Id))
                     ?? Conventions.Humanize(page.Id);
                 string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
                 if (page.Icon != null && UnknownIcon(page.Icon))
@@ -421,7 +481,7 @@ namespace UIFramework
                 }
         }
 
-        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections, List<(string Page, int Order, string Section, bool Hidden)> asDeclared)
+        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections)
         {
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
             var byKey = settings.GroupBy(s => s.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
@@ -430,21 +490,6 @@ namespace UIFramework
                 CheckCondition(spec, byKey, "The section '" + section.Key + "'", "is shown when", section.Value);
                 if (!declaredSections.Contains(section.Key))
                     spec.Problems.Add("The section '" + section.Key + "' has a condition, but no setting is in a section of that name.");
-            }
-            // A section whose fields are not one after the other gets its heading twice: said, so the game can order
-            // them. As the game declared them: where the user's layout moved a field is not the game author's to fix.
-            foreach (var page in asDeclared.Where(s => !s.Hidden).GroupBy(s => s.Page ?? "game"))
-            {
-                var seen = new HashSet<string>(StringComparer.Ordinal);
-                var told = new HashSet<string>(StringComparer.Ordinal);
-                string previous = null;
-                foreach (var s in page.OrderBy(x => x.Order))
-                {
-                    if (s.Section == null || s.Section == previous) { previous = s.Section ?? previous; continue; }
-                    if (!seen.Add(s.Section) && told.Add(s.Section))
-                        spec.Problems.Add("The section '" + s.Section + "' on the page '" + page.Key + "' is split by another section, so its heading shows twice; declare its settings one after the other.");
-                    previous = s.Section;
-                }
             }
             foreach (var s in settings)
             {
@@ -511,6 +556,27 @@ namespace UIFramework
                 }
                 else if (!keys.Contains(stop.Target) && Array.IndexOf(TourStop.Parts, stop.Target) < 0)
                     spec.Problems.Add("The tour points at '" + stop.Target + "', which is neither a setting nor a part of the window (" + string.Join(", ", TourStop.Parts) + "); that stop is skipped.");
+            }
+        }
+
+        /// <summary>A section whose fields are not one after the other gets its heading twice: said, so the game can order
+        /// them. As the game placed them, on its own page or the one the window's pages claim it for: where the user's
+        /// layout moved a field is not the game author's to fix.</summary>
+        private static void CheckSplitSections(WindowSpec spec, List<(string Key, string Page, int Order, string Section, bool Hidden)> asDeclared,
+            Dictionary<string, string> claimedByWindow)
+        {
+            foreach (var page in asDeclared.Where(s => !s.Hidden).GroupBy(s => claimedByWindow.TryGetValue(s.Key, out var claimedBy) ? claimedBy : s.Page ?? "game"))
+            {
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                var told = new HashSet<string>(StringComparer.Ordinal);
+                string previous = null;
+                foreach (var s in page.OrderBy(x => x.Order))
+                {
+                    if (s.Section == null || s.Section == previous) { previous = s.Section ?? previous; continue; }
+                    if (!seen.Add(s.Section) && told.Add(s.Section))
+                        spec.Problems.Add("The section '" + s.Section + "' on the page '" + page.Key + "' is split by another section, so its heading shows twice; declare its settings one after the other.");
+                    previous = s.Section;
+                }
             }
         }
 
