@@ -8,7 +8,6 @@
 #   tools\docs-shots.ps1 -NoCopy        # renders only, to look at them first
 param(
     [string] $Out = (Join-Path $env:TEMP 'uiframework-docs-shots'),
-    [string] $StreamerBotPath = 'C:\Users\Administrator\Downloads\Streamer.bot-x64-1.0.7',
     [switch] $NoCopy
 )
 $ErrorActionPreference = 'Stop'
@@ -47,7 +46,9 @@ Shoot 'demo-tour' $demo $null $null @('-theme', 'dark', '-tour')
 Shoot 'demo-helplines' $demo $null '{ "dark": true, "helpLines": true }' @('-pages', 'game')
 
 # The problems panel: the demo with four mistakes in its declaration, and a layout file that does not parse.
-Add-Type -Path (Join-Path $StreamerBotPath 'Newtonsoft.Json.dll') -ErrorAction SilentlyContinue
+# Newtonsoft.Json is the one the preview's build has beside it: the Streamer.bot folder it came from was this tool's
+# default on one machine only, and elsewhere the run stopped here after seven of its eight windows.
+Add-Type -Path (Join-Path (Split-Path -Parent $exe) 'Newtonsoft.Json.dll') -ErrorAction SilentlyContinue
 $reader = New-Object Newtonsoft.Json.JsonTextReader (New-Object IO.StringReader ([IO.File]::ReadAllText($demo, [Text.Encoding]::UTF8)))
 $reader.DateParseHandling = [Newtonsoft.Json.DateParseHandling]::None
 $schema = [Newtonsoft.Json.Linq.JObject]::Load($reader)

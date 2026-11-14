@@ -30,7 +30,10 @@ if ($SchemaOf) {
     exit 0
 }
 $root = Split-Path -Parent $PSScriptRoot
-$out = Join-Path $env:TEMP 'uiframework-stub-check'
+# A folder per checkout: two checkouts (worktrees) checked at once compiled into the same Stub.dll and Demo.dll, so
+# one failed on a file the other had open, or read the other's demo for its schema.json.
+$id = [BitConverter]::ToString([Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($root.ToLowerInvariant())), 0, 4).Replace('-', '')
+$out = Join-Path $env:TEMP ('uiframework-stub-check-' + $id)
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 
 $hostExe = @(& (Join-Path $RoslynHostTools 'build-roslyn-host.ps1') -StreamerBotPath $StreamerBotPath)[-1]

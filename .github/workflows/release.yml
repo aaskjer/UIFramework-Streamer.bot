@@ -1,4 +1,4 @@
-# On a tag vX.Y.Z: build the DLL, run the tests, publish the tag's release with UIFramework.dll and the version's
+# On a tag vX.Y.Z: build the DLL, run the tests and CI's other checks, publish the tag's release with UIFramework.dll and the version's
 # section of CHANGELOG.md as its notes (stable only for a round X.0.0; every other version is a pre-release), and write lib/v<major>/latest.json
 # (version, url, sha256) back to main, which is what the loader of every host of that major line reads: 1.x.y goes to
 # lib/v1, 2.0.0 and what follows it to lib/v2, so a v1 host is never offered a 2.x.
@@ -72,9 +72,25 @@ jobs:
           if ($start -lt 0) { Write-Error "CHANGELOG.md has no section '## [$version]'; write what changed before tagging." }
           $end = $lines.Count
           for ($i = $start; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^## ') { $end = $i; break } }
-          $notes = ($lines[$start..($end - 1)] -join "`n").Trim()
+          # PowerShell counts a range down as well: with no line between the version's heading and the next one,
+          # $start..($end - 1) took both headings as the notes, and an empty section was released.
+          $notes = if ($end -gt $start) { ($lines[$start..($end - 1)] -join "`n").Trim() } else { '' }
           if ($notes.Length -eq 0) { Write-Error "CHANGELOG.md section '## [$version]' is empty." }
           [IO.File]::WriteAllText('notes.md', $notes + "`n", (New-Object Text.UTF8Encoding $false))
+
+      # CI's checks beside the build and the tests, here too: the release does not wait for CI, and 1.6.0 was
+      # published while CI failed on its docs/Conventions.md.
+      - name: docs/Conventions.md matches the conventions
+        shell: powershell
+        run: ./tools/conventions-doc.ps1 -Check
+
+      - name: The demo carries the template's host block
+        shell: powershell
+        run: ./tools/update-host-block.ps1 -File examples/DemoGame/DemoGame.cs -Check
+
+      - name: The demo's import carries the demo and the stub
+        shell: powershell
+        run: ./tools/build-import.ps1 -Check
 
       # Two steps: in one, only the last command's exit code counted, and a build that failed in the preview alone
       # was followed by tests that passed.
