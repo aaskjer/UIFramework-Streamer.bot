@@ -172,5 +172,32 @@ namespace UIFramework.Tests
                 close.SetValue(null, closeBefore);
             }
         }
+
+        [Fact]
+        public void An_older_DLL_loaded_because_the_chosen_one_failed_is_not_said_to_run_already()
+        {
+            // 2.0.0 no longer matches its hash: it is set aside and 1.0.0 opens the window. This open loaded 1.0.0, and
+            // 2.0.0 is offered again, not used from the next start.
+            using (var streamerbot = new ProbeStreamerbot("1.0.0", "2.0.0"))
+            {
+                File.WriteAllText(streamerbot.Dll("2.0.0") + ".sha256", "0000");
+                Assert.True(streamerbot.Stub.Run());
+                Assert.True(File.Exists(streamerbot.Dll("2.0.0") + ".broken"));
+                Assert.Contains(streamerbot.Stub.Log, line => line.StartsWith("error") && line.Contains("does not match the hash"));
+                Assert.DoesNotContain(streamerbot.Stub.Log, line => line.Contains("running already") || line.Contains("from the next start"));
+            }
+        }
+
+        [Fact]
+        public void A_DLL_installed_beside_a_running_one_waits_for_the_next_start()
+        {
+            using (var streamerbot = new ProbeStreamerbot("1.0.0", "2.0.0"))
+            {
+                streamerbot.Stub.Preload(streamerbot.Dll("1.0.0"));                  // a game's host block, as Streamer.bot started
+                Assert.True(streamerbot.Stub.Run());
+                Assert.True(File.Exists(streamerbot.Dll("2.0.0")));
+                Assert.Contains(streamerbot.Stub.Log, line => line.Contains("UIFramework 1.0.0 is running already in this Streamer.bot; 2.0.0 is used from the next start"));
+            }
+        }
     }
 }

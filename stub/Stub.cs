@@ -912,42 +912,42 @@ public class CPHInline
         var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (!AutoUpdateEnabled())
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in UIFramework\\loader.json or in this game's uiframework.layout.json).");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; the release check is off (autoUpdate: false in UIFramework\\loader.json or in this game's uiframework.layout.json).");
             return installed;
         }
         JObject latest;
         try { latest = FetchLatest(); }
         catch (Exception ex)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; the release check failed: " + ex.Message);
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " installed; the release check failed: " + ex.Message);
             return installed;
         }
         Version newest;
         try { newest = ParseVersion(ReleaseVersion(latest)); }
         catch (Exception ex)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; " + ex.Message);
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " installed; " + ex.Message);
             return installed;
         }
         if (newest != null && NeedsNewerStub(latest) != null)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
+            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays installed.");
             return installed;
         }
         // Missing parts count as 0: a folder named "1.9" holds what latest.json calls "1.9.0".
         if (newest == null || have == null || Full(newest) <= Full(have))
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; latest.json says " + (string)latest["version"] + ", nothing newer.");
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
         if (Skipped(newest))
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in UIFramework\\loader.json or in this game's uiframework.layout.json).");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; " + newest + " is available but was skipped (skipVersion in UIFramework\\loader.json or in this game's uiframework.layout.json).");
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
-        CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
+        CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; " + newest + " is available, asking.");
 
         // The version running in this Streamer.bot already, if any: it stays in use until Streamer.bot restarts.
         bool loaded;
@@ -1254,6 +1254,9 @@ public class CPHInline
         try
         {
             dll = OfferUpdate(dll);
+            // The UIFramework that ran before this open: only beside that one does the chosen DLL wait for the next start.
+            // One this open loads because the chosen one failed is no such case.
+            var running = LoadedFramework();
             // The chosen DLL first, then every other installed one, newest first: one that cannot be loaded leaves the
             // window to an older one instead of locking every game out.
             bool bound = false;
@@ -1285,7 +1288,7 @@ public class CPHInline
             Volatile.Write(ref _shownSchema, schema);
             // False: a window for this settings file was open already and came to the front; the run that serves it
             // pumps for it, so this one does not drain the queue beside it.
-            if (LoadedFramework() is Assembly running && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
+            if (running != null && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
                 CPH.LogInfo(LogPrefix + " UIFramework " + VersionOf(running) + " is running already in this Streamer.bot; " + Path.GetFileName(Path.GetDirectoryName(dll)) + " is used from the next start of Streamer.bot.");
             if (Serve(schema))
                 Pump();

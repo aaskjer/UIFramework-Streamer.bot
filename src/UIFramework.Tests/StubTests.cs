@@ -322,6 +322,18 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void TheReleaseCheckNamesTheInstalledVersionAsInstalled()
+        {
+            // What runs may be another one (a game loaded an older one as Streamer.bot started): the line says installed.
+            var stub = new StubUnderTest();
+            Directory.CreateDirectory(Path.GetDirectoryName(_loader));
+            File.WriteAllText(_loader, @"{ ""autoUpdate"": false }");
+            Call(stub, "OfferUpdate", Path.Combine(_folder, "lib", "1.9.0", "UIFramework.dll"));
+            Assert.Contains(stub.CPH.Log, line => line.Contains("UIFramework 1.9.0 installed; the release check is off"));
+            Assert.DoesNotContain(stub.CPH.Log, line => line.Contains(" in use"));
+        }
+
+        [Fact]
         public void ASkipThatCanBeKeptNowhereChangesNoFile()
         {
             var heard = Hearing();
