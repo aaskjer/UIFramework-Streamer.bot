@@ -216,11 +216,19 @@ namespace UIFramework
                 pageFields[pageId].Add(setting);
             }
 
-            // Standard pages the spec did not name: messages when there are templates, about always.
+            // Standard pages the spec did not name: messages when there are templates, help when there are help
+            // sections, custom triggers or methods to list, about always.
             if (spec.Messages.Count > 0 && pageOrder.All(p => p.Id != "messages"))
                 pageOrder.Add(new SpecPage { Id = "messages" });
+            if ((spec.Help.Count > 0 || spec.Triggers.Count > 0 || spec.Methods.Count > 0) && pageOrder.All(p => p.Id != "help"))
+                pageOrder.Add(new SpecPage { Id = "help" });
             if (pageOrder.All(p => p.Id != "about"))
                 pageOrder.Add(new SpecPage { Id = "about", Bottom = true });
+            // The Log page comes only where the window names it: a log declared with its folder and files (what the
+            // settings action reads it by) but without the page has none, and its switch no field.
+            if (!string.IsNullOrEmpty(spec.Log.Folder) && !string.IsNullOrEmpty(spec.Log.Files) && pageOrder.All(p => p.Id != "log"))
+                spec.Problems.Add("The window declares a log, but its pages do not name 'log': there is no Log page"
+                    + (string.IsNullOrEmpty(spec.Log.WriteLogKey) ? "" : ", and '" + spec.Log.WriteLogKey + "' has no switch") + ". Add \"log\" to the pages.");
 
             // Pages the spec did not order: by convention order, trailing standard pages last.
             var explicitIds = new HashSet<string>(spec.SpecPages.Select(p => p.Id), StringComparer.Ordinal);

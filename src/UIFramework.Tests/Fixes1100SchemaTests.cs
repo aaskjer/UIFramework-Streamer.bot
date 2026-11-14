@@ -165,5 +165,33 @@ namespace UIFramework.Tests
             var picture = Assert.Single(Find<System.Windows.Controls.Image>(page));
             Assert.Equal(":not-an-emoji:", picture.Tag);
         });
+
+        // ---- The standard pages ---------------------------------------------------------------------------
+
+        private const string OneSetting = Head + @"{ ""key"": ""a"", ""default"": 1 } ], ""window"": { ""title"": ""Demo"", ";
+
+        [Theory]
+        [InlineData(@"""help"": [ { ""heading"": ""Playing"", ""lines"": [ ""Type !play."" ] } ]")]
+        [InlineData(@"""triggers"": [ { ""name"": ""Demo: Won"", ""code"": ""demo_onWin"", ""what"": ""Somebody won."" } ]")]
+        [InlineData(@"""methods"": [ { ""name"": ""StartRound"", ""what"": ""Starts a round."" } ]")]
+        public void TheHelpPageComesByItselfWithWhatGoesOnIt(string declared)
+        {
+            // Only a window that named "help" among its pages had one; the sections, triggers and methods went unseen.
+            var spec = Prepared(OneSetting + declared + " } }");
+            Assert.Equal(new[] { "game", "help", "about" }, spec.Pages.Select(p => p.Id).ToArray());
+            Assert.Empty(spec.Problems);
+            Assert.DoesNotContain(Prepared(OneSetting + @"""about"": { ""credits"": ""Me"" } } }").Pages, p => p.Id == "help");
+        }
+
+        [Fact]
+        public void ALogWithoutItsPageIsNamed()
+        {
+            const string log = @"""log"": { ""folder"": ""Demo/Logs"", ""files"": ""log*.txt"", ""writeLogKey"": ""logToFile"" }";
+            const string settings = Head + @"{ ""key"": ""a"", ""default"": 1 }, { ""key"": ""logToFile"", ""default"": true, ""page"": ""log"" } ], ""window"": { ""title"": ""Demo"", ";
+            var problem = Assert.Single(Prepared(settings + log + " } }").Problems);
+            Assert.Contains("'log'", problem);
+            Assert.Contains("'logToFile'", problem);
+            Assert.Empty(Prepared(settings + log + @", ""pages"": [ ""game"", ""log"", ""about"" ] } }").Problems);
+        }
     }
 }
