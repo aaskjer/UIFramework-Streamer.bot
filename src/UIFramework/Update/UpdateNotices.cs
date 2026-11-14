@@ -21,9 +21,10 @@ namespace UIFramework
     /// broadcaster account is connected, and with which text). <see cref="Delay"/> after the first game of this
     /// Streamer.bot run, once GitHub's answers are fresh, one game gets the whole notice and delivers it: the games of
     /// this run whose release is newer than the version they run, UIFramework when its newest release is newer than the
-    /// newest DLL installed, and a game whose settings action is older than that release needs (latest.json's
-    /// minHostStub). Games with the same texts share one message. Then nothing more until Streamer.bot starts again.
-    /// The links go to Streamer.bot's log.
+    /// newest DLL installed and a game's settings would offer it (not skipped with "No", the release check not switched
+    /// off), and a game whose settings action is older than that release needs (latest.json's minHostStub). Games with
+    /// the same texts share one message. Then nothing more until Streamer.bot starts again. The links go to
+    /// Streamer.bot's log.
     ///
     /// GitHub's answers sit in <c>&lt;Streamer.bot&gt;\UIFramework\updates.json</c>, shared by every game; an answer older
     /// than twelve hours starts a new check in the background. A game whose layout file says
@@ -81,7 +82,7 @@ namespace UIFramework
                 {
                     var state = Read();
                     var run = ThisRun(state, now);
-                    Enter(run, host, title, version, releases, wants, own);
+                    Enter(run, host, title, version, releases, wants, own, layout);
                     Write(state);
                     if ((bool?)run["notified"] == true || !wants)
                         return null;
@@ -128,7 +129,7 @@ namespace UIFramework
                             log.Add(name + ": its settings action is older than UIFramework " + Tag(latest) + " needs (" + Tag(needs) + "); import the latest " + name + " release.");
                         }
                     }
-                    if (latest != null && installed != null && latest > installed)
+                    if (latest != null && installed != null && latest > installed && Offered(latest, games))
                     {
                         items.Add(new KeyValuePair<JObject, string>(me, "UIFramework " + Tag(latest)));
                         log.Add("UIFramework " + Tag(latest) + " is out (installed: " + Tag(installed) + "); open the settings of any game to update it.");
@@ -228,7 +229,7 @@ namespace UIFramework
                 lock (Gate)
                 {
                     var state = Read();
-                    Enter(ThisRun(state, Now()), host, title, version, releases, layout == null || layout.UpdateNotices, Parse(options));
+                    Enter(ThisRun(state, Now()), host, title, version, releases, layout == null || layout.UpdateNotices, Parse(options), layout);
                     if (!string.IsNullOrWhiteSpace(stubVersion))
                         Obj(state, "stubs")[host] = stubVersion;
                     Write(state);
@@ -267,16 +268,40 @@ namespace UIFramework
             return run;
         }
 
-        private static void Enter(JObject run, string host, string title, string version, string releases, bool wants, JObject options)
+        private static void Enter(JObject run, string host, string title, string version, string releases, bool wants, JObject options, LayoutFile layout)
         {
             if (string.IsNullOrWhiteSpace(host)) return;
             Obj(run, "games")[host] = new JObject
             {
                 ["host"] = host, ["title"] = string.IsNullOrWhiteSpace(title) ? host : title, ["version"] = version,
                 ["releases"] = string.IsNullOrWhiteSpace(releases) ? null : releases.Trim(), ["wants"] = wants,
-                ["options"] = options
+                ["options"] = options,
+                // What the game's own layout file says of UIFramework's releases, which its settings action reads too.
+                ["autoUpdate"] = layout == null || layout.AutoUpdate,
+                ["skipVersion"] = (string)(layout?.Root["skipVersion"] as JValue)
             };
         }
+
+        /// <summary>Whether the settings of some game of this run would offer UIFramework's newest release, as the
+        /// settings action decides it: none does when <c>loader.json</c> beside the DLL switches the release check off
+        /// or skips that version, and a game does not whose own layout file says so. A <c>loader.json</c> that cannot be
+        /// read counts as empty, as there. A release declined with "No" was named in chat on every start, with a log
+        /// line that sent the streamer to settings which did not offer it.</summary>
+        private static bool Offered(Version latest, JObject games)
+        {
+            JObject loader;
+            string path = Path.Combine(Folder, "loader.json");
+            try { loader = File.Exists(path) ? JObject.Parse(File.ReadAllText(path)) : new JObject(); }
+            catch (Exception) { loader = new JObject(); }
+            if (SwitchedOff(loader["autoUpdate"]) || Skips(loader["skipVersion"], latest))
+                return false;
+            return games.Properties().Select(p => p.Value).OfType<JObject>().Any(g => !SwitchedOff(g["autoUpdate"]) && !Skips(g["skipVersion"], latest));
+        }
+
+        private static bool SwitchedOff(JToken token) => token != null && token.Type == JTokenType.Boolean && !(bool)token;
+
+        // A version where one belongs; a list or an object there counts as missing, as in the settings action.
+        private static bool Skips(JToken token, Version latest) => token is JValue && Equals(Web.ParseVersion((string)token), latest);
 
         private static string ProcessStart()
         {

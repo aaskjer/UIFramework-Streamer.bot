@@ -272,12 +272,15 @@ namespace UIFramework.Tests
         });
     }
 
-    /// <summary>1.10.0, the update notice: a text with broken braces does not cost the notice.</summary>
+    /// <summary>1.10.0, the update notice: a text with broken braces does not cost the notice; UIFramework is named only
+    /// when the settings of a game would offer it.</summary>
     public class Fixes1100NoticeTests : IDisposable
     {
         private readonly string _folder;
         private DateTime _now = new DateTime(2026, 11, 14, 12, 0, 0, DateTimeKind.Utc);
         private string _minHostStub = "0.1.0";
+        private string _session = "run-0";
+        private int _runs;
 
         public Fixes1100NoticeTests()
         {
@@ -288,7 +291,7 @@ namespace UIFramework.Tests
             UpdateNotices.InBackground = false;
             UpdateNotices.Delay = TimeSpan.FromSeconds(20);
             UpdateNotices.Now = () => _now;
-            UpdateNotices.Session = () => "run-1";
+            UpdateNotices.Session = () => _session;
             UpdateNotices.Fetch = url =>
             {
                 if (url == UpdateNotices.FrameworkLatestUrl) return "{ \"version\": \"1.3.0\", \"minHostStub\": \"" + _minHostStub + "\" }";
@@ -349,6 +352,44 @@ namespace UIFramework.Tests
                 File.Delete(file);
                 if (made) Directory.Delete(lang);
             }
+        }
+
+        // One Streamer.bot start with the given games, as many seconds after the first as the notice waits.
+        private string[] Run(params Func<string>[] games)
+        {
+            _session = "run-" + (++_runs);
+            foreach (var game in games) Assert.Empty(Chat(game()));
+            _now = _now.AddSeconds(30);
+            return Chat(games.Last()());
+        }
+
+        [Theory]
+        [InlineData(null, true)]
+        [InlineData("{ \"skipVersion\": \"1.3.0\" }", false)]            // "No" in the update dialog, for every game
+        [InlineData("{ \"skipVersion\": \"v1.3\" }", false)]
+        [InlineData("{ \"skipVersion\": \"1.2.5\" }", true)]             // another version skipped: this one is offered
+        [InlineData("{ \"autoUpdate\": false }", false)]                 // the release check off, for every game
+        [InlineData("{ \"autoUpdate\": \"no\", \"skipVersion\": [ \"1.3.0\" ] }", true)]   // what is no switch or version counts as missing
+        [InlineData("{ \"skipVersion\": \"1.3.0\"", true)]               // an unreadable loader.json counts as empty
+        public void UIFramework_is_named_only_when_the_settings_would_offer_it(string loader, bool named)
+        {
+            if (loader != null) File.WriteAllText(Path.Combine(_folder, "loader.json"), loader);
+            var chat = Run(Hangman);
+            Assert.Equal(new[] { "🔔 Updates are out: Hangman Game v13.2.0" + (named ? ", UIFramework v1.3.0" : "") + ". Details are in Streamer.bot's log." }, chat);
+        }
+
+        [Fact]
+        public void A_games_own_layout_file_declines_it_for_that_game_alone()
+        {
+            Settings("hangman", "{ \"autoUpdate\": false }");
+            Settings("trivia", "{ \"skipVersion\": \"1.3.0\" }");
+            // Neither game's settings would offer it: nothing to say, Hangman's own release aside.
+            Assert.Equal(new[] { "🔔 Updates are out: Hangman Game v13.2.0. Details are in Streamer.bot's log." }, Run(Trivia, Hangman));
+            // A third game of the run would: it is named, whichever game delivers the notice.
+            Assert.Contains("UIFramework v1.3.0", Run(() => Due("demo", "Demo Game", "v1.0.0", null), Trivia, Hangman).Single());
+            // Nothing declined anywhere: the notice is as it always was.
+            Settings("hangman", "{ }");
+            Assert.Contains("UIFramework v1.3.0", Run(Hangman).Single());
         }
     }
 }
