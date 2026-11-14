@@ -175,5 +175,41 @@ namespace UIFramework.Tests
                     Assert.Equal(Array.IndexOf(game.Languages.ToArray(), "pt-BR"), picker.SelectedIndex);
                 });
             });
+
+        // ---- L4: an en.json beside Streamer.bot corrects English ------------------------------------------------------
+
+        [Fact]
+        public void An_english_file_beside_streamerbot_corrects_the_dlls_english()
+        {
+            WithExternal(new Dictionary<string, string>
+            {
+                ["en.json"] = @"{ ""ui"": { ""btn.save"": ""Store"" }, ""keys"": { ""maxBet"": { ""label"": ""Highest bet"" } } }"
+            }, () =>
+            {
+                var spec = Prepared(Plain, null);
+                Assert.Equal("Store", Text.T("btn.save"));                    // before: "Save", the file was never read
+                Assert.Equal("Highest bet", spec.ResolvedSettings.Single(s => s.Key == "maxBet").Label);
+                Assert.Equal("Cancel", Text.T("btn.cancel"));                 // what it leaves out is the DLL's
+                Assert.Equal("en", spec.Conventions.Lang.Code);
+                Assert.False(spec.Conventions.Lang.Translates);
+                Assert.Equal(1, spec.Languages.Count(c => c == "en"));
+                // The DLL's English stays as it is, for every language to fall back on.
+                Assert.Equal("Save", Conventions.Default.Lang.Ui["btn.save"]);
+                Prepared(Plain, "de");
+                Assert.Equal("Speichern", Text.T("btn.save"));
+            });
+            // Without the file: the English loaded once, as before.
+            try { Assert.Same(Conventions.Default, Prepared(Plain, null).Conventions); }
+            finally { Text.Use(Conventions.Default.Lang); }
+        }
+
+        [Fact]
+        public void An_unreadable_english_file_beside_streamerbot_is_named() =>
+            WithExternal(new Dictionary<string, string> { ["en.json"] = @"{ ""ui"": { ""btn.save"": " }, () =>
+            {
+                var spec = Prepared(Plain, null);
+                Assert.Contains(spec.Problems, p => p.StartsWith("en.json could not be read"));
+                Assert.Equal("Save", Text.T("btn.save"));
+            });
     }
 }

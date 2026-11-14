@@ -135,7 +135,10 @@ namespace UIFramework
             }
             // The layout file's code likewise ("pt-br", "pt", "de-AT"); one that stands for none of them is English.
             string language = !string.IsNullOrEmpty(spec.Language) ? spec.Language : Conventions.Match(layout.Language, spec.Languages) ?? "en";
-            var conventions = language == "en" ? Conventions.Default : Conventions.Load(language);
+            // English is the DLL's, loaded once, unless UIFramework\lang has an en.json correcting it: that is read at
+            // every open, as any other language's file is.
+            var conventions = language == "en" && !System.IO.File.Exists(System.IO.Path.Combine(Conventions.ExternalFolder, "en.json"))
+                ? Conventions.Default : Conventions.Load(language);
             if (language != "en" && schema.Lang != null)
                 // The game's own translations over the conventions', its code in this very spelling last.
                 foreach (var mine in schema.Lang.Properties().Where(p => p.Value is JObject && Offered(p.Name) == language).OrderBy(p => p.Name == language))

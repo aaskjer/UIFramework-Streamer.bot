@@ -27,18 +27,21 @@ namespace UIFramework
 
         private static Conventions _default;
 
-        /// <summary>The embedded conventions with the English texts. Loaded once.</summary>
+        /// <summary>The embedded conventions with the English texts, as the DLL carries them. Loaded once.</summary>
         public static Conventions Default
         {
             get
             {
                 if (_default == null)
-                    _default = Load("en");
+                    _default = Load("en", beside: false);
                 return _default;
             }
         }
 
-        public static Conventions Load(string languageCode)
+        public static Conventions Load(string languageCode) => Load(languageCode, beside: true);
+
+        /// <param name="beside">Whether a file in <see cref="ExternalFolder"/> is laid over the DLL's.</param>
+        private static Conventions Load(string languageCode, bool beside)
         {
             var conventions = Parse(JObject.Parse(ReadEmbedded("conventions.keys.json")));
             conventions.Lang = Lang.Parse(JObject.Parse(ReadEmbedded("conventions.lang.en.json")));
@@ -54,18 +57,19 @@ namespace UIFramework
                     conventions.Lang.Overlay(JObject.Parse(other));
                     conventions.Lang.Code = languageCode;
                 }
-                // A file of the same shape in UIFramework\lang beside Streamer.bot: a language the DLL does not
-                // carry, or corrections to one it does, without waiting for a release. It is laid over the DLL's.
-                string external = ExternalFile(languageCode);
-                if (external != null && File.Exists(external))
+            }
+            // A file of the same shape in UIFramework\lang beside Streamer.bot: a language the DLL does not carry, or
+            // corrections to one it does, English too (a proofreader's en.json), without waiting for a release. It is
+            // laid over the DLL's.
+            string external = beside && !string.IsNullOrEmpty(languageCode) ? ExternalFile(languageCode) : null;
+            if (external != null && File.Exists(external))
+            {
+                try
                 {
-                    try
-                    {
-                        conventions.Lang.Overlay(JObject.Parse(File.ReadAllText(external)));
-                        conventions.Lang.Code = languageCode;
-                    }
-                    catch (Exception ex) { conventions.LoadProblem = Path.GetFileName(external) + " could not be read: " + ex.Message; }
+                    conventions.Lang.Overlay(JObject.Parse(File.ReadAllText(external)));
+                    conventions.Lang.Code = languageCode;
                 }
+                catch (Exception ex) { conventions.LoadProblem = Path.GetFileName(external) + " could not be read: " + ex.Message; }
             }
             return conventions;
         }
