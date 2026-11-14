@@ -13,8 +13,8 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, and lines
-    /// of one second stand newest first.</summary>
+    /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, lines of
+    /// one second stand newest first, a line without a time has no time.</summary>
     public class Fixes1100PagesTests
     {
         private static void Sta(Action body)
@@ -113,6 +113,29 @@ namespace UIFramework.Tests
             hooks.Lines.Add("[2026-11-14 20:05:10] STATS | User: alice | Platform: twitch");
             Click(Find<Button>(page).Single(b => AutomationProperties.GetName(b) == Text.T("log.reload")));
             Assert.Equal(new[] { "STATS", "AWARD", "WIN", "ROUND-END", "START" }, Results());
+        });
+
+        [Fact]
+        public void A_line_without_a_readable_time_has_an_empty_time_cell() => Sta(() =>
+        {
+            var hooks = new LogHooks();
+            hooks.Lines.Add("[2026-11-14 20:05:10] WIN | User: alice | Platform: twitch");
+            hooks.Lines.Add("[not a time] WIN | User: bob");
+            hooks.Lines.Add("hello there");
+            var page = LogPageOf(hooks);
+            var grid = Find<DataGrid>(page).Single();
+            var time = (DataGridTextColumn)grid.Columns[0];
+            string Shown(LogEntry entry)
+            {
+                var cell = new TextBlock { DataContext = entry };
+                cell.SetBinding(TextBlock.TextProperty, time.Binding);
+                return cell.Text;
+            }
+            var entries = grid.Items.OfType<LogEntry>().ToList();
+            Assert.Equal("2026-11-14 20:05:10", Shown(entries[0]));
+            Assert.Equal("", Shown(entries[1]));                  // was 0001-01-01 00:00:00
+            Assert.Equal("", Shown(entries[2]));
+            Assert.Equal("Timestamp", time.SortMemberPath);       // a click on the header still sorts by the time
         });
     }
 }

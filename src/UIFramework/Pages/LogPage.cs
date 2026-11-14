@@ -171,7 +171,7 @@ namespace UIFramework
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
-            grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, cellText));
+            grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { Converter = new TimeText() }, cellText));
             grid.Columns.Add(ResultColumn(r => StyleOf(spec, r)));
             var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn(Text.T("log.user"), "User"), new LogColumn(Text.T("log.platform"), "Platform") };
             foreach (var column in columns)
@@ -446,6 +446,15 @@ namespace UIFramework
                 MinWidth = 90,
                 SortMemberPath = "Result"
             };
+        }
+
+        // A line without a time that can be read (LogEntry.Parse leaves DateTime.MinValue) has an empty Time cell, not
+        // 0001-01-01 00:00:00; the column still sorts by the time itself.
+        private sealed class TimeText : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+                value is DateTime time && time != DateTime.MinValue ? time.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : "";
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
         }
 
         private sealed class FieldReader : IValueConverter
