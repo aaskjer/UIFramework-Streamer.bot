@@ -42,6 +42,10 @@ namespace UIFramework
         {
             var conventions = Parse(JObject.Parse(ReadEmbedded("conventions.keys.json")));
             conventions.Lang = Lang.Parse(JObject.Parse(ReadEmbedded("conventions.lang.en.json")));
+            // The code as the language files spell it: a layout file's "pt-br", or "pt" where pt-BR is the only
+            // Portuguese there is, reads that file and names it pt-BR.
+            if (!string.IsNullOrEmpty(languageCode))
+                languageCode = Match(languageCode, Available()) ?? languageCode;
             if (!string.IsNullOrEmpty(languageCode) && languageCode != "en")
             {
                 string other = TryReadEmbedded("conventions.lang." + languageCode + ".json");
@@ -77,7 +81,8 @@ namespace UIFramework
             code.All(c => char.IsLetterOrDigit(c) || c == '-') ? Path.Combine(ExternalFolder, code + ".json") : null;
 
         /// <summary>Every language there are texts for: English, the files the DLL carries, the files in
-        /// <see cref="ExternalFolder"/>. A window offers all of them.</summary>
+        /// <see cref="ExternalFolder"/>. A window offers all of them. A file named like one already listed in
+        /// another case (pt-br.json beside the DLL's pt-BR) is that language, not a second one.</summary>
         public static List<string> Available()
         {
             var codes = new List<string> { "en" };
@@ -87,7 +92,7 @@ namespace UIFramework
                 int at = name.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
                 if (at < 0 || !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
                 string code = name.Substring(at + prefix.Length, name.Length - at - prefix.Length - ".json".Length);
-                if (code.Length > 0 && !codes.Contains(code)) codes.Add(code);
+                if (code.Length > 0 && !codes.Contains(code, StringComparer.OrdinalIgnoreCase)) codes.Add(code);
             }
             try
             {
@@ -95,11 +100,38 @@ namespace UIFramework
                     foreach (var file in Directory.GetFiles(ExternalFolder, "*.json"))
                     {
                         string code = Path.GetFileNameWithoutExtension(file);
-                        if (code.Length > 0 && code.All(c => char.IsLetterOrDigit(c) || c == '-') && !codes.Contains(code)) codes.Add(code);
+                        if (code.Length > 0 && code.All(c => char.IsLetterOrDigit(c) || c == '-') && !codes.Contains(code, StringComparer.OrdinalIgnoreCase)) codes.Add(code);
                     }
             }
             catch (Exception) { }
             return codes;
+        }
+
+        /// <summary>The code in <paramref name="codes"/> that <paramref name="code"/> stands for, spelt as it is there:
+        /// the same code in any case ("pt-br" for pt-BR), else the language a regional code belongs to ("pt" for
+        /// pt-BR where only pt is there), else the one regional code of a language ("pt-BR" for pt). Null when none
+        /// fits, or when a language has several regional codes and none of its own.</summary>
+        public static string Match(string code, IEnumerable<string> codes)
+        {
+            code = code?.Trim();
+            if (string.IsNullOrEmpty(code) || codes == null)
+                return null;
+            var list = codes.Where(c => !string.IsNullOrEmpty(c)).ToList();
+            string same = list.FirstOrDefault(c => c == code) ?? list.FirstOrDefault(c => string.Equals(c, code, StringComparison.OrdinalIgnoreCase));
+            if (same != null)
+                return same;
+            string language = LanguageOf(code);
+            if (language != code)
+                return list.FirstOrDefault(c => string.Equals(c, language, StringComparison.OrdinalIgnoreCase));
+            var regional = list.Where(c => string.Equals(LanguageOf(c), language, StringComparison.OrdinalIgnoreCase)).ToList();
+            return regional.Count == 1 ? regional[0] : null;
+        }
+
+        /// <summary>"pt" for "pt-BR": the code up to its first '-'.</summary>
+        private static string LanguageOf(string code)
+        {
+            int dash = code.IndexOf('-');
+            return dash > 0 ? code.Substring(0, dash) : code;
         }
 
         public static Conventions Parse(JObject root)

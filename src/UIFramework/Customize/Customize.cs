@@ -832,13 +832,14 @@ namespace UIFramework
                 return null;
             var codes = spec.Languages.ToArray();
             var language = Ui.PlainCombo(Text.T("cust.language"), codes.Select(LanguageName).ToArray());
-            string current = layout.Language;
-            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, current != null && codes.Contains(current) ? current : "en"));
+            // The language the window is in: the layout file's code as Entry.Prepare takes it ("pt-br" is pt-BR).
+            string Current() => Conventions.Match(layout.Language, codes) ?? "en";
+            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, Current()));
             language.Width = 110;
             language.SelectionChanged += (s, e) =>
             {
                 string code = language.SelectedIndex >= 0 ? codes[language.SelectedIndex] : "en";
-                if (code == (layout.Language ?? "en")) return;
+                if (code == Current()) return;
                 layout.Language = code == "en" ? null : code;
                 changed();
             };
