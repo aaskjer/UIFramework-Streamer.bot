@@ -1,0 +1,47 @@
+name: Fix a translation
+description: A text of the settings window that is wrong, awkward or missing in your language
+title: "Translation: "
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The window's own texts live in one file per language, in [`conventions/lang`](https://github.com/aaskjer/UIFramework-Streamer.bot/tree/main/conventions/lang). French and Brazilian Portuguese are new and no native speaker has read them yet, so corrections there help most.
+
+        One issue can hold as many corrections as you like. To try a wording first, save a file with just the texts you change as `UIFramework\lang\<code>.json` beside Streamer.bot and open the window again; [Conventions](https://github.com/aaskjer/UIFramework-Streamer.bot/blob/main/docs/Conventions.md#proofreading-a-language) shows how.
+
+        Texts a project adds itself (its own settings, its chat messages) belong in that project's repository, not here.
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - English (en)
+        - Deutsch (de)
+        - Español (es)
+        - Français (fr)
+        - Português (Brasil) (pt-BR)
+        - Another language
+    validations:
+      required: true
+
+  - type: textarea
+    id: corrections
+    attributes:
+      label: Corrections
+      description: "For each text: what the window says now (or its key in the language file) and what it should say."
+      placeholder: |
+        Now: Guardar y salir
+        Better: Guardar y cerrar
+
+        Now: ...
+        Better: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything to add?
+      description: "Optional: where the text shows, or why the new wording fits better. A complete file for a new language can be dropped in here."
