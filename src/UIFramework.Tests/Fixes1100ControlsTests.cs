@@ -133,6 +133,34 @@ namespace UIFramework.Tests
             Assert.False(whole.Put(new JValue(0)));      // a whole-number stop: 0 is a value none of them has
         });
 
+        // ---- A range slider over a value that is no number ------------------------------------------------------
+
+        [Fact]
+        public void A_range_slider_over_a_value_that_is_no_number_starts_on_its_default() => Sta(() =>
+        {
+            foreach (var bad in new[] { @"""""", @"""abc""", "[1]" })
+            {
+                var parts = new WindowParts();
+                var settings = JObject.Parse(@"{ ""volume"": " + bad + " }");
+                var fields = new Fields(parts, settings, JObject.Parse(@"{ ""volume"": 50 }"), _ => { });
+                var page = new StackPanel();
+                page.Children.Add(fields.SliderField("Volume", "volume", "", null, 0, 100, 1, true, null));
+                Assert.Equal("50", parts.Sliders["volume"].StoredText);
+                // The next save writes the default, as it does for a number box; it wrote 0.
+                var saved = new JObject();
+                FieldBinding.Save(saved, page);
+                Assert.Equal(50L, (long)saved["volume"]);
+            }
+
+            // A number stored as text is still read, and one outside the range still pulled into it.
+            var mixed = new WindowParts();
+            var read = new Fields(mixed, JObject.Parse(@"{ ""a"": ""0,5"", ""b"": 7 }"), JObject.Parse(@"{ ""a"": 0.2, ""b"": 1 }"), _ => { });
+            read.SliderField("A", "a", "", null, 0, 1, 0.1, false, null);
+            read.SliderField("B", "b", "", null, 0, 5, 1, true, null);
+            Assert.Equal("0.5", mixed.Sliders["a"].StoredText);
+            Assert.Equal("5", mixed.Sliders["b"].StoredText);
+        });
+
         // ---- An answer panel after a failure --------------------------------------------------------------------
 
         private static string[] Lines(StackPanel panel) => panel.Children.OfType<TextBlock>().Select(t => t.Text).ToArray();

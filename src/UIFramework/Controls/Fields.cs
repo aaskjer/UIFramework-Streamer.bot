@@ -354,7 +354,9 @@ namespace UIFramework
                 ToolTip = tooltip,
                 Margin = new Thickness(0, 4, 0, 0)
             };
-            if (!slider.Put(Token(key)))
+            // A range starts on its default when the file holds something that is no number ("", "abc"), as a number box
+            // does; it started on its minimum, which the next save then wrote.
+            if (!slider.Put(stops ? Token(key) : NumberToken(key)))
             {
                 slider.Value = slider.Minimum;
                 // A stored value the stops do not offer stays what is saved until the slider is moved.
