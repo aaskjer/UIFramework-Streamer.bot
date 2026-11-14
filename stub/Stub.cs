@@ -173,7 +173,10 @@ public class CPHInline
         {
             try
             {
-                AskGameNow("saved", null, settingsJson);
+                // UiHost.Handle answers "saved" too: a game action that ran without answering did not hear of it, and
+                // another run would not answer either.
+                if (AskGameNow("saved", null, settingsJson) == null)
+                    throw new InvalidOperationException("the action '" + GameActionName + "' ran but did not answer.");
                 return;
             }
             catch (TimeoutException ex) when (attempt < 3)
@@ -312,8 +315,9 @@ public class CPHInline
 
     // One request to the game at a time: its arguments and its answer variable are the game's, and two runs whose
     // pumps overlap (a window closed and opened again quickly) must not mix them. A request that has hung inside the
-    // game action for 35 seconds holds nobody up: its arguments were read long ago, so the requests after it go on
-    // behind a new gate (a run taking over a window whose game never answered, a window opened again meanwhile).
+    // game action for 35 seconds without saying it still works holds nobody up: its arguments were read long ago, so
+    // the requests after it go on behind a new gate (a run taking over a window whose game never answered, a window
+    // opened again meanwhile).
     private sealed class Gate { public long Since; }
     private static Gate _askGate = new Gate();
 
@@ -340,6 +344,10 @@ public class CPHInline
                 }
             }
             long since = Interlocked.Read(ref gate.Since);
+            // One the game says it still works on (UiHost.StillWorking: an import) has not hung: it counts from the last
+            // time it said so. The beat looked for is the holder's, the request asked last.
+            var beat = LastBeat();
+            if (since != 0 && beat != null && beat.Value.Ticks > since) since = beat.Value.Ticks;
             if (since != 0 && DateTime.UtcNow.Ticks - since > TimeSpan.FromSeconds(35).Ticks)
                 Interlocked.CompareExchange(ref _askGate, new Gate(), gate);
             else if (DateTime.UtcNow >= deadline)
@@ -918,42 +926,42 @@ public class CPHInline
         var have = ParseVersion(Path.GetFileName(Path.GetDirectoryName(installed)));
         if (!AutoUpdateEnabled())
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; the release check is off (autoUpdate: false in UIFramework\\loader.json or in this game's uiframework.layout.json).");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; the release check is off (autoUpdate: false in UIFramework\\loader.json or in this game's uiframework.layout.json).");
             return installed;
         }
         JObject latest;
         try { latest = FetchLatest(); }
         catch (Exception ex)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; the release check failed: " + ex.Message);
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " installed; the release check failed: " + ex.Message);
             return installed;
         }
         Version newest;
         try { newest = ParseVersion(ReleaseVersion(latest)); }
         catch (Exception ex)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + have + " in use; " + ex.Message);
+            CPH.LogWarn(LogPrefix + " UIFramework " + have + " installed; " + ex.Message);
             return installed;
         }
         if (newest != null && NeedsNewerStub(latest) != null)
         {
-            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays in use.");
+            CPH.LogWarn(LogPrefix + " UIFramework " + newest + " needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this one is " + StubVersion + "); update the game to get it. " + have + " stays installed.");
             return installed;
         }
         // Missing parts count as 0: a folder named "1.9" holds what latest.json calls "1.9.0".
         if (newest == null || have == null || Full(newest) <= Full(have))
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; latest.json says " + (string)latest["version"] + ", nothing newer.");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; latest.json says " + (string)latest["version"] + ", nothing newer.");
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
         if (Skipped(newest))
         {
-            CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available but was skipped (skipVersion in UIFramework\\loader.json or in this game's uiframework.layout.json).");
+            CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; " + newest + " is available but was skipped (skipVersion in UIFramework\\loader.json or in this game's uiframework.layout.json).");
             NoteLayout("frameworkAvailable", null);
             return installed;
         }
-        CPH.LogInfo(LogPrefix + " UIFramework " + have + " in use; " + newest + " is available, asking.");
+        CPH.LogInfo(LogPrefix + " UIFramework " + have + " installed; " + newest + " is available, asking.");
 
         // The version running in this Streamer.bot already, if any: it stays in use until Streamer.bot restarts.
         bool loaded;
@@ -1079,20 +1087,24 @@ public class CPHInline
             var loaded = LoadedFramework();
             string refusal = SharedRefusal(loaded);
             if (refusal != null) throw new SharedFrameworkRefused(refusal);
+            // The hash the download checked, kept beside the file: a damaged DLL is not loaded but set aside, and its
+            // version is offered again. Also while another UIFramework runs (a game's host block loaded an older one as
+            // Streamer.bot started, passing the damaged one over): the file is not the running one, so it can be moved,
+            // and left where it is it would be passed over at every start. (A file put in by hand has no hash file and
+            // is loaded as it is.)
+            string hashFile = dllPath + ".sha256";
+            if (!string.Equals(loaded?.Location, dllPath, StringComparison.OrdinalIgnoreCase) && File.Exists(hashFile) &&
+                HashOf(dllPath) != File.ReadAllText(hashFile).Trim().ToLowerInvariant())
+            {
+                SetAside(dllPath);
+                throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with; it was set aside as .broken and is offered again next time.");
+            }
             var shared = loaded?.GetType("UIFramework.Entry")?.GetMethod("Show", signature);
             if (shared != null)
             {
                 _show = shared;
                 _close = loaded.GetType("UIFramework.Entry").GetMethod("Close", new[] { typeof(string) });
                 return true;
-            }
-            // The hash the download checked, kept beside the file: a damaged DLL is not loaded but set aside, and its
-            // version is offered again. (A file put in by hand has no hash file and is loaded as it is.)
-            string hashFile = dllPath + ".sha256";
-            if (File.Exists(hashFile) && HashOf(dllPath) != File.ReadAllText(hashFile).Trim().ToLowerInvariant())
-            {
-                SetAside(dllPath);
-                throw new InvalidOperationException(dllPath + " does not match the hash it was downloaded with; it was set aside as .broken and is offered again next time.");
             }
             // UnsafeLoadFrom: a DLL saved from a browser carries Windows' "downloaded from the internet" mark, which
             // LoadFrom refuses in Streamer.bot (NotSupportedException); this loads it like any other.
@@ -1260,6 +1272,10 @@ public class CPHInline
         try
         {
             dll = OfferUpdate(dll);
+            // The UIFramework that ran before this open: only beside that one does the chosen DLL wait for the next start,
+            // and only while it is there (Bind sets a damaged one aside). One this open loads because the chosen one
+            // failed is no such case.
+            var running = LoadedFramework();
             // The chosen DLL first, then every other installed one, newest first: one that cannot be loaded leaves the
             // window to an older one instead of locking every game out.
             bool bound = false;
@@ -1291,7 +1307,7 @@ public class CPHInline
             Volatile.Write(ref _shownSchema, schema);
             // False: a window for this settings file was open already and came to the front; the run that serves it
             // pumps for it, so this one does not drain the queue beside it.
-            if (LoadedFramework() is Assembly running && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
+            if (running != null && File.Exists(dll) && !string.Equals(running.Location, dll, StringComparison.OrdinalIgnoreCase) && _show.DeclaringType?.Assembly == running)
                 CPH.LogInfo(LogPrefix + " UIFramework " + VersionOf(running) + " is running already in this Streamer.bot; " + Path.GetFileName(Path.GetDirectoryName(dll)) + " is used from the next start of Streamer.bot.");
             if (Serve(schema))
                 Pump();
