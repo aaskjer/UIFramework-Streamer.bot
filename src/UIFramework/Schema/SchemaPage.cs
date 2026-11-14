@@ -443,9 +443,8 @@ namespace UIFramework
         private static FrameworkElement EmoteField(PageContext ctx, Setting s, string label, string help)
         {
             var box = ctx.Fields.SettingBox(label, s.Key, help);
+            // YouTube's own emojis (":name:") have their pictures in the table inside the DLL, as in a list's column.
             string platform = (s.Platform ?? "twitch").ToLowerInvariant();
-            if (platform == "youtube")
-                return Ui.Labeled(label, box);
             var image = EmotePictures.Picture(platform, box.Text, ctx.Hooks);
             image.Margin = new Thickness(0, 2, 6, 0);
             box.LostFocus += (sender, e) => EmotePictures.Show(image, platform, box.Text, ctx.Hooks);

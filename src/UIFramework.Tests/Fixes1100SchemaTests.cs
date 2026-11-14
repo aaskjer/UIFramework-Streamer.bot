@@ -153,5 +153,17 @@ namespace UIFramework.Tests
             Assert.Equal(new[] { "Fleet preset applied." }, status);
             Assert.Contains(Find<TextBlock>(page), line => line.Text == "Five ships.");
         });
+
+        // ---- An emote field ---------------------------------------------------------------------------------
+
+        [Fact]
+        public void AYouTubeEmoteFieldHasItsPictureAsAListColumnDoes() => Sta(() =>
+        {
+            // A code the table does not know: the picture stays empty and nothing is downloaded.
+            var spec = Prepared(Head + @"{ ""key"": ""reel"", ""default"": "":not-an-emoji:"", ""kind"": ""emote"", ""platform"": ""youtube"" } ] }");
+            var (_, _, page) = Built(spec, new NoHooks());
+            var picture = Assert.Single(Find<System.Windows.Controls.Image>(page));
+            Assert.Equal(":not-an-emoji:", picture.Tag);
+        });
     }
 }
