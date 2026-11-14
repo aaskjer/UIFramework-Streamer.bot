@@ -109,7 +109,7 @@ namespace UIFramework
             Func<string, string> outcome = r => OutcomeOf(spec, r);
 
             var root = new DockPanel { Margin = new Thickness(16, 12, 16, 12) };
-            var entries = new ObservableCollection<LogEntry>(read.OrderByDescending(x => x.Timestamp));
+            var entries = new ObservableCollection<LogEntry>(NewestFirst(read));
             var view = CollectionViewSource.GetDefaultView(entries);
 
             var search = new TextBox { ToolTip = Text.T("log.search.tip") };
@@ -129,7 +129,9 @@ namespace UIFramework
             {
                 var openFolder = Ui.IconButton(Icons.Folder, Icons.Font, Text.T("log.openFolder"));   // the folder, as on a path field
                 openFolder.Margin = new Thickness(6, 0, 0, 0);
-                openFolder.Click += (sender, e) => Web.OpenFolder(spec.Folder, ctx.Log, ctx.Spec.LogPrefix);
+                // Beside Streamer.bot, where the watcher and the settings action look: the declared "Chat Games/Logs" as
+                // it is was taken from the process's current directory, which a file dialog moves (Export, Import).
+                openFolder.Click += (sender, e) => Web.OpenFolder(spec.FullFolder ?? spec.Folder, ctx.Log, ctx.Spec.LogPrefix);
                 buttons.Children.Add(openFolder);
             }
             var searchRow = new DockPanel();
@@ -169,7 +171,7 @@ namespace UIFramework
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
-            grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, cellText));
+            grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { Converter = new TimeText() }, cellText));
             grid.Columns.Add(ResultColumn(r => StyleOf(spec, r)));
             var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn(Text.T("log.user"), "User"), new LogColumn(Text.T("log.platform"), "Platform") };
             foreach (var column in columns)
@@ -298,7 +300,7 @@ namespace UIFramework
                 // Not inside view.DeferRefresh(): the grid reads the view with every line that comes in, and a view
                 // whose refresh is deferred throws on that.
                 entries.Clear();
-                foreach (var item in reloaded.OrderByDescending(x => x.Timestamp))
+                foreach (var item in NewestFirst(reloaded))
                     entries.Add(item);
                 FillDates(keepDay);
                 FillResults(keepResult);
@@ -381,6 +383,12 @@ namespace UIFramework
             page.Unloaded += (sender, e) => Stop();
         }
 
+        /// <summary>The entries with the newest first. The host hands them over in the order they were written (the
+        /// settings action: file by file, line by line) and a time has whole seconds, so a round's end writes several
+        /// lines of one second. The sort keeps the order it is given for equal times: given the other way round, the
+        /// last of them is the first row, as in every other second.</summary>
+        private static IEnumerable<LogEntry> NewestFirst(IEnumerable<LogEntry> read) => read.Reverse().OrderByDescending(x => x.Timestamp);
+
         /// <summary>The row that holds the entry with this raw line, or -1. Two entries can read the same (a line
         /// without a time): the one nearest to where it was is meant.</summary>
         public static int RowOf(System.Collections.IList rows, string raw, int was)
@@ -438,6 +446,15 @@ namespace UIFramework
                 MinWidth = 90,
                 SortMemberPath = "Result"
             };
+        }
+
+        // A line without a time that can be read (LogEntry.Parse leaves DateTime.MinValue) has an empty Time cell, not
+        // 0001-01-01 00:00:00; the column still sorts by the time itself.
+        private sealed class TimeText : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+                value is DateTime time && time != DateTime.MinValue ? time.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : "";
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
         }
 
         private sealed class FieldReader : IValueConverter

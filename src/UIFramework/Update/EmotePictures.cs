@@ -32,23 +32,29 @@ namespace UIFramework
         private static DateTime _twitchAsked;
         private static string _twitchSources;
         // The host's answer per window (one IHostHooks each): asking the game costs a trip to Streamer.bot's thread
-        // and up to five seconds when it hangs, so it is asked once, not once per emote cell.
+        // and up to five seconds when it hangs, so it is asked once, not once per emote cell, and on a thread of its
+        // own, like every other request (Patient): an emote's picture waits for the answer, the window does not.
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, SourcesBox> Sources =
             new System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, SourcesBox>();
 
-        private sealed class SourcesBox { public string Json; }
+        private sealed class SourcesBox { public Task<string> Json; }
+        private static readonly Task<string> NoSources = Task.FromResult<string>(null);
 
-        /// <summary>The host's emote sources, asked once per hooks object (per window); null without a host or an answer.</summary>
-        public static string SourcesOf(IHostHooks hooks)
+        private static Task<string> Asked(IHostHooks hooks)
         {
-            if (hooks == null) return null;
-            return Sources.GetValue(hooks, h =>
-            {
-                string json = null;
-                try { json = h.EmoteSources(); } catch (Exception) { }
-                return new SourcesBox { Json = json };
-            }).Json;
+            if (hooks == null) return NoSources;
+            var box = Sources.GetValue(hooks, h => new SourcesBox());
+            lock (box)
+                return box.Json ?? (box.Json = Task.Run(() =>
+                {
+                    try { return hooks.EmoteSources(); }
+                    catch (Exception) { return null; }
+                }));
         }
+
+        /// <summary>The host's emote sources, asked once per hooks object (per window); null without a host or an answer.
+        /// Waits for the answer: on the window's thread, <see cref="Show"/> asks for it only once it is there.</summary>
+        public static string SourcesOf(IHostHooks hooks) => Asked(hooks).GetAwaiter().GetResult();
 
         /// <summary>A Kick emote as chat renders it, <c>[emote:ID:name]</c>, or typed short as <c>ID:name</c>: group 1
         /// is the id, group 2 the name.</summary>
@@ -156,6 +162,19 @@ namespace UIFramework
                 var m = KickCode.Match(code);
                 if (m.Success)
                     Load(image, code, "https://files.kick.com/emotes/" + m.Groups[1].Value + "/fullsize");
+                return;
+            }
+            // YouTube and Twitch look in the game's sources too. While the game has not answered yet, the picture is
+            // shown once it has (for the code the image still stands for), and the window goes on meanwhile.
+            var asked = Asked(hooks);
+            if (!asked.IsCompleted)
+            {
+                var waiting = image.Dispatcher;
+                asked.ContinueWith(done => waiting.BeginInvoke(new Action(() =>
+                {
+                    if (Equals(image.Tag, code))
+                        Show(image, platform, code, hooks, onSource);
+                })), TaskScheduler.Default);
                 return;
             }
             if (string.Equals(platform, "youtube", StringComparison.OrdinalIgnoreCase))

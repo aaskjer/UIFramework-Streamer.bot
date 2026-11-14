@@ -9,6 +9,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Newtonsoft.Json.Linq;
 using Run = System.Windows.Documents.Run;
 
 namespace UIFramework
@@ -30,6 +31,10 @@ namespace UIFramework
         {
             var spec = ctx.Spec;
             var page = Ui.PageStack();
+            // The game's credits and its own links are declared texts like the sections': translated where the
+            // conventions or the game's Tx know them.
+            var lang = spec.Conventions?.Lang;
+            string T(string declared) => lang != null && lang.Translates ? lang.Text(declared) : declared;
 
             // No logo declared: no empty square beside the name.
             var logo = new Image { Width = 72, Height = 72, Margin = new Thickness(0, 0, 14, 0) };
@@ -72,7 +77,7 @@ namespace UIFramework
             if (!string.IsNullOrWhiteSpace(spec.About.Credits))
                 names.Children.Add(new TextBlock
                 {
-                    Text = spec.About.Credits,
+                    Text = T(spec.About.Credits),
                     FontSize = 12,
                     Foreground = Theme.SubFg,
                     TextWrapping = TextWrapping.Wrap,
@@ -102,7 +107,7 @@ namespace UIFramework
                 Link(Text.T("about.releases"), spec.ReleasesUrl);
             }
             foreach (var link in spec.About.Links)
-                Link(link.Text, link.Url);
+                Link(T(link.Text), link.Url);
             // Then the links every window ends with, as conventions/keys.json lists them (the framework's page,
             // Streamer.bot, where to report a problem): a text is a window text's key or the text itself.
             if (spec.About.ShowDefaultLinks)
@@ -243,15 +248,21 @@ namespace UIFramework
                     fire.ToolTip = Text.T("help.trigger.fire.tip");
                     AutomationProperties.SetName(fire, Text.T("help.trigger.fire") + ": " + trigger.Name);
                     var declared = trigger;
+                    // Asked off the window's thread like every other request (Patient): with the game busy on another
+                    // request the window stood still for five seconds. The button is greyed until the answer is there,
+                    // and no answer says why (the settings action's reason) instead of guessing at an older game.
                     fire.Click += (s, e) =>
                     {
-                        try
+                        var settings = (JObject)ctx.Settings?.DeepClone();
+                        fire.IsEnabled = false;
+                        Patient.Ask(() => ctx.Hooks?.Test(FireRequest + declared.Code, settings), (answer, error) =>
                         {
-                            string answer = ctx.Hooks?.Test(FireRequest + declared.Code, ctx.Settings);
+                            fire.IsEnabled = true;
+                            string why = error != null ? error.Message : Patient.Why(answer);
                             if (answer == "fired") ctx.SetStatus?.Invoke(Text.T("help.trigger.fired", declared.Name), Theme.SuccessText, null);
-                            else ctx.SetStatus?.Invoke(Text.T("help.trigger.notFired", declared.Name), Theme.DangerText, Text.T("help.trigger.notFired.why"));
-                        }
-                        catch (Exception ex) { ctx.SetStatus?.Invoke(Text.T("help.trigger.notFired", declared.Name), Theme.DangerText, ex.Message); }
+                            else ctx.SetStatus?.Invoke(Text.T("help.trigger.notFired", declared.Name), Theme.DangerText, why.Length > 0 ? why : Text.T("help.trigger.notFired.why"));
+                        },
+                        waiting: () => ctx.SetStatus?.Invoke(Text.T("action.waiting", declared.Name), Theme.MutedColor, null));
                     };
                     page.Children.Add(fire);
                 }
