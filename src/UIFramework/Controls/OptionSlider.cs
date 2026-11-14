@@ -44,8 +44,15 @@ namespace UIFramework
             ValueChanged += (s, e) => _kept = null;
         }
 
-        /// <summary>Lets go of a kept value: the slider's own stop is the value from now on.</summary>
-        public void LetGo() => _kept = null;
+        /// <summary>Lets go of a kept value: the slider's own stop is the value from now on. The value changes without the
+        /// slider moving, so its ValueChanged fires here, as in <see cref="Put"/>: the label, the change count, a condition
+        /// on the slider and an <c>ask</c> follow.</summary>
+        public void LetGo()
+        {
+            if (_kept == null) return;
+            _kept = null;
+            OnValueChanged(Value, Value);
+        }
 
         /// <summary>The value as the settings file holds it: the stop's value (a number when it is one), or the number.</summary>
         public JToken Stored
