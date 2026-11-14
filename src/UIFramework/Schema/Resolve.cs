@@ -295,8 +295,13 @@ namespace UIFramework
                 bool hidden = userPage?.Hidden == true && page.Id != "about";
                 if (hidden && !customizing)
                     continue;
+                // The conventions' title for the id where it is a translation: a language without page titles of its own
+                // has the English ones, which never replace what the game titled the page itself (as with a key's label).
+                string idTitle = lang.Page(page.Id);
+                if (page.Title != null && idTitle == Conventions.Default.Lang.Page(page.Id))
+                    idTitle = null;
                 string title = userPage?.Title
-                    ?? (lang.Translates ? lang.OwnPage(page.Id) ?? lang.TextOrNull(page.Title) ?? lang.Page(page.Id) ?? page.Title : page.Title ?? lang.Page(page.Id))
+                    ?? (lang.Translates ? lang.OwnPage(page.Id) ?? lang.TextOrNull(page.Title) ?? idTitle ?? page.Title : page.Title ?? lang.Page(page.Id))
                     ?? Conventions.Humanize(page.Id);
                 string icon = userPage?.Icon != null ? IconGlyph(userPage.Icon) : page.Icon != null ? IconGlyph(page.Icon) : conventions.Pages.TryGetValue(page.Id, out var c) ? IconGlyph(c.Icon) : "•";
                 if (page.Icon != null && UnknownIcon(page.Icon))

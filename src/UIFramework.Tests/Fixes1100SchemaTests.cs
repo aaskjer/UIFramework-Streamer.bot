@@ -293,5 +293,21 @@ namespace UIFramework.Tests
             Assert.False((bool)spec.Defaults["sendAction"]);
             Assert.True((bool)spec.Defaults["logToFile"]);
         });
+
+        // ---- Page titles in another language -------------------------------------------------------------
+
+        [Fact]
+        public void APagesOwnTitleStaysInALanguageThatDoesNotTitleItsId()
+        {
+            const string settings = Head + @"{ ""key"": ""a"", ""default"": 1 }, { ""key"": ""b"", ""default"": 1, ""page"": ""leaderboard"" } ],
+                ""lang"": { ""nl"": { ""keys"": { ""a"": ""Een"" } } }, ""window"": { ""title"": ""Demo"", ";
+            const string pages = @"""pages"": [ { ""id"": ""game"", ""title"": ""Round"" }, { ""id"": ""leaderboard"", ""title"": ""Scoreboard"" },
+                { ""id"": ""help"", ""title"": ""How to play"" }, ""about"" ], ""help"": [ { ""heading"": ""Playing"", ""lines"": [ ""Type !play."" ] } ] } }";
+            string[] Titles(string language) => Prepared(settings + @"""language"": """ + language + @""", " + pages).Pages.Select(p => p.Title).Take(3).ToArray();
+            // Dutch, with nothing but the game's own texts: the conventions' English titles replaced the game's.
+            Assert.Equal(new[] { "Round", "Scoreboard", "How to play" }, Titles("nl"));
+            // German titles the ids, and translates a declared wording it knows.
+            Assert.Equal(new[] { "Spiel", "Bestenliste", "Anleitung" }, Titles("de"));
+        }
     }
 }
