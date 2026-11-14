@@ -355,7 +355,9 @@ namespace UIFramework
                 ToolTip = tooltip,
                 Margin = new Thickness(0, 4, 0, 0)
             };
-            if (!slider.Put(Token(key)))
+            // A range starts on its default when the file holds something that is no number ("", "abc"), as a number box
+            // does; it started on its minimum, which the next save then wrote.
+            if (!slider.Put(stops ? Token(key) : NumberToken(key)))
             {
                 slider.Value = slider.Minimum;
                 // A stored value the stops do not offer stays what is saved until the slider is moved.
@@ -380,7 +382,8 @@ namespace UIFramework
                 {
                     var caption = new TextBlock { Text = options[i].Label, FontSize = 11, Foreground = Theme.SubFg, Cursor = Cursors.Hand };
                     int stop = i;
-                    caption.MouseLeftButtonDown += (sender, e) => { slider.LetGo(); slider.Value = stop; Paint(); };
+                    // The stop the slider sits on lets go of a kept value; another one is a move, which lets go of it too.
+                    caption.MouseLeftButtonDown += (sender, e) => { if (slider.Index == stop) slider.LetGo(); else slider.Value = stop; Paint(); };
                     captions.Children.Add(caption);
                     labels.Add(caption);
                 }

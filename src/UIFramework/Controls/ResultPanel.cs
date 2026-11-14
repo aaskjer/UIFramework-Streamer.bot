@@ -28,6 +28,9 @@ namespace UIFramework
             try { return JsonText.Parse(text) as JObject; } catch (Exception) { return null; }
         }
 
+        /// <summary>Marks the line of a failure, so the next answer does not keep it.</summary>
+        private const string Failure = "action-failed";
+
         /// <param name="failed">The text says what went wrong: it is shown in the colour of a failure.</param>
         public static void Render(StackPanel panel, string result, IHostHooks hooks = null, bool failed = false)
         {
@@ -37,13 +40,16 @@ namespace UIFramework
             {
                 panel.Children.Clear();
                 var line = Line(text, false);
-                if (failed) line.Foreground = new SolidColorBrush(Theme.DangerText);
+                if (failed) { line.Foreground = new SolidColorBrush(Theme.DangerText); line.Tag = Failure; }
                 panel.Children.Add(line);
                 return;
             }
             if (structured["lines"] == null && structured["bar"] == null)
             {
                 // An answer that only sets fields or a status leaves the panel as it was; an empty panel gets the status.
+                // A failure of an earlier ask is not kept: it said the action failed under an answer that came.
+                if (panel.Children.Count == 1 && panel.Children[0] is TextBlock before && Equals(before.Tag, Failure))
+                    panel.Children.Clear();
                 string status = (string)structured["status"];
                 if (panel.Children.Count == 0 && !string.IsNullOrEmpty(status))
                     panel.Children.Add(Line(status, false));
