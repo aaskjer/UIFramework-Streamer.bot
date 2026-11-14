@@ -116,6 +116,20 @@ public class CPHInline
         public string ReadTable(string key) => _owner.AskGame("table", key, null, KnowsNoAnswer("table") ? NoAnswer : null);
         public string EmoteSources() => _owner.AskGame("emotes", null, null);
 
+        // Streamer.bot's user groups, for the window's group fields to suggest: a JSON array of their names, read on
+        // Streamer.bot's thread like everything of CPH. Null when they cannot be read; the fields then suggest none.
+        public string Groups()
+        {
+            List<string> groups = null;
+            try { _owner.RunOnBot(() => groups = _owner.CPH.GetGroups(), true); }
+            catch (Exception ex)
+            {
+                _owner.CPH.LogWarn(LogPrefix + " Streamer.bot's groups could not be read for the window: " + ex.Message);
+                return null;
+            }
+            return JArray.FromObject(groups ?? new List<string>()).ToString(Newtonsoft.Json.Formatting.None);
+        }
+
         // The log as the window declares it: every file matching the pattern in the folder, oldest file first.
         public IEnumerable<string> ReadLogLines()
         {

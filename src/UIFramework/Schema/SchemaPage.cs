@@ -282,7 +282,7 @@ namespace UIFramework
                     element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.namelist.hint"), tip));
                     break;
                 case "grouplist":
-                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip));
+                    element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip, names => StreamerBotGroups(ctx, names)));
                     break;
                 case "colour":
                 case "color":
@@ -459,6 +459,51 @@ namespace UIFramework
             return Ui.Labeled(label, dock);
         }
 
+        // Streamer.bot's groups, asked of the settings action once per window (one hooks object each, as the emote
+        // sources are), when a grouplist field first gets the cursor; every grouplist field of the window shares the
+        // answer, also after the window rebuilt its pages. The question goes off the window's thread (Patient): a
+        // Streamer.bot that takes its time leaves the box to type in meanwhile.
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, GroupsAnswer> GroupsAsked =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, GroupsAnswer>();
+
+        private sealed class GroupsAnswer
+        {
+            public List<string> Names;
+            public readonly List<Action<List<string>>> Waiting = new List<Action<List<string>>>();
+        }
+
+        private static void StreamerBotGroups(PageContext ctx, Action<List<string>> then)
+        {
+            var hooks = ctx.Hooks;
+            var answer = GroupsAsked.GetValue(hooks, h => new GroupsAnswer());
+            if (answer.Names != null) { then(answer.Names); return; }
+            answer.Waiting.Add(then);
+            if (answer.Waiting.Count > 1) return;   // asked already: the answer goes to every field waiting for it
+            Patient.Ask(() => hooks.Groups(), (json, error) =>
+            {
+                answer.Names = GroupNames(error == null ? json : null);
+                var waiting = answer.Waiting.ToList();
+                answer.Waiting.Clear();
+                foreach (var field in waiting)
+                    field(answer.Names);
+            });
+        }
+
+        /// <summary>The names in the settings action's answer to Groups, a JSON array of strings: sorted, without empty
+        /// and repeated ones. None for no answer (a settings action before stub 0.3.2, a preview) or one that is no
+        /// such array.</summary>
+        public static List<string> GroupNames(string json)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(json) && JsonText.Parse(json) is JArray array)
+                    return array.Where(t => t.Type == JTokenType.String).Select(t => ((string)t).Trim()).Where(n => n.Length > 0)
+                        .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase).ToList();
+            }
+            catch (Exception) { }   // no JSON: nothing to suggest
+            return new List<string>();
+        }
+
         private static FrameworkElement PathField(PageContext ctx, Setting s, string label, string help)
         {
             var box = ctx.Fields.SettingBox(label, s.Key, (string.IsNullOrEmpty(help) ? "" : help + "\n") + Text.T("field.path.tip"));
@@ -466,15 +511,35 @@ namespace UIFramework
             open.Margin = new Thickness(6, 0, 0, 0);
             open.Click += (sender, e) =>
             {
-                string path = box.Text.Trim().Trim('"');
-                if (path.Length == 0) return;
-                if (!System.IO.Path.IsPathRooted(path))
-                    path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-                Web.OpenFolder(path, ctx.Log, ctx.Spec.LogPrefix);
+                // A value that names a file opens the folder the file is in: the button made a folder of the file's
+                // name ("overlay\state.json"), or failed on a file that was there.
+                string folder = PathPicker.FolderToOpen(box.Text, AppDomain.CurrentDomain.BaseDirectory);
+                if (folder != null)
+                    Web.OpenFolder(folder, ctx.Log, ctx.Spec.LogPrefix);
+            };
+            // Windows' own dialog: for a file when the value or the default names one, else for a folder. What is chosen
+            // under the Streamer.bot folder is written relative to it.
+            var browse = Ui.IconButton(PathPicker.BrowseGlyph, Icons.Font, Text.T("field.path.browse"));
+            browse.Margin = new Thickness(6, 0, 0, 0);
+            browse.Click += (sender, e) =>
+            {
+                string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
+                var plan = PathPicker.For(box.Text, s.Default?.Type == JTokenType.String ? (string)s.Default : null, baseFolder);
+                string chosen;
+                try { chosen = PathPicker.Choose(plan, Window.GetWindow(box), Text.T(plan.File ? "field.path.pickFile" : "field.path.pickFolder", label), Text.T("field.path.allFiles")); }
+                catch (Exception ex)
+                {
+                    ctx.Log?.Warn(ctx.Spec.LogPrefix + " The dialog for '" + s.Key + "' could not open: " + ex.Message);
+                    return;
+                }
+                if (chosen != null)
+                    box.Text = PathPicker.Relative(chosen, baseFolder);
             };
             var dock = new DockPanel();
             DockPanel.SetDock(open, Dock.Right);
+            DockPanel.SetDock(browse, Dock.Right);
             dock.Children.Add(open);
+            dock.Children.Add(browse);
             dock.Children.Add(box);
             return Ui.Labeled(label, dock);
         }

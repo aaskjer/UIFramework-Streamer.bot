@@ -37,6 +37,10 @@ namespace UIFramework
         /// <summary>Looks at the settings about to be saved and names what would not do what it looks like, one
         /// problem per line; the window shows them and asks whether to save anyway. Null or empty: nothing to say.</summary>
         string Validate(JObject settings);
+
+        /// <summary>The names of Streamer.bot's user groups as a JSON array, for the chips of a grouplist field to
+        /// suggest. Asked once per window, off the window's thread. Null: nothing to suggest.</summary>
+        string Groups();
     }
 
     /// <summary>A hooks implementation that does nothing, for previews and hosts without extras.</summary>
@@ -49,5 +53,6 @@ namespace UIFramework
         public virtual string ReadTable(string key) => null;
         public virtual string EmoteSources() => null;
         public virtual string Validate(JObject settings) => null;
+        public virtual string Groups() => null;
     }
 }

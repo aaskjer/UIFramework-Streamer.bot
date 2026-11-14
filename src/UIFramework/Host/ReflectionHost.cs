@@ -19,6 +19,7 @@ namespace UIFramework
     ///   string ReadTable(string key)                 // JSON array of row objects
     ///   string EmoteSources()                        // JSON: twitchUserId, clientId, token (for emote pictures)
     ///   string Validate(string settingsJson)         // problems before a save, one per line; null = fine
+    ///   string Groups()                              // JSON array of Streamer.bot's group names (stub 0.3.2 and on)
     ///   IEnumerable&lt;string&gt; ReadLogLines()          // or string[] / List&lt;string&gt;; null = no Log page
     ///   string WindowLogPrefix()                     // the prefix of the window's log lines, where it declares none
     /// </code>
@@ -26,7 +27,7 @@ namespace UIFramework
     public sealed class ReflectionHost : IHostLog, IHostHooks
     {
         private readonly object _host;
-        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources, _validate;
+        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources, _validate, _groups;
 
         public ReflectionHost(object host)
         {
@@ -39,6 +40,7 @@ namespace UIFramework
             _readLog = Find(type, "ReadLogLines");
             _emoteSources = Find(type, "EmoteSources");
             _validate = Find(type, "Validate", typeof(string));
+            _groups = Find(type, "Groups");
         }
 
         private static MethodInfo Find(Type type, string name, params Type[] parameters) =>
@@ -99,6 +101,13 @@ namespace UIFramework
         {
             if (_emoteSources == null) return null;
             try { return _emoteSources.Invoke(_host, null) as string; } catch (Exception) { return null; }
+        }
+
+        // A settings action before stub 0.3.2 has no Groups: the group fields then suggest nothing, as before.
+        public string Groups()
+        {
+            if (_groups == null) return null;
+            try { return _groups.Invoke(_host, null) as string; } catch (Exception) { return null; }
         }
     }
 }
