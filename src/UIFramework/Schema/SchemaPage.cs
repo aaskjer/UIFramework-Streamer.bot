@@ -548,8 +548,11 @@ namespace UIFramework
             JObject settings;
             try
             {
-                // A copy: the question is put together on another thread while the window goes on changing its own.
-                settings = s.Live && ctx.LiveSettings != null ? ctx.LiveSettings() : (JObject)ctx.Settings.DeepClone();
+                // A field with `ask` asks with what the window shows, as `live` on it did before `ask` had a name; a
+                // button does so with `live`. A copy: the question is put together on another thread while the window
+                // goes on changing its own.
+                bool live = s.Live || (s.Ask && s.Kind != "action");
+                settings = live && ctx.LiveSettings != null ? ctx.LiveSettings() : (JObject)ctx.Settings.DeepClone();
             }
             catch (Exception ex) { Failed(ex.Message); return; }
             if (button != null) button.IsEnabled = false;
