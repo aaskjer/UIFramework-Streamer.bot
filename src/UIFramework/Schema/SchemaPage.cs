@@ -44,11 +44,14 @@ namespace UIFramework
                 page.Children.Add(Ui.Note(Text.T("cust.emptyPage")));
         }
 
-        /// <summary>Fields the spec put on a standard page, above that page's own content.</summary>
+        /// <summary>Fields the spec put on a standard page, above that page's own content. A page with nothing of its
+        /// own (no messages, no help) shows the fields alone instead of going with them.</summary>
         public static UIElement Prepend(PageContext ctx, List<Setting> settings, UIElement inner)
         {
-            if (settings.Count == 0 || inner == null)
+            if (settings.Count == 0)
                 return inner;
+            if (inner == null)
+                return Build(ctx, settings);
             var top = Ui.PageStack();
             top.Margin = new Thickness(16, 2, 16, 0);
             if (ctx.Customizing)

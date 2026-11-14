@@ -164,6 +164,21 @@ namespace UIFramework
             var claimed = new HashSet<string>(StringComparer.Ordinal);
             var pageFields = new Dictionary<string, List<Setting>>(StringComparer.Ordinal);
             var pageOrder = new List<SpecPage>();
+            // A page's claim on a sender switch waits until the Messages page's entries are known, and with them
+            // whether it draws the switch.
+            var senderClaims = new List<(SpecPage Page, string Pattern, Setting Setting)>();
+
+            void Claim(SpecPage page, Setting setting, List<Setting> mine)
+            {
+                // The user's layout has the last word: a field the user moved to another page stays there.
+                string moved = layout?.Field(setting.Key)?.Page;
+                if (moved != null && moved != page.Id)
+                    return;
+                claimed.Add(setting.Key);
+                // Where it sits now, for the customise mode's menu and everything else that asks.
+                setting.Page = page.Id;
+                mine.Add(setting);
+            }
 
             foreach (var page in spec.SpecPages)
             {
@@ -175,22 +190,20 @@ namespace UIFramework
                         spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which no setting matches.");
                     foreach (var setting in Match(pattern, settings).Where(s => !claimed.Contains(s.Key)))
                     {
-                        // The Messages page builds the sender switches and the Log page its switch whatever a page
-                        // claims: a second field for the key would have the last word on save. They stay there.
-                        if (senderKeys.Contains(setting.Key) || setting.Key == spec.Log.WriteLogKey)
+                        if (senderKeys.Contains(setting.Key))
                         {
-                            if (pattern == setting.Key)
-                                spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the " + (senderKeys.Contains(setting.Key) ? "Messages" : "Log") + " page shows; it stays there.");
+                            senderClaims.Add((page, pattern, setting));
                             continue;
                         }
-                        // The user's layout has the last word: a field the user moved to another page stays there.
-                        string moved = layout?.Field(setting.Key)?.Page;
-                        if (moved != null && moved != page.Id)
+                        // The Log page builds its switch whatever a page claims: a second field for the key would have
+                        // the last word on save. It stays there.
+                        if (setting.Key == spec.Log.WriteLogKey)
+                        {
+                            if (pattern == setting.Key)
+                                spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the Log page shows; it stays there.");
                             continue;
-                        claimed.Add(setting.Key);
-                        // Where it sits now, for the customise mode's menu and everything else that asks.
-                        setting.Page = page.Id;
-                        mine.Add(setting);
+                        }
+                        Claim(page, setting, mine);
                     }
                 }
                 pageFields[page.Id] = mine;
@@ -199,9 +212,31 @@ namespace UIFramework
             // A template a page claimed by its key is that page's field, not also an entry of the Messages picker.
             spec.Messages.RemoveAll(m => claimed.Contains(m.Key) && settings.Any(s => s.Key == m.Key && s.Page != "messages"));
 
+            // The sender switches the Messages page draws, as StandardPages.BuildMessages does: the game's while it has
+            // entries, the cooldown pair while one of them is in the cooldown group and the bot switch for it is
+            // declared. One it does not draw is a field like any other, on its page: a setting the game reads always has
+            // one. Those it draws stay there whatever a page claims, since a second field would have the last word on save.
+            var drawn = new HashSet<string>(StringComparer.Ordinal);
+            if (spec.Messages.Count > 0)
+            {
+                drawn.UnionWith(new[] { spec.Senders.UseBot, spec.Senders.SendAction, spec.Senders.NumberSeparator }.Where(k => k != null));
+                if (spec.Senders.CooldownUseBot != null && spec.Messages.Any(m => spec.Senders.IsCooldownGroup(m.Group)))
+                    drawn.UnionWith(new[] { spec.Senders.CooldownUseBot, spec.Senders.CooldownSendAction }.Where(k => k != null));
+            }
+            foreach (var (page, pattern, setting) in senderClaims)
+            {
+                if (drawn.Contains(setting.Key))
+                {
+                    if (pattern == setting.Key)
+                        spec.Problems.Add("Page '" + page.Id + "' names '" + pattern + "', which the Messages page shows; it stays there.");
+                }
+                else if (!claimed.Contains(setting.Key))
+                    Claim(page, setting, pageFields[page.Id]);
+            }
+
             foreach (var setting in settings.OrderBy(s => s.Order))
             {
-                if (claimed.Contains(setting.Key) || (setting.Hidden && !customizing) || senderKeys.Contains(setting.Key))
+                if (claimed.Contains(setting.Key) || (setting.Hidden && !customizing) || drawn.Contains(setting.Key))
                     continue;
                 if (setting.Key == spec.Log.WriteLogKey)
                     continue;

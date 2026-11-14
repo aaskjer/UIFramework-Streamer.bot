@@ -193,5 +193,78 @@ namespace UIFramework.Tests
             Assert.Contains("'logToFile'", problem);
             Assert.Empty(Prepared(settings + log + @", ""pages"": [ ""game"", ""log"", ""about"" ] } }").Problems);
         }
+
+        // ---- What a standard page draws itself ----------------------------------------------------------------
+
+        /// <summary>Every page built as the shell builds it: the keys each one shows a field for, null for a page
+        /// that is left out.</summary>
+        private static Dictionary<string, List<string>> Shown(WindowSpec spec)
+        {
+            var shown = new Dictionary<string, List<string>>();
+            foreach (var page in spec.Pages)
+            {
+                var parts = new WindowParts();
+                var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, null, new NoHooks());
+                shown[page.Id] = page.Build?.Invoke(ctx) == null ? null : parts.Elements.Keys.ToList();
+            }
+            return shown;
+        }
+
+        private const string Senders = @"{ ""key"": ""useBot"", ""default"": true }, { ""key"": ""sendAction"", ""default"": false }, { ""key"": ""numberSeparator"", ""default"": "","" },
+            { ""key"": ""cooldownUseBot"", ""default"": true }, { ""key"": ""cooldownSendAction"", ""default"": false }, ";
+
+        [Fact]
+        public void SenderSwitchesWithoutMessagesAreFieldsOnTheirPages() => Sta(() =>
+        {
+            // No message to draw them with: no Messages page, and the five had no field anywhere.
+            var spec = Prepared(Head + Senders + @"{ ""key"": ""a"", ""default"": 1 } ] }");
+            var shown = Shown(spec);
+            Assert.False(shown.ContainsKey("messages"));
+            Assert.Equal(new[] { "useBot", "sendAction", "numberSeparator" }, shown["general"].OrderBy(k => k == "useBot" ? 0 : k == "sendAction" ? 1 : 2).ToArray());
+            Assert.Equal(new[] { "cooldownUseBot", "cooldownSendAction" }, shown["cooldowns"].ToArray());
+            Assert.Empty(spec.Problems);
+        });
+
+        [Fact]
+        public void CooldownSwitchesWithoutACooldownMessageAreFieldsOnTheirPage() => Sta(() =>
+        {
+            // Blackjack's cooldown messages have no group: the Messages page drew the game's senders and not the pair.
+            var spec = Prepared(Head + Senders.Replace(@"""cooldownUseBot"", ""default"": true", @"""cooldownUseBot"", ""default"": true, ""page"": ""messages""")
+                .Replace(@"""cooldownSendAction"", ""default"": false", @"""cooldownSendAction"", ""default"": false, ""page"": ""messages""") + @"
+                { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""page"": ""messages"", ""group"": ""Game"" },
+                { ""key"": ""msgWait"", ""default"": ""Wait, {user}"", ""kind"": ""template"", ""page"": ""messages"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""messages"", ""about"" ], ""senders"": { ""cooldownGroup"": ""Cooldown"" } } }");
+            var shown = Shown(spec);
+            foreach (var key in new[] { "useBot", "sendAction", "numberSeparator", "cooldownUseBot", "cooldownSendAction" })
+                Assert.Single(shown["messages"], key);
+            Assert.Empty(spec.Problems);
+            // With a message in the group the page draws the pair itself, and a page naming one is told so.
+            var grouped = Prepared(Head + Senders + @"
+                { ""key"": ""msgWait"", ""default"": ""Wait, {user}"", ""kind"": ""template"", ""page"": ""messages"", ""group"": ""Cooldown"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ { ""id"": ""chat"", ""fields"": [ ""cooldownUseBot"" ] }, ""messages"", ""about"" ] } }");
+            Assert.Single(grouped.Problems, p => p.Contains("'cooldownUseBot', which the Messages page shows"));
+            Assert.DoesNotContain("cooldownUseBot", Shown(grouped)["chat"] ?? new List<string>());
+        });
+
+        [Fact]
+        public void APageThatNamesASenderSwitchTheMessagesPageDoesNotDrawShowsIt() => Sta(() =>
+        {
+            var spec = Prepared(Head + Senders + @"{ ""key"": ""a"", ""default"": 1 } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"", { ""id"": ""chat"", ""title"": ""Chat"", ""fields"": [ ""useBot"", ""cooldown*"" ] }, ""about"" ] } }");
+            var shown = Shown(spec);
+            Assert.Equal(new[] { "useBot", "cooldownUseBot", "cooldownSendAction" }, shown["chat"].ToArray());
+            Assert.Empty(spec.Problems);
+        });
+
+        [Fact]
+        public void FieldsOnAStandardPageThatHasNothingOfItsOwnStay() => Sta(() =>
+        {
+            // The Messages page without messages and the Help page without help were left out, and the fields with them.
+            var spec = Prepared(Head + @"{ ""key"": ""useBot"", ""default"": true, ""page"": ""messages"" },
+                { ""key"": ""tips"", ""default"": true, ""page"": ""help"" }, { ""key"": ""a"", ""default"": 1 } ] }");
+            var shown = Shown(spec);
+            Assert.Equal(new[] { "useBot" }, shown["messages"].ToArray());
+            Assert.Equal(new[] { "tips" }, shown["help"].ToArray());
+        });
     }
 }
