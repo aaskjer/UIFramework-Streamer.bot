@@ -273,7 +273,7 @@ namespace UIFramework.Tests
     }
 
     /// <summary>1.10.0, the update notice: a text with broken braces does not cost the notice; UIFramework is named only
-    /// when the settings of a game would offer it.</summary>
+    /// when the settings of a game would offer it; a game that fixes its window's language gets its notice in it.</summary>
     public class Fixes1100NoticeTests : IDisposable
     {
         private readonly string _folder;
@@ -390,6 +390,20 @@ namespace UIFramework.Tests
             // Nothing declined anywhere: the notice is as it always was.
             Settings("hangman", "{ }");
             Assert.Contains("UIFramework v1.3.0", Run(Hangman).Single());
+        }
+
+        [Fact]
+        public void The_notice_speaks_the_language_a_game_fixes_for_its_window()
+        {
+            // The game fixes German for its window; its layout file still names the Spanish of an earlier version.
+            Settings("hangman", "{ \"language\": \"es\" }");
+            UpdateNotices.Register("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman"), "0.3.2", null, "de");
+            Assert.Equal(new[] { "🔔 Updates verfügbar: Hangman Game v13.2.0, UIFramework v1.3.0. Details stehen im Log von Streamer.bot." }, Run(Hangman));
+            // Kept for the starts that follow, where only the game's Init() asks.
+            Assert.StartsWith("🔔 Updates verfügbar", Run(Hangman).Single());
+            // A window that fixes no language any more: the layout file's again.
+            UpdateNotices.Register("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game", Settings("hangman"), "0.3.2");
+            Assert.StartsWith("🔔 Hay actualizaciones", Run(Hangman).Single());
         }
     }
 }

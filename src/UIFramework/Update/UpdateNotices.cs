@@ -107,7 +107,8 @@ namespace UIFramework
                     var latest = Web.ParseVersion((string)framework?["version"]);
                     var needs = Web.ParseVersion((string)framework?["minHostStub"]);
                     var installed = NewestInstalled();
-                    var lang = Conventions.Load(layout?.Language ?? "en").Lang;
+                    // The language the game fixes for its window (InLanguage), as its window told it, else the user's.
+                    var lang = Conventions.Load((string)((state["languages"] as JObject)?[host ?? ""] as JValue) ?? layout?.Language ?? "en").Lang;
                     var games = Obj(run, "games");
                     var me = games[host ?? ""] as JObject;
                     var items = new List<KeyValuePair<JObject, string>>();   // the game whose texts say it, what it says
@@ -220,7 +221,9 @@ namespace UIFramework
 
         /// <summary>The window, when it opens: the game and the version that runs, for this run's notice, and the
         /// version of its settings action, so a release that needs a newer one can be said.</summary>
-        public static void Register(string host, string title, string version, string releases, string settingsFile, string stubVersion, string options = null)
+        /// <param name="language">The language the game fixes for its window (<c>UiWindow.InLanguage</c>), null when it
+        /// fixes none. The game's notice is in that language, also on later starts: the game's Init() does not say it.</param>
+        public static void Register(string host, string title, string version, string releases, string settingsFile, string stubVersion, string options = null, string language = null)
         {
             if (string.IsNullOrWhiteSpace(host)) return;
             try
@@ -232,6 +235,10 @@ namespace UIFramework
                     Enter(ThisRun(state, Now()), host, title, version, releases, layout == null || layout.UpdateNotices, Parse(options), layout);
                     if (!string.IsNullOrWhiteSpace(stubVersion))
                         Obj(state, "stubs")[host] = stubVersion;
+                    if (!string.IsNullOrWhiteSpace(language))
+                        Obj(state, "languages")[host] = language.Trim();
+                    else
+                        (state["languages"] as JObject)?.Remove(host);
                     Write(state);
                 }
             }
