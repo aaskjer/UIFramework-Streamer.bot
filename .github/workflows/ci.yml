@@ -1,9 +1,11 @@
-# Every push and pull request: the DLL, the preview and the tests build, and the tests pass.
+# Pushes to main and pull requests: the DLL, the preview and the tests build, the tests pass, and what is made from
+# the sources (docs/Conventions.md, the demo's host block, its import) matches them. Another branch is checked
+# through its pull request: a push to every branch as well ran each check twice for it.
 name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
 
 jobs:
@@ -19,3 +21,11 @@ jobs:
       - name: docs/Conventions.md matches the conventions
         shell: powershell
         run: ./tools/conventions-doc.ps1 -Check
+      # The two checks of tools/check-stub.ps1 that need no Streamer.bot. hosts/<name>/HostBlock.cs is not checked:
+      # it is the block as the game carries it, and a game takes a new template only with its next release.
+      - name: The demo carries the template's host block
+        shell: powershell
+        run: ./tools/update-host-block.ps1 -File examples/DemoGame/DemoGame.cs -Check
+      - name: The demo's import carries the demo and the stub
+        shell: powershell
+        run: ./tools/build-import.ps1 -Check
