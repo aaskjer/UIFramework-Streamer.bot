@@ -301,8 +301,9 @@ public class CPHInline
 
     // One request to the game at a time: its arguments and its answer variable are the game's, and two runs whose
     // pumps overlap (a window closed and opened again quickly) must not mix them. A request that has hung inside the
-    // game action for 35 seconds holds nobody up: its arguments were read long ago, so the requests after it go on
-    // behind a new gate (a run taking over a window whose game never answered, a window opened again meanwhile).
+    // game action for 35 seconds without saying it still works holds nobody up: its arguments were read long ago, so
+    // the requests after it go on behind a new gate (a run taking over a window whose game never answered, a window
+    // opened again meanwhile).
     private sealed class Gate { public long Since; }
     private static Gate _askGate = new Gate();
 
@@ -329,6 +330,10 @@ public class CPHInline
                 }
             }
             long since = Interlocked.Read(ref gate.Since);
+            // One the game says it still works on (UiHost.StillWorking: an import) has not hung: it counts from the last
+            // time it said so. The beat looked for is the holder's, the request asked last.
+            var beat = LastBeat();
+            if (since != 0 && beat != null && beat.Value.Ticks > since) since = beat.Value.Ticks;
             if (since != 0 && DateTime.UtcNow.Ticks - since > TimeSpan.FromSeconds(35).Ticks)
                 Interlocked.CompareExchange(ref _askGate, new Gate(), gate);
             else if (DateTime.UtcNow >= deadline)

@@ -609,6 +609,53 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void ARequestTheGameStillWorksOnIsNotTakenForAHungOne()
+        {
+            // An import that has run for 40 seconds and says it still works. A request from a window opened again
+            // meanwhile waits for it, where after 35 seconds it went on beside it as beside one that hung, and the
+            // import's next word went to the wrong request.
+            var stub = new StubUnderTest();
+            var importing = new ManualResetEventSlim();
+            var finish = new ManualResetEventSlim();
+            var order = new List<string>();
+            stub.CPH.Game = cph =>
+            {
+                string var = (string)cph.Arguments["uiframework.var"], name = (string)cph.Arguments["uiframework.name"];
+                if (name == "importWords")
+                {
+                    object gate = Field("_askGate").GetValue(null);
+                    gate.GetType().GetField("Since").SetValue(gate, DateTime.UtcNow.AddSeconds(-40).Ticks);
+                    AppDomain.CurrentDomain.SetData(UiHost.WorkingKey(var), DateTime.UtcNow.Ticks);
+                    importing.Set();
+                    finish.Wait(10000);
+                }
+                lock (order) order.Add(name);
+                cph.SetGlobalVar(var, "done", false);
+                return true;
+            };
+            Exception failed = null;
+            Thread Ask(string name)
+            {
+                var thread = new Thread(() =>
+                {
+                    try { Call(stub, "AskGameNow", "test", name, "{}"); }
+                    catch (Exception ex) { failed = ex; }
+                });
+                thread.Start();
+                return thread;
+            }
+            var import = Ask("importWords");
+            Assert.True(importing.Wait(10000));
+            var next = Ask("tryRoll");
+            Thread.Sleep(2500);                                    // the next request has looked at the gate twice
+            finish.Set();
+            import.Join();
+            next.Join();
+            Assert.Null(failed);
+            Assert.Equal(new[] { "importWords", "tryRoll" }, order);
+        }
+
+        [Fact]
         public void TheGameHearsOfASaveAlsoWhenItWasBusyAtFirst()
         {
             var stub = new StubUnderTest();
