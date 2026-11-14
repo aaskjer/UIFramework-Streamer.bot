@@ -84,9 +84,15 @@ jobs:
         shell: powershell
         run: ./tools/conventions-doc.ps1 -Check
 
-      - name: The demo carries the template's host block
+      - name: The demo and hosts/ carry the template's host block
         shell: powershell
-        run: ./tools/update-host-block.ps1 -File examples/DemoGame/DemoGame.cs -Check
+        run: |
+          ./tools/update-host-block.ps1 -File examples/DemoGame/DemoGame.cs -Check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          foreach ($block in Get-ChildItem hosts -Recurse -Filter HostBlock.cs) {
+            ./tools/update-host-block.ps1 -File $block.FullName -Check
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
 
       - name: The demo's import carries the demo and the stub
         shell: powershell

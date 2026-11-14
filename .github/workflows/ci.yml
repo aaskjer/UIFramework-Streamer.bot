@@ -21,11 +21,17 @@ jobs:
       - name: docs/Conventions.md matches the conventions
         shell: powershell
         run: ./tools/conventions-doc.ps1 -Check
-      # The two checks of tools/check-stub.ps1 that need no Streamer.bot. hosts/<name>/HostBlock.cs is not checked:
-      # it is the block as the game carries it, and a game takes a new template only with its next release.
-      - name: The demo carries the template's host block
+      # The checks of tools/check-stub.ps1 that need no Streamer.bot, and the same for the eight games' copies in hosts/:
+      # each holds its game's table and window in the current template (tools/update-host-block.ps1 refreshes them).
+      - name: The demo and hosts/ carry the template's host block
         shell: powershell
-        run: ./tools/update-host-block.ps1 -File examples/DemoGame/DemoGame.cs -Check
+        run: |
+          ./tools/update-host-block.ps1 -File examples/DemoGame/DemoGame.cs -Check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          foreach ($block in Get-ChildItem hosts -Recurse -Filter HostBlock.cs) {
+            ./tools/update-host-block.ps1 -File $block.FullName -Check
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
       - name: The demo's import carries the demo and the stub
         shell: powershell
         run: ./tools/build-import.ps1 -Check
