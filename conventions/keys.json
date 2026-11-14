@@ -90,8 +90,8 @@
 
     "autoStartEnabled":            { "kind": "bool", "default": false, "page": "automation", "aliases": ["AutoStartEnabled"] },
     "autoStartIntervalMinutes":    { "kind": "int",  "default": 15,    "page": "automation", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartEnabled", "aliases": ["AutoStartIntervalMinutes"] },
-    "autoStartRandom":             { "kind": "bool", "default": false, "page": "automation", "requires": "autoStartEnabled", "aliases": ["AutoStartRandom"] },
-    "autoStartIntervalMaxMinutes": { "kind": "int",  "default": 30,    "page": "automation", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartRandom", "aliases": ["AutoStartIntervalMaxMinutes"] },
+    "autoStartRandom":             { "kind": "bool", "default": false, "page": "automation", "row": "autoStart", "requires": "autoStartEnabled", "aliases": ["AutoStartRandom"] },
+    "autoStartIntervalMaxMinutes": { "kind": "int",  "default": 30,    "page": "automation", "min": 1, "max": 1440, "unit": "min", "row": "autoStart", "requires": "autoStartEnabled && autoStartRandom", "aliases": ["AutoStartIntervalMaxMinutes"] },
     "autoStartMinChatLines":       { "kind": "int",  "default": 0,     "page": "automation", "min": 0, "requires": "autoStartEnabled", "aliases": ["AutoStartMinChatLines"] },
 
     "adBreakStart":           { "kind": "bool",    "default": false, "page": "automation", "aliases": ["AdBreakStart"] },

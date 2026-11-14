@@ -57,7 +57,7 @@ namespace UIFramework
             try
             {
                 UpdateNotices.Register(schema.Host, spec.Title, schema.Version, (string)schema.Window?["releases"], settingsPath, stubVersion,
-                    schema.Window?["updates"]?.ToString(Newtonsoft.Json.Formatting.None));
+                    schema.Window?["updates"]?.ToString(Newtonsoft.Json.Formatting.None), spec.Language);
             }
             catch (Exception) { }
             return Show(spec, schema, bridge, bridge, pump);

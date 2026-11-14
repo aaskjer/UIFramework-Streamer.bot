@@ -22,7 +22,8 @@ namespace UIFramework
         /// <summary>A page the spec marks as custom. Returns null to leave the page out.</summary>
         FrameworkElement BuildPage(string pageId, PageContext context);
 
-        /// <summary>The host's own log entries for the Log page, newest first. Null hides the page.</summary>
+        /// <summary>The host's own log entries for the Log page, in the order they were written (oldest first): the page
+        /// puts the newest first, and of the lines of one second the last written. Null hides the page.</summary>
         IEnumerable<LogEntry> ReadLog();
 
         /// <summary>Rows for a setting of kind "table", as a JSON array of objects keyed by the schema's columns.

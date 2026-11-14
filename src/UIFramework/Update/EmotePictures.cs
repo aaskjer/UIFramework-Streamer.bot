@@ -198,7 +198,7 @@ namespace UIFramework
                     Load(image, code, found.Url.Replace("{theme}", theme));
                     if (found.Source != null)
                     {
-                        image.ToolTip = "A " + found.Source + " emote: chat only shows it as one to viewers with the " + found.Source + " extension.";
+                        image.ToolTip = Text.T("field.emote.extension", found.Source);
                         onSource?.Invoke(found.Source);
                     }
                 }));
