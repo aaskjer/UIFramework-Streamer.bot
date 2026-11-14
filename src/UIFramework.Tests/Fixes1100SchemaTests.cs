@@ -198,13 +198,13 @@ namespace UIFramework.Tests
 
         /// <summary>Every page built as the shell builds it: the keys each one shows a field for, null for a page
         /// that is left out.</summary>
-        private static Dictionary<string, List<string>> Shown(WindowSpec spec)
+        private static Dictionary<string, List<string>> Shown(WindowSpec spec, IHostHooks hooks = null)
         {
             var shown = new Dictionary<string, List<string>>();
             foreach (var page in spec.Pages)
             {
                 var parts = new WindowParts();
-                var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, null, new NoHooks());
+                var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, null, hooks ?? new NoHooks());
                 shown[page.Id] = page.Build?.Invoke(ctx) == null ? null : parts.Elements.Keys.ToList();
             }
             return shown;
@@ -265,6 +265,33 @@ namespace UIFramework.Tests
             var shown = Shown(spec);
             Assert.Equal(new[] { "useBot" }, shown["messages"].ToArray());
             Assert.Equal(new[] { "tips" }, shown["help"].ToArray());
+        });
+
+        /// <summary>A game with a log and nothing in it yet.</summary>
+        private sealed class EmptyLog : NoHooks
+        {
+            public override IEnumerable<LogEntry> ReadLog() => new List<LogEntry>();
+        }
+
+        [Fact]
+        public void AHiddenSenderSwitchNumberFormatOrLogSwitchHasNoField() => Sta(() =>
+        {
+            // The Messages and the Log page drew them from the window's keys, hidden or not.
+            var spec = Prepared(Head + @"{ ""key"": ""useBot"", ""default"": true }, { ""key"": ""sendAction"", ""default"": false, ""hidden"": true },
+                { ""key"": ""numberSeparator"", ""default"": "","" }, { ""key"": ""logToFile"", ""default"": true, ""page"": ""log"", ""hidden"": true },
+                { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""page"": ""messages"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""messages"", ""log"", ""about"" ], ""overrides"": { ""numberSeparator"": { ""hidden"": true } },
+                    ""log"": { ""folder"": ""Demo/Logs"", ""files"": ""log*.txt"", ""writeLogKey"": ""logToFile"" } } }");
+            var shown = Shown(spec, new EmptyLog());
+            Assert.Contains("useBot", shown["messages"]);
+            Assert.DoesNotContain("sendAction", shown["messages"]);
+            Assert.DoesNotContain("numberSeparator", shown["messages"]);
+            Assert.DoesNotContain("logToFile", shown["log"]);
+            Assert.DoesNotContain(shown.Values.Where(keys => keys != null), keys => keys.Contains("sendAction") || keys.Contains("numberSeparator") || keys.Contains("logToFile"));
+            Assert.Empty(spec.Problems);
+            // The values stay in the file.
+            Assert.False((bool)spec.Defaults["sendAction"]);
+            Assert.True((bool)spec.Defaults["logToFile"]);
         });
     }
 }

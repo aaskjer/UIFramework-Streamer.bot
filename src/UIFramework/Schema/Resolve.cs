@@ -32,6 +32,8 @@ namespace UIFramework
             var declaredSections = new HashSet<string>(StringComparer.Ordinal);
             // Where the game put each field, before the user's layout moves it: what the check of split sections reads.
             var asDeclared = new List<(string Page, int Order, string Section, bool Hidden)>();
+            // What the game hides (`hidden`, Override), before the user's layout: the same with every resolve.
+            var hiddenByGame = new HashSet<string>(StringComparer.Ordinal);
             foreach (var declared in schema.Settings)
             {
                 // A known key declared as another kind of value is most likely the game's own idea under a taken name:
@@ -79,6 +81,7 @@ namespace UIFramework
                             option.Label = lang.Text(option.Label);
                 }
                 asDeclared.Add((setting.Page, setting.Order, setting.Section, setting.Hidden));
+                if (setting.Hidden) hiddenByGame.Add(setting.Key);
                 // The user's layout has the last word on where a field sits and what it is called. A section it names
                 // by a name the game declared reads in the window's language, as the game's own sections do.
                 var mine = layout?.Field(setting.Key);
@@ -138,14 +141,18 @@ namespace UIFramework
             if (string.IsNullOrEmpty(spec.Version) && !string.IsNullOrEmpty(schema.Version))
                 spec.Version = schema.Version;
 
-            // 3. Sender switches exist only when the schema declares them.
+            // 3. Sender switches exist only when the schema declares them and the game does not hide them: a hidden one,
+            // like the Log page's switch, is a setting kept in the file without a field. The Messages and the Log page
+            // drew them hidden or not.
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
-            string Present(string key) => key != null && keys.Contains(key) ? key : null;
+            string Present(string key) => key != null && keys.Contains(key) && !hiddenByGame.Contains(key) ? key : null;
             spec.Senders.UseBot = Present(spec.Senders.UseBot);
             spec.Senders.SendAction = Present(spec.Senders.SendAction);
             spec.Senders.CooldownUseBot = Present(spec.Senders.CooldownUseBot);
             spec.Senders.CooldownSendAction = Present(spec.Senders.CooldownSendAction);
             spec.Senders.NumberSeparator = Present(spec.Senders.NumberSeparator);
+            if (spec.Log.WriteLogKey != null && hiddenByGame.Contains(spec.Log.WriteLogKey))
+                spec.Log.WriteLogKey = null;
             var senderKeys = new HashSet<string>(new[] { spec.Senders.UseBot, spec.Senders.SendAction, spec.Senders.CooldownUseBot, spec.Senders.CooldownSendAction, spec.Senders.NumberSeparator }.Where(k => k != null), StringComparer.Ordinal);
 
             // 4. Templates on the messages page become the picker's entries. Their groups are in the window's language,
