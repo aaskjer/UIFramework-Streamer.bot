@@ -294,6 +294,30 @@ namespace UIFramework.Tests
             Assert.True((bool)spec.Defaults["logToFile"]);
         });
 
+        // ---- A row with an action -----------------------------------------------------------------------------
+
+        [Fact]
+        public void AnAnswerUnderARowHidesWithItsActionAlsoWithTheHelpUnderTheFields() => Sta(() =>
+        {
+            var spec = Prepared(Head + @"{ ""key"": ""sw"", ""default"": true },
+                { ""key"": ""tryBet"", ""default"": 10, ""row"": ""try"", ""transient"": true },
+                { ""key"": ""tryIt"", ""default"": """", ""kind"": ""action"", ""panel"": true, ""row"": ""try"", ""showWhen"": ""sw"", ""help"": ""Rolls once with the bet."" } ] }");
+            spec.Layout.HelpLines = true;
+            var parts = new WindowParts();
+            var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, null, new Game((name, values) => "Rolled a 6."));
+            var page = SchemaPage.Build(ctx, spec.ResolvedSettings, "game");
+            foreach (var wire in ctx.AfterBuild)
+                wire();
+            Click(Find<Button>(page).Single());
+            var answer = Find<Border>(page).Single(b => Equals(b.Tag, "action-answer"));
+            var holder = (Border)answer.Parent;
+            Assert.Equal(Visibility.Visible, answer.Visibility);
+            Assert.Equal(Visibility.Visible, holder.Visibility);
+            parts.Switches["sw"].IsChecked = false;
+            // The condition hides the action's help-line wrapper; the box under the row followed the button inside it.
+            Assert.Equal(Visibility.Collapsed, holder.Visibility);
+        });
+
         // ---- Page titles in another language -------------------------------------------------------------
 
         [Fact]

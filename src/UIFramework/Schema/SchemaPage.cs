@@ -108,9 +108,10 @@ namespace UIFramework
                                 && stack.Children[1] is Border box && Equals(box.Tag, AnswerBox))
                             {
                                 stack.Children.Remove(box);
-                                // Under the row, the answer still follows its action: hidden while the action is.
+                                // Under the row, the answer still follows its action: hidden while the action is. The
+                                // action's conditions hide the cell, its help-line wrapper when it has one.
                                 var holder = new Border { Child = box };
-                                holder.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding("Visibility") { Source = stack });
+                                holder.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding("Visibility") { Source = cells[i] });
                                 answers.Add(holder);
                             }
                             if (cell is Button || (cell is StackPanel only && only.Children.Count == 1 && only.Children[0] is Button))
