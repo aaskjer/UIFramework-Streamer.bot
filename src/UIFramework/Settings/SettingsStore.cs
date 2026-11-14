@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -130,6 +131,10 @@ namespace UIFramework
             var merged = (JObject)Defaults.DeepClone();
             var moved = new HashSet<string>(StringComparer.Ordinal);
             fromFile = (JObject)fromFile.DeepClone();
+            // A null where the setting has a default is no value: the game's UiSettings reads the default (or an old key)
+            // in its place, so the window does too, instead of showing 0, an empty box or a switch that is off.
+            foreach (var empty in fromFile.Properties().Where(p => p.Value.Type == JTokenType.Null && Defaults[p.Name] is JToken d && d.Type != JTokenType.Null).ToList())
+                empty.Remove();
             // An alias with a dot names a value inside an object of the old file ("PlatformEmotes.twitch"): it is
             // moved out, to every key that takes it, and the object is dropped once it is empty. The old value goes
             // also when the canonical key is in the file already, so it does not linger there forever.
@@ -201,7 +206,8 @@ namespace UIFramework
             if (value == null) return JValue.CreateNull();
             if (factor != 1.0 && (value.Type == JTokenType.Integer || value.Type == JTokenType.Float) && FieldBinding.ToDouble(((JValue)value).Value, out double number))
             {
-                double scaled = number * factor;
+                // Ten decimals, as a number box saves them: 0.29 times 100 is 28.999999999999996, which the box shows as 29.
+                double scaled = Math.Round(number * factor, 10);
                 if (shape?.Type == JTokenType.Integer && Math.Abs(scaled - Math.Round(scaled)) < 1e-9)
                     return (long)Math.Round(scaled);
                 return scaled;

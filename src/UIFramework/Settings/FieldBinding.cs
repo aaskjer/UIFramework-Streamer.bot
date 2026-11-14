@@ -480,8 +480,9 @@ namespace UIFramework
                 }
                 else if (node is TextBox)
                 {
+                    // As a save takes the box's text: a name, path, colour or token without spaces at either end.
                     if (value is JContainer) problem = Text.T("import.why.text");
-                    else if (value == null || value.Type != JTokenType.String) result = Invariant(value);
+                    else result = ValueOf(tag, Invariant(value));
                 }
                 else if (node is ComboBox cmb)
                 {
@@ -489,6 +490,15 @@ namespace UIFramework
                     var item = cmb.Items.OfType<ComboBoxItem>().FirstOrDefault(i => string.Equals(Invariant(ComboValue(tag, i.Tag)), wanted, StringComparison.OrdinalIgnoreCase));
                     if (item == null) problem = Text.T("import.why.option");
                     else result = ComboValue(tag, item.Tag);
+                }
+                else if (node is OptionSlider slider)
+                {
+                    // A twin of the slider takes the value: a number is pulled into its range, a stop must be one of its
+                    // stops. The value the slider keeps from the file (no stop has it) is taken back as it is.
+                    var twin = new OptionSlider { Options = slider.Options, Whole = slider.Whole, Minimum = slider.Minimum, Maximum = slider.Maximum };
+                    if (slider.IsKept && string.Equals(slider.StoredText, Invariant(value), StringComparison.OrdinalIgnoreCase)) result = slider.Stored;
+                    else if (twin.Put(value)) result = twin.Stored;
+                    else problem = Text.T(slider.Options != null ? "import.why.option" : "import.why.number");
                 }
                 else if (node is ListEditor && !(value is JArray))
                     problem = Text.T("import.why.list");
