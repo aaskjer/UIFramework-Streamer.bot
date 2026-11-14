@@ -154,7 +154,7 @@ namespace UIFramework.Tests
                 // German; the game's own wording without a translation of its own stays as declared.
                 var spec = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
                 Entry.Prepare(spec, schema);
-                Assert.Equal(new[] { "en", "de", "es" }, spec.Languages);
+                Assert.Equal(new[] { "en", "de", "es", "fr", "pt-BR" }, spec.Languages);
                 Assert.Equal("Abklingzeit pro Nutzer", spec.ResolvedSettings.First(s => s.Key == "userCooldown").Label);
                 Assert.Equal("Spiel", spec.Pages.First(p => p.Id == "game").Title);
                 Assert.Equal("Decks", spec.ResolvedSettings.First(s => s.Key == "numDecks").Label);
@@ -163,7 +163,7 @@ namespace UIFramework.Tests
                 var withLang = Schema.Parse(DeclaredSchema);
                 var german = SpecJson.Parse(DeclaredWindow.Replace(@"""language"": ""LANG"",", ""), settings);
                 Entry.Prepare(german, withLang);
-                Assert.Equal(new[] { "en", "de", "es" }, german.Languages);
+                Assert.Equal(new[] { "en", "de", "es", "fr", "pt-BR" }, german.Languages);
                 Assert.Equal("Decks im Schuh", german.ResolvedSettings.First(s => s.Key == "numDecks").Label);
             }
             finally { Text.Use(Conventions.Default.Lang); }

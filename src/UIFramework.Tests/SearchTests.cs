@@ -124,7 +124,7 @@ namespace UIFramework.Tests
         [Fact]
         public void The_search_texts_are_there_in_every_language()
         {
-            foreach (string code in new[] { "en", "de", "es" })
+            foreach (string code in new[] { "en", "de", "es", "fr", "pt-BR" })
             {
                 using (var stream = typeof(Conventions).Assembly.GetManifestResourceStream("UIFramework.conventions.lang." + code + ".json"))
                 using (var reader = new System.IO.StreamReader(stream))

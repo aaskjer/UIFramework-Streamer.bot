@@ -187,7 +187,7 @@ namespace UIFramework.Tests
             Assert.NotNull(declared);
             Assert.Equal(kind, (string)declared["kind"]);
             Assert.Equal("automation", (string)declared["page"]);
-            foreach (string code in new[] { "en", "de", "es" })
+            foreach (string code in new[] { "en", "de", "es", "fr", "pt-BR" })
             {
                 var text = Read("lang." + code + ".json")["keys"][key] as JObject;
                 Assert.True(text != null && !string.IsNullOrWhiteSpace((string)text["label"]) && !string.IsNullOrWhiteSpace((string)text["help"]),

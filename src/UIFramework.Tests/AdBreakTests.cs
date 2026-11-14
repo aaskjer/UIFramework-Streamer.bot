@@ -165,7 +165,7 @@ namespace UIFramework.Tests
             Assert.NotNull(declared);
             Assert.Equal(kind, (string)declared["kind"]);
             Assert.Equal("automation", (string)declared["page"]);
-            foreach (string code in new[] { "en", "de", "es" })
+            foreach (string code in new[] { "en", "de", "es", "fr", "pt-BR" })
             {
                 var lang = Read("lang." + code + ".json");
                 Assert.False(string.IsNullOrWhiteSpace((string)lang["pages"]["automation"]), "no title for the Automation page in " + code + ".json");
