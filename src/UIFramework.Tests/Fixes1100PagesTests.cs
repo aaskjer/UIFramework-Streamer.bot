@@ -14,8 +14,8 @@ using Xunit;
 namespace UIFramework.Tests
 {
     /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, lines of
-    /// one second stand newest first, a line without a time has no time; the Help page's Fire button asks the game
-    /// without holding the window still.</summary>
+    /// one second stand newest first, a line without a time has no time; the Help page's Fire button and the emote
+    /// pictures ask the game without holding the window still.</summary>
     public class Fixes1100PagesTests
     {
         private static void Sta(Action body)
@@ -200,6 +200,49 @@ namespace UIFramework.Tests
             Click(fire);
             Pump(2500);
             Assert.Equal(Text.T("help.trigger.notFired.why"), said.Last().Why);
+        });
+
+        // ---- Emote pictures ----------------------------------------------------------------------------------
+
+        private sealed class SlowSources : NoHooks
+        {
+            public string Url;
+            public int Asked, Thread;
+            public override string EmoteSources()
+            {
+                Asked++;
+                Thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                System.Threading.Thread.Sleep(Patient.QuickMs + 1500);
+                return "{ \"youtube\": { \":own-1100:\": \"" + Url + "\" } }";
+            }
+        }
+
+        [Fact]
+        public void An_emote_field_does_not_hold_the_window_while_the_game_names_its_emote_sources() => Sta(() =>
+        {
+            var hooks = new SlowSources { Url = "https://example.invalid/own-" + Guid.NewGuid().ToString("N") };
+            // The picture is there already, so nothing is downloaded: what matters is that it is shown once the game answered.
+            var cache = (System.Collections.Concurrent.ConcurrentDictionary<string, System.Threading.Tasks.Task<System.Windows.Media.ImageSource>>)typeof(EmotePictures)
+                .GetField("Pictures", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).GetValue(null);
+            var picture = System.Windows.Media.Imaging.BitmapSource.Create(1, 1, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, new byte[4], 4);
+            picture.Freeze();
+            string url = hooks.Url + "=w48-h48-c-k-nd";
+            cache[url] = System.Threading.Tasks.Task.FromResult<System.Windows.Media.ImageSource>(picture);
+            try
+            {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                var image = EmotePictures.Picture("youtube", ":own-1100:", hooks);
+                var second = EmotePictures.Picture("youtube", ":own-1100:", hooks);
+                Assert.True(watch.ElapsedMilliseconds < Patient.QuickMs + 1000, "the emote cells held the window for " + watch.ElapsedMilliseconds + " ms");
+                Assert.Null(image.Source);
+
+                Pump(2500);
+                Assert.Same(picture, image.Source);
+                Assert.Same(picture, second.Source);
+                Assert.Equal(1, hooks.Asked);                     // once per window, as before
+                Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, hooks.Thread);
+            }
+            finally { cache.TryRemove(url, out _); }
         });
     }
 }
