@@ -318,6 +318,23 @@ namespace UIFramework.Tests
             Assert.Equal(Visibility.Collapsed, holder.Visibility);
         });
 
+        // ---- The check of split sections ------------------------------------------------------------------
+
+        [Fact]
+        public void ASplitSectionIsLookedForWhereTheWindowsPagesPutTheFields()
+        {
+            // statsTop goes to the stats page: S is one run of fields on the game page, though it was said to be split.
+            var claimedAway = Prepared(Head + @"{ ""key"": ""a"", ""default"": 1, ""section"": ""S"" }, { ""key"": ""statsTop"", ""default"": 1, ""section"": ""T"" },
+                { ""key"": ""b"", ""default"": 1, ""section"": ""S"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"", { ""id"": ""stats"", ""title"": ""Stats"", ""fields"": [ ""stats*"" ] }, ""about"" ] } }");
+            Assert.Empty(claimedAway.Problems);
+            // One page takes the fields of two: S shows its heading twice there, and nothing said so.
+            var claimedTogether = Prepared(Head + @"{ ""key"": ""a"", ""default"": 1, ""page"": ""one"", ""section"": ""S"" }, { ""key"": ""x"", ""default"": 1, ""page"": ""two"", ""section"": ""T"" },
+                { ""key"": ""b"", ""default"": 1, ""page"": ""one"", ""section"": ""S"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ { ""id"": ""all"", ""title"": ""All"", ""fields"": [ ""*"" ] }, ""about"" ] } }");
+            Assert.Contains(claimedTogether.Problems, p => p.Contains("The section 'S' on the page 'all' is split"));
+        }
+
         // ---- Page titles in another language -------------------------------------------------------------
 
         [Fact]

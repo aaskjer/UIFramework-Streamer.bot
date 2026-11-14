@@ -31,7 +31,7 @@ namespace UIFramework
             var settings = new List<Setting>();
             var declaredSections = new HashSet<string>(StringComparer.Ordinal);
             // Where the game put each field, before the user's layout moves it: what the check of split sections reads.
-            var asDeclared = new List<(string Page, int Order, string Section, bool Hidden)>();
+            var asDeclared = new List<(string Key, string Page, int Order, string Section, bool Hidden)>();
             // What the game hides (`hidden`, Override), before the user's layout: the same with every resolve.
             var hiddenByGame = new HashSet<string>(StringComparer.Ordinal);
             foreach (var declared in schema.Settings)
@@ -80,7 +80,7 @@ namespace UIFramework
                         foreach (var option in setting.Options)
                             option.Label = lang.Text(option.Label);
                 }
-                asDeclared.Add((setting.Page, setting.Order, setting.Section, setting.Hidden));
+                asDeclared.Add((setting.Key, setting.Page, setting.Order, setting.Section, setting.Hidden));
                 if (setting.Hidden) hiddenByGame.Add(setting.Key);
                 // The user's layout has the last word on where a field sits and what it is called. A section it names
                 // by a name the game declared reads in the window's language, as the game's own sections do.
@@ -107,7 +107,7 @@ namespace UIFramework
             Shows(spec, settings);
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
-            Check(spec, settings, declaredSections, asDeclared);
+            Check(spec, settings, declaredSections);
             CheckCooldowns(spec, schema, settings);
             foreach (var pill in spec.HeaderPills)
                 pill.Tooltip = lang.Text(pill.Declared);
@@ -174,9 +174,13 @@ namespace UIFramework
             // A page's claim on a sender switch waits until the Messages page's entries are known, and with them
             // whether it draws the switch.
             var senderClaims = new List<(SpecPage Page, string Pattern, Setting Setting)>();
+            // The page that claims each field before the user's layout has its say: where the game puts it.
+            var claimedByWindow = new Dictionary<string, string>(StringComparer.Ordinal);
 
             void Claim(SpecPage page, Setting setting, List<Setting> mine)
             {
+                if (!claimedByWindow.ContainsKey(setting.Key))
+                    claimedByWindow[setting.Key] = page.Id;
                 // The user's layout has the last word: a field the user moved to another page stays there.
                 string moved = layout?.Field(setting.Key)?.Page;
                 if (moved != null && moved != page.Id)
@@ -240,6 +244,7 @@ namespace UIFramework
                 else if (!claimed.Contains(setting.Key))
                     Claim(page, setting, pageFields[page.Id]);
             }
+            CheckSplitSections(spec, asDeclared, claimedByWindow);
 
             foreach (var setting in settings.OrderBy(s => s.Order))
             {
@@ -476,7 +481,7 @@ namespace UIFramework
                 }
         }
 
-        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections, List<(string Page, int Order, string Section, bool Hidden)> asDeclared)
+        private static void Check(WindowSpec spec, List<Setting> settings, ISet<string> declaredSections)
         {
             var keys = new HashSet<string>(settings.Select(s => s.Key), StringComparer.Ordinal);
             var byKey = settings.GroupBy(s => s.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
@@ -485,21 +490,6 @@ namespace UIFramework
                 CheckCondition(spec, byKey, "The section '" + section.Key + "'", "is shown when", section.Value);
                 if (!declaredSections.Contains(section.Key))
                     spec.Problems.Add("The section '" + section.Key + "' has a condition, but no setting is in a section of that name.");
-            }
-            // A section whose fields are not one after the other gets its heading twice: said, so the game can order
-            // them. As the game declared them: where the user's layout moved a field is not the game author's to fix.
-            foreach (var page in asDeclared.Where(s => !s.Hidden).GroupBy(s => s.Page ?? "game"))
-            {
-                var seen = new HashSet<string>(StringComparer.Ordinal);
-                var told = new HashSet<string>(StringComparer.Ordinal);
-                string previous = null;
-                foreach (var s in page.OrderBy(x => x.Order))
-                {
-                    if (s.Section == null || s.Section == previous) { previous = s.Section ?? previous; continue; }
-                    if (!seen.Add(s.Section) && told.Add(s.Section))
-                        spec.Problems.Add("The section '" + s.Section + "' on the page '" + page.Key + "' is split by another section, so its heading shows twice; declare its settings one after the other.");
-                    previous = s.Section;
-                }
             }
             foreach (var s in settings)
             {
@@ -566,6 +556,27 @@ namespace UIFramework
                 }
                 else if (!keys.Contains(stop.Target) && Array.IndexOf(TourStop.Parts, stop.Target) < 0)
                     spec.Problems.Add("The tour points at '" + stop.Target + "', which is neither a setting nor a part of the window (" + string.Join(", ", TourStop.Parts) + "); that stop is skipped.");
+            }
+        }
+
+        /// <summary>A section whose fields are not one after the other gets its heading twice: said, so the game can order
+        /// them. As the game placed them, on its own page or the one the window's pages claim it for: where the user's
+        /// layout moved a field is not the game author's to fix.</summary>
+        private static void CheckSplitSections(WindowSpec spec, List<(string Key, string Page, int Order, string Section, bool Hidden)> asDeclared,
+            Dictionary<string, string> claimedByWindow)
+        {
+            foreach (var page in asDeclared.Where(s => !s.Hidden).GroupBy(s => claimedByWindow.TryGetValue(s.Key, out var claimedBy) ? claimedBy : s.Page ?? "game"))
+            {
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                var told = new HashSet<string>(StringComparer.Ordinal);
+                string previous = null;
+                foreach (var s in page.OrderBy(x => x.Order))
+                {
+                    if (s.Section == null || s.Section == previous) { previous = s.Section ?? previous; continue; }
+                    if (!seen.Add(s.Section) && told.Add(s.Section))
+                        spec.Problems.Add("The section '" + s.Section + "' on the page '" + page.Key + "' is split by another section, so its heading shows twice; declare its settings one after the other.");
+                    previous = s.Section;
+                }
             }
         }
 
