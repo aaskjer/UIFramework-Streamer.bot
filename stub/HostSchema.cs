@@ -662,7 +662,9 @@ public static class UiHost
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
         }
-        finally { System.Threading.Volatile.Write(ref _answering, null); }
+        // Only its own: a request that hung and ends while the settings action has gone on with the next one leaves
+        // that one's StillWorking in place.
+        finally { System.Threading.Interlocked.CompareExchange(ref _answering, null, var); }
         CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
         return true;
     }

@@ -110,6 +110,42 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void StillWorkingKeepsItsRequestWhenOneThatHungBeforeItEnds()
+        {
+            // A request hung, and the settings action went on with the next one. The hung one ending took StillWorking's
+            // request away from the one still at work, whose answer was then dropped after 30 seconds.
+            string hung = "uiframework.answer.Demo." + Guid.NewGuid().ToString("N"), working = "uiframework.answer.Demo." + Guid.NewGuid().ToString("N");
+            Dictionary<string, object> Args(string var) => new Dictionary<string, object> { ["uiframework.request"] = "test", ["uiframework.name"] = "importWords", ["uiframework.var"] = var };
+            var inside = new ManualResetEventSlim();
+            var end = new ManualResetEventSlim();
+            var first = new Thread(() => UiHost.Handle(Args(hung), new FakeCph(), "Demo", "demo", "v1.0.0", "Demo/settings.json",
+                test: (name, values) => { inside.Set(); end.Wait(10000); return "late"; }));
+            first.Start();
+            object beat = null;
+            try
+            {
+                Assert.True(inside.Wait(10000));
+                Assert.True(UiHost.Handle(Args(working), new FakeCph(), "Demo", "demo", "v1.0.0", "Demo/settings.json",
+                    test: (name, values) =>
+                    {
+                        end.Set();
+                        first.Join();                                        // the hung request ends while this one works
+                        UiHost.StillWorking();
+                        beat = AppDomain.CurrentDomain.GetData(UiHost.WorkingKey(working));
+                        return "imported";
+                    }));
+                Assert.IsType<long>(beat);
+            }
+            finally
+            {
+                end.Set();
+                first.Join();
+                AppDomain.CurrentDomain.SetData(UiHost.WorkingKey(hung), null);
+                AppDomain.CurrentDomain.SetData(UiHost.WorkingKey(working), null);
+            }
+        }
+
+        [Fact]
         public void TheUpdateNoticeTakesTheNextOlderDllWhenTheNewestCannotBeUsed()
         {
             // A Streamer.bot of its own (an AppDomain whose folder holds UIFramework\lib), with no UIFramework loaded:
