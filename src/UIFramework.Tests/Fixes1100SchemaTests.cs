@@ -106,5 +106,26 @@ namespace UIFramework.Tests
             Assert.Equal("hard", (string)asked["preset"]);
             Assert.Equal(25, (int)asked["bet"]);
         });
+
+        [Fact]
+        public void AnAskFieldsEarlierAnswerDoesNotLandOverALaterOne() => Sta(() =>
+        {
+            var spec = Prepared(Head + @"{ ""key"": ""preset"", ""default"": ""easy"", ""ask"": true }, { ""key"": ""bet"", ""default"": 10 } ] }");
+            int calls = 0;
+            var game = new Game((name, values) =>
+            {
+                // The first question waits behind another request of the settings action; the second is answered at once.
+                if (Interlocked.Increment(ref calls) == 1) { Thread.Sleep(Patient.QuickMs + 300); return @"{ ""set"": { ""bet"": 1 } }"; }
+                return @"{ ""set"": { ""bet"": 2 } }";
+            });
+            var (_, parts, _) = Built(spec, game);
+            parts.Boxes["preset"].Text = "medium";
+            parts.Boxes["preset"].Text = "hard";
+            Assert.Equal("2", parts.Boxes["bet"].Text);
+            Pump(Patient.QuickMs + 900);
+            Assert.Equal(2, game.Asked.Count);
+            // The answer for "medium" came last and was put over the one for "hard", which the field shows.
+            Assert.Equal("2", parts.Boxes["bet"].Text);
+        });
     }
 }

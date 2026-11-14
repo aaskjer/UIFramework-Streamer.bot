@@ -333,8 +333,15 @@ namespace UIFramework
             if ((s.Ask || s.Live) && s.Kind != "action" && !s.ReadOnly)
             {
                 // A field that asks the host whenever it changes; `set` in the answer fills in other fields (a preset slider).
+                // Each question has a number, as a button's: an answer that comes after a later question was asked
+                // (it waited behind another request) does not put its values over the later one's.
                 var source = element;
-                ctx.AfterBuild.Add(() => FieldBinding.HookChangeTracking(source, () => Ask(ctx, s, label, null)));
+                int asked = 0;
+                ctx.AfterBuild.Add(() => FieldBinding.HookChangeTracking(source, () =>
+                {
+                    int mine = ++asked;
+                    Ask(ctx, s, label, null, () => mine == asked);
+                }));
             }
 
             // The help line goes with the field: greyed and hidden with it.
