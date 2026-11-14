@@ -132,5 +132,30 @@ namespace UIFramework.Tests
             Assert.Equal("2", whole.StoredText);
             Assert.False(whole.Put(new JValue(0)));      // a whole-number stop: 0 is a value none of them has
         });
+
+        // ---- An answer panel after a failure --------------------------------------------------------------------
+
+        private static string[] Lines(StackPanel panel) => panel.Children.OfType<TextBlock>().Select(t => t.Text).ToArray();
+
+        [Fact]
+        public void An_answer_that_only_sets_fields_does_not_keep_the_failure_before_it() => Sta(() =>
+        {
+            // The first ask timed out, the second came back with a status: the panel said "failed" under it.
+            var panel = new StackPanel();
+            ResultPanel.Render(panel, "Preset: the game did not answer (timeout)", failed: true);
+            ResultPanel.Render(panel, @"{ ""set"": { ""gridSize"": 8 }, ""status"": ""Preset applied."" }");
+            Assert.Equal(new[] { "Preset applied." }, Lines(panel));
+            Assert.NotEqual(Theme.DangerText, ((System.Windows.Media.SolidColorBrush)((TextBlock)panel.Children[0]).Foreground).Color);
+
+            // Without a status the panel is empty, so its box hides as before the first click.
+            ResultPanel.Render(panel, "Preset failed: boom", failed: true);
+            ResultPanel.Render(panel, @"{ ""set"": { ""gridSize"": 8 } }");
+            Assert.Empty(panel.Children);
+
+            // An answer's own lines still stay under one that only sets fields.
+            ResultPanel.Render(panel, @"{ ""lines"": [ ""27 %"" ] }");
+            ResultPanel.Render(panel, @"{ ""set"": { ""gridSize"": 8 }, ""status"": ""Preset applied."" }");
+            Assert.Equal(new[] { "27 %" }, Lines(panel));
+        });
     }
 }
