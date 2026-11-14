@@ -72,7 +72,9 @@ jobs:
           if ($start -lt 0) { Write-Error "CHANGELOG.md has no section '## [$version]'; write what changed before tagging." }
           $end = $lines.Count
           for ($i = $start; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^## ') { $end = $i; break } }
-          $notes = ($lines[$start..($end - 1)] -join "`n").Trim()
+          # PowerShell counts a range down as well: with no line between the version's heading and the next one,
+          # $start..($end - 1) took both headings as the notes, and an empty section was released.
+          $notes = if ($end -gt $start) { ($lines[$start..($end - 1)] -join "`n").Trim() } else { '' }
           if ($notes.Length -eq 0) { Write-Error "CHANGELOG.md section '## [$version]' is empty." }
           [IO.File]::WriteAllText('notes.md', $notes + "`n", (New-Object Text.UTF8Encoding $false))
 
