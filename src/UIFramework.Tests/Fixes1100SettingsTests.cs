@@ -66,5 +66,39 @@ namespace UIFramework.Tests
             Assert.Equal(1.0, parts.Sliders["fairness"].Value);   // the sliders themselves are not moved
             Assert.Equal(3.0, parts.Sliders["level"].Value);
         });
+
+        // ---- A null in the file is read as the game reads it ------------------------------------------------
+
+        [Fact]
+        public void ANullInTheFileStandsForTheDefaultAsItDoesForTheGame()
+        {
+            var defaults = JObject.Parse(@"{ ""bet"": 50, ""useBot"": true, ""prefix"": ""> "", ""words"": [ ""apple"" ], ""none"": null }");
+            var store = new SettingsStore(System.IO.Path.GetTempFileName(), defaults)
+                .WithAliases(new Dictionary<string, string> { ["OldBet"] = "bet" });
+            var provided = new HashSet<string>(System.StringComparer.Ordinal);
+            var merged = store.Merged(JObject.Parse(@"{ ""bet"": null, ""OldBet"": 30, ""useBot"": null, ""prefix"": null, ""words"": null,
+                ""none"": null, ""state"": null }"), provided);
+
+            // UiSettings goes past a null to the old key, then to the default: so does the window.
+            Assert.Equal(30, (int)merged["bet"]);
+            Assert.True((bool)merged["useBot"]);
+            Assert.Equal("> ", (string)merged["prefix"]);
+            Assert.Equal("apple", (string)merged["words"][0]);
+            // A setting without a default and a key of the game's own keep their null.
+            Assert.Equal(JTokenType.Null, merged["none"].Type);
+            Assert.Equal(JTokenType.Null, merged["state"].Type);
+            // An import that names a setting with null brings nothing for it.
+            Assert.Equal(new[] { "bet", "none", "state" }, System.Linq.Enumerable.ToArray(System.Linq.Enumerable.OrderBy(provided, k => k, System.StringComparer.Ordinal)));
+        }
+
+        [Fact]
+        public void AFieldOverANullShowsTheDefault() => Sta(() =>
+        {
+            var (f, parts, page) = Page(@"{ ""bet"": 50, ""useBot"": true }", @"{ ""bet"": null, ""useBot"": null }");
+            page.Children.Add(f.IntField("Bet", "bet", ""));
+            page.Children.Add(f.Toggle("Send as bot", "useBot", ""));
+            Assert.Equal("50", parts.Boxes["bet"].Text);          // it showed 0 while the game played with 50
+            Assert.True(parts.Switches["useBot"].IsChecked);       // and off while the game sent as the bot
+        });
     }
 }
