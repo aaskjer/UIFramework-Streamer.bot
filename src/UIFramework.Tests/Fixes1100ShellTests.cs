@@ -107,6 +107,38 @@ namespace UIFramework.Tests
             }
         }
 
+        // ---- The questions after the check ------------------------------------------------------------------
+
+        [Fact]
+        public void TheQuestionAfterTheCheckBelongsToTheWindow()
+        {
+            using (var w = new Opened(Schema))
+            {
+                var asked = new ManualResetEventSlim();
+                var answer = new ManualResetEventSlim();
+                w.OnValidate = settings => { asked.Set(); answer.Wait(10000); return "The bet is odd."; };
+                var done = w.Later(() => w.Click(w.On(() => Text.T("btn.save"))));
+                Assert.True(asked.Wait(5000));
+                Thread.Sleep(Patient.QuickMs + 300);
+                // The user went to another window while the game took its time: this one is not the active one any more.
+                IntPtr window = w.On(() => new WindowInteropHelper(w.Window).Handle);
+                w.On(() => w.Elsewhere());
+                Assert.NotEqual(window, w.On(() => Opened.ActiveWindow()));
+                answer.Set();
+
+                var question = w.Dialog(5000);
+                Assert.NotEqual(IntPtr.Zero, question);
+                Assert.Contains("The bet is odd.", Opened.TextOf(question));
+                // Its owner is the settings window, which takes no click and no close while it is up.
+                Assert.Equal(window, Opened.Owner(question));
+                Assert.False(Opened.Enabled(window));
+                Opened.Answer(question, Opened.IdNo);
+                Assert.True(done.Wait(10000));
+                Assert.False(File.Exists(w.SettingsPath));     // declined: nothing written
+                Assert.True(Opened.Enabled(window));
+            }
+        }
+
         // ---- The window, opened as a game opens it ---------------------------------------------------------
 
         /// <summary>Shell.Run on a thread of its own, which starts the window's thread, as the settings action does. A

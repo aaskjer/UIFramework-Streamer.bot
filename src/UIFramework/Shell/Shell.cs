@@ -780,7 +780,7 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(Text.T("import.notWritten", ex.Message), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Box(Text.T("import.notWritten", ex.Message), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 SafeHook(() => _hooks.OnSaved(merged));
@@ -1378,7 +1378,7 @@ namespace UIFramework
             catch (Exception ex)
             {
                 Failed("Save error: " + ex.Message);
-                MessageBox.Show(Text.T("dialog.saveFailed.text", ex.Message), Text.T("dialog.saveFailed.title"), MessageBoxButton.OK, MessageBoxImage.Error);
+                Box(Text.T("dialog.saveFailed.text", ex.Message), Text.T("dialog.saveFailed.title"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -1430,7 +1430,7 @@ namespace UIFramework
             if (Patient.IsNoAnswer(fromHost))
             {
                 string why = Patient.Why(fromHost);
-                var unchecked_ = MessageBox.Show(Text.T("dialog.unchecked.text", why.Length > 0 ? why : "-"), Text.T("dialog.unchecked.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var unchecked_ = Box(Text.T("dialog.unchecked.text", why.Length > 0 ? why : "-"), Text.T("dialog.unchecked.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (unchecked_ != MessageBoxResult.Yes)
                     return false;
                 fromHost = null;
@@ -1439,11 +1439,20 @@ namespace UIFramework
                 warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
             if (warnings.Count > 0)
             {
-                var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var proceed = Box(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (proceed != MessageBoxResult.Yes)
                     return false;
             }
             return true;
+        }
+
+        /// <summary>A message box modal to the window, for what follows the game's check. Without an owner WPF takes the
+        /// active window, and the user may have gone to another one while the game took its time: the box then left the
+        /// window open to clicks and to its X, with the save still waiting for the answer.</summary>
+        private MessageBoxResult Box(string text, string title, MessageBoxButton buttons, MessageBoxImage image)
+        {
+            var window = _window;
+            return window != null ? MessageBox.Show(window, text, title, buttons, image) : MessageBox.Show(text, title, buttons, image);
         }
 
         private void SafeHook(Action hook)
