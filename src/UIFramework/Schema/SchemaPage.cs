@@ -456,11 +456,11 @@ namespace UIFramework
             open.Margin = new Thickness(6, 0, 0, 0);
             open.Click += (sender, e) =>
             {
-                string path = box.Text.Trim().Trim('"');
-                if (path.Length == 0) return;
-                if (!System.IO.Path.IsPathRooted(path))
-                    path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-                Web.OpenFolder(path, ctx.Log, ctx.Spec.LogPrefix);
+                // A value that names a file opens the folder the file is in: the button made a folder of the file's
+                // name ("overlay\state.json"), or failed on a file that was there.
+                string folder = PathPicker.FolderToOpen(box.Text, AppDomain.CurrentDomain.BaseDirectory);
+                if (folder != null)
+                    Web.OpenFolder(folder, ctx.Log, ctx.Spec.LogPrefix);
             };
             var dock = new DockPanel();
             DockPanel.SetDock(open, Dock.Right);
