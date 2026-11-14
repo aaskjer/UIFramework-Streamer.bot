@@ -271,4 +271,84 @@ namespace UIFramework.Tests
             finally { Text.Use(Conventions.Default.Lang); }
         });
     }
+
+    /// <summary>1.10.0, the update notice: a text with broken braces does not cost the notice.</summary>
+    public class Fixes1100NoticeTests : IDisposable
+    {
+        private readonly string _folder;
+        private DateTime _now = new DateTime(2026, 11, 14, 12, 0, 0, DateTimeKind.Utc);
+        private string _minHostStub = "0.1.0";
+
+        public Fixes1100NoticeTests()
+        {
+            _folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "notices-1100-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(_folder, "lib", "1.2.0"));
+            File.WriteAllText(Path.Combine(_folder, "lib", "1.2.0", "UIFramework.dll"), "");
+            UpdateNotices.Folder = _folder;
+            UpdateNotices.InBackground = false;
+            UpdateNotices.Delay = TimeSpan.FromSeconds(20);
+            UpdateNotices.Now = () => _now;
+            UpdateNotices.Session = () => "run-1";
+            UpdateNotices.Fetch = url =>
+            {
+                if (url == UpdateNotices.FrameworkLatestUrl) return "{ \"version\": \"1.3.0\", \"minHostStub\": \"" + _minHostStub + "\" }";
+                if (url.Contains("aaskjer/Hangman-Game")) return "[ { \"tag_name\": \"v13.2.0\" } ]";
+                if (url.Contains("aaskjer/Trivia-Game")) return "[ { \"tag_name\": \"v9.1.0\" } ]";
+                throw new InvalidOperationException("offline");
+            };
+        }
+
+        public void Dispose()
+        {
+            UpdateNotices.Folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UIFramework");
+            UpdateNotices.InBackground = true;
+            UpdateNotices.Delay = TimeSpan.FromSeconds(20);
+            UpdateNotices.Now = () => DateTime.UtcNow;
+            UpdateNotices.Session = () => "tests";
+            try { Directory.Delete(_folder, true); } catch (Exception) { }
+        }
+
+        private string Settings(string game, string layout = null)
+        {
+            string dir = Path.Combine(_folder, game);
+            Directory.CreateDirectory(dir);
+            if (layout != null) File.WriteAllText(Path.Combine(dir, LayoutFile.FileName), layout);
+            return Path.Combine(dir, "settings.json");
+        }
+
+        private string Due(string game, string title, string version, string repo) => UpdateNotices.DueJson(game, title, version, repo, Settings(game), null);
+        private string Hangman() => Due("hangman", "Hangman Game", "v13.1.1", "aaskjer/Hangman-Game");
+        private string Trivia() => Due("trivia", "Trivia Game", "v9.1.0", "aaskjer/Trivia-Game");
+
+        // Null: stop asking; "": not yet; else the notice's chat lines.
+        private static string[] Chat(string answer) => answer == null ? null : answer.Length == 0 ? new string[0] : ((JArray)JObject.Parse(answer)["chat"]).Select(l => (string)l).ToArray();
+
+        [Fact]
+        public void A_language_file_with_broken_braces_does_not_cost_the_notice()
+        {
+            // A language file beside Streamer.bot whose "import it again" lost a brace.
+            string lang = Conventions.ExternalFolder;
+            bool made = !Directory.Exists(lang);
+            string file = Path.Combine(lang, "x1100.json");
+            Directory.CreateDirectory(lang);
+            File.WriteAllText(file, "{ \"ui\": { \"update.chat.reimport\": \"{0 (import it again\" } }");
+            try
+            {
+                _minHostStub = "0.3.0";
+                Settings("trivia", "{ \"language\": \"x1100\" }");
+                UpdateNotices.Register("trivia", "Trivia Game", "v9.1.0", "aaskjer/Trivia-Game", Settings("trivia"), "0.2.0");
+                Assert.Empty(Chat(Trivia()));
+                _now = _now.AddSeconds(30);
+                var chat = Chat(Trivia());
+                Assert.NotNull(chat);                             // was null: the whole notice of the run was lost
+                Assert.Contains("{0 (import it again", Assert.Single(chat));
+                Assert.Contains("UIFramework v1.3.0", chat[0]);
+            }
+            finally
+            {
+                File.Delete(file);
+                if (made) Directory.Delete(lang);
+            }
+        }
+    }
 }

@@ -423,6 +423,8 @@ namespace UIFramework
         private static string Text(Lang lang, string key) =>
             lang.Ui.TryGetValue(key, out var own) ? own : Conventions.Default.Lang.Ui.TryGetValue(key, out var english) ? english : key;
 
-        private static string Format(Lang lang, string key, params object[] args) => string.Format(CultureInfo.InvariantCulture, Text(lang, key), args);
+        // Filled as the window fills its texts: a language file beside Streamer.bot (UIFramework\lang) with broken braces
+        // threw here, and the run's whole notice was lost.
+        private static string Format(Lang lang, string key, params object[] args) => UIFramework.Text.Fill(Text(lang, key), args);
     }
 }
