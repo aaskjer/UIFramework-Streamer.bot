@@ -97,5 +97,40 @@ namespace UIFramework.Tests
             Assert.Equal("off", slider.StoredText);
             Assert.Equal(1, heard);
         });
+
+        // ---- Decimal stops found by their number ----------------------------------------------------------------
+
+        [Fact]
+        public void A_number_finds_the_stop_of_that_number_not_the_stop_at_that_index() => Sta(() =>
+        {
+            // The default 2.0 is a double in the schema, "2" as text: it was taken for the index 2, the stop "5.0".
+            var parts = new WindowParts();
+            var fields = new Fields(parts, new JObject(), JObject.Parse(@"{ ""speed"": 2.0 }"), _ => { });
+            var page = new StackPanel();
+            page.Children.Add(fields.SliderField("Speed", "speed", "", Stops("0.5|Slow", "2.0|Normal", "5.0|Fast"), 0, 2, 1, true, null));
+            var slider = parts.Sliders["speed"];
+            Assert.False(slider.IsKept);
+            Assert.Equal(1, slider.Index);
+            Assert.Equal("2.0", slider.StoredText);
+            Assert.Empty(FieldBinding.Repaired(JObject.Parse(@"{ ""speed"": 2.0 }"), page));   // nothing for the next save to write
+
+            // A preset's set: "0.50" is the stop "0.5"; 1 is no stop of these, and not taken for the index 1 either.
+            Assert.True(slider.Put(new JValue("0.50")));
+            Assert.Equal("0.5", slider.StoredText);
+            Assert.False(slider.Put(new JValue(1)));
+            Assert.Equal("0.5", slider.StoredText);
+        });
+
+        [Fact]
+        public void Stops_that_are_no_numbers_are_still_found_by_their_index() => Sta(() =>
+        {
+            var slider = new OptionSlider { Options = Stops("off|Off", "low|Low", "high|High"), Minimum = 0, Maximum = 2, TickFrequency = 1 };
+            Assert.True(slider.Put(new JValue(1)));
+            Assert.Equal("low", slider.StoredText);
+            var whole = new OptionSlider { Options = Stops("1", "2", "3"), Minimum = 0, Maximum = 2, TickFrequency = 1 };
+            Assert.True(whole.Put(new JValue(2.0)));
+            Assert.Equal("2", whole.StoredText);
+            Assert.False(whole.Put(new JValue(0)));      // a whole-number stop: 0 is a value none of them has
+        });
     }
 }

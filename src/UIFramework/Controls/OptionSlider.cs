@@ -93,8 +93,12 @@ namespace UIFramework
             if (Options != null)
             {
                 int at = Options.FindIndex(o => string.Equals(o.Value, text, StringComparison.OrdinalIgnoreCase));
+                // A number finds the stop of the same number however either is written: a project's default 2.0 arrives
+                // as "2" and is the stop "2.0". It was taken for the index 2 when no stop was a whole number, the stop "5.0".
+                if (at < 0 && IsNumber(text, out double wanted))
+                    at = Options.FindIndex(o => IsNumber(o.Value, out double stop) && stop == wanted);
                 if (at < 0 && int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) && index >= 0 && index < Options.Count
-                    && !Options.Any(o => long.TryParse(o.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)))
+                    && !Options.Any(o => IsNumber(o.Value, out _)))
                     at = index;
                 if (at < 0)
                     return false;
@@ -106,5 +110,9 @@ namespace UIFramework
             Value = Math.Max(Minimum, Math.Min(Maximum, number));
             return true;
         }
+
+        /// <summary>A stop's value or a stored one as a number, with a point: "1,000" is none.</summary>
+        private static bool IsNumber(string text, out double number) =>
+            double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number) && !double.IsNaN(number);
     }
 }
