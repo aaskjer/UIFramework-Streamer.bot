@@ -259,5 +259,25 @@ namespace UIFramework.Tests
             }
             finally { window.Close(); }
         });
+
+        // ---- L3: the thousands separator of a game without the setting, by language -----------------------------------
+
+        [Theory]
+        [InlineData("en", "11,500")]
+        [InlineData("de", "11.500")]
+        [InlineData("es", "11.500")]
+        [InlineData("pt-BR", "11.500")]
+        [InlineData("fr", "11 500")]       // before: 11.500; French groups with a space, here the plain one
+        [InlineData("zz-qq", "11.500")]    // a code Windows does not know: the point, as before
+        public void A_game_without_a_separator_setting_groups_amounts_as_its_language_does(string code, string shown) => Sta(() =>
+        {
+            try
+            {
+                Text.Use(new Lang { Code = code });
+                var fields = new Fields(new WindowParts(), new JObject(), new JObject(), _ => { });
+                Assert.Equal(shown, fields.Amount(11500));
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
+        });
     }
 }

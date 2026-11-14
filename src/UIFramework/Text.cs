@@ -22,6 +22,27 @@ namespace UIFramework
         /// <summary>The window's language code ("en", "de").</summary>
         public static string Code => (_lang ?? _shared ?? Conventions.Default.Lang).Code ?? "en";
 
+        /// <summary>The thousands separator a reader of the window's language expects, from Windows' culture for its
+        /// code: 1,500 in English, 1.500 in German, Spanish and Brazilian Portuguese, 1 500 in French. A space of any
+        /// kind (French groups with a narrow no-break space, which not every font has) is the plain one: chat and a
+        /// text box both show it, and it is the space a game's own separator setting offers. A code Windows does not
+        /// know: the point.</summary>
+        public static string GroupSeparator
+        {
+            get
+            {
+                try
+                {
+                    var culture = CultureInfo.GetCultureInfo(Code);
+                    if (culture.EnglishName.StartsWith("Unknown", StringComparison.OrdinalIgnoreCase))
+                        return ".";
+                    string separator = culture.NumberFormat.NumberGroupSeparator;
+                    return separator.Length > 0 && string.IsNullOrWhiteSpace(separator) ? " " : separator;
+                }
+                catch (Exception) { return "."; }
+            }
+        }
+
         /// <summary>The text with its placeholders filled, or as it is when its braces are broken: a language file
         /// from outside (UIFramework\lang, a game's Ui texts) with "{0" in it kept the whole window from opening.</summary>
         public static string Fill(string text, params object[] args)
