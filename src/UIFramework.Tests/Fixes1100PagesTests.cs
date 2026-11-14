@@ -15,7 +15,7 @@ namespace UIFramework.Tests
 {
     /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, lines of
     /// one second stand newest first, a line without a time has no time; the Help page's Fire button and the emote
-    /// pictures ask the game without holding the window still.</summary>
+    /// pictures ask the game without holding the window still; the About page's credits and links are translated.</summary>
     public class Fixes1100PagesTests
     {
         private static void Sta(Action body)
@@ -243,6 +243,32 @@ namespace UIFramework.Tests
                 Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, hooks.Thread);
             }
             finally { cache.TryRemove(url, out _); }
+        });
+
+        // ---- The About page ----------------------------------------------------------------------------------
+
+        [Fact]
+        public void The_About_pages_credits_and_the_games_own_links_are_translated_like_its_sections() => Sta(() =>
+        {
+            var schema = Schema.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settings"": [ { ""key"": ""a"", ""default"": 1 } ],
+                ""window"": { ""title"": ""Demo"", ""language"": ""de"",
+                    ""about"": { ""credits"": ""Responsible: aaskjer"", ""links"": [ { ""text"": ""Repository"", ""url"": ""https://example.com/repo"" } ],
+                        ""sections"": [ { ""heading"": ""Thanks"", ""lines"": [ ""Made with care."" ] } ] } },
+                ""lang"": { ""de"": { ""texts"": { ""Responsible: aaskjer"": ""Verantwortlich: aaskjer"", ""Repository"": ""Quellcode"", ""Thanks"": ""Danke"" } } } }");
+            try
+            {
+                var spec = Entry.SpecFor(null, schema, null);
+                Entry.Prepare(spec, schema);
+                var parts = new WindowParts();
+                var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, null, null);
+                var blocks = Find<TextBlock>(StandardPages.BuildAbout(ctx)).ToList();
+                Assert.Contains(blocks, b => b.Text == "Danke");                    // a section's heading, as before
+                Assert.Contains(blocks, b => b.Text == "Verantwortlich: aaskjer");
+                Assert.DoesNotContain(blocks, b => b.Text == "Responsible: aaskjer");
+                var link = Assert.Single(blocks, b => b.ToolTip as string == "https://example.com/repo");
+                Assert.Equal("Quellcode", AutomationProperties.GetName(link));
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
         });
     }
 }
