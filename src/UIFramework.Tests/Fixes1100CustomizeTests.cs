@@ -201,5 +201,31 @@ namespace UIFramework.Tests
             Assert.Equal("", spec.Layout.Field("r").Row);
             Assert.Equal("r:", Drawn(spec, "one").Last());
         });
+
+        // ---- The layout file edited by hand ---------------------------------------------------------------
+
+        [Fact]
+        public void An_order_with_more_digits_than_a_long_reads_as_the_largest_and_the_window_opens()
+        {
+            string folder = Folder(), settingsPath = Path.Combine(folder, "settings.json");
+            File.WriteAllText(Path.Combine(folder, LayoutFile.FileName), @"{
+                ""pages"": { ""two"": { ""order"": 123456789012345678901234 } },
+                ""fields"": { ""a"": { ""order"": 99999999999999999999 }, ""b"": { ""order"": -99999999999999999999 } } }");
+            var layout = LayoutFile.Load(settingsPath);
+            Assert.Null(layout.Problem);
+            Assert.Equal(int.MaxValue, layout.Field("a").Order);
+            Assert.Equal(int.MinValue, layout.Field("b").Order);
+            Assert.Equal(int.MaxValue, layout.Page("two").Order);
+
+            // The window resolves with it: before, (long) threw on the number and every open failed.
+            var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
+                { ""key"": ""a"", ""default"": 1, ""page"": ""one"" }, { ""key"": ""b"", ""default"": 2, ""page"": ""one"" },
+                { ""key"": ""c"", ""default"": 3, ""page"": ""two"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""one"", ""two"" ] } }");
+            var spec = Entry.SpecFor(null, schema, settingsPath);
+            Entry.Prepare(spec, schema);
+            Assert.Equal(new[] { "b:", "a:" }, Drawn(spec, "one"));
+            Assert.Equal(new[] { "two", "one", "about" }, spec.Pages.Select(p => p.Id).ToArray());
+        }
     }
 }
