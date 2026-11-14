@@ -167,7 +167,8 @@ public static class UiSchema
         }
         if (s.File != null) item["file"] = s.File;
         if (s.Transient) item["transient"] = true;
-        if (s.Live) item["live"] = true;
+        // A field that asks is asked with what the window shows: a DLL up to 1.9.0 takes those values only for "live".
+        if (s.Live || (s.Ask && s.Kind != "action")) item["live"] = true;
         if (s.Ask) item["ask"] = true;
         if (s.Panel) item["panel"] = true;
         if (s.Auto) item["auto"] = true;
@@ -709,7 +710,9 @@ public static class UiHost
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
         }
-        finally { System.Threading.Volatile.Write(ref _answering, null); }
+        // Only its own: a request that hung and ends while the settings action has gone on with the next one leaves
+        // that one's StillWorking in place.
+        finally { System.Threading.Interlocked.CompareExchange(ref _answering, null, var); }
         CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
         return true;
     }
@@ -1414,10 +1417,13 @@ public sealed class UiSettings
             // moment there is no file, and a swap that failed halfway leaves only the .bak.
             for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
             {
-                bool backup = System.IO.File.Exists(path + ".bak");
-                if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
-                if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
-                System.Threading.Thread.Sleep(40);
+                bool backup = System.IO.File.Exists(path + ".bak"), saving = System.IO.File.Exists(path + ".tmp");
+                if (!backup && (attempt >= 5 || !saving)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                // Only a save under way (its .tmp) is waited for. Without one the file is looked for once more, as a
+                // swap may have ended between the looks; still missing, it is read from the .bak at once, not after
+                // 160 ms on every load.
+                if (attempt >= 5 || (!saving && !System.IO.File.Exists(path))) throw new System.IO.FileNotFoundException("it is missing", path);
+                if (saving) System.Threading.Thread.Sleep(40);
             }
             return new UiSettings(Read(path));
         }
@@ -1458,13 +1464,16 @@ public sealed class UiSettings
         if (setting?.Aliases != null)
             for (int i = 0; i < setting.Aliases.Length; i++)
             {
-                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch"). One that is a
+                // setting of its own again holds that setting's value: the window does not move it either.
                 string alias = setting.Aliases[i];
+                if (UiSchema.Find(alias) != null) continue;
                 int dot = alias.IndexOf('.');
                 var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                 if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                // Rounded as the window's store rounds it on the move: 0.07 * 100 is 7.000000000000001 to a double.
                 if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
-                    return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                    return System.Math.Round(System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value, 10);
                 return old;
             }
         return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);
