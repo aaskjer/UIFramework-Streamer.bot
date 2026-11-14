@@ -1413,8 +1413,10 @@ public sealed class UiSettings
         if (setting?.Aliases != null)
             for (int i = 0; i < setting.Aliases.Length; i++)
             {
-                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch"). One that is a
+                // setting of its own again holds that setting's value: the window does not move it either.
                 string alias = setting.Aliases[i];
+                if (UiSchema.Find(alias) != null) continue;
                 int dot = alias.IndexOf('.');
                 var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                 if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;

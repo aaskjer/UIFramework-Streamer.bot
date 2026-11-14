@@ -87,6 +87,34 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AnOldKeyThatIsASettingOfItsOwnIsReadForThatSettingOnly()
+        {
+            // 'sides' was called 'count' once, and 'count' is a setting again. The window leaves that value to 'count'
+            // and shows the default for 'sides'; the game read 4 sides until the first save.
+            WithTable(() =>
+            {
+                var settings = UiSettings.Parse(@"{ ""count"": 4, ""OldRolls"": 9 }");
+                Assert.Equal(6, settings.Int("sides"));
+                Assert.Equal(4, settings.Int("count"));
+                Assert.Equal(9, settings.Int("rolls"));                                       // an old key that is no setting is read
+            },
+            UiSchema.S("sides", 6, aliases: new[] { "count" }), UiSchema.S("count", 3), UiSchema.S("rolls", 1, aliases: new[] { "OldRolls" }));
+        }
+
+        // The game's table, for one test: the template's own is empty.
+        private static void WithTable(Action test, params UiSchema.Setting[] table)
+        {
+            var field = typeof(UiSchema).GetField("Table");
+            object before = field.GetValue(null);
+            try
+            {
+                field.SetValue(null, table);
+                test();
+            }
+            finally { field.SetValue(null, before); }
+        }
+
+        [Fact]
         public void AHandlerThatStillWorksSaysSoWhereTheSettingsActionLooks()
         {
             var cph = new FakeCph();
