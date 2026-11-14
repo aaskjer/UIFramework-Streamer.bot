@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Threading;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -21,7 +25,15 @@ namespace UIFramework.Tests
             if (failure != null) throw failure;
         }
 
-        private const string Plain = @"{ ""host"": ""demo"", ""version"": ""1"", ""settings"": [ { ""key"": ""maxBet"", ""default"": 100 } ] }";
+        /// <summary>Lets the dispatcher run what is queued (Loaded, layout) until it is idle.</summary>
+        private static void Pump()
+        {
+            var frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+        }
+
+        private const string Plain =@"{ ""host"": ""demo"", ""version"": ""1"", ""settings"": [ { ""key"": ""maxBet"", ""default"": 100 } ] }";
 
         /// <summary>A window prepared with this language in its layout file (and a fixed one, if given).</summary>
         private static WindowSpec Prepared(string schemaJson, string layoutLanguage, string fixedLanguage = null)
@@ -211,5 +223,41 @@ namespace UIFramework.Tests
                 Assert.Contains(spec.Problems, p => p.StartsWith("en.json could not be read"));
                 Assert.Equal("Save", Text.T("btn.save"));
             });
+
+        // ---- L1: the language picker fits its longest name ------------------------------------------------------------
+
+        [Fact]
+        public void The_language_picker_is_as_wide_as_its_longest_name() => Sta(() =>
+        {
+            ComboBox Shown(params string[] codes)
+            {
+                var spec = new WindowSpec { Languages = codes.ToList() };
+                var layout = new LayoutFile(Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "settings.json"));
+                return Customize.LanguagePicker(spec, layout, () => { });
+            }
+            var portuguese = Shown("en", "de", "pt-BR");
+            var short_ = Shown("en", "de", "es");
+            Assert.Contains("Português (Brasil)", portuguese.Items.Cast<string>());
+            // In a window with the settings window's font, beside each other as in the footer.
+            var window = new Window
+            {
+                Width = 500, Height = 100, FontSize = 13, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { portuguese, short_ } }
+            };
+            window.Show();
+            try
+            {
+                Pump();
+                window.UpdateLayout();
+                var typeface = new Typeface(portuguese.FontFamily, portuguese.FontStyle, portuguese.FontWeight, portuguese.FontStretch);
+                double text = new FormattedText("Português (Brasil)", System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface,
+                    portuguese.FontSize, Brushes.Black, VisualTreeHelper.GetDpi(portuguese).PixelsPerDip).Width;
+                // The combo shows its text 8 px from the left and keeps 26 px for the arrow (Ui.ComboTemplate).
+                Assert.True(portuguese.ActualWidth - 8 - 26 >= text, "the name needs " + text + " px, the combo leaves " + (portuguese.ActualWidth - 34));
+                Assert.Equal(110.0, short_.ActualWidth);   // short names: as wide as it always was
+            }
+            finally { window.Close(); }
+        });
     }
 }
