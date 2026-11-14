@@ -279,5 +279,21 @@ namespace UIFramework.Tests
             }
             finally { Text.Use(Conventions.Default.Lang); }
         });
+
+        // ---- L5: the tooltip of a 7TV, BTTV or FFZ emote picture is a window text ----------------------------------------
+
+        [Fact]
+        public void The_tooltip_of_an_extensions_emote_is_in_the_windows_language()
+        {
+            try
+            {
+                Assert.Equal("A 7TV emote: chat only shows it as one to viewers with the 7TV extension.", Text.T("field.emote.extension", "7TV"));
+                Text.Use(Conventions.Load("de").Lang);
+                Assert.Equal("Ein BTTV-Emote: Der Chat zeigt es nur Zuschauern mit der BTTV-Erweiterung als Emote.", Text.T("field.emote.extension", "BTTV"));
+                Text.Use(Conventions.Load("es").Lang);
+                Assert.Contains("extensión FFZ", Text.T("field.emote.extension", "FFZ"));
+            }
+            finally { Text.Use(Conventions.Default.Lang); }
+        }
     }
 }
