@@ -358,7 +358,7 @@ describe answer leaves a line in Streamer.bot's log.
 
 **A request that takes long on purpose** (a Try button that imports a word list) calls `UiHost.StillWorking()`
 every few seconds while it works. The settings action gives a request 30 seconds once it has started and then
-stops waiting for its answer; each `StillWorking()` gives it 30 seconds from then (stub 0.3.1 and on; an older
+stops waiting for its answer; each `StillWorking()` gives it 30 seconds from then (stub 0.3.2 and on; an older
 stub ignores it). Outside a request it does nothing.
 
 **The points system.** `UiCurrency.Detect(CPH, settings)` gives the user variable the points live in

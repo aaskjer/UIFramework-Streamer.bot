@@ -20,7 +20,7 @@ follows it go to `lib/v2/latest.json`.
 
 ### Added
 
-- **`UiHost.StillWorking()` (host block, stub 0.3.1):** a request that takes long on purpose (a Try button that
+- **`UiHost.StillWorking()` (host block, stub 0.3.2):** a request that takes long on purpose (a Try button that
   imports a word list) says that it is still at work, and the settings action waits 30 seconds from then for its
   answer. It gave every request 30 seconds after it started and then dropped the answer while the work went on;
   Hangman stopped its import at 28 seconds for that. 30 seconds stays what a request gets without the call. See
@@ -28,13 +28,19 @@ follows it go to `lib/v2/latest.json`.
 
 ### Fixed
 
+- **A DLL that needs a newer settings action no longer locks a game's window (host block).** The update notice
+  and `UiLive` loaded the newest `UIFramework.dll` under `lib\`, also one another game had installed for a newer
+  stub. Only one UIFramework runs in a Streamer.bot, so the game's settings window then failed on every start,
+  although the stub passes such a DLL over. The host block now loads the newest DLL that fits the settings action
+  released with it (`StubVersion` in the host block, 0.3.2, kept equal to the stub's); a DLL that names no stub
+  fits.
 - **The update notice takes the next older DLL when the newest cannot be used (host block).** When the newest
   `UIFramework.dll` under `lib\` failed its hash or threw once while loading, the block gave up on every DLL for the
   rest of the run: no update notice, and `UiLive` said Unknown for Twitch and Kick until Streamer.bot restarted. It
   now tries the installed ones newest first and passes over one that is damaged, will not load, or needs a newer
-  settings action than the one released with the block (`StubVersion` in the block, kept equal to the stub's); a
-  file downloaded again is tried again. Once a UIFramework is loaded, the block takes that one: .NET answers every
-  later load of a `UIFramework.dll`, whichever version, with the one already loaded.
+  settings action (the entry above); a file downloaded again is tried again. Once a UIFramework is loaded, the block
+  takes that one: .NET answers every later load of a `UIFramework.dll`, whichever version, with the one already
+  loaded.
 - **A round that starts while the window saves reads the saved settings (host block).** The window swaps the new
   settings file in, the old one becoming the `.bak`, and for that moment there is no file; `UiSettings.Load` took
   the missing file for one never saved and gave the defaults without a word. It now waits a moment for a file that
@@ -43,16 +49,37 @@ follows it go to `lib/v2/latest.json`.
 - **A save that switches automatic rounds off keeps the timer off (host block).** `UiTimer.Rearm` looked at the
   timed action, then switched it off and on; a save whose `UiTimer.Sync` switched it off in between found it on
   again. The two now take turns.
-- **The game hears of every save (stub 0.3.1).** The "saved" request runs from the settings action's queue; when it
+- **A running UIFramework that needs a newer settings action is not taken (stub 0.3.2).** A host block of 1.9.0
+  or before, in another game, still loads the newest DLL as Streamer.bot starts. The stub passed such a DLL over
+  when it was installed but used it when it was running, and the DLL then refused the window with the advice to
+  remove its folder. The stub now leaves it alone in both cases; its dialog names the running version and the stub
+  it needs, and says that updating the game opens the window.
+- **The game hears of every save (stub 0.3.2).** The "saved" request runs from the settings action's queue; when it
   found another request still running, the log said "A queued step failed" and the game never heard of the save,
   so its overlay and timed action went on with the old settings. It is now sent again (three tries in all), and what
   still fails is said in the log and in a note beside the window.
-- **An unreadable `loader.json` is not written over (stub 0.3.1).** A damaged or locked `UIFramework\loader.json`
+- **A download that breaks off is tried again (stub 0.3.2).** A connection reset while the file came in was not
+  counted as a broken connection, and a connection closed early left a short file that failed the hash check with a
+  message that read like tampering. Both get the three tries now, as does a connection that cannot be made; only
+  after the last one does the dialog say that the file does not match.
+- **A game action that runs without answering is "no answer" (stub 0.3.2).** One whose `Execute()` never reached
+  `UiHost.Handle` counted as an empty answer: a Try button said "done" and a save went on as checked. Streamer.bot
+  reads a global set to empty text back as null, so the stub now marks the answer's variable before the run
+  and sees whether the game wrote it.
+- **A DLL in a folder named `1.9` gets the no-answer marker (stub 0.3.2).** It was compared as older than 1.9.0 and
+  got null instead.
+- **A list or an object where a version belongs no longer breaks every open (stub 0.3.2).** `skipVersion` in
+  `loader.json` or the layout file, or `minHostStub` in `latest.json`, made the window fail; such a value counts as
+  missing, and the log says so.
+- **An unreadable `loader.json` is not written over (stub 0.3.2).** A damaged or locked `UIFramework\loader.json`
   counted as empty, and *No* in the update dialog replaced it with a file holding only `skipVersion`. It now counts
   as empty without being written over, as the layout file already did; *No* keeps the skip in the game's layout
-  file then, and the log says where it went and that `loader.json` cannot be read.
-- **A DLL in a folder named `1.9` gets the no-answer marker (stub 0.3.1).** It was compared as older than 1.9.0 and
-  got null instead.
+  file then, and the log says where it went (or that it could not be kept) and that `loader.json` cannot be read.
+- **A run that a later one took over ends there (stub 0.3.2).** When a game that had hung for a minute answered
+  after all, its first run went on to the update dialog and the window, beside the run that had opened it.
+- **Two runs that end together leave the window free (stub 0.3.2).** If the run that opened the window ended just
+  as another run's window closed, neither handed the window back, and the next open reused the old schema without
+  asking the game or GitHub.
 
 ## [1.9.0] - 2026-11-12
 

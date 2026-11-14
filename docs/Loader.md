@@ -28,9 +28,11 @@ again, to any game, and the next one is. **Cancel**, the dialog's X and Esc mean
 again. (A stub before 0.3.0 had it the other way round, so closing the dialog skipped the version for good.) A
 running DLL is never overwritten (it is locked, and .NET Framework does not unload).
 
-**A download that GitHub does not deliver** (a 5xx, a 429, a connection that breaks or times out; a fresh
-release's file answered 504 once and loaded seconds later) is tried three times, a few seconds apart. What is left
-after the last try reads "GitHub did not deliver the file after 3 tries ... Try again in a moment."
+**A download that GitHub does not deliver** (a 5xx, a 429, a connection that fails, breaks or times out, a file
+cut short that does not match its hash; a fresh release's file answered 504 once and loaded seconds later) is tried
+three times, a few seconds apart. What is left after the last try reads "GitHub did not deliver the file after 3
+tries ... Try again in a moment.", or, for a file that still does not match, that it does not match the published
+hash.
 
 **The pill in the window's header:** whoever answers "not now" in the update dialog sees the pill
 `UIFramework 0.3.2 available` in the window (a click opens the releases) until the version is taken or skipped.
@@ -40,7 +42,8 @@ It rests on `frameworkAvailable` in `uiframework.layout.json`; *Yes* and *No* cl
 in `<Streamer.bot>\UIFramework\loader.json`: `"skipVersion": "1.9.0"` (written by *No* in the update dialog) and
 `"autoUpdate": false` (written by hand: no release check in any game). A stub before 0.3.0 kept both in each game's
 `uiframework.layout.json`, where they held for that game alone; they are still read there, so a check switched off
-or a version skipped in one game's layout file stays so for that game.
+or a version skipped in one game's layout file stays so for that game. A `loader.json` that cannot be read counts as
+empty and is not written over (stub 0.3.2; the log says so): *No* then keeps the skip in the game's layout file.
 
 **Where `latest.json` comes from:** first through the GitHub API (`contents/lib/v1/latest.json`, uncached, 60
 calls per hour and IP); when the API refuses (its rate limit) or answers with something that is no `latest.json` (a
@@ -58,14 +61,20 @@ DLL (`UIFramework.dll.sha256`, written before the DLL is moved in) and checked o
 since is set aside as `UIFramework.dll.broken`, an older one opens the window, and the next open offers that
 version again. A game's host block checks the same hash before it loads the DLL for the update notice or the live
 check (host block of 1.8.1 and on; an older one loaded it unchecked, and the settings action then used what was
-loaded); it leaves a damaged file where it is, for the settings action to set aside. This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
+loaded); it leaves a damaged file where it is, for the settings action to set aside. It also leaves out a DLL that
+needs a newer settings action than the one released with it (`StubVersion` in the host block, kept equal to the
+stub's): only one UIFramework runs in a Streamer.bot, and once the notice had loaded such a DLL, the game's own
+window could not open until a restart (an older host block took the newest DLL). This catches damage, not someone who can write to the Streamer.bot folder: a DLL put in by hand
 has no hash file and is loaded as it is. A release
-whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.1 now) is not offered to
+whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.2 now) is not offered to
 that stub; the game has to ship the newer settings action first. The same holds for a DLL that is there already,
 installed by another game: a DLL names the stub it needs in its product version (`1.8.4+stub.0.1.0`, from
 `MinHostStub` in `UIFramework.csproj`), a stub from 0.2.1 on reads that without loading the file and passes such a
 DLL over for an older one that fits, and the DLL itself (1.8.4 and on) opens no window for an older stub but says
-which one it needs. That also covers a stub before 0.2.1 and a DLL another game has loaded already. Nothing from `latest.json` is taken unchecked: a
+which one it needs. That also covers a stub before 0.2.1 and a DLL another game has loaded already. A stub from
+0.3.2 on does not take such a DLL that is running already either (a host block of 1.9.0 or before loads the newest
+DLL as Streamer.bot starts, whichever stub it needs): its dialog names the running version and the stub it needs,
+and says that updating the game opens the window. Nothing from `latest.json` is taken unchecked: a
 release without a `sha256` is not installed, a `url` that is not `https://` is not fetched, and a `version` that is
 not two to four numbers with dots (`1.2.0`, a leading `v` allowed) never becomes a folder name.
 
@@ -89,11 +98,12 @@ thread. A Try button's answer and a table's rows arrive when they arrive, the bu
 that it is asking; the check before a save waits for its answer with the window alive (it paints and moves, and
 takes no input: what the answer decides must not be overtaken). Before, the window's own thread waited, and Windows
 called a window "not responding" whose game took its time. No answer is not taken for an answer: a check before
-saving that got none (a timeout, a disabled action) is not "no problems", the window asks whether to save
+saving that got none (a timeout, a disabled action, a game action that ran without answering) is not "no
+problems", the window asks whether to save
 unchecked; a Try button says that the game did not answer, in the colour of a failure, instead of "done", and a
 table says so instead of showing as empty (stub 0.3.0 and on; an older stub cannot tell the two apart). A window
 whose request hangs can be closed and opened again, and when the game has not sent its schema for a minute, the
-next run opens the window instead of waiting for it.
+next run opens the window instead of waiting for it; the first run, should the game answer after all, ends there.
 
 **One prefix in the log:** the lines of a game's settings start with the prefix its window declares
 (`UiWindow(..., logPrefix:)`), else with `[<game action's name>/Settings]`, from the first line ("the window cannot

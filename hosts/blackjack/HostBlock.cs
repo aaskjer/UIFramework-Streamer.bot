@@ -262,7 +262,7 @@ public static class UiSchema
         // German: the game's own keys and texts; sections, pages and the shared keys come from the conventions.
         .Lang("de",
             K("overlaySample", "Beispielrunde zeigen", "Spielt etwa zehn Sekunden lang eine erfundene Hand auf dem Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht. Bist du live, sehen es auch deine Zuschauer. Nutzt die gespeicherten Einstellungen; niemandes Punkte ändern sich. Läuft gerade eine Hand, ein Duell oder ein House-Tisch, bleibt das Overlay bei ihm."),
-            K("overlayDemo", "Demo ansehen", "Öffnet das Overlay im Browser und spielt erfundene Hände, von der Solo-Hand bis zum Duell und zum House-Tisch, im Aussehen der gespeicherten Einstellungen, ohne Streamer.bot. Mit &demo=1 an der URL der Quelle in OBS lässt sie sich genauso platzieren."),
+            K("overlayDemo", "Demo ansehen", "Öffnet das Overlay im Browser und spielt erfundene Hände, von der Solo-Hand bis zum Duell und zum House-Tisch, im Aussehen der gespeicherten Einstellungen, ohne Streamer.bot. Zum Platzieren in OBS: Lokale Datei in der Browserquelle abwählen und als URL die file:///-Adresse des Overlays mit ?demo=1 eintragen."),
             Pg("table", "Tisch"),
             Pg("duel", "Duell"),
             Pg("house", "Haus"),
@@ -274,7 +274,7 @@ public static class UiSchema
             K("showAceMsg", "Sagen, wenn ein Ass auf 1 fällt", "Postet eine Zeile, wann immer ein Ass als 1 statt 11 zählt, um eine Hand unter 22 zu halten."),
             K("allowDoubleDown", "Verdoppeln", "Verdoppelt den Einsatz für genau eine weitere Karte, dann wird gehalten. Nur auf einer frischen Hand aus zwei Karten, vor allem anderen."),
             K("allowSplit", "Teilen", "Teilt ein Startpaar gleichwertiger Karten in zwei Hände, jede für denselben Einsatz ausgespielt."),
-            K("allowResplit", "Erneut teilen", "Lässt eine geteilte Hand noch einmal teilen, wenn sie wieder ein passendes Paar zieht. Gilt auch für geteilte Asse."),
+            K("allowResplit", "Erneut teilen", "Lässt eine geteilte Hand noch einmal teilen, wenn sie wieder ein passendes Paar zieht. Geteilte Asse bekommen je eine Karte und bleiben stehen, sie werden nicht erneut geteilt."),
             K("maxSplitHands", "Hände durch Teilen", "Wie viele Hände eine Runde durch Teilen höchstens erreicht. Vier ist der Casino-Standard."),
             K("allowInsurance", "Versicherung", "Zeigt der Dealer ein Ass, darf ein Spieler die Hälfte seines Einsatzes gegen einen Blackjack des Dealers setzen. Zahlt 2:1.\nAuf Dauer ist es eine Nebenwette, die der Spieler verliert, deshalb ist sie standardmäßig aus."),
             K("allowSurrender", "Aufgeben", "Lässt einen Spieler eine frische Hand aus zwei Karten aufgeben und die Hälfte des Einsatzes behalten, vor Ziehen, Verdoppeln, Teilen oder Versichern."),
@@ -518,7 +518,7 @@ public static class UiSchema
         .Samples("cards", "🂫(10) 🂺(10)", "card", "🂺(10)", "value", "20", "total", "22", "handnum", "2", "hands", "Tie on Hand 1!", "card1", "🂫(10)", "card2", "🂺(10)", "challenger", "alice", "opponent", "bob", "challengercards", "🂫(10) 🂺(10) (20)", "opponentcards", "🂱(11) 🂸(8) (19)", "challengervalue", "20", "opponentvalue", "19", "winner", "alice", "loser", "bob", "pot", "3,000", "bet", "1,500", "newbet", "3,000", "raise", "doubles down", "turn", "bob", "round", "1", "seconds", "60", "required", "1,500", "available", "820", "var", "points", "action", "insurance", "extra", ", double or split", "addictedCutPercent", "50", "menu", "1) Vegas Strip | 2) Atlantic City | 3) European", "rules", "Vegas Strip", "rulesdetail", "4 deck shoe, dealer stands on soft 17, insurance offered, blackjack pays 3:2", "seats", "alice: 20 win | bob: 19 lose", "seatnum", "2", "dealer", "🂱(11) 🂸(8)", "dealervalue", "19", "playercards", "🂫(10) 🂺(10)", "playervalue", "20", "FormatNumber(bet)", "1,500", "0", "alice", "1", "12", "balance", "11,500")
         .Log("Chat Games/Logs", "BJG-log*.txt", writeLogKey: "logToFile", writeLogHelp: "Writes every settled hand to a dated 'BJG-log-yyyy-MM-dd.txt' in the Logs folder, one file per day.", columns: new[] { "Player|User", "Bet|Bet", "Change|Change", "After|After" }, results: new[] { "Win", "Blackjack", "Loss", "Bust", "Push", "Charlie", "Three 7s", "Insurance", "Surrender", "Quit", "Timeout" })
         .Answer("overlaySample", "A sample hand is playing on the overlay for about ten seconds, in OBS too if the source is there. Nobody's points move.")
-        .Answer("overlayDemo", "The demo opened in your browser. In OBS, add &demo=1 to the source's URL to place it the same way.")
+        .Answer("overlayDemo", "The demo opened in your browser. To place it in OBS, untick Local file in the browser source and set its URL to the overlay's file:/// address with ?demo=1 at the end.")
         .Help(
             H("The idea",
                 Note("Get closer to 21 than the dealer without going past it. Number cards count their face value, Jack, Queen and King count 10, and an Ace counts 11 until that would bust the hand, at which point it drops to 1 on its own.")),
@@ -586,7 +586,7 @@ public static class UiSchema
         S("showAceMsg", true, page: "table", label: "Say when an Ace drops to 1", help: "Posts a line whenever an Ace counts as 1 instead of 11 to keep a hand under 22.", kind: "bool", section: "The dealer", aliases: new[] { "ShowAceMsg" }),
         S("allowDoubleDown", true, page: "table", label: "Double down", help: "Doubles the stake for exactly one more card, then stands. Only on a fresh two-card hand, before anything else.", kind: "bool", section: "Optional rules", aliases: new[] { "AllowDoubleDown" }),
         S("allowSplit", true, page: "table", label: "Split", help: "Splits a starting pair of equal-value cards into two hands, each played out for the same stake.", kind: "bool", section: "Optional rules", aliases: new[] { "AllowSplit" }),
-        S("allowResplit", false, page: "table", label: "Resplit", help: "Lets a split hand split again when it draws another matching pair. Applies to split Aces too.", kind: "bool", section: "Optional rules", aliases: new[] { "AllowResplit" }),
+        S("allowResplit", false, page: "table", label: "Resplit", help: "Lets a split hand split again when it draws another matching pair. Split Aces get one card each and stand, so they are never split again.", kind: "bool", section: "Optional rules", aliases: new[] { "AllowResplit" }),
         S("maxSplitHands", 4, page: "table", label: "Hands from splitting", help: "The total number of hands one round may reach through splitting. Four is the casino standard.", kind: "int", section: "Optional rules", options: new[] { "2", "3", "4", "5", "6", "7", "8" }, aliases: new[] { "MaxSplitHands" }),
         S("allowInsurance", false, page: "table", label: "Insurance", help: "When the dealer shows an Ace, a player may stake half their bet against a dealer blackjack. Pays 2:1.\nOver time it is a losing side bet for the player, which is why it is off by default.", kind: "bool", section: "Optional rules", aliases: new[] { "AllowInsurance" }),
         S("allowSurrender", false, page: "table", label: "Surrender", help: "Lets a player fold a fresh two-card hand and keep half the stake, before hitting, doubling, splitting or insuring.", kind: "bool", section: "Optional rules", aliases: new[] { "AllowSurrender" }),
@@ -663,9 +663,9 @@ public static class UiSchema
         S("obsConnectionId", 0, page: "overlay", label: "Connection", help: "Which Streamer.bot OBS connection to use. 0 is the first one.", kind: "int", section: "Set it up in OBS", aliases: new[] { "ObsConnectionId" }),
         S("obsSceneName", "Blackjack", page: "overlay", label: "Scene", help: "The scene the source is added to. Created if it does not exist yet.", kind: "string", section: "Set it up in OBS", aliases: new[] { "ObsSceneName" }),
         S("obsSourceName", "Blackjack Overlay", page: "overlay", label: "Source", help: "The browser source created inside that scene. Nothing is changed if a source of this name is already there.", kind: "string", section: "Set it up in OBS", aliases: new[] { "ObsSourceName" }),
-        S("setupObsOverlay", null, page: "overlay", label: "Create the browser source in OBS", help: "Creates the scene above if it is missing and adds a browser source pointing at the overlay file. Needs OBS connected in Streamer.bot.", kind: "action", section: "Set it up in OBS", confirm: "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?", row: "obsButtons"),
+        S("setupObsOverlay", null, page: "overlay", label: "Create the browser source in OBS", help: "Creates the scene above if it is missing and adds a browser source pointing at the overlay file. Needs OBS connected in Streamer.bot.", kind: "action", live: true, section: "Set it up in OBS", confirm: "This creates the scene if it is missing and adds a browser source pointing at the overlay file, over the OBS connection set above. Go ahead?", row: "obsButtons"),
         S("overlaySample", null, page: "overlay", label: "Show a sample round", help: "Plays one made-up hand on the overlay for about ten seconds, the one in OBS included, so you can see where it sits and how it looks. If you are live, your viewers see it too. Uses the settings as saved; nobody's points move. While a hand, duel or House table is running the overlay is left to it.", kind: "action", section: "Set it up in OBS", row: "obsButtons"),
-        S("overlayDemo", null, page: "overlay", label: "Try the demo", help: "Opens the overlay in your browser, playing made-up hands from a solo hand to a duel and a House table in the look the saved settings give it, without Streamer.bot. Add &demo=1 to the source's URL in OBS to place it the same way.", kind: "action", section: "Set it up in OBS", row: "obsButtons"),
+        S("overlayDemo", null, page: "overlay", label: "Try the demo", help: "Opens the overlay in your browser, playing made-up hands from a solo hand to a duel and a House table in the look the saved settings give it, without Streamer.bot. To place it in OBS, untick Local file in the browser source and set its URL to the overlay's file:/// address with ?demo=1 at the end.", kind: "action", section: "Set it up in OBS", row: "obsButtons"),
         S("overlayFolder", "Overlay", page: "overlay", label: "Overlay folder", help: "A subfolder name kept under Chat Games\\Blackjack Game, or a full path, so the overlay can live anywhere. Empty uses 'Overlay'.", kind: "path", section: "Files", aliases: new[] { "OverlayFolder" }),
         // ---- messages ----
         Msg("Playing a hand", "msgGameStart", "🃏 {user} is dealt in. ", "Hand dealt", "Opens a round. The hand and the dealer's upcard are appended to it.", new[] { "user", "cards", "value" }, alias: "MsgGameStart"),
@@ -857,7 +857,7 @@ public static class UiSchema
         S("leaderboardSendAction", false, page: "stats", label: "Send as /me", help: "Twitch only: YouTube and Kick have no /me.", section: "How the leaderboard is sent", aliases: new[] { "LeaderboardSendAction" }),
         S("leaderboardResetScope", "totals", page: "stats", label: "A reset clears", help: "The totals only: the money the ranking runs on - bets, winnings, net, duel points, biggest win and loss. Games played, blackjacks, busts, streaks and duel records stay. Right for a monthly season.", section: "Starting a new season", options: new[] { "totals|The leaderboard totals only", "all|Every stat there is" }, aliases: new[] { "LeaderboardResetScope" }),
         S("leaderboardAutoReset", "off", page: "stats", label: "Automatically", help: "Clears the leaderboard on its own when the period rolls over, using the scope above.", section: "Starting a new season", options: new[] { "off|Never", "weekly|Every new ISO week", "monthly|On the 1st of the month" }, aliases: new[] { "LeaderboardAutoReset" }),
-        S("resetLeaderboard", null, page: "stats", label: "Reset the leaderboard now", help: "Applies the reset scope to every viewer on every platform, and asks first.", kind: "action", section: "Starting a new season", confirm: "This permanently clears the leaderboard for every viewer according to the reset scope above. It cannot be undone. Go ahead?"),
+        S("resetLeaderboard", null, page: "stats", label: "Reset the leaderboard now", help: "Applies the reset scope to every viewer on every platform, and asks first.", kind: "action", live: true, section: "Starting a new season", confirm: "This permanently clears the leaderboard for every viewer according to the reset scope above. It cannot be undone. Go ahead?"),
         // ---- log ----
         S("logToFile", true, page: "log", label: "Write a log file per day", help: "Writes every settled hand - win, loss, blackjack, bust, surrender, insurance, quit, timeout, and the duel and House results - to a dated 'BJG-log-yyyy-MM-dd.txt' in the Logs folder, one file per day.", kind: "bool", aliases: new[] { "LogToFile" }),
     };
@@ -1284,7 +1284,7 @@ public static class UiHost
     /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
     /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
     /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
-    /// from before stub 0.3.1, it does nothing.</summary>
+    /// from before stub 0.3.2, it does nothing.</summary>
     public static void StillWorking()
     {
         string var = System.Threading.Volatile.Read(ref _answering);
@@ -1385,7 +1385,7 @@ public static class UiUpdateNotice
 
     // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
     // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-    internal const string StubVersion = "0.3.1";
+    internal const string StubVersion = "0.3.2";
 
     /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
     /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -1461,12 +1461,15 @@ public static class UiUpdateNotice
     }
 
     /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+    /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
     internal static bool NeedsNewerStub(string dll)
     {
         try
         {
-            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+            string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
             int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
             if (at < 0) return false;
             string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');

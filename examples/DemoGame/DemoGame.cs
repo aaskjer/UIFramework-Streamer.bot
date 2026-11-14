@@ -720,7 +720,7 @@ public static class UiHost
     /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
     /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
     /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
-    /// from before stub 0.3.1, it does nothing.</summary>
+    /// from before stub 0.3.2, it does nothing.</summary>
     public static void StillWorking()
     {
         string var = System.Threading.Volatile.Read(ref _answering);
@@ -821,7 +821,7 @@ public static class UiUpdateNotice
 
     // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
     // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-    internal const string StubVersion = "0.3.1";
+    internal const string StubVersion = "0.3.2";
 
     /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
     /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -897,12 +897,15 @@ public static class UiUpdateNotice
     }
 
     /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+    /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
     internal static bool NeedsNewerStub(string dll)
     {
         try
         {
-            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+            string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
             int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
             if (at < 0) return false;
             string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
