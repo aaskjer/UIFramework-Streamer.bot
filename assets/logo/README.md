@@ -8,7 +8,7 @@ beams away block by block: that dot is the "I".
 | File | Use |
 |---|---|
 | `uiframework-mark.svg` | The mark on its dark tile. Any size from 64 px up. |
-| `uiframework-mark-16.svg` | Hand-set pixel version for 16 to 48 px (favicons, tab and window icons): one cell is one pixel; keeps the tear, a drip and the beaming dot. |
+| `uiframework-mark-16.svg` | Pixel version set by hand for 16 to 48 px (favicons, tab and window icons), one cell per pixel. It keeps the tear, a drip and the beaming dot. |
 | `uiframework-mark-{512,256,128,64}.png` | The mark as PNG. |
 | `uiframework-mark-small-{48,32,16}.png` | The pixel version as PNG. |
 | `uiframework.ico` | Windows icon: the pixel version at 16, 32, 48, the full mark at 256. |
@@ -31,7 +31,7 @@ Colours:
 | Pink | `#FF4FD8` | `#FF4FD8` |
 | Amber (the I) | `#FFC857` | `#FFB000` |
 
-In a README, both versions follow GitHub's theme:
+In a README, `<picture>` shows the version that fits GitHub's theme:
 
 ```html
 <picture>

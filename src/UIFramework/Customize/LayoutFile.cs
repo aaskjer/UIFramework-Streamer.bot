@@ -157,8 +157,9 @@ namespace UIFramework
             set { if (value) Root["tourSeen"] = true; else Root.Remove("tourSeen"); }
         }
 
-        // The loader's note for the window's header pill: a framework release the user answered "No" to in the
-        // update dialog. Set by the stub on "No", removed once the release is taken, skipped or overtaken.
+        // The loader's note for the window's header pill: a framework release the user put off with "Cancel" in the
+        // update dialog, or whose download failed. Set by the stub then, removed once the release is taken, skipped
+        // with "No" or overtaken.
         public string FrameworkAvailable { get => Text("frameworkAvailable"); set => SetText("frameworkAvailable", value); }
 
         private string Text(string key) => Root[key]?.Type == JTokenType.String ? (string)Root[key] : null;
