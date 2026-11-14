@@ -114,12 +114,7 @@ namespace UIFramework
                 foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "messages"))
                 {
                     string targetId = page.Id;
-                    var entry = Item(page.Title, () =>
-                    {
-                        ctx.Layout.SetField(setting.Key, "page", targetId);
-                        ctx.Layout.SetField(setting.Key, "order", null);
-                        Commit(ctx, targetId);
-                    });
+                    var entry = Item(page.Title, () => MoveToPage(ctx, setting, targetId));
                     entry.IsEnabled = targetId != pageId;
                     move.Items.Add(entry);
                 }
@@ -477,6 +472,23 @@ namespace UIFramework
             Commit(ctx, pageId);
         }
 
+        /// <summary>Moves a field to another page (its menu, or dropped on the page in the rail): after the last field of
+        /// its own section where the page has that section, else at the page's end, so no heading shows twice. Every field
+        /// there gets an order, as on a drop: by the order the game declared, the field landed wherever that number fell
+        /// among the orders of a page the user had sorted, often inside another section.</summary>
+        private static void MoveToPage(PageContext ctx, Setting setting, string pageId)
+        {
+            var there = FieldsOn(ctx.Spec, pageId).Where(s => s.Key != setting.Key).ToList();
+            int at = setting.Section == null ? -1 : there.FindLastIndex(s => s.Section == setting.Section);
+            there.Insert(at < 0 ? there.Count : at + 1, setting);
+            ctx.Layout.SetField(setting.Key, "page", pageId);
+            // A row is a line of the page it was on: the field arrives on a line of its own.
+            if (!string.IsNullOrEmpty(setting.Row)) ctx.Layout.SetField(setting.Key, "row", "");
+            for (int i = 0; i < there.Count; i++)
+                ctx.Layout.SetField(there[i].Key, "order", i * 10);
+            Commit(ctx, pageId);
+        }
+
         /// <summary>A field dropped among the fields of another section joins it, so no section is split in two and its
         /// heading does not show twice. The section goes into the layout by the name the game declared, so it holds in
         /// every language; "Reset this field" brings the field's own back.</summary>
@@ -627,11 +639,7 @@ namespace UIFramework
                 {
                     var setting = FieldFor(e);
                     if (setting == null) return;
-                    ctx.Layout.SetField(setting.Key, "page", page.Id);
-                    ctx.Layout.SetField(setting.Key, "order", null);
-                    // A row is a line of the page it was on: the field arrives on a line of its own.
-                    if (!string.IsNullOrEmpty(setting.Row)) ctx.Layout.SetField(setting.Key, "row", "");
-                    Commit(ctx, page.Id);
+                    MoveToPage(ctx, setting, page.Id);
                 }
                 else if (e.Data.GetDataPresent(PageFormat))
                 {

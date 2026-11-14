@@ -132,5 +132,74 @@ namespace UIFramework.Tests
             Press("a2", "cust.moveDown");
             Assert.Equal(new[] { "a1:A", "b1:B", "a2:B", "b2:B" }, Drawn(spec, "game"));
         });
+
+        // ---- A field moved to another page ------------------------------------------------------------------
+
+        /// <summary>Whether a section's heading shows more than once on the page.</summary>
+        private static bool SplitsASection(WindowSpec spec, string pageId)
+        {
+            var headings = new List<string>();
+            string section = null;
+            foreach (var s in spec.ResolvedSettings.Where(x => x.Page == pageId).OrderBy(x => x.Order))
+                if (s.Section != null && s.Section != section)
+                    headings.Add(section = s.Section);
+            return headings.Count != headings.Distinct().Count();
+        }
+
+        [Fact]
+        public void A_field_moved_to_a_page_the_user_sorted_lands_at_its_end_or_in_its_own_section() => Sta(() =>
+        {
+            var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
+                { ""key"": ""p1"", ""default"": ""x"", ""page"": ""one"", ""section"": ""S1"" },
+                { ""key"": ""p2"", ""default"": ""x"", ""page"": ""one"", ""section"": ""S1"" },
+                { ""key"": ""p3"", ""default"": ""x"", ""page"": ""one"", ""section"": ""S2"" },
+                { ""key"": ""q1"", ""default"": ""x"", ""page"": ""two"" },
+                { ""key"": ""q2"", ""default"": ""x"", ""page"": ""two"" },
+                { ""key"": ""g"", ""default"": ""x"", ""page"": ""two"", ""section"": ""G"" },
+                { ""key"": ""h"", ""default"": ""x"", ""page"": ""two"", ""section"": ""S1"" },
+                { ""key"": ""r"", ""default"": ""x"", ""page"": ""two"", ""row"": ""pair"" },
+                { ""key"": ""r2"", ""default"": ""x"", ""page"": ""two"", ""row"": ""pair"" } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""one"", ""two"" ] } }");
+            var spec = Customising(schema);
+            // Page one as sorting it leaves it: an order for every field.
+            spec.Layout.SetField("p1", "order", 0);
+            spec.Layout.SetField("p2", "order", 10);
+            spec.Layout.SetField("p3", "order", 20);
+            spec.Layout.Save();
+            Entry.Prepare(spec, schema);
+            var ctx = Entry.ContextFor(spec, new JObject(), new WindowParts(), new QuietLog(), null);
+            string one = spec.Pages.First(p => p.Id == "one").Title;
+
+            // Its menu: g was declared sixth, and the sixth place fell between p1 (0) and p2 (10): S1 showed twice.
+            void MoveByMenu(string key)
+            {
+                var box = (Border)Customize.Wrap(ctx, spec.ResolvedSettings.First(s => s.Key == key), new TextBlock(), "two");
+                var moveTo = box.ContextMenu.Items.OfType<MenuItem>().First(i => (string)i.Header == Text.T("cust.moveTo"));
+                Click(moveTo.Items.OfType<MenuItem>().First(i => (string)i.Header == one));
+                Entry.Prepare(spec, schema);
+            }
+            MoveByMenu("g");
+            Assert.Equal(new[] { "p1:S1", "p2:S1", "p3:S2", "g:G" }, Drawn(spec, "one"));
+            Assert.False(SplitsASection(spec, "one"));
+
+            // Dropped on the page in the rail: h is in S1, which page one has, and goes to its end.
+            var rail = new Border();
+            Customize.AttachRail(ctx, spec.Pages.First(p => p.Id == "one"), rail, () => spec.Pages.Where(p => !p.Bottom).ToList());
+            var data = new DataObject("UIFramework.Field", "h");
+            data.SetData("UIFramework.Layout", spec.Layout.Path);
+            var drop = (DragEventArgs)typeof(DragEventArgs).GetConstructors(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .First(c => c.GetParameters().Length == 5)
+                .Invoke(new object[] { data, DragDropKeyStates.None, DragDropEffects.Move, rail, new Point() });
+            drop.RoutedEvent = DragDrop.DropEvent;
+            rail.RaiseEvent(drop);
+            Entry.Prepare(spec, schema);
+            Assert.Equal(new[] { "p1:S1", "p2:S1", "h:S1", "p3:S2", "g:G" }, Drawn(spec, "one"));
+            Assert.False(SplitsASection(spec, "one"));
+
+            // A row is a line of the page it was on, by the menu as by a drop.
+            MoveByMenu("r");
+            Assert.Equal("", spec.Layout.Field("r").Row);
+            Assert.Equal("r:", Drawn(spec, "one").Last());
+        });
     }
 }
