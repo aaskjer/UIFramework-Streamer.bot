@@ -76,7 +76,8 @@ namespace UIFramework
 
         /// <summary>The picture of one of YouTube's own emojis, or null for anything the table doesn't know (a
         /// Unicode emoji, a BTTV emote, a typo). The host's <c>youtube</c> object (<c>{ ":name:": url }</c>) wins
-        /// over the embedded table.</summary>
+        /// over the embedded table. For a shortcode this waits for the host's emote sources; the window's thread asks
+        /// <see cref="YouTubeLookup"/>.</summary>
         public static string YouTubeUrl(string code, IHostHooks hooks, int size = 48)
         {
             code = (code ?? "").Trim();
@@ -93,6 +94,19 @@ namespace UIFramework
             if (string.IsNullOrEmpty(url) && !YouTubeTable().TryGetValue(code, out url))
                 return null;
             return url.Contains("=") ? url : url + "=w" + size + "-h" + size + "-c-k-nd";
+        }
+
+        /// <summary><see cref="YouTubeUrl"/> without the wait, for the window's thread: done at once for a code that is
+        /// no shortcode or when the host's emote sources are known, else once the host has answered (on another
+        /// thread), as the picture of an emote cell is.</summary>
+        public static Task<string> YouTubeLookup(string code, IHostHooks hooks, int size = 48)
+        {
+            if (!YouTubeCode.IsMatch((code ?? "").Trim()))
+                return Task.FromResult<string>(null);
+            var asked = Asked(hooks);
+            if (asked.IsCompleted)
+                return Task.FromResult(YouTubeUrl(code, hooks, size));
+            return asked.ContinueWith(done => YouTubeUrl(code, hooks, size), TaskScheduler.Default);
         }
 
         private static Dictionary<string, string> YouTubeTable()
