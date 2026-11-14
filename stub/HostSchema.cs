@@ -1370,10 +1370,13 @@ public sealed class UiSettings
             // moment there is no file, and a swap that failed halfway leaves only the .bak.
             for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
             {
-                bool backup = System.IO.File.Exists(path + ".bak");
-                if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
-                if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
-                System.Threading.Thread.Sleep(40);
+                bool backup = System.IO.File.Exists(path + ".bak"), saving = System.IO.File.Exists(path + ".tmp");
+                if (!backup && (attempt >= 5 || !saving)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                // Only a save under way (its .tmp) is waited for. Without one the file is looked for once more, as a
+                // swap may have ended between the looks; still missing, it is read from the .bak at once, not after
+                // 160 ms on every load.
+                if (attempt >= 5 || (!saving && !System.IO.File.Exists(path))) throw new System.IO.FileNotFoundException("it is missing", path);
+                if (saving) System.Threading.Thread.Sleep(40);
             }
             return new UiSettings(Read(path));
         }

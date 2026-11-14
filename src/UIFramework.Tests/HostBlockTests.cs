@@ -75,6 +75,21 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AFileGoneWithNoSaveUnderWayIsReadFromTheBackupAtOnce()
+        {
+            // No .tmp: the window is not swapping a file in, so there is nothing to wait for. Every load of a game
+            // whose file was deleted beside its .bak waited 160 ms for it.
+            string file = TempSettings("gone-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            File.WriteAllText(file + ".bak", @"{ ""sides"": 8 }");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var backup = UiSettings.Load(file);
+            Assert.True(watch.ElapsedMilliseconds < 100, "a file gone beside its .bak waited " + watch.ElapsedMilliseconds + " ms");
+            Assert.True(backup.FromBackup);
+            Assert.Equal(8, backup.Raw.Value<int>("sides"));
+        }
+
+        [Fact]
         public void AFileNeverSavedIsTheDefaultsWithoutAWord()
         {
             string file = TempSettings("never-" + Guid.NewGuid().ToString("N"));
