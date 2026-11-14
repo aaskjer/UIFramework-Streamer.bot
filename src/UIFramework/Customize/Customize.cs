@@ -127,7 +127,7 @@ namespace UIFramework
             }
             // Without the mouse: Tab reaches the field, the Menu key (or Shift+F10) opens this menu, and Move up and
             // Move down, also Alt+Up and Alt+Down, do what dragging does. The moved field keeps the keyboard.
-            List<string> OnPage() => ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            List<string> OnPage() => FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             void Move(int by)
             {
                 var keys = OnPage();
@@ -331,6 +331,20 @@ namespace UIFramework
             }
         }
 
+        /// <summary>The fields the customise mode shows on a page, in their order: the templates on the Messages page, and
+        /// on any other page its fields but those the Messages and Log pages draw wherever they are declared (the sender
+        /// switches, the number format, the log switch). Counted among a page's fields, they took a Move up or Move down
+        /// that changed nothing on it, and lent a field dropped beside them their section.</summary>
+        private static List<Setting> FieldsOn(WindowSpec spec, string pageId)
+        {
+            var senders = spec.Senders;
+            var elsewhere = new HashSet<string>(new[] { senders.UseBot, senders.SendAction, senders.CooldownUseBot, senders.CooldownSendAction, senders.NumberSeparator, spec.Log?.WriteLogKey }
+                .Where(k => k != null), StringComparer.Ordinal);
+            return spec.ResolvedSettings
+                .Where(s => s.Page == pageId && (pageId == "messages" ? s.Kind == "template" : !elsewhere.Contains(s.Key)))
+                .OrderBy(s => s.Order).ToList();
+        }
+
         /// <summary>Puts the dragged field before or after the target. Beside it: both on the target's line (its row,
         /// or a new one named after it). Above or below it: the dragged field on a line of its own.</summary>
         private static void PlaceField(PageContext ctx, string pageId, string dragged, string target, bool before, bool beside)
@@ -351,7 +365,7 @@ namespace UIFramework
             }
             else
                 ctx.Layout.SetField(dragged, "row", "");
-            var onPage = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            var onPage = FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             onPage.Remove(dragged);
             int at = onPage.IndexOf(target);
             int first = at, last = at;
@@ -367,7 +381,7 @@ namespace UIFramework
             {
                 // The same for a line the page puts together by itself (three numbers, two switches): above or below
                 // all of it, not between its fields.
-                var drawn = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).ToList();
+                var drawn = FieldsOn(ctx.Spec, pageId);
                 var lines = Lines(drawn);
                 int LineOf(string key) { int i = drawn.FindIndex(s => s.Key == key); return i < 0 ? -1 : lines[i]; }
                 int line = LineOf(target);
@@ -425,9 +439,7 @@ namespace UIFramework
         /// field on the page. Nothing is written when that leaves the page as it is.</summary>
         private static void ReorderFields(PageContext ctx, string pageId, string dragged, string before)
         {
-            var onPage = ctx.Spec.ResolvedSettings
-                .Where(s => s.Page == pageId)
-                .OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            var onPage = FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             var draggedSetting = ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == dragged);
             if (draggedSetting == null || dragged == before) return;
             // A message template stays on the Messages page, and nothing else is dropped between the messages.
