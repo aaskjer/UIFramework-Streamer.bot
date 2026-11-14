@@ -158,6 +158,7 @@
     "dialog.damaged.defaults": "The window shows the defaults, and Save writes a fresh file.",
     "dialog.damaged.kept": " The damaged file was kept next to it as {0}.broken.",
     "dialog.damaged.title": "Settings damaged",
+    "settings.fromBackup": "{0} is missing. The window shows the settings from before the last save ({0}.bak), which the extension uses too. The next save writes {0} again.",
     "dialog.unsaved.title": "Unsaved changes",
     "dialog.unsaved.customise": "Save your changes before customising?\nThe pages are rebuilt, and anything unsaved is lost.",
     "dialog.unsaved.switch": "Save your changes before switching?\nThe pages are rebuilt, and anything unsaved is lost.",

@@ -226,6 +226,13 @@ namespace UIFramework
                     (loaded.FromBackup ? Text.T("dialog.damaged.backup", fileName) : Text.T("dialog.damaged.defaults")) +
                     Text.T("dialog.damaged.kept", fileName),
                     Text.T("dialog.damaged.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            else if (loaded.FromBackup)
+            {
+                // The file is gone beside its .bak: the window shows the .bak, which the project reads as well, and says
+                // so under the red "i" instead of in a dialog, as nothing is damaged. The next save writes the file.
+                _log.Warn(_spec.LogPrefix + " " + fileName + " is missing; the window shows " + fileName + ".bak, as the project reads it. The next save writes " + fileName + " again.");
+                _problems.Add(Text.T("settings.fromBackup", fileName));
+            }
 
             var settings = loaded.Settings;
             // Every open resolves afresh, so a layout change made in the customise mode shows up after the rebuild.

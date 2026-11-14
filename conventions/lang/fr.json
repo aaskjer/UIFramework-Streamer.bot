@@ -300,6 +300,7 @@
     "dialog.damaged.defaults": "La fenêtre affiche les valeurs par défaut : enregistrez pour écrire un nouveau fichier.",
     "dialog.damaged.kept": " Le fichier endommagé a été conservé à côté, sous le nom {0}.broken.",
     "dialog.damaged.title": "Paramètres endommagés",
+    "settings.fromBackup": "{0} est introuvable. La fenêtre affiche les paramètres d'avant le dernier enregistrement ({0}.bak), que l'extension utilise aussi. Le prochain enregistrement réécrit {0}.",
     "dialog.unsaved.title": "Modifications non enregistrées",
     "dialog.unsaved.customise": "Enregistrer vos modifications avant de personnaliser ?\nLes pages vont être reconstruites et tout ce qui n'est pas enregistré sera perdu.",
     "dialog.unsaved.switch": "Enregistrer vos modifications avant le changement ?\nLes pages vont être reconstruites et tout ce qui n'est pas enregistré sera perdu.",

@@ -300,6 +300,7 @@
     "dialog.damaged.defaults": "A janela mostra os valores padrão, e Salvar grava um arquivo novo.",
     "dialog.damaged.kept": " O arquivo danificado foi mantido ao lado, como {0}.broken.",
     "dialog.damaged.title": "Configurações danificadas",
+    "settings.fromBackup": "{0} não foi encontrado. A janela mostra as configurações de antes do último salvamento ({0}.bak), que a extensão também usa. O próximo salvamento grava {0} de novo.",
     "dialog.unsaved.title": "Alterações não salvas",
     "dialog.unsaved.customise": "Salvar as alterações antes de personalizar?\nAs páginas são recriadas, e o que não foi salvo se perde.",
     "dialog.unsaved.switch": "Salvar as alterações antes de trocar?\nAs páginas são recriadas, e o que não foi salvo se perde.",

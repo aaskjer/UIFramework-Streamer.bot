@@ -300,6 +300,7 @@
     "dialog.damaged.defaults": "Das Fenster zeigt die Standardwerte; Speichern schreibt eine neue Datei.",
     "dialog.damaged.kept": " Die beschädigte Datei bleibt daneben als {0}.broken erhalten.",
     "dialog.damaged.title": "Einstellungen beschädigt",
+    "settings.fromBackup": "{0} fehlt. Das Fenster zeigt die Einstellungen von vor dem letzten Speichern ({0}.bak), die auch die Erweiterung verwendet. Das nächste Speichern schreibt {0} neu.",
     "dialog.unsaved.title": "Ungespeicherte Änderungen",
     "dialog.unsaved.customise": "Änderungen vor dem Anpassen speichern?\nDie Seiten werden neu aufgebaut; Ungespeichertes geht verloren.",
     "dialog.unsaved.switch": "Änderungen vor dem Umschalten speichern?\nDie Seiten werden neu aufgebaut; Ungespeichertes geht verloren.",
