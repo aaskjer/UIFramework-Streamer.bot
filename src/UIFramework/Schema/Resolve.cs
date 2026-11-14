@@ -34,6 +34,10 @@ namespace UIFramework
             var asDeclared = new List<(string Key, string Page, int Order, string Section, bool Hidden)>();
             // What the game hides (`hidden`, Override), before the user's layout: the same with every resolve.
             var hiddenByGame = new HashSet<string>(StringComparer.Ordinal);
+            // Each field's order as the project declares it, and the fields the user's layout gives an order of its own:
+            // what places a field the user never placed on a page the user sorted.
+            var declaredOrder = new Dictionary<string, int>(StringComparer.Ordinal);
+            var placedByUser = new HashSet<string>(StringComparer.Ordinal);
             foreach (var declared in schema.Settings)
             {
                 // A known key declared as another kind of value is most likely the game's own idea under a taken name:
@@ -81,6 +85,7 @@ namespace UIFramework
                             option.Label = lang.Text(option.Label);
                 }
                 asDeclared.Add((setting.Key, setting.Page, setting.Order, setting.Section, setting.Hidden));
+                declaredOrder[setting.Key] = setting.Order;
                 if (setting.Hidden) hiddenByGame.Add(setting.Key);
                 // The user's layout has the last word on where a field sits and what it is called. A section it names
                 // by a name the game declared reads in the window's language, as the game's own sections do.
@@ -92,7 +97,11 @@ namespace UIFramework
                     setting.Label = mine.Label ?? setting.Label;
                     setting.Section = mine.Section != null ? lang.Text(mine.Section) : setting.Section;
                     if (mine.Hidden.HasValue) setting.Hidden = mine.Hidden.Value;
-                    if (mine.Order.HasValue) setting.Order = mine.Order.Value;
+                    if (mine.Order.HasValue)
+                    {
+                        setting.Order = mine.Order.Value;
+                        placedByUser.Add(setting.Key);
+                    }
                     // "" is a line of its own: a row nobody else names.
                     if (mine.Row != null) setting.Row = mine.Row.Length == 0 ? "~" + setting.Key : mine.Row;
                 }
@@ -262,6 +271,11 @@ namespace UIFramework
                 }
                 pageFields[pageId].Add(setting);
             }
+            // A field the user never placed on a page the user sorted: by the page the field ends up on, hidden ones
+            // included, as the customise mode counts a page's fields; not by what the Messages and Log pages draw.
+            foreach (var page in settings.Where(s => !drawn.Contains(s.Key) && s.Key != spec.Log.WriteLogKey && !(s.Kind == "template" && s.Page == "messages"))
+                .GroupBy(s => s.Page))
+                PlaceUnsorted(page.ToList(), placedByUser, declaredOrder);
 
             // Standard pages the spec did not name: messages when there are templates, help when there are help
             // sections, custom triggers or methods to list, about always.
@@ -448,6 +462,9 @@ namespace UIFramework
             }
         }
 
+        /// <summary>A number as a declaration writes it, whatever the system's decimal mark: 0.5.</summary>
+        private static string Number(double value) => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
         /// <summary>Kinds that hold the same sort of value: a whole number, a decimal, text, a switch, a list, a colour.</summary>
         private static string KindFamily(string kind)
         {
@@ -527,6 +544,18 @@ namespace UIFramework
                     CheckCondition(spec, byKey, "'" + s.Key + "'", "is shown when", s.ShowWhen);
                 if (s.Min.HasValue && s.Max.HasValue && s.Min > s.Max)
                     spec.Problems.Add("'" + s.Key + "' has a minimum above its maximum.");
+                // A slider over a range holds what its default is (docs/Schema.md): a whole number keeps it on whole numbers,
+                // so a place a step, minimum or maximum with a fraction gives it is saved rounded (0.5 as 0, 1.5 as 2), the
+                // same as the place beside it.
+                if (s.Kind == "slider" && (s.Options == null || s.Options.Count == 0) && s.Default?.Type == Newtonsoft.Json.Linq.JTokenType.Integer)
+                {
+                    bool Fraction(double? v) => v.HasValue && v.Value != Math.Floor(v.Value);
+                    string limit = Fraction(s.Step) ? "step " + Number(s.Step.Value) : Fraction(s.Min) ? "minimum " + Number(s.Min.Value)
+                        : Fraction(s.Max) ? "maximum " + Number(s.Max.Value) : null;
+                    if (limit != null)
+                        spec.Problems.Add("'" + s.Key + "' has the " + limit + ", but its default " + FieldBinding.Invariant(s.Default) + " is a whole number, so the slider"
+                            + " holds whole numbers and saves a place between two of them rounded. Write the default as " + FieldBinding.Invariant(s.Default) + ".0 for a slider of decimals.");
+                }
                 foreach (var alias in s.Aliases)
                     if (alias != s.Key && keys.Contains(alias))
                         spec.Problems.Add("'" + s.Key + "' has the old key '" + alias + "', which is a setting of its own; that old key is not moved.");
@@ -578,6 +607,38 @@ namespace UIFramework
                     previous = s.Section;
                 }
             }
+        }
+
+        /// <summary>A page the user sorted in the customise mode has an order in the layout for every field it showed then
+        /// (0, 10, 20 ...). A field without one, which the project added in an update or "Reset this field" gave back,
+        /// kept its place among all the project's settings, which fell anywhere among those orders, often inside another
+        /// section, whose heading then showed twice. It now goes behind the field the project declares before it on the
+        /// page when it shares that one's section, else to the end of its own section there, else to the end of the page.
+        /// The page's fields are then numbered in that order.</summary>
+        private static void PlaceUnsorted(List<Setting> page, ISet<string> placed, IDictionary<string, int> declared)
+        {
+            if (!page.Any(s => placed.Contains(s.Key)) || page.All(s => placed.Contains(s.Key))) return;
+            var order = page.Where(s => placed.Contains(s.Key)).OrderBy(s => s.Order).ToList();
+            Setting before = null;
+            foreach (var setting in page.OrderBy(s => declared[s.Key]))
+            {
+                if (!placed.Contains(setting.Key))
+                {
+                    // Behind the field declared before it, or first when none is. A field without a section takes the
+                    // section it lands in; one with a section goes only where that section is.
+                    int at = before == null ? 0 : order.IndexOf(before) + 1;
+                    string there = before != null ? before.Section : order.Count > 0 ? order[0].Section : setting.Section;
+                    if (setting.Section != null && setting.Section != there)
+                    {
+                        int last = order.FindLastIndex(s => s.Section == setting.Section);
+                        at = last >= 0 ? last + 1 : order.Count;
+                    }
+                    order.Insert(at, setting);
+                }
+                before = setting;
+            }
+            for (int i = 0; i < order.Count; i++)
+                order[i].Order = i;
         }
 
         /// <summary>A points system the game found installed: a pill in the header, and the two points settings say
