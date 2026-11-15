@@ -533,7 +533,7 @@ namespace UIFramework
                     return;
                 }
                 if (chosen != null)
-                    box.Text = PathPicker.Relative(chosen, baseFolder);
+                    box.Text = PathPicker.Stored(chosen);
             };
             var dock = new DockPanel();
             DockPanel.SetDock(open, Dock.Right);

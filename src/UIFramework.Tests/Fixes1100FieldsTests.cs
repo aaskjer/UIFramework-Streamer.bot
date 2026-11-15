@@ -114,13 +114,14 @@ namespace UIFramework.Tests
         }
 
         [Fact]
-        public void AChoiceUnderTheStreamerBotFolderIsWrittenRelative()
+        public void AChoiceIsWrittenAsAFullPathAlsoUnderTheStreamerBotFolder()
         {
-            Assert.Equal(@"overlay\state.json", PathPicker.Relative(Bot + @"\overlay\state.json", Bot + @"\"));
-            Assert.Equal("logs", PathPicker.Relative(@"c:\streamer.bot\logs", Bot));          // the case of the letters does not matter
-            Assert.Equal(@"C:\Streamer.botX\logs", PathPicker.Relative(@"C:\Streamer.botX\logs", Bot));   // a folder whose name only starts the same
-            Assert.Equal(@"D:\games\scores.txt", PathPicker.Relative(@"D:\games\scores.txt", Bot));
-            Assert.Equal(Bot, PathPicker.Relative(Bot, Bot));                                  // the folder itself stays a whole path, not ""
+            // A project may read a relative value from a folder of its own (Blackjack's and Battleship's overlay
+            // folder count from the game's folder): a full path means the same to all of them.
+            Assert.Equal(Bot + @"\overlay\state.json", PathPicker.Stored(Bot + @"\overlay\state.json"));
+            Assert.Equal(Bot + @"\Chat Games\Battleship Game\Overlay", PathPicker.Stored(Bot + @"\Chat Games\Battleship Game\Overlay\"));
+            Assert.Equal(@"D:\games\scores.txt", PathPicker.Stored(@"D:\games\scores.txt"));
+            Assert.Null(PathPicker.Stored(null));
         }
 
         [Fact]

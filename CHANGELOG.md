@@ -30,8 +30,8 @@ removed: the window still works with every settings action from stub 0.1.0 on (`
   button opens a file dialog when the value or the default names a file (it has an extension, or a file of that name
   exists), otherwise a folder dialog. The dialog starts where the value points, or where the default points while
   the value is empty; a relative value counts from the Streamer.bot folder. A file the action has not written yet
-  can be chosen. A choice under the Streamer.bot folder is written relative to it (`overlay\state.json`), anything
-  else as a full path.
+  can be chosen. A choice is written as a full path, also under the Streamer.bot folder: a project may read a
+  relative value from a folder of its own.
 - **A `grouplist` field suggests Streamer.bot's groups (stub 0.3.2).** docs/Schema.md promised "chips with
   Streamer.bot's groups suggested"; the field had the hint "Add a Streamer.bot group" and took what was typed. The
   first time a group field gets the cursor, the window asks the settings action for the groups, once. The action

@@ -10,7 +10,7 @@ namespace UIFramework
     /// What the buttons beside a path field do. The folder button opens the folder the value names, or the folder a
     /// named file is in; the browse button lets the user choose with Windows' own dialog, a file dialog for a file and a
     /// folder dialog for a folder, starting where the value points. A relative value counts from the Streamer.bot
-    /// folder, and a choice under that folder is written relative to it.
+    /// folder, and a choice is written as a full path: a project may read a relative value from a folder of its own.
     /// </summary>
     public static class PathPicker
     {
@@ -82,15 +82,15 @@ namespace UIFramework
             return plan;
         }
 
-        /// <summary>A chosen path as the field stores it: relative to <paramref name="baseFolder"/> when it lies under
-        /// it ("overlay\state.json"), else absolute. The folder itself stays absolute: an empty value would mean the
-        /// default.</summary>
-        public static string Relative(string chosen, string baseFolder)
+        /// <summary>A chosen path as the field stores it: always the full path, also under the Streamer.bot folder.
+        /// Projects do not agree where a relative value starts (Blackjack and Battleship read their overlay folder from
+        /// their own folder), and a full path means the same to every one of them.</summary>
+        public static string Stored(string chosen)
         {
-            if (string.IsNullOrEmpty(chosen) || string.IsNullOrEmpty(baseFolder)) return chosen;
+            if (string.IsNullOrEmpty(chosen)) return chosen;
             string full = Path.GetFullPath(chosen);
-            string root = Path.GetFullPath(baseFolder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            return full.Length > root.Length && full.StartsWith(root, StringComparison.OrdinalIgnoreCase) ? full.Substring(root.Length) : full;
+            // A folder without the separator behind it, as the dialog gives it; a drive's root keeps it ("D:\").
+            return full.Length > (Path.GetPathRoot(full) ?? "").Length ? full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : full;
         }
 
         /// <summary>Shows the dialog the plan names over <paramref name="owner"/>: the chosen path, or null when the user
