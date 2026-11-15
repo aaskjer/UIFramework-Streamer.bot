@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -28,6 +29,9 @@ namespace UIFramework
             try { return JsonText.Parse(text) as JObject; } catch (Exception) { return null; }
         }
 
+        /// <summary>Marks the line of a failure, so the next answer does not keep it.</summary>
+        private const string Failure = "action-failed";
+
         /// <param name="failed">The text says what went wrong: it is shown in the colour of a failure.</param>
         public static void Render(StackPanel panel, string result, IHostHooks hooks = null, bool failed = false)
         {
@@ -37,13 +41,16 @@ namespace UIFramework
             {
                 panel.Children.Clear();
                 var line = Line(text, false);
-                if (failed) line.Foreground = new SolidColorBrush(Theme.DangerText);
+                if (failed) { line.Foreground = new SolidColorBrush(Theme.DangerText); line.Tag = Failure; }
                 panel.Children.Add(line);
                 return;
             }
             if (structured["lines"] == null && structured["bar"] == null)
             {
                 // An answer that only sets fields or a status leaves the panel as it was; an empty panel gets the status.
+                // A failure of an earlier ask is not kept: it said the action failed under an answer that came.
+                if (panel.Children.Count == 1 && panel.Children[0] is TextBlock before && Equals(before.Tag, Failure))
+                    panel.Children.Clear();
                 string status = (string)structured["status"];
                 if (panel.Children.Count == 0 && !string.IsNullOrEmpty(status))
                     panel.Children.Add(Line(status, false));
@@ -88,8 +95,13 @@ namespace UIFramework
                 string code = token?.ToString() ?? "";
                 string name = EmotePictures.NameOf(code);
                 var cell = new StackPanel { Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Bottom };
-                if (platform == "youtube" && EmotePictures.YouTubeUrl(code, hooks) == null)
-                    cell.Children.Add(new TextBlock { Text = code, FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, Foreground = Theme.LabelFg });
+                // Whether a YouTube shortcode has a picture can hang on the project's emote sources (its `youtube`
+                // object), which may not have come yet. The window does not wait for them: the cell holds the
+                // picture's place meanwhile, and a code that turns out to have none is drawn as its text then. A
+                // Unicode emoji needs no sources and shows itself at once.
+                var url = platform == "youtube" ? EmotePictures.YouTubeLookup(code, hooks) : null;
+                if (url != null && url.IsCompleted && NoPicture(url))
+                    cell.Children.Add(Glyph(code));
                 else
                 {
                     var image = EmotePictures.Picture(platform, code, hooks);
@@ -98,12 +110,36 @@ namespace UIFramework
                     image.Margin = new Thickness(0);
                     image.HorizontalAlignment = HorizontalAlignment.Center;
                     cell.Children.Add(image);
+                    if (url != null && !url.IsCompleted)
+                    {
+                        var dispatcher = cell.Dispatcher;
+                        url.ContinueWith(found =>
+                        {
+                            if (!NoPicture(found))
+                                return;
+                            dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                int at = cell.Children.IndexOf(image);
+                                if (at < 0)
+                                    return;
+                                cell.Children.RemoveAt(at);
+                                cell.Children.Insert(at, Glyph(code));
+                            }));
+                        }, TaskScheduler.Default);
+                    }
                 }
                 cell.Children.Add(new TextBlock { Text = name, FontSize = 11, Foreground = Theme.SubFg, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 0) });
                 wrap.Children.Add(cell);
             }
             return wrap;
         }
+
+        /// <summary>The lookup found no picture for the code (or failed, which shows the same).</summary>
+        private static bool NoPicture(Task<string> url) => url.Status != TaskStatus.RanToCompletion || url.Result == null;
+
+        /// <summary>An emote without a picture, drawn as its text in the picture's place.</summary>
+        private static TextBlock Glyph(string code) =>
+            new TextBlock { Text = code, FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, Foreground = Theme.LabelFg };
 
         private static TextBlock Line(string text, bool big) => new TextBlock
         {

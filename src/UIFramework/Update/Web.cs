@@ -28,12 +28,15 @@ namespace UIFramework
             }
         }
 
+        /// <summary>What shows a folder in Explorer once it is there. Tests put their own in.</summary>
+        public static Action<string> ShowFolder = folder => Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+
         public static void OpenFolder(string folder, IHostLog log, string prefix)
         {
             try
             {
                 Directory.CreateDirectory(folder);
-                Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+                ShowFolder(folder);
             }
             catch (Exception ex)
             {

@@ -2874,6 +2874,76 @@
       "aliases": [
         "MsgNoLeaderboard"
       ]
+    },
+    {
+      "key": "msgStats",
+      "default": "⚓ {user}: {played} battles | {won}W/{lost}L | Win rate: {winrate}% | Accuracy: {accuracy}% ({hits}/{shots}) | Ships sunk: {sunk}, lost: {shipsLost} | Best streak: {bestStreak} | Net: {net} {points}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Stats",
+      "label": "Stats reply",
+      "help": "!bstats: a player's record. {abandoned}, {flawless}, {bestWin} (the fewest shots in a win) and {streak} can be added.",
+      "placeholders": [
+        "user",
+        "played",
+        "won",
+        "lost",
+        "abandoned",
+        "winrate",
+        "accuracy",
+        "hits",
+        "shots",
+        "sunk",
+        "shipsLost",
+        "flawless",
+        "bestWin",
+        "streak",
+        "bestStreak",
+        "net",
+        "points"
+      ]
+    },
+    {
+      "key": "msgStatsFree",
+      "default": "⚓ {user}: {played} battles | {won}W/{lost}L | Win rate: {winrate}% | Accuracy: {accuracy}% ({hits}/{shots}) | Ships sunk: {sunk}, lost: {shipsLost} | Best streak: {bestStreak}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Stats",
+      "label": "Stats reply in Free game",
+      "help": "!bstats while Free game is on, with no points at stake.",
+      "placeholders": [
+        "user",
+        "played",
+        "won",
+        "lost",
+        "abandoned",
+        "winrate",
+        "accuracy",
+        "hits",
+        "shots",
+        "sunk",
+        "shipsLost",
+        "flawless",
+        "bestWin",
+        "streak",
+        "bestStreak",
+        "net",
+        "points"
+      ]
+    },
+    {
+      "key": "msgLeaderboard",
+      "default": "🏆 Top {count} Admirals ({rankedBy}): {entries}",
+      "kind": "template",
+      "page": "messages",
+      "group": "Stats",
+      "label": "Leaderboard",
+      "help": "!ballstats. {entries} is the ranked players one after another, like '🥇 Name (+1,200)'.",
+      "placeholders": [
+        "count",
+        "rankedBy",
+        "entries"
+      ]
     }
   ],
   "window": {
@@ -3076,11 +3146,9 @@
         "WIN",
         "LOSS",
         "TIMEOUT",
-        "ABANDONED",
+        "NO-SHOW",
         "STOPPED",
-        "CHAT WIN",
-        "CHAT LOSS",
-        "DUEL"
+        "STARTED"
       ],
       "platforms": [
         "twitch",
@@ -4415,6 +4483,18 @@
         "msgNoLeaderboard": {
           "label": "Bestenliste leer",
           "help": "!ballstats, bevor irgendjemand eine Bilanz hat."
+        },
+        "msgStats": {
+          "label": "Bilanz",
+          "help": "!bstats: die Bilanz eines Spielers. {abandoned}, {flawless}, {bestWin} (die wenigsten Schüsse in einem Sieg) und {streak} lassen sich ergänzen."
+        },
+        "msgStatsFree": {
+          "label": "Bilanz im Freispiel",
+          "help": "!bstats, solange das Freispiel läuft und keine Punkte im Spiel sind."
+        },
+        "msgLeaderboard": {
+          "label": "Bestenliste",
+          "help": "!ballstats. {entries} sind die Spieler der Rangliste nacheinander, etwa '🥇 Name (+1,200)'."
         }
       },
       "texts": {

@@ -144,7 +144,8 @@
             }
             if (s.File != null) item["file"] = s.File;
             if (s.Transient) item["transient"] = true;
-            if (s.Live) item["live"] = true;
+            // A field that asks is asked with what the window shows: a DLL up to 1.9.0 takes those values only for "live".
+            if (s.Live || (s.Ask && s.Kind != "action")) item["live"] = true;
             if (s.Ask) item["ask"] = true;
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
@@ -254,7 +255,7 @@
                 K("rndMin", "Min ×", "Der kleinste Gewinn-Multiplikator. Jeder Gewinn würfelt einen Multiplikator zwischen Min und Max, ein Jackpot kommt auf diesen Wurf drauf."),
                 K("rndMax", "Max ×", "Der größte Gewinn-Multiplikator."),
                 K("odds", "Was wirklich rauskommt", "Die Chance auf Jackpot, Gewinn und Verlust und was ein Einsatz von 100 im Schnitt zurückbringt, aus den fünf Zahlen, wie sie stehen, für einen Zuschauer ohne Abonnenten-/VIP-Bonus oder Süchtigen-Kürzung."),
-                K("previousDefaultBet", null, "Der Standardeinsatz von vor !SetFreeGamble, den !EndFreeGamble zurückbringt."),
+                K("previousDefaultBet", null, "Ein Standardeinsatz, den !SetFreeGamble vor 25.2.2 auf 0 gesetzt hat und den !EndFreeGamble zurückbringt."),
                 K("tryRoll", "Würfeln", "Spielt ein Gamble mit den Einstellungen, wie sie auf dieser Seite stehen, gespeichert oder nicht, und zeigt den Wurf und die Nachricht, die der Chat bekäme. Nichts wird gesendet, nichts gespeichert."),
                 K("platformsNote", null, "Twitch, YouTube und Kick spielen alle, und jede Antwort geht in den Chat, aus dem der Befehl oder die Einlösung kam. Um eine Plattform auszulassen, entferne den Haken am Befehl !gamble in Streamer.bot, zum Beispiel 'Kick Message'."),
                 K("cooldownNote", null, "Was der Chat während einer Abklingzeit erfährt, steht auf der Seite Nachrichten unter Abklingzeit."),
@@ -319,7 +320,7 @@
                     Note("A viewer runs !gamble with a bet, and the bet rolls against the odds on the Game page: jackpot, win or loss. Wins and jackpots are paid on top of the bet; a loss takes it."),
                     Cmd("!gamble", "plays for the Default bet. With a Default bet of 0, viewers always have to name an amount."),
                     Cmd("!gamble 500", "plays for 500, within the minimum and maximum. Also 50%, 10k, 2.5m, 1b, all, half, third, quarter and random."),
-                    Cmd("!SetFreeGamble", "moderators: turns Free Game Mode on. !EndFreeGamble turns it off and brings the Default bet back."),
+                    Cmd("!SetFreeGamble", "moderators: turns Free Game Mode on. !EndFreeGamble turns it off again."),
                     Cmd("!gambleaddict add <user>", "moderators: puts a viewer on the addicted list; remove takes them off.")),
                 H("How a gamble is decided",
                     Note("The game rolls 1 to 10,000. A roll within the jackpot chance is a jackpot: the bet times a multiplier between Min × and Max ×, times the Jackpot ×. A roll within the win chance on top of that is a win: the bet times the multiplier. Everything else loses the bet. Twitch subscribers and VIPs can get a boost on wins and jackpots; viewers on the Addicted list get a cut.")),
@@ -362,8 +363,8 @@
             S("defaultBet", 1234, page: "game", label: "Default bet", help: "The bet for a plain !gamble with no amount. 0 means viewers always have to name one. Viewers can also bet a number, a percentage, shorthand like 10k, or all, half, third, quarter and random.", section: "Bets and points", min: 0.0, aliases: new[] { "DefaultBet" }),
             S("minBet", 0, page: "game", label: "Minimum (0 = none)", help: "The smallest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.", section: "Bets and points", min: 0.0, aliases: new[] { "MinBet" }),
             S("maxBet", 9999999, page: "game", label: "Maximum (0 = none)", help: "The largest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.", section: "Bets and points", min: 0.0, aliases: new[] { "MaxBet" }),
-            S("freeGame", false, page: "game", label: "Free Game Mode", help: "Nobody pays or wins points, channel point redemptions included, and chat gets the Free game messages. !SetFreeGamble and !EndFreeGamble switch it from chat; starting it there puts the Default bet to 0 and ending it brings the previous one back.", section: "Bets and points", aliases: new[] { "FreeGameActive" }),
-            S("previousDefaultBet", 1234, page: "game", help: "The Default bet from before !SetFreeGamble, brought back by !EndFreeGamble.", section: "Bets and points", min: 0.0, hidden: true, aliases: new[] { "PreviousDefaultBet" }),
+            S("freeGame", false, page: "game", label: "Free Game Mode", help: "Nobody pays or wins points, channel point redemptions included, and chat gets the Free game messages. !SetFreeGamble and !EndFreeGamble switch it from chat, the same as this switch; the Default bet stays as it is.", section: "Bets and points", aliases: new[] { "FreeGameActive" }),
+            S("previousDefaultBet", 0, page: "game", help: "A Default bet that !SetFreeGamble set to 0 before 25.2.2, brought back by !EndFreeGamble.", section: "Bets and points", min: 0.0, hidden: true, aliases: new[] { "PreviousDefaultBet" }),
             S("pointsVariable", "points", page: "game", label: "Points variable", help: "The variable your points live in. Currency Core by StreamUP and LOYALTY POINTS by tawmae are found on their own; only change this for a points system of your own.", section: "Bets and points", aliases: new[] { "PointsVar" }),
             S("pointsName", "Points", page: "game", label: "Shown in chat as", help: "The name {pointsName} puts in chat, like 'Coins' or 'Gems'. Currency Core and LOYALTY POINTS bring their own name, which is used instead.", section: "Bets and points", aliases: new[] { "PointsName" }),
             S("subscriberBoostEnabled", false, page: "game", label: "Subscriber boost", help: "Gives Twitch subscribers a bigger payout on wins and jackpots. Twitch only: on YouTube and Kick the game doesn't check for subscribers.", section: "Payouts", aliases: new[] { "SubscriberBoostEnabled" }, twitchOnly: true),
@@ -829,7 +830,9 @@
                 CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
                 answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
             }
-            finally { System.Threading.Volatile.Write(ref _answering, null); }
+            // Only its own: a request that hung and ends while the settings action has gone on with the next one leaves
+            // that one's StillWorking in place.
+            finally { System.Threading.Interlocked.CompareExchange(ref _answering, null, var); }
             CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
             return true;
         }
@@ -840,7 +843,7 @@
         /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
         /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
         /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
-        /// from before stub 0.3.1, it does nothing.</summary>
+        /// from before stub 0.3.2, it does nothing.</summary>
         public static void StillWorking()
         {
             string var = System.Threading.Volatile.Read(ref _answering);
@@ -941,7 +944,7 @@
 
         // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
         // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-        internal const string StubVersion = "0.3.1";
+        internal const string StubVersion = "0.3.2";
 
         /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
         /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -1017,12 +1020,15 @@
         }
 
         /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-        /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+        /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+        /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
         internal static bool NeedsNewerStub(string dll)
         {
             try
             {
-                string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+                var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                    .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+                string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
                 int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
                 if (at < 0) return false;
                 string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
@@ -1531,10 +1537,13 @@
                 // moment there is no file, and a swap that failed halfway leaves only the .bak.
                 for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
                 {
-                    bool backup = System.IO.File.Exists(path + ".bak");
-                    if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
-                    if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
-                    System.Threading.Thread.Sleep(40);
+                    bool backup = System.IO.File.Exists(path + ".bak"), saving = System.IO.File.Exists(path + ".tmp");
+                    if (!backup && (attempt >= 5 || !saving)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                    // Only a save under way (its .tmp) is waited for. Without one the file is looked for once more, as a
+                    // swap may have ended between the looks; still missing, it is read from the .bak at once, not after
+                    // 160 ms on every load.
+                    if (attempt >= 5 || (!saving && !System.IO.File.Exists(path))) throw new System.IO.FileNotFoundException("it is missing", path);
+                    if (saving) System.Threading.Thread.Sleep(40);
                 }
                 return new UiSettings(Read(path));
             }
@@ -1575,13 +1584,16 @@
             if (setting?.Aliases != null)
                 for (int i = 0; i < setting.Aliases.Length; i++)
                 {
-                    // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                    // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch"). One that is a
+                    // setting of its own again holds that setting's value: the window does not move it either.
                     string alias = setting.Aliases[i];
+                    if (UiSchema.Find(alias) != null) continue;
                     int dot = alias.IndexOf('.');
                     var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                     if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                    // Rounded as the window's store rounds it on the move: 0.07 * 100 is 7.000000000000001 to a double.
                     if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
-                        return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                        return System.Math.Round(System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value, 10);
                     return old;
                 }
             return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);

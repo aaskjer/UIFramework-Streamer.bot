@@ -1,6 +1,6 @@
 {
   "host": "trivia",
-  "version": "v9.3.2",
+  "version": "v9.3.3",
   "settingsFile": "Chat Games/Trivia Game/configs.json",
   "settings": [
     {
@@ -82,7 +82,7 @@
       "page": "game",
       "section": "Rounds",
       "label": "First reminder at",
-      "help": "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this.",
+      "help": "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this. 0 sends no reminders.",
       "min": 0.0,
       "unit": "s",
       "row": "roundTimes",
@@ -289,7 +289,7 @@
       "page": "game",
       "section": "Blitz rounds",
       "label": "First reminder at",
-      "help": "Seconds left when a blitz round gets its first reminder.",
+      "help": "Seconds left when a blitz round gets its first reminder. 0 sends no reminders.",
       "min": 0.0,
       "unit": "s",
       "row": "blitz",
@@ -501,7 +501,7 @@
       "page": "automation",
       "section": "Ad breaks",
       "label": "Start a round when ads start",
-      "help": "When an ad break starts on your Twitch channel, a round starts with it, as many rounds in a row as fit the break (within 'Rounds per command', and one while 'Allow several rounds in a row' is off). No cooldown and no moderator is needed. A round already under way is left alone.",
+      "help": "When an ad break starts on your Twitch channel, a round starts with it, as many rounds in a row as fit the break (within 'Max per command', and one while 'Allow several rounds in a row' is off). No cooldown and no moderator is needed. A round already under way is left alone.",
       "aliases": [
         "AdBreakStart"
       ]
@@ -1416,7 +1416,7 @@
       "page": "suggestions",
       "section": "What arrives",
       "label": "Filed under",
-      "help": "The category suggested questions are filed under on the Custom List tab.",
+      "help": "The category suggested questions are filed under on the Questions page.",
       "row": "arrive",
       "aliases": [
         "SuggestCategory"
@@ -1497,7 +1497,7 @@
       "page": "suggestions",
       "section": "What arrives",
       "label": "Playable the moment they arrive",
-      "help": "Off, and they land switched off on the Custom List tab for you to look over first.",
+      "help": "Off, and they land switched off on the Questions page for you to look over first.",
       "aliases": [
         "SuggestEnabledOnArrival"
       ]
@@ -1844,7 +1844,7 @@
       "page": "overlay",
       "section": "Add it to OBS",
       "label": "Source",
-      "help": "The browser source's name. If OBS already has a source of this name, you are asked whether to point it at the overlay again instead.",
+      "help": "The browser source's name. If OBS already has a browser source of this name, it is pointed at the overlay again instead; a source of another kind with this name is left alone.",
       "row": "obs",
       "aliases": [
         "OverlayObsSource"
@@ -1970,7 +1970,7 @@
       "page": "overlay",
       "section": "What it shows",
       "label": "The leaderboard after a round",
-      "help": "Follows the result with the top of the leaderboard, ranked like !TL and leaving out the same viewers.",
+      "help": "Follows the result with the top of the leaderboard, ranked like !TTB and leaving out the same viewers.",
       "aliases": [
         "OverlayShowLeaderboard"
       ]
@@ -2745,7 +2745,7 @@
     },
     {
       "key": "addictedUsage",
-      "default": "@{userName}, usage: !addicted add <user>  or  !addicted remove <user>",
+      "default": "@{userName}, usage: !TA add <user>  or  !TA remove <user>",
       "kind": "template",
       "page": "messages",
       "group": "Addicted",
@@ -3428,7 +3428,7 @@
           },
           {
             "command": "!ta add|remove <user>",
-            "what": "adds or removes a viewer from the half-payout list. Writes straight to the Access page."
+            "what": "adds or removes a viewer from the Addicted list, whose wins pay out less (the cut is set on the Access page). Writes straight to the Access page."
           },
           {
             "command": "!triviascoreboard",
@@ -3929,7 +3929,7 @@
         },
         "normalCountdownStartSeconds": {
           "label": "Erste Erinnerung bei",
-          "help": "Verbleibende Sekunden, bei denen der Chat die erste Countdown-Erinnerung bekommt. Die zweite kommt bei der Hälfte davon, die dritte bei der Hälfte davon, höchstens 5. Nur die Rundenlänge begrenzt das."
+          "help": "Verbleibende Sekunden, bei denen der Chat die erste Countdown-Erinnerung bekommt. Die zweite kommt bei der Hälfte davon, die dritte bei der Hälfte davon, höchstens 5. Nur die Rundenlänge begrenzt das. 0 schickt keine Erinnerungen."
         },
         "delayBetweenRoundsSeconds": {
           "label": "Pause zwischen Runden",
@@ -3985,7 +3985,7 @@
         },
         "blitzCountdownStartSeconds": {
           "label": "Erste Erinnerung bei",
-          "help": "Verbleibende Sekunden, bei denen eine Blitzrunde ihre erste Erinnerung bekommt."
+          "help": "Verbleibende Sekunden, bei denen eine Blitzrunde ihre erste Erinnerung bekommt. 0 schickt keine Erinnerungen."
         },
         "matchingNote": {
           "label": null,
@@ -4041,7 +4041,7 @@
         },
         "adBreakStart": {
           "label": "Runde starten, wenn Werbung startet",
-          "help": "Startet auf deinem Twitch-Kanal ein Werbeblock, startet mit ihm eine Runde, so viele Runden nacheinander, wie in den Block passen (innerhalb von 'Runden pro Befehl', und eine, solange 'Mehrere Runden nacheinander erlauben' aus ist). Dafür braucht es keine Abklingzeit und keinen Moderator. Eine laufende Runde bleibt unberührt."
+          "help": "Startet auf deinem Twitch-Kanal ein Werbeblock, startet mit ihm eine Runde, so viele Runden nacheinander, wie in den Block passen (innerhalb von 'Höchstens je Befehl', und eine, solange 'Mehrere Runden nacheinander erlauben' aus ist). Dafür braucht es keine Abklingzeit und keinen Moderator. Eine laufende Runde bleibt unberührt."
         },
         "adBreakAnnounce": {
           "label": "Vor der Werbung ankündigen",
@@ -4429,7 +4429,7 @@
         },
         "overlayObsSource": {
           "label": "Quelle",
-          "help": "Der Name der Browserquelle. Hat OBS schon eine Quelle dieses Namens, wird sie wieder aufs Overlay gerichtet."
+          "help": "Der Name der Browserquelle. Hat OBS schon eine Browserquelle dieses Namens, wird sie wieder aufs Overlay gerichtet; eine Quelle anderer Art mit diesem Namen bleibt, wie sie ist."
         },
         "setupObsOverlay": {
           "label": "In OBS einrichten",
@@ -4477,7 +4477,7 @@
         },
         "overlayShowLeaderboard": {
           "label": "Die Bestenliste nach einer Runde",
-          "help": "Lässt auf das Ergebnis die Spitze der Bestenliste folgen, gereiht wie !TL und mit denselben Ausnahmen."
+          "help": "Lässt auf das Ergebnis die Spitze der Bestenliste folgen, gereiht wie !TTB und mit denselben Ausnahmen."
         },
         "overlayResultSeconds": {
           "label": "Ergebnis anzeigen für",

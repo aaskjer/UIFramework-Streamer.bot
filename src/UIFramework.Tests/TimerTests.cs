@@ -157,7 +157,9 @@ namespace UIFramework.Tests
             Assert.Equal("automation", max.Page);
             Assert.Equal("autoStart", max.Row);
             Assert.Equal("min", max.Unit);
-            Assert.Equal("autoStartRandom", max.Requires);
+            // Greyed out with the timer's switch as well as with the random one, and on one row with the switch between them.
+            Assert.Equal("autoStartEnabled && autoStartRandom", max.Requires);
+            Assert.Equal("autoStart", Conventions.Default.Complete(new Setting { Key = "autoStartRandom" }).Row);
             Assert.Equal(30, (int)max.Default);
             Assert.Equal("autoStartEnabled", Conventions.Default.Complete(new Setting { Key = "autoStartMinChatLines" }).Requires);
 
@@ -185,7 +187,7 @@ namespace UIFramework.Tests
             Assert.NotNull(declared);
             Assert.Equal(kind, (string)declared["kind"]);
             Assert.Equal("automation", (string)declared["page"]);
-            foreach (string code in new[] { "en", "de", "es" })
+            foreach (string code in new[] { "en", "de", "es", "fr", "pt-BR" })
             {
                 var text = Read("lang." + code + ".json")["keys"][key] as JObject;
                 Assert.True(text != null && !string.IsNullOrWhiteSpace((string)text["label"]) && !string.IsNullOrWhiteSpace((string)text["help"]),

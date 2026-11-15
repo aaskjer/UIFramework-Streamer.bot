@@ -95,6 +95,9 @@ namespace UIFramework
         private static int? Int(JToken parent, string key)
         {
             var token = At(parent, key);
+            // A whole number with more digits than a long holds (a hand edit) is read as a BigInteger, which (long) throws
+            // on, and the window did not open; as a double it is the largest order.
+            if (token?.Type == JTokenType.Integer && !(((JValue)token).Value is long)) return (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (double)token));
             if (token?.Type == JTokenType.Integer) return (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (long)token));
             if (token?.Type == JTokenType.Float) return (int)Math.Round(Math.Max(int.MinValue, Math.Min(int.MaxValue, (double)token)));
             return null;
@@ -154,8 +157,9 @@ namespace UIFramework
             set { if (value) Root["tourSeen"] = true; else Root.Remove("tourSeen"); }
         }
 
-        // The loader's note for the window's header pill: a framework release the user answered "No" to in the
-        // update dialog. Set by the stub on "No", removed once the release is taken, skipped or overtaken.
+        // The loader's note for the window's header pill: a framework release the user put off with "Cancel" in the
+        // update dialog, or whose download failed. Set by the stub then, removed once the release is taken, skipped
+        // with "No" or overtaken.
         public string FrameworkAvailable { get => Text("frameworkAvailable"); set => SetText("frameworkAvailable", value); }
 
         private string Text(string key) => Root[key]?.Type == JTokenType.String ? (string)Root[key] : null;

@@ -144,7 +144,8 @@
             }
             if (s.File != null) item["file"] = s.File;
             if (s.Transient) item["transient"] = true;
-            if (s.Live) item["live"] = true;
+            // A field that asks is asked with what the window shows: a DLL up to 1.9.0 takes those values only for "live".
+            if (s.Live || (s.Ask && s.Kind != "action")) item["live"] = true;
             if (s.Ask) item["ask"] = true;
             if (s.Panel) item["panel"] = true;
             if (s.Auto) item["auto"] = true;
@@ -249,6 +250,7 @@
                 K("matchChance", "Treffer-Chance", "Chance in Prozent, dass eine Drehung gleiche Walzen zeigen darf: sie werden dann frei gezogen, ein Treffer ist also wahrscheinlich, aber nicht sicher. Sonst wird eine Wiederholung neu gezogen, um einen Treffer zu vermeiden. Die Quoten darunter zeigen, was wirklich herauskommt."),
                 K("jackpotChance", "Jackpot-Chance", "Chance in Prozent, dass jede Walze dasselbe Emote zeigt - der Jackpot. '1' ist 1 von 100. Auch eine freie Ziehung kann alle gleich landen, die echte Chance ist also etwas höher."),
                 K("rerollAttempts", "Neuziehungen", "Wie hartnäckig eine Drehung, die nicht treffen soll, eine Wiederholung vermeidet: jede Walze wird bis zu so oft gezogen. Eine Wiederholung kann trotzdem durchrutschen, vor allem mit wenigen Emotes im Spiel."),
+                K("odds", "Was wirklich herauskommt", "Aus 30.000 Probedrehungen mit den Emotes, Gewichten, Chancen und Auszahlungen, wie sie auf dieser Seite stehen, gespeichert oder nicht, und den Emotes der Plattform, die unter der Probedrehung gewählt ist. Für einen Zuschauer ohne Abonnenten- oder VIP-Bonus und ohne Abzug für Süchtige, und ohne den Jackpot-Topf."),
                 K("emotePoolSize", "Emote-Pool (0 = alle)", "Wie viele der Emotes im Spiel für jede Drehung gezogen werden. Weniger Emotes machen Treffer wahrscheinlicher. 0, oder mehr als es gibt, nimmt alle."),
                 K("minEmoteWeight", "Mindestgewicht", "Nur Emotes mit mindestens diesem Gewicht spielen. Niedrige Gewichte kommen oft und zahlen wenig, ein höherer Wert nimmt also die billigsten Emotes heraus."),
                 K("maxEmoteWeight", "Höchstgewicht", "Nur Emotes mit höchstens diesem Gewicht spielen. Hohe Gewichte sind selten und zahlen viel, ein niedrigerer Wert nimmt also die wertvollsten Emotes heraus."),
@@ -324,6 +326,7 @@
             .Pill("freeGame", "Free mode on", "Free mode off", tooltip: "Free mode, from the Game page or !SetFreeSlots. While it is on, nobody stakes or wins anything and the jackpot pool doesn't grow.")
             .Pill("isChannelPointsTrigger", "Channel points", "Chat command", tooltip: "How viewers spin on Twitch, from the Access page. YouTube and Kick always use the chat command.")
             .Samples("user", "alice", "amount", "1,500", "currency", "Points", "newBalance", "12,345", "jackpotMinBet", "50,000", "jackpotLossContribution", "100", "jackpotPoolCurrent", "23,400", "jackpotPoolWinAmount", "23,400", "addictedCutPercent", "50", "jackpot", "", "/jackpot", "", "reason", "your bet is below the minimum (1 Points).", "seconds", "12", "min", "1", "max", "9,999,999")
+            .Answer("odds", "{\"lines\":[\"4 slots: Two or three alike pay; all four alike is the jackpot.\",{\"text\":\"A bet of 100 comes back as about 93\",\"big\":true},\"Worked out from 30,000 test spins with the Twitch emotes, for a viewer without boosts, Addicted cut or jackpot pool.\"],\"bar\":[{\"label\":\"Jackpot\",\"value\":0.9,\"text\":\"0.9 %\",\"colour\":\"#F59E0B\"},{\"label\":\"Win\",\"value\":26.5,\"text\":\"26.5 %\",\"colour\":\"#22C55E\"},{\"label\":\"Loss\",\"value\":72.6,\"text\":\"72.6 %\",\"colour\":\"#6B7280\"}]}")
             .Answer("trySpin", "{\"lines\":[\"alice has 12,340 Points and spins for 1,000 Points on Twitch.\",{\"emotes\":[\"Kappa\",\"LUL\",\"Kappa\",\"FailFish\"],\"platform\":\"twitch\"},\"No match · @alice spun Kappa || LUL || Kappa || FailFish and lost 1,000 Points. New balance: 11,340 Points.\"]}")
             .Log("Chat Games/Logs", "SMG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Trigger|Trigger", "Bet|Bet", "Change|Change", "After|After" }, results: new[] { "WIN", "LOSS", "JACKPOT" }, platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No spins logged yet. Every spin lands here once 'Write a log file per day' is on.")
             .Help(
@@ -337,7 +340,7 @@
                 H("What a win pays",
                     Note("The bet × the payout % of the tier (2, 3, 4 or 5 alike, or the jackpot) × the emote's weight ÷ 100, and never less than the bet. A low weight comes up often and pays little, a high one is rare and pays a lot; which weights play is set on the Game page, the weights themselves on the Emotes page."),
                     Note("With the jackpot pool on, every lost bet goes into a pool per platform, and a jackpot with a bet at or above 'Bet to win the pool' takes the pool on top. Twitch subscribers and VIPs can get a boost; viewers on the Addicted list get a cut."),
-                    Note("'Try a spin' on the Game page plays one round with the game's own engine and the exact chat message, from the settings as they stand in the window, without sending or saving anything.")),
+                    Note("'What really comes out' on the Game page shows the odds your settings give, and 'Try a spin' plays one round with the game's own engine and the exact chat message, from the settings as they stand in the window, without sending or saving anything.")),
                 H("Channel points",
                     Note("On Twitch a channel point reward can start the spin instead of the command (Access page): the reward's price is the bet, or a typed amount, a fixed amount, or nothing at all. YouTube and Kick keep the chat command. A redemption that can't end in a spin is refunded while it is still in the request queue.")),
                 H("For your own actions",
@@ -376,6 +379,7 @@
             S("emotePoolSize", 10, page: "game", label: "Emote pool (0 = all)", help: "How many of the emotes in play are drawn for each spin. Fewer emotes make matches more likely. 0, or more than there are, uses them all.", section: "Slots and odds", min: 0.0, aliases: new[] { "EmotePoolSize" }),
             S("minEmoteWeight", 1, page: "game", label: "Min weight", help: "Only emotes with at least this weight play. Low weights come up often and pay little, so raising this takes out the cheapest emotes.", section: "Slots and odds", min: 1.0, aliases: new[] { "MinEmoteWeight" }),
             S("maxEmoteWeight", 10, page: "game", label: "Max weight", help: "Only emotes with at most this weight play. High weights are rare and pay a lot, so lowering this takes out the most valuable emotes.", section: "Slots and odds", min: 1.0, aliases: new[] { "MaxEmoteWeight" }),
+            S("odds", null, page: "game", label: "What really comes out", help: "Worked out from 30,000 test spins with the emotes, weights, chances and payouts as they stand on this page, saved or not, and the emotes of the platform picked under Try a spin. For a viewer without Subscriber/VIP boost or Addicted cut, and without the jackpot pool.", kind: "action", section: "Slots and odds", live: true, panel: true),
             S("defaultBet", 1234, page: "game", label: "Default bet", help: "The bet for a spin with no amount. Viewers can also bet a number, all, half, third, quarter or random.", section: "Bets and points", min: 0.0, aliases: new[] { "DefaultBet" }),
             S("minBet", 1, page: "game", label: "Minimum (0 = none)", help: "The smallest bet allowed. 0 turns the limit off. 'random' bets between Minimum and Maximum. Also applies to channel points in 'Typed amount' and 'Fixed' mode.", section: "Bets and points", min: 0.0, aliases: new[] { "MinBet" }),
             S("maxBet", 9999999, page: "game", label: "Maximum (0 = none)", help: "The largest bet allowed. 0 turns the limit off. Also applies to channel points in 'Typed amount' and 'Fixed' mode.", section: "Bets and points", min: 0.0, aliases: new[] { "MaxBet" }),
@@ -848,7 +852,9 @@
                 CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
                 answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
             }
-            finally { System.Threading.Volatile.Write(ref _answering, null); }
+            // Only its own: a request that hung and ends while the settings action has gone on with the next one leaves
+            // that one's StillWorking in place.
+            finally { System.Threading.Interlocked.CompareExchange(ref _answering, null, var); }
             CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
             return true;
         }
@@ -859,7 +865,7 @@
         /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
         /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
         /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
-        /// from before stub 0.3.1, it does nothing.</summary>
+        /// from before stub 0.3.2, it does nothing.</summary>
         public static void StillWorking()
         {
             string var = System.Threading.Volatile.Read(ref _answering);
@@ -960,7 +966,7 @@
 
         // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
         // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-        internal const string StubVersion = "0.3.1";
+        internal const string StubVersion = "0.3.2";
 
         /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
         /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -1036,12 +1042,15 @@
         }
 
         /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-        /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+        /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+        /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
         internal static bool NeedsNewerStub(string dll)
         {
             try
             {
-                string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+                var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                    .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+                string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
                 int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
                 if (at < 0) return false;
                 string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
@@ -1550,10 +1559,13 @@
                 // moment there is no file, and a swap that failed halfway leaves only the .bak.
                 for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
                 {
-                    bool backup = System.IO.File.Exists(path + ".bak");
-                    if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
-                    if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
-                    System.Threading.Thread.Sleep(40);
+                    bool backup = System.IO.File.Exists(path + ".bak"), saving = System.IO.File.Exists(path + ".tmp");
+                    if (!backup && (attempt >= 5 || !saving)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                    // Only a save under way (its .tmp) is waited for. Without one the file is looked for once more, as a
+                    // swap may have ended between the looks; still missing, it is read from the .bak at once, not after
+                    // 160 ms on every load.
+                    if (attempt >= 5 || (!saving && !System.IO.File.Exists(path))) throw new System.IO.FileNotFoundException("it is missing", path);
+                    if (saving) System.Threading.Thread.Sleep(40);
                 }
                 return new UiSettings(Read(path));
             }
@@ -1594,13 +1606,16 @@
             if (setting?.Aliases != null)
                 for (int i = 0; i < setting.Aliases.Length; i++)
                 {
-                    // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                    // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch"). One that is a
+                    // setting of its own again holds that setting's value: the window does not move it either.
                     string alias = setting.Aliases[i];
+                    if (UiSchema.Find(alias) != null) continue;
                     int dot = alias.IndexOf('.');
                     var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                     if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                    // Rounded as the window's store rounds it on the move: 0.07 * 100 is 7.000000000000001 to a double.
                     if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
-                        return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                        return System.Math.Round(System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value, 10);
                     return old;
                 }
             return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);

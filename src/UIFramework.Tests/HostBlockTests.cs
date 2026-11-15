@@ -75,6 +75,21 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AFileGoneWithNoSaveUnderWayIsReadFromTheBackupAtOnce()
+        {
+            // No .tmp: the window is not swapping a file in, so there is nothing to wait for. Every load of a game
+            // whose file was deleted beside its .bak waited 160 ms for it.
+            string file = TempSettings("gone-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            File.WriteAllText(file + ".bak", @"{ ""sides"": 8 }");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var backup = UiSettings.Load(file);
+            Assert.True(watch.ElapsedMilliseconds < 100, "a file gone beside its .bak waited " + watch.ElapsedMilliseconds + " ms");
+            Assert.True(backup.FromBackup);
+            Assert.Equal(8, backup.Raw.Value<int>("sides"));
+        }
+
+        [Fact]
         public void AFileNeverSavedIsTheDefaultsWithoutAWord()
         {
             string file = TempSettings("never-" + Guid.NewGuid().ToString("N"));
@@ -84,6 +99,47 @@ namespace UIFramework.Tests
             Assert.False(none.FromBackup);
             Assert.Empty(none.Raw.Properties());
             Assert.True(watch.ElapsedMilliseconds < 100, "a game whose settings were never saved waited " + watch.ElapsedMilliseconds + " ms");
+        }
+
+        [Fact]
+        public void AnOldKeyThatIsASettingOfItsOwnIsReadForThatSettingOnly()
+        {
+            // 'sides' was called 'count' once, and 'count' is a setting again. The window leaves that value to 'count'
+            // and shows the default for 'sides'; the game read 4 sides until the first save.
+            WithTable(() =>
+            {
+                var settings = UiSettings.Parse(@"{ ""count"": 4, ""OldRolls"": 9 }");
+                Assert.Equal(6, settings.Int("sides"));
+                Assert.Equal(4, settings.Int("count"));
+                Assert.Equal(9, settings.Int("rolls"));                                       // an old key that is no setting is read
+            },
+            UiSchema.S("sides", 6, aliases: new[] { "count" }), UiSchema.S("count", 3), UiSchema.S("rolls", 1, aliases: new[] { "OldRolls" }));
+        }
+
+        [Fact]
+        public void AnOldFractionIsReadAsTheWindowStoresItsPercent()
+        {
+            // 0.07 * 100 is 7.000000000000001 to a double: the game read that where the window shows 7.
+            WithTable(() =>
+            {
+                var settings = UiSettings.Parse(@"{ ""Cut"": 0.07 }");
+                Assert.Equal("7", settings.String("cut"));
+                Assert.Equal(7.0, settings.Double("cut"));
+            },
+            UiSchema.S("cut", 10.0, aliases: new[] { "Cut" }, aliasFactor: 100));
+        }
+
+        // The game's table, for one test: the template's own is empty.
+        private static void WithTable(Action test, params UiSchema.Setting[] table)
+        {
+            var field = typeof(UiSchema).GetField("Table");
+            object before = field.GetValue(null);
+            try
+            {
+                field.SetValue(null, table);
+                test();
+            }
+            finally { field.SetValue(null, before); }
         }
 
         [Fact]
@@ -107,6 +163,42 @@ namespace UIFramework.Tests
                 Assert.Null(AppDomain.CurrentDomain.GetData(key));
             }
             finally { AppDomain.CurrentDomain.SetData(key, null); }
+        }
+
+        [Fact]
+        public void StillWorkingKeepsItsRequestWhenOneThatHungBeforeItEnds()
+        {
+            // A request hung, and the settings action went on with the next one. The hung one ending took StillWorking's
+            // request away from the one still at work, whose answer was then dropped after 30 seconds.
+            string hung = "uiframework.answer.Demo." + Guid.NewGuid().ToString("N"), working = "uiframework.answer.Demo." + Guid.NewGuid().ToString("N");
+            Dictionary<string, object> Args(string var) => new Dictionary<string, object> { ["uiframework.request"] = "test", ["uiframework.name"] = "importWords", ["uiframework.var"] = var };
+            var inside = new ManualResetEventSlim();
+            var end = new ManualResetEventSlim();
+            var first = new Thread(() => UiHost.Handle(Args(hung), new FakeCph(), "Demo", "demo", "v1.0.0", "Demo/settings.json",
+                test: (name, values) => { inside.Set(); end.Wait(10000); return "late"; }));
+            first.Start();
+            object beat = null;
+            try
+            {
+                Assert.True(inside.Wait(10000));
+                Assert.True(UiHost.Handle(Args(working), new FakeCph(), "Demo", "demo", "v1.0.0", "Demo/settings.json",
+                    test: (name, values) =>
+                    {
+                        end.Set();
+                        first.Join();                                        // the hung request ends while this one works
+                        UiHost.StillWorking();
+                        beat = AppDomain.CurrentDomain.GetData(UiHost.WorkingKey(working));
+                        return "imported";
+                    }));
+                Assert.IsType<long>(beat);
+            }
+            finally
+            {
+                end.Set();
+                first.Join();
+                AppDomain.CurrentDomain.SetData(UiHost.WorkingKey(hung), null);
+                AppDomain.CurrentDomain.SetData(UiHost.WorkingKey(working), null);
+            }
         }
 
         [Fact]
@@ -136,6 +228,79 @@ namespace UIFramework.Tests
                 AppDomain.Unload(domain);
                 try { Directory.Delete(root, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
             }
+        }
+
+        [Fact]
+        public void TheUpdateNoticeLoadsNoDllThatNeedsANewerSettingsAction()
+        {
+            // Only one UIFramework runs in a Streamer.bot: one loaded here that the game's settings action does not fit
+            // would keep its window from opening until a restart. Telling it apart reads the file, it loads nothing.
+            InStreamerbot((lib, probe) =>
+            {
+                Installed(lib, "1.0.0");
+                Directory.CreateDirectory(Path.Combine(lib, "3.0.0"));
+                TooNewDll(Path.Combine(lib, "3.0.0"));
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+                Assert.DoesNotContain(probe.Loaded(), location => location.StartsWith(Path.Combine(lib, "3.0.0"), StringComparison.OrdinalIgnoreCase));
+            });
+        }
+
+        [Fact]
+        public void ADllDownloadedAgainIsTriedAgain()
+        {
+            InStreamerbot((lib, probe) =>
+            {
+                string dll = Path.Combine(lib, "2.0.0", "UIFramework.dll");
+                Directory.CreateDirectory(Path.GetDirectoryName(dll));
+                File.WriteAllText(dll, "abc");
+                File.WriteAllText(dll + ".sha256", "0000");
+                File.SetLastWriteTimeUtc(dll, DateTime.UtcNow.AddHours(-1));
+                Assert.Null(probe.Notices());
+                // The settings action set it aside and downloaded it again: a file written anew, matching its hash.
+                Installed(lib, "2.0.0", hashed: true);
+                Assert.Equal(dll, probe.Notices(), StringComparer.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public void ADllInstalledWhileOneRunsWaitsForTheRestart()
+        {
+            InStreamerbot((lib, probe) =>
+            {
+                Installed(lib, "1.0.0");
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+                Installed(lib, "4.0.0");
+                Assert.Equal(Path.Combine(lib, "1.0.0", "UIFramework.dll"), probe.Notices(), StringComparer.OrdinalIgnoreCase);
+            });
+        }
+
+        // A Streamer.bot of its own: an AppDomain whose folder holds UIFramework\lib, with no UIFramework loaded.
+        private static void InStreamerbot(Action<string, FrameworkProbe> test)
+        {
+            string root = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "lib-" + Guid.NewGuid().ToString("N"));
+            string lib = Path.Combine(root, "UIFramework", "lib");
+            Directory.CreateDirectory(lib);
+            var domain = AppDomain.CreateDomain("probe", null, new AppDomainSetup { ApplicationBase = root });
+            try { test(lib, (FrameworkProbe)domain.CreateInstanceFromAndUnwrap(typeof(FrameworkProbe).Assembly.Location, typeof(FrameworkProbe).FullName)); }
+            finally
+            {
+                AppDomain.Unload(domain);
+                try { Directory.Delete(root, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+        }
+
+        // This build's UIFramework.dll under lib\<version>, written now as a download is, with the hash the settings
+        // action keeps beside it when hashed.
+        private static void Installed(string lib, string version, bool hashed = false)
+        {
+            string folder = Path.Combine(lib, version);
+            Directory.CreateDirectory(folder);
+            byte[] dll = File.ReadAllBytes(typeof(Entry).Assembly.Location);
+            File.WriteAllBytes(Path.Combine(folder, "UIFramework.dll"), dll);
+            File.Copy(typeof(JObject).Assembly.Location, Path.Combine(folder, "Newtonsoft.Json.dll"), true);
+            if (hashed)
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                    File.WriteAllText(Path.Combine(folder, "UIFramework.dll.sha256"), BitConverter.ToString(sha.ComputeHash(dll)).Replace("-", "").ToLowerInvariant());
         }
 
         // A DLL whose product version asks for a settings action no game has: "9.0.0+stub.99.0".
@@ -282,6 +447,19 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void AFieldThatAsksIsAskedWithWhatTheWindowShows()
+        {
+            // A DLL up to 1.9.0 hands the window's current values only to a setting with "live": with "ask" alone a
+            // preset slider was answered from the values saved last, not from where it stands.
+            var asks = UiSchema.ToJson(UiSchema.S("preset", 1, kind: "slider", ask: true));
+            Assert.True((bool)asks["ask"]);
+            Assert.True((bool)asks["live"]);
+            Assert.True(Schema.Parse(new JObject { ["host"] = "demo", ["version"] = "1", ["settings"] = new JArray(asks) }).Settings[0].Live);
+            Assert.Null(UiSchema.ToJson(UiSchema.S("tryRoll", null, kind: "action", ask: true))["live"]);   // a button says live itself
+            Assert.Null(UiSchema.ToJson(UiSchema.S("sides", 6))["live"]);
+        }
+
+        [Fact]
         public void TheBlockAnswersTheStubsRequests()
         {
             var cph = new FakeCph();
@@ -366,5 +544,8 @@ namespace UIFramework.Tests
     public sealed class FrameworkProbe : MarshalByRefObject
     {
         public string Notices() => UiUpdateNotice.FrameworkType()?.Assembly.Location;
+
+        /// <summary>Where every assembly loaded in this AppDomain came from.</summary>
+        public string[] Loaded() => AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray();
     }
 }

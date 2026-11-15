@@ -144,7 +144,8 @@ public static class UiSchema
         }
         if (s.File != null) item["file"] = s.File;
         if (s.Transient) item["transient"] = true;
-        if (s.Live) item["live"] = true;
+        // A field that asks is asked with what the window shows: a DLL up to 1.9.0 takes those values only for "live".
+        if (s.Live || (s.Ask && s.Kind != "action")) item["live"] = true;
         if (s.Ask) item["ask"] = true;
         if (s.Panel) item["panel"] = true;
         if (s.Auto) item["auto"] = true;
@@ -282,7 +283,7 @@ public static class UiSchema
                 Cmd("!suggest q | correct | wrong | wrong", "adds a question of the viewer's own to the pool, guarded by a channel point reward or a Streamer.bot group. Set it up on the Suggestions page."),
                 Cmd("!skiptrivia", "throws the current question away without scoring it. The answer is not revealed."),
                 Cmd("!forceendtrivia", "ends the round early but still scores it: answers already submitted count, and the answer is revealed. Stops a back-to-back series too. Always mod-only."),
-                Cmd("!ta add|remove <user>", "adds or removes a viewer from the half-payout list. Writes straight to the Access page."),
+                Cmd("!ta add|remove <user>", "adds or removes a viewer from the Addicted list, whose wins pay out less (the cut is set on the Access page). Writes straight to the Access page."),
                 Cmd("!triviascoreboard", "posts the top players for the platform the command came from."),
                 Cmd("!tstats  ·  !tss <user>", "your own trivia stats, or somebody else's if you name them."),
                 Note("These are the commands' default names; you may have bound them to other words in Streamer.bot.")),
@@ -329,7 +330,7 @@ public static class UiSchema
                 K("difficultyNote", null, "Eine Stufe des Reglers füllt die sechs Zahlen aus, für die sie steht; gespeichert wird erst, wenn du speicherst. Das Spiel liest nur die Zahlen, du kannst sie danach also feinjustieren: der Regler zeigt dann Eigene oder die Stufe, zu der sie passen."),
                 K("difficultyNow", "So läuft eine Runde", "Was eine Runde mit den sechs Zahlen ergibt, wie sie auf dieser Seite stehen, gespeichert oder nicht. Der Regler folgt ihnen: er zeigt die Stufe, zu der sie passen, oder Eigene."),
                 K("answerTimeSeconds", "Antwortzeit", "Wie lange eine normale Runde Antworten annimmt, in Sekunden."),
-                K("normalCountdownStartSeconds", "Erste Erinnerung bei", "Verbleibende Sekunden, bei denen der Chat die erste Countdown-Erinnerung bekommt. Die zweite kommt bei der Hälfte davon, die dritte bei der Hälfte davon, höchstens 5. Nur die Rundenlänge begrenzt das."),
+                K("normalCountdownStartSeconds", "Erste Erinnerung bei", "Verbleibende Sekunden, bei denen der Chat die erste Countdown-Erinnerung bekommt. Die zweite kommt bei der Hälfte davon, die dritte bei der Hälfte davon, höchstens 5. Nur die Rundenlänge begrenzt das. 0 schickt keine Erinnerungen."),
                 K("delayBetweenRoundsSeconds", "Pause zwischen Runden", "Die Pause zwischen dem Ergebnis einer Runde und der Frage der nächsten, in einer Serie. Mit eingeschaltetem Overlay mindestens so lange, wie es das Ergebnis und die Bestenliste danach zeigt."),
                 K("defaultDifficulty", "Schwierigkeit", "Wie schwer die Fragen von opentdb, Wikidata, OdeNet, PokeAPI und IGDB sind. Deine eigenen Fragen werden auf der Seite Fragen gefiltert."),
                 K("defaultQuestionType", "Fragetyp", "Welche Form von Frage von opentdb, Wikidata, OdeNet, PokeAPI und IGDB gezogen werden darf."),
@@ -343,7 +344,7 @@ public static class UiSchema
                 K("enableBlitzTrivia", "Blitzrunden erlauben", "Aus, und jede Runde läuft ihre volle Antwortzeit."),
                 K("blitzChance", "Chance", "Wie oft eine Runde zur Blitzrunde wird, in Prozent."),
                 K("blitzAnswerTimeSeconds", "Antwortzeit", "Wie lange eine Blitzrunde Antworten annimmt, in Sekunden."),
-                K("blitzCountdownStartSeconds", "Erste Erinnerung bei", "Verbleibende Sekunden, bei denen eine Blitzrunde ihre erste Erinnerung bekommt."),
+                K("blitzCountdownStartSeconds", "Erste Erinnerung bei", "Verbleibende Sekunden, bei denen eine Blitzrunde ihre erste Erinnerung bekommt. 0 schickt keine Erinnerungen."),
                 K("matchingNote", null, "Alle vier aus, und keine Antwort kann je angenommen werden."),
                 K("allowNumericAnswers", "Per Optionsnummer", "'2' tippen wählt die zweite Option."),
                 K("allowExactTextAnswers", "Genau wie geschrieben", "Der Antworttext, ohne Groß- und Kleinschreibung."),
@@ -357,7 +358,7 @@ public static class UiSchema
                 K("autoStartRandom", "Zufällige Zeit", "Jede Wartezeit wird neu gezogen, zwischen Alle und Höchstens, sodass der Chat nicht weiß, wann die nächste Runde kommt."),
                 K("autoStartIntervalMaxMinutes", "Höchstens (min)", "Die längste Wartezeit einer zufälligen Zeit."),
                 K("adBreakNote", null, "Nur Twitch. Während Werbung läuft, sehen die Zuschauer den Stream nicht, aber der Chat funktioniert wie immer: ein guter Moment für eine Runde. Streamer.bot sagt dem Spiel, wann ein Werbeblock startet und wie lange er läuft; das Spiel betrachtet ihn als beendet, sobald diese Zeit um ist."),
-                K("adBreakStart", "Runde starten, wenn Werbung startet", "Startet auf deinem Twitch-Kanal ein Werbeblock, startet mit ihm eine Runde, so viele Runden nacheinander, wie in den Block passen (innerhalb von 'Runden pro Befehl', und eine, solange 'Mehrere Runden nacheinander erlauben' aus ist). Dafür braucht es keine Abklingzeit und keinen Moderator. Eine laufende Runde bleibt unberührt."),
+                K("adBreakStart", "Runde starten, wenn Werbung startet", "Startet auf deinem Twitch-Kanal ein Werbeblock, startet mit ihm eine Runde, so viele Runden nacheinander, wie in den Block passen (innerhalb von 'Höchstens je Befehl', und eine, solange 'Mehrere Runden nacheinander erlauben' aus ist). Dafür braucht es keine Abklingzeit und keinen Moderator. Eine laufende Runde bleibt unberührt."),
                 K("adBreakAnnounce", "Vor der Werbung ankündigen", "Eine Zeile im Chat vor dem Werbeblock, damit die Zuschauer wissen, dass mit ihm eine Runde kommt. Die Zeile steht auf der Seite Nachrichten."),
                 K("adBreakAnnounceMinutes", "Minuten vorher", "Wie lange vor der Werbung die Zeile gesendet wird, 1 bis 5. Twitch meldet einen Werbeblock ab fünf Minuten vorher."),
                 K("adBreakBonusPercent", "Bonus während der Werbung", "Wie viel mehr eine Twitch-Runde zahlt, die während eines Werbeblocks gestartet wurde, in Prozent, egal wer sie gestartet hat. 0 für keinen. Zählt vor dem Abzug für Süchtige."),
@@ -454,7 +455,7 @@ public static class UiSchema
                 K("obsNote", null, "Fügt der Szene darunter eine Browserquelle in Leinwandgröße hinzu, die aufs Overlay zeigt. OBS muss in Streamer.bot unter Stream Apps, OBS Studio verbunden sein. Lass die Szene leer, um die zu nehmen, die in OBS gerade live ist. Eine Quelle gleichen Namens wird wieder aufs Overlay gerichtet statt verdoppelt."),
                 K("overlayObsConnection", "Verbindung Nr.", "Welche der OBS-Verbindungen von Streamer.bot genutzt wird, falls du mehr als eine hast. 0 ist die erste."),
                 K("overlayObsScene", "Szene", "Die Szene, der die Quelle hinzugefügt wird. Sie wird angelegt, falls es sie noch nicht gibt. Leer: die Szene, die in OBS live ist, wenn du den Knopf drückst."),
-                K("overlayObsSource", "Quelle", "Der Name der Browserquelle. Hat OBS schon eine Quelle dieses Namens, wird sie wieder aufs Overlay gerichtet."),
+                K("overlayObsSource", "Quelle", "Der Name der Browserquelle. Hat OBS schon eine Browserquelle dieses Namens, wird sie wieder aufs Overlay gerichtet; eine Quelle anderer Art mit diesem Namen bleibt, wie sie ist."),
                 K("setupObsOverlay", "In OBS einrichten", "Schreibt die Overlay-Seite und fügt dann die Browserquelle in OBS hinzu, oder richtet eine Quelle dieses Namens wieder aufs Overlay. Nutzt die gespeicherten Einstellungen, also erst speichern."),
                 K("overlaySample", "Beispielrunde zeigen", "Spielt eine erfundene Runde auf jedem offenen Overlay, dem in OBS eingeschlossen, damit du siehst, wo es sitzt und wie es aussieht. Bist du live, sehen es auch deine Zuschauer. Nutzt die gespeicherten Einstellungen."),
                 K("byHandNote", null, "Oder von Hand: eine Browserquelle anlegen, 'Lokale Datei' abhaken, die URL einfügen, die URL kopieren in die Zwischenablage legt, und die Größe auf deine Leinwand setzen, meist 1920 x 1080. Die Seite dahinter wird nach Chat Games\\Trivia Game\\Overlay geschrieben, wann immer du die URL kopierst oder mit eingeschaltetem Overlay speicherst."),
@@ -466,7 +467,7 @@ public static class UiSchema
                 K("overlayShowPlatform", "Von welcher Plattform sie kam", "Ein Chip vor der Frage, der Twitch, YouTube oder Kick nennt. Für Streams auf mehreren Plattformen zugleich, wo jede ihre eigene Frage spielt."),
                 K("overlayShowTimer", "Der Countdown", "Die Uhr und der ablaufende Balken. Aus, und die Runde endet trotzdem pünktlich, es wird nur nicht gezeigt."),
                 K("overlayShowWinners", "Wer gewonnen hat", "Die Namen der Gewinner mit ihren Punkten unter dem Ergebnis. Aus, und das Ergebnis sagt nur, wie viele richtig lagen."),
-                K("overlayShowLeaderboard", "Die Bestenliste nach einer Runde", "Lässt auf das Ergebnis die Spitze der Bestenliste folgen, gereiht wie !TL und mit denselben Ausnahmen."),
+                K("overlayShowLeaderboard", "Die Bestenliste nach einer Runde", "Lässt auf das Ergebnis die Spitze der Bestenliste folgen, gereiht wie !TTB und mit denselben Ausnahmen."),
                 K("overlayResultSeconds", "Ergebnis anzeigen für", "Wie lange Antwort und Gewinner stehen bleiben, und die Bestenliste danach. Die nächste Frage einer Serie wartet darauf."),
                 K("overlayLeaderboardPlaces", "Plätze der Bestenliste", "Wie viele Zuschauer die Bestenliste des Overlays nennt, bis zu 10."),
                 K("overlayPosition", "Frage", "Wo die Frage auf der Leinwand sitzt. Die Bestenliste erscheint immer oben rechts, nachdem die Frage weg ist."),
@@ -625,7 +626,7 @@ public static class UiSchema
         S("difficultyNote", null, page: "game", help: "A stop of the slider fills in the six numbers it stands for; nothing is saved until you save. The game only reads the numbers, so you can fine-tune them afterwards: the slider then shows Custom, or the stop they match.", kind: "note", section: "Difficulty"),
         S("difficultyNow", null, page: "game", label: "How a round plays", help: "What a round gives with the six numbers as they stand on this page, saved or not. The slider follows them: it shows the stop they match, or Custom.", kind: "action", section: "Difficulty", live: true, panel: true, auto: true),
         S("answerTimeSeconds", 60, page: "game", label: "Answer time", help: "How long a normal round accepts answers, in seconds.", kind: "duration", section: "Rounds", min: 1.0, unit: "s", row: "roundTimes", aliases: new[] { "AnswerTimeSeconds" }),
-        S("normalCountdownStartSeconds", 30, page: "game", label: "First reminder at", help: "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this.", kind: "duration", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "NormalCountdownStartSeconds" }),
+        S("normalCountdownStartSeconds", 30, page: "game", label: "First reminder at", help: "Seconds left when chat gets the first countdown reminder. The second lands at half of it, the third at half again, capped at 5. Only the round's own length caps this. 0 sends no reminders.", kind: "duration", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "NormalCountdownStartSeconds" }),
         S("delayBetweenRoundsSeconds", 5, page: "game", label: "Delay between rounds", help: "The pause between the result of one round and the question of the next, in a back-to-back run. With the overlay on, at least as long as it shows the result and the leaderboard after it.", kind: "duration", section: "Rounds", min: 0.0, unit: "s", row: "roundTimes", aliases: new[] { "DelayBetweenRoundsSeconds" }),
         S("defaultDifficulty", "any", page: "game", label: "Difficulty", help: "How hard the questions drawn from opentdb, Wikidata, OdeNet, PokeAPI and IGDB are. Your own questions are filtered on the Questions page instead.", kind: "options", section: "Rounds", options: new[] { "any|Any", "easy|Easy", "medium|Medium", "hard|Hard" }, row: "roundDefaults", aliases: new[] { "DefaultDifficulty" }),
         S("defaultQuestionType", "both", page: "game", label: "Question type", help: "Which shape of question may be drawn from opentdb, Wikidata, OdeNet, PokeAPI and IGDB.", kind: "options", section: "Rounds", options: new[] { "both|True/False + Multiple Choice", "boolean|True/False only", "multiple|Multiple Choice only" }, row: "roundDefaults", aliases: new[] { "DefaultQuestionType" }),
@@ -639,7 +640,7 @@ public static class UiSchema
         S("enableBlitzTrivia", true, page: "game", label: "Enable blitz rounds", help: "Off, and every round runs its full answer time.", section: "Blitz rounds", aliases: new[] { "EnableBlitzTrivia" }),
         S("blitzChance", 10, page: "game", label: "Chance", help: "How often a round becomes a blitz round, as a percentage.", kind: "percent", section: "Blitz rounds", min: 0.0, max: 100.0, row: "blitz", aliases: new[] { "BlitzChance" }),
         S("blitzAnswerTimeSeconds", 20, page: "game", label: "Answer time", help: "How long a blitz round accepts answers, in seconds.", kind: "duration", section: "Blitz rounds", min: 1.0, unit: "s", row: "blitz", aliases: new[] { "BlitzAnswerTimeSeconds" }),
-        S("blitzCountdownStartSeconds", 10, page: "game", label: "First reminder at", help: "Seconds left when a blitz round gets its first reminder.", kind: "duration", section: "Blitz rounds", min: 0.0, unit: "s", row: "blitz", aliases: new[] { "BlitzCountdownStartSeconds" }),
+        S("blitzCountdownStartSeconds", 10, page: "game", label: "First reminder at", help: "Seconds left when a blitz round gets its first reminder. 0 sends no reminders.", kind: "duration", section: "Blitz rounds", min: 0.0, unit: "s", row: "blitz", aliases: new[] { "BlitzCountdownStartSeconds" }),
         S("matchingNote", null, page: "game", help: "Switch all four off and no answer can ever be accepted.", kind: "note", section: "Answer matching"),
         S("allowNumericAnswers", true, page: "game", label: "By option number", help: "Typing '2' picks the second option.", section: "Answer matching", aliases: new[] { "AllowNumericAnswers" }),
         S("allowExactTextAnswers", true, page: "game", label: "Exactly as written", help: "The answer text, ignoring case.", section: "Answer matching", aliases: new[] { "AllowExactTextAnswers" }),
@@ -657,7 +658,7 @@ public static class UiSchema
         S("autoStartMinChatLines", 0, page: "automation", label: "Only after chat lines", help: "How many lines a platform's chat must have written since its last automatic round. Too few, and the round waits for the next turn of the timer. 0 asks for none.", section: "Rounds that start themselves", min: 0.0, requires: "autoStartEnabled", row: "autoMore", aliases: new[] { "AutoStartMinChatLines" }),
         S("autoStartRequireChatActivity", true, page: "automation", label: "Only when chat has been active", help: "Off, and a round is offered on the schedule whether or not anybody is there, on every platform you are live on.", section: "Rounds that start themselves", aliases: new[] { "AutoStartRequireChatActivity" }),
         S("adBreakNote", null, page: "automation", help: "Twitch only. While ads run, viewers cannot see the stream, but chat works as ever: a good moment for a round. Streamer.bot tells the game when an ad break starts and how long it runs; the game takes the break as over once that time has passed.", kind: "note", section: "Ad breaks"),
-        S("adBreakStart", false, page: "automation", label: "Start a round when ads start", help: "When an ad break starts on your Twitch channel, a round starts with it, as many rounds in a row as fit the break (within 'Rounds per command', and one while 'Allow several rounds in a row' is off). No cooldown and no moderator is needed. A round already under way is left alone.", section: "Ad breaks", aliases: new[] { "AdBreakStart" }),
+        S("adBreakStart", false, page: "automation", label: "Start a round when ads start", help: "When an ad break starts on your Twitch channel, a round starts with it, as many rounds in a row as fit the break (within 'Max per command', and one while 'Allow several rounds in a row' is off). No cooldown and no moderator is needed. A round already under way is left alone.", section: "Ad breaks", aliases: new[] { "AdBreakStart" }),
         S("adBreakAnnounce", true, page: "automation", label: "Announce it before the ads", help: "A line in chat ahead of the ad break, so viewers know a round comes with it. The line is on the Messages page.", section: "Ad breaks", requires: "adBreakStart", row: "adAnnounce", aliases: new[] { "AdBreakAnnounce" }),
         S("adBreakAnnounceMinutes", 1, page: "automation", label: "Minutes before", help: "How long before the ads the line is sent, 1 to 5. Twitch tells of an ad break from five minutes ahead.", section: "Ad breaks", min: 1.0, max: 5.0, unit: "min", requires: "adBreakStart && adBreakAnnounce", row: "adAnnounce", aliases: new[] { "AdBreakAnnounceMinutes" }),
         S("adBreakBonusPercent", 0.0, page: "automation", label: "Bonus during ads", help: "How much more a Twitch round started during an ad break pays, as a percentage, whoever started it. 0 for none. It counts before the Addicted cut.", kind: "percent", section: "Ad breaks", min: 0.0, max: 1000.0, aliases: new[] { "AdBreakBonusPercent" }),
@@ -718,12 +719,12 @@ public static class UiSchema
         S("suggestRewardId", "", page: "suggestions", label: "Reward ID", help: "A channel point reward that lets the redeemer suggest a question. Twitch only. Leave it blank to rely on groups and moderators.", section: "Who may suggest", twitchOnly: true, aliases: new[] { "SuggestRewardId" }),
         S("suggestAllowModerators", true, page: "suggestions", label: "Moderators may always suggest", help: "Moderators and the broadcaster can suggest without the reward or a group.", section: "Who may suggest", aliases: new[] { "SuggestAllowModerators" }),
         S("suggestAllowedGroups", "", page: "suggestions", label: "Allowed groups", help: "Members of these Streamer.bot groups may suggest questions.", kind: "grouplist", section: "Who may suggest", aliases: new[] { "SuggestAllowedGroups" }),
-        S("suggestCategory", "Suggested", page: "suggestions", label: "Filed under", help: "The category suggested questions are filed under on the Custom List tab.", section: "What arrives", row: "arrive", aliases: new[] { "SuggestCategory" }),
+        S("suggestCategory", "Suggested", page: "suggestions", label: "Filed under", help: "The category suggested questions are filed under on the Questions page.", section: "What arrives", row: "arrive", aliases: new[] { "SuggestCategory" }),
         S("suggestDifficulty", "medium", page: "suggestions", label: "Difficulty", kind: "options", section: "What arrives", options: new[] { "easy|Easy", "medium|Medium", "hard|Hard", "very hard|Very hard" }, row: "arrive", aliases: new[] { "SuggestDifficulty" }),
         S("suggestMaxPerUser", 3, page: "suggestions", label: "Max per viewer", help: "How many of one viewer's questions may sit in the pool at once. Deleting one frees a slot.", section: "What arrives", min: 0.0, row: "limits", aliases: new[] { "SuggestMaxPerUser" }),
         S("suggestMaxQuestionLength", 200, page: "suggestions", label: "Question length", help: "Longest a suggested question may be, in characters.", section: "What arrives", min: 1.0, row: "limits", aliases: new[] { "SuggestMaxQuestionLength" }),
         S("suggestMaxAnswerLength", 60, page: "suggestions", label: "Answer length", help: "Longest each individual answer may be, in characters.", section: "What arrives", min: 1.0, row: "limits", aliases: new[] { "SuggestMaxAnswerLength" }),
-        S("suggestEnabledOnArrival", true, page: "suggestions", label: "Playable the moment they arrive", help: "Off, and they land switched off on the Custom List tab for you to look over first.", section: "What arrives", aliases: new[] { "SuggestEnabledOnArrival" }),
+        S("suggestEnabledOnArrival", true, page: "suggestions", label: "Playable the moment they arrive", help: "Off, and they land switched off on the Questions page for you to look over first.", section: "What arrives", aliases: new[] { "SuggestEnabledOnArrival" }),
         S("arriveNote", null, page: "suggestions", help: "Anything that would not make a playable question is turned away rather than stored: a missing answer, a wrong answer identical to the correct one, anything over the lengths above, and any question already in the pool. What chat is told is on the Messages page.", kind: "note", section: "What arrives"),
         S("platformsNote", null, page: "access", help: "Twitch, YouTube and Kick all play, and every reply goes to the chat the command or redemption came from. To leave a platform out, untick it on the Trivia commands in Streamer.bot, for example 'Kick Message'.", kind: "note", section: "Platforms"),
         S("isChannelPointsTrigger", false, page: "access", label: "Channel points start a round", help: "On Twitch, a redemption of the reward below starts a round instead of !trivia, which is then off on Twitch. Redemptions only come from Twitch, so on YouTube and Kick viewers keep starting rounds with !trivia. The reward's cost, cooldowns and text prompt are all configured on Twitch, not here.", section: "How viewers play", twitchOnly: true, aliases: new[] { "IsChannelPointsTrigger" }),
@@ -755,7 +756,7 @@ public static class UiSchema
         S("obsNote", null, page: "overlay", help: "Adds a browser source the size of your canvas to the scene below, pointed at the overlay. OBS has to be connected in Streamer.bot under Stream Apps, OBS Studio. Leave the scene empty to use the one that is live in OBS right now. A source of the same name is pointed at the overlay again instead of doubled up.", kind: "note", section: "Add it to OBS"),
         S("overlayObsConnection", 0, page: "overlay", label: "Connection #", help: "Which of Streamer.bot's OBS connections to use, if you have more than one. 0 is the first.", section: "Add it to OBS", min: 0.0, row: "obs", aliases: new[] { "OverlayObsConnection" }),
         S("overlayObsScene", "Trivia", page: "overlay", label: "Scene", help: "The scene the source is added to. It is created if it doesn't exist yet. Empty: the scene that is live in OBS when you press the button.", section: "Add it to OBS", row: "obs", aliases: new[] { "OverlayObsScene" }),
-        S("overlayObsSource", "Trivia Overlay", page: "overlay", label: "Source", help: "The browser source's name. If OBS already has a source of this name, you are asked whether to point it at the overlay again instead.", section: "Add it to OBS", row: "obs", aliases: new[] { "OverlayObsSource" }),
+        S("overlayObsSource", "Trivia Overlay", page: "overlay", label: "Source", help: "The browser source's name. If OBS already has a browser source of this name, it is pointed at the overlay again instead; a source of another kind with this name is left alone.", section: "Add it to OBS", row: "obs", aliases: new[] { "OverlayObsSource" }),
         S("setupObsOverlay", null, page: "overlay", label: "Set it up in OBS", help: "Writes the overlay page, then adds the browser source in OBS, or points a source of that name at the overlay again. Uses the settings as saved, so save first.", kind: "action", section: "Add it to OBS", confirm: "This adds a browser source to OBS, covering the whole canvas, on the OBS connection, scene and source named above. Go ahead?", row: "obsButtons"),
         S("overlaySample", null, page: "overlay", label: "Show a sample round", help: "Plays one made-up round on every overlay that is open, the one in OBS included, so you can see where it sits and how it looks. If you are live, your viewers see it too. Uses the settings as saved.", kind: "action", section: "Add it to OBS", row: "obsButtons"),
         S("byHandNote", null, page: "overlay", help: "Or by hand: add a Browser source, untick 'Local file', paste the URL that Copy URL puts on the clipboard and set the size to your canvas, usually 1920 x 1080. The page behind it is written to Chat Games\\Trivia Game\\Overlay whenever you copy the URL or save with the overlay on.", kind: "note", section: "Add it to OBS"),
@@ -767,7 +768,7 @@ public static class UiSchema
         S("overlayShowPlatform", true, page: "overlay", label: "Which platform it came from", help: "A chip naming Twitch, YouTube or Kick in front of the question, for streaming to more than one at once, where every platform plays a question of its own.", section: "What it shows", aliases: new[] { "OverlayShowPlatform" }),
         S("overlayShowTimer", true, page: "overlay", label: "The countdown", help: "The clock and the bar running down. Off, the round still ends on time, it just isn't shown.", section: "What it shows", aliases: new[] { "OverlayShowTimer" }),
         S("overlayShowWinners", true, page: "overlay", label: "Who won", help: "The winners' names with their points under the result. Off, the result only says how many were right.", section: "What it shows", aliases: new[] { "OverlayShowWinners" }),
-        S("overlayShowLeaderboard", true, page: "overlay", label: "The leaderboard after a round", help: "Follows the result with the top of the leaderboard, ranked like !TL and leaving out the same viewers.", section: "What it shows", aliases: new[] { "OverlayShowLeaderboard" }),
+        S("overlayShowLeaderboard", true, page: "overlay", label: "The leaderboard after a round", help: "Follows the result with the top of the leaderboard, ranked like !TTB and leaving out the same viewers.", section: "What it shows", aliases: new[] { "OverlayShowLeaderboard" }),
         S("overlayResultSeconds", 10, page: "overlay", label: "Result shown for", help: "How long the answer and the winners stay up, and the leaderboard after them. The next question of a back-to-back run waits for them.", kind: "duration", section: "What it shows", min: 1.0, unit: "s", row: "overlayTiming", aliases: new[] { "OverlayResultSeconds" }),
         S("overlayLeaderboardPlaces", 5, page: "overlay", label: "Leaderboard places", help: "How many viewers the overlay's leaderboard lists, up to 10.", section: "What it shows", min: 1.0, max: 10.0, row: "overlayTiming", aliases: new[] { "OverlayLeaderboardPlaces" }),
         S("overlayPosition", "bottom", page: "overlay", label: "Question", kind: "options", section: "Look", options: new[] { "bottom|Bottom centre", "top|Top centre" }, row: "placing", aliases: new[] { "OverlayPosition" }),
@@ -819,7 +820,7 @@ public static class UiSchema
         Msg("Scoreboard", "callerNotOnBoard", "@{user}, you are not in the top {topn}.", "Not On The Board", "Sent after the leaderboard when the viewer who asked for it has stats but did not make the top N.", new[] { "user", "topn" }, alias: "CallerNotOnBoard"),
         Msg("Scoreboard", "callerFooter", "🌟 Your stats: {wins} wins, {points} pts  ⚡ Blitz: {blitzwins} wins, {blitzpoints} pts", "Their Own Numbers", "Follows 'Not On The Board' with that viewer's own figures.", new[] { "wins", "points", "blitzwins", "blitzpoints" }, alias: "CallerFooter"),
         Msg("Scoreboard", "monthlyReset", "🔄 Trivia {platform} leaderboard has been reset for the new month!", "Monthly Reset", "Announced once when the leaderboard is wiped by the auto reset.", new[] { "platform" }, alias: "MonthlyReset"),
-        Msg("Addicted", "addictedUsage", "@{userName}, usage: !addicted add <user>  or  !addicted remove <user>", "Usage", "Sent when the addicted command is used with no target.", new[] { "userName" }, alias: "AddictedUsage"),
+        Msg("Addicted", "addictedUsage", "@{userName}, usage: !TA add <user>  or  !TA remove <user>", "Usage", "Sent when the addicted command is used with no target.", new[] { "userName" }, alias: "AddictedUsage"),
         Msg("Addicted", "addictedAdded", "@{userName}, {targetUser} added to the addicted list — {addictedCut}% win penalty applied. 🙏", "Added", "Sent when a viewer is added to the addicted list. Their winnings are then cut by the Addicted cut on the Access page.", new[] { "userName", "targetUser", "addictedCut" }, alias: "AddictedAdded"),
         Msg("Addicted", "addictedAlreadyOnList", "@{userName}, {targetUser} is already on the addicted list.", "Already On List", "Sent when adding a viewer who is already on the addicted list.", new[] { "userName", "targetUser" }, alias: "AddictedAlreadyOnList"),
         Msg("Addicted", "addictedRemoved", "@{userName}, {targetUser} removed from the addicted list.", "Removed", "Sent when a viewer is taken off the addicted list.", new[] { "userName", "targetUser" }, alias: "AddictedRemoved"),
@@ -1259,7 +1260,9 @@ public static class UiHost
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
         }
-        finally { System.Threading.Volatile.Write(ref _answering, null); }
+        // Only its own: a request that hung and ends while the settings action has gone on with the next one leaves
+        // that one's StillWorking in place.
+        finally { System.Threading.Interlocked.CompareExchange(ref _answering, null, var); }
         CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
         return true;
     }
@@ -1270,7 +1273,7 @@ public static class UiHost
     /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
     /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
     /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
-    /// from before stub 0.3.1, it does nothing.</summary>
+    /// from before stub 0.3.2, it does nothing.</summary>
     public static void StillWorking()
     {
         string var = System.Threading.Volatile.Read(ref _answering);
@@ -1371,7 +1374,7 @@ public static class UiUpdateNotice
 
     // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
     // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-    internal const string StubVersion = "0.3.1";
+    internal const string StubVersion = "0.3.2";
 
     /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
     /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -1447,12 +1450,15 @@ public static class UiUpdateNotice
     }
 
     /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+    /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
     internal static bool NeedsNewerStub(string dll)
     {
         try
         {
-            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+            string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
             int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
             if (at < 0) return false;
             string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
@@ -1961,10 +1967,13 @@ public sealed class UiSettings
             // moment there is no file, and a swap that failed halfway leaves only the .bak.
             for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
             {
-                bool backup = System.IO.File.Exists(path + ".bak");
-                if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
-                if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
-                System.Threading.Thread.Sleep(40);
+                bool backup = System.IO.File.Exists(path + ".bak"), saving = System.IO.File.Exists(path + ".tmp");
+                if (!backup && (attempt >= 5 || !saving)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                // Only a save under way (its .tmp) is waited for. Without one the file is looked for once more, as a
+                // swap may have ended between the looks; still missing, it is read from the .bak at once, not after
+                // 160 ms on every load.
+                if (attempt >= 5 || (!saving && !System.IO.File.Exists(path))) throw new System.IO.FileNotFoundException("it is missing", path);
+                if (saving) System.Threading.Thread.Sleep(40);
             }
             return new UiSettings(Read(path));
         }
@@ -2005,13 +2014,16 @@ public sealed class UiSettings
         if (setting?.Aliases != null)
             for (int i = 0; i < setting.Aliases.Length; i++)
             {
-                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch"). One that is a
+                // setting of its own again holds that setting's value: the window does not move it either.
                 string alias = setting.Aliases[i];
+                if (UiSchema.Find(alias) != null) continue;
                 int dot = alias.IndexOf('.');
                 var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                 if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                // Rounded as the window's store rounds it on the move: 0.07 * 100 is 7.000000000000001 to a double.
                 if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
-                    return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                    return System.Math.Round(System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value, 10);
                 return old;
             }
         return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);

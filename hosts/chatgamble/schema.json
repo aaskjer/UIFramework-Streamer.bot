@@ -1,6 +1,6 @@
 {
   "host": "chatgamble",
-  "version": "25.2.2",
+  "version": "25.2.3",
   "settingsFile": "Chat Games/Classic Chat Gamble/configs.json",
   "settings": [
     {
@@ -203,17 +203,17 @@
       "page": "game",
       "section": "Bets and points",
       "label": "Free Game Mode",
-      "help": "Nobody pays or wins points, channel point redemptions included, and chat gets the Free game messages. !SetFreeGamble and !EndFreeGamble switch it from chat; starting it there puts the Default bet to 0 and ending it brings the previous one back.",
+      "help": "Nobody pays or wins points, channel point redemptions included, and chat gets the Free game messages. !SetFreeGamble and !EndFreeGamble switch it from chat, the same as this switch; the Default bet stays as it is.",
       "aliases": [
         "FreeGameActive"
       ]
     },
     {
       "key": "previousDefaultBet",
-      "default": 1234,
+      "default": 0,
       "page": "game",
       "section": "Bets and points",
-      "help": "The Default bet from before !SetFreeGamble, brought back by !EndFreeGamble.",
+      "help": "A Default bet that !SetFreeGamble set to 0 before 25.2.2, brought back by !EndFreeGamble.",
       "min": 0.0,
       "hidden": true,
       "aliases": [
@@ -1103,7 +1103,7 @@
           },
           {
             "command": "!SetFreeGamble",
-            "what": "moderators: turns Free Game Mode on. !EndFreeGamble turns it off and brings the Default bet back."
+            "what": "moderators: turns Free Game Mode on. !EndFreeGamble turns it off again."
           },
           {
             "command": "!gambleaddict add <user>",
@@ -1234,7 +1234,7 @@
         },
         "previousDefaultBet": {
           "label": null,
-          "help": "Der Standardeinsatz von vor !SetFreeGamble, den !EndFreeGamble zurückbringt."
+          "help": "Ein Standardeinsatz, den !SetFreeGamble vor 25.2.2 auf 0 gesetzt hat und den !EndFreeGamble zurückbringt."
         },
         "tryRoll": {
           "label": "Würfeln",

@@ -111,9 +111,11 @@ namespace UIFramework.Tests
         {
             Assert.Equal("Deutsch", Customize.LanguageName("de"));
             Assert.Equal("Español", Customize.LanguageName("es"));
+            Assert.Equal("Français", Customize.LanguageName("fr"));
+            Assert.Equal("Português (Brasil)", Customize.LanguageName("pt-BR"));
             Assert.Equal("English", Customize.LanguageName("en"));
             Assert.Equal("zz-qq", Customize.LanguageName("zz-qq"));
-            Assert.Equal(new[] { "en", "de", "es" }, Conventions.Available().Take(3).ToArray());
+            Assert.Equal(new[] { "en", "de", "es", "fr", "pt-BR" }, Conventions.Available().Take(5).ToArray());
         }
     }
 }

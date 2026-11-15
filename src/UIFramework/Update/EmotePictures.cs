@@ -32,23 +32,29 @@ namespace UIFramework
         private static DateTime _twitchAsked;
         private static string _twitchSources;
         // The host's answer per window (one IHostHooks each): asking the game costs a trip to Streamer.bot's thread
-        // and up to five seconds when it hangs, so it is asked once, not once per emote cell.
+        // and up to five seconds when it hangs, so it is asked once, not once per emote cell, and on a thread of its
+        // own, like every other request (Patient): an emote's picture waits for the answer, the window does not.
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, SourcesBox> Sources =
             new System.Runtime.CompilerServices.ConditionalWeakTable<IHostHooks, SourcesBox>();
 
-        private sealed class SourcesBox { public string Json; }
+        private sealed class SourcesBox { public Task<string> Json; }
+        private static readonly Task<string> NoSources = Task.FromResult<string>(null);
 
-        /// <summary>The host's emote sources, asked once per hooks object (per window); null without a host or an answer.</summary>
-        public static string SourcesOf(IHostHooks hooks)
+        private static Task<string> Asked(IHostHooks hooks)
         {
-            if (hooks == null) return null;
-            return Sources.GetValue(hooks, h =>
-            {
-                string json = null;
-                try { json = h.EmoteSources(); } catch (Exception) { }
-                return new SourcesBox { Json = json };
-            }).Json;
+            if (hooks == null) return NoSources;
+            var box = Sources.GetValue(hooks, h => new SourcesBox());
+            lock (box)
+                return box.Json ?? (box.Json = Task.Run(() =>
+                {
+                    try { return hooks.EmoteSources(); }
+                    catch (Exception) { return null; }
+                }));
         }
+
+        /// <summary>The host's emote sources, asked once per hooks object (per window); null without a host or an answer.
+        /// Waits for the answer: on the window's thread, <see cref="Show"/> asks for it only once it is there.</summary>
+        public static string SourcesOf(IHostHooks hooks) => Asked(hooks).GetAwaiter().GetResult();
 
         /// <summary>A Kick emote as chat renders it, <c>[emote:ID:name]</c>, or typed short as <c>ID:name</c>: group 1
         /// is the id, group 2 the name.</summary>
@@ -70,7 +76,8 @@ namespace UIFramework
 
         /// <summary>The picture of one of YouTube's own emojis, or null for anything the table doesn't know (a
         /// Unicode emoji, a BTTV emote, a typo). The host's <c>youtube</c> object (<c>{ ":name:": url }</c>) wins
-        /// over the embedded table.</summary>
+        /// over the embedded table. For a shortcode this waits for the host's emote sources; the window's thread asks
+        /// <see cref="YouTubeLookup"/>.</summary>
         public static string YouTubeUrl(string code, IHostHooks hooks, int size = 48)
         {
             code = (code ?? "").Trim();
@@ -87,6 +94,19 @@ namespace UIFramework
             if (string.IsNullOrEmpty(url) && !YouTubeTable().TryGetValue(code, out url))
                 return null;
             return url.Contains("=") ? url : url + "=w" + size + "-h" + size + "-c-k-nd";
+        }
+
+        /// <summary><see cref="YouTubeUrl"/> without the wait, for the window's thread: done at once for a code that is
+        /// no shortcode or when the host's emote sources are known, else once the host has answered (on another
+        /// thread), as the picture of an emote cell is.</summary>
+        public static Task<string> YouTubeLookup(string code, IHostHooks hooks, int size = 48)
+        {
+            if (!YouTubeCode.IsMatch((code ?? "").Trim()))
+                return Task.FromResult<string>(null);
+            var asked = Asked(hooks);
+            if (asked.IsCompleted)
+                return Task.FromResult(YouTubeUrl(code, hooks, size));
+            return asked.ContinueWith(done => YouTubeUrl(code, hooks, size), TaskScheduler.Default);
         }
 
         private static Dictionary<string, string> YouTubeTable()
@@ -158,6 +178,19 @@ namespace UIFramework
                     Load(image, code, "https://files.kick.com/emotes/" + m.Groups[1].Value + "/fullsize");
                 return;
             }
+            // YouTube and Twitch look in the game's sources too. While the game has not answered yet, the picture is
+            // shown once it has (for the code the image still stands for), and the window goes on meanwhile.
+            var asked = Asked(hooks);
+            if (!asked.IsCompleted)
+            {
+                var waiting = image.Dispatcher;
+                asked.ContinueWith(done => waiting.BeginInvoke(new Action(() =>
+                {
+                    if (Equals(image.Tag, code))
+                        Show(image, platform, code, hooks, onSource);
+                })), TaskScheduler.Default);
+                return;
+            }
             if (string.Equals(platform, "youtube", StringComparison.OrdinalIgnoreCase))
             {
                 string url = YouTubeUrl(code, hooks);
@@ -179,7 +212,7 @@ namespace UIFramework
                     Load(image, code, found.Url.Replace("{theme}", theme));
                     if (found.Source != null)
                     {
-                        image.ToolTip = "A " + found.Source + " emote: chat only shows it as one to viewers with the " + found.Source + " extension.";
+                        image.ToolTip = Text.T("field.emote.extension", found.Source);
                         onSource?.Invoke(found.Source);
                     }
                 }));

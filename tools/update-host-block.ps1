@@ -98,10 +98,12 @@ if ($Check) {
 $templateSet = New-Object 'System.Collections.Generic.HashSet[string]'
 foreach ($l in $templateLines) { [void]$templateSet.Add($l.Trim()) }
 # Every earlier version of the template counts as the template too: a block one or more releases behind carries
-# their lines, which are not the game's own. Read from this repository's history when git is at hand.
+# their lines, which are not the game's own. Read from this repository's history when git is at hand, every branch
+# included: a game can carry the block of a branch not merged yet, and a plain "git log" also leaves out a merged
+# branch whose merge kept the other side's file.
 $repoRoot = Split-Path -Parent $PSScriptRoot
 try {
-    $revisions = @(git -C $repoRoot log --format=%H -- stub/HostSchema.cs 2>$null)
+    $revisions = @(git -C $repoRoot log --all --full-history --format=%H -- stub/HostSchema.cs 2>$null)
     foreach ($rev in $revisions) {
         foreach ($l in @(git -C $repoRoot show "${rev}:stub/HostSchema.cs" 2>$null)) { [void]$templateSet.Add(([string]$l).Trim()) }
     }

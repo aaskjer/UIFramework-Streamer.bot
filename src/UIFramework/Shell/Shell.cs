@@ -226,6 +226,13 @@ namespace UIFramework
                     (loaded.FromBackup ? Text.T("dialog.damaged.backup", fileName) : Text.T("dialog.damaged.defaults")) +
                     Text.T("dialog.damaged.kept", fileName),
                     Text.T("dialog.damaged.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            else if (loaded.FromBackup)
+            {
+                // The file is gone beside its .bak: the window shows the .bak, which the project reads as well, and says
+                // so under the red "i" instead of in a dialog, as nothing is damaged. The next save writes the file.
+                _log.Warn(_spec.LogPrefix + " " + fileName + " is missing; the window shows " + fileName + ".bak, as the project reads it. The next save writes " + fileName + " again.");
+                _problems.Add(Text.T("settings.fromBackup", fileName));
+            }
 
             var settings = loaded.Settings;
             // Every open resolves afresh, so a layout change made in the customise mode shows up after the rebuild.
@@ -251,9 +258,10 @@ namespace UIFramework
             Sidecars.Load(settings, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix, _unreadableLists);
             foreach (var key in _unreadableLists)
             {
+                // The list's own tooltip in the window's language, after which list and which file it is.
                 var list = _spec.ResolvedSettings.FirstOrDefault(s => s.Key == key);
-                _problems.Add("'" + (list?.Label ?? key) + "' could not be read from " + (list != null ? System.IO.Path.GetFileName(Sidecars.PathOf(list, _spec.SettingsPath)) : "its file")
-                    + ", so it shows its defaults and this window will not write it. Close the window and open it again once the file is free or repaired.");
+                _problems.Add("'" + (list?.Label ?? key) + "'" + (list != null ? " (" + System.IO.Path.GetFileName(Sidecars.PathOf(list, _spec.SettingsPath)) + ")" : "")
+                    + ": " + Text.T("list.unreadable"));
             }
 
             var window = new Window
@@ -285,6 +293,8 @@ namespace UIFramework
             Func<int> changes = () => 0;
             Func<(string Id, double Offset)> currentPage = () => (null, 0);
             double? keepOffset = null;
+            // What a list in a file of its own showed unsaved when Reset all ran: the next build puts it back.
+            JObject keepUnsaved = null;
             DispatcherTimer rainbowTimer = null;
             KeyEventHandler keyHandler = null;
             bool captureStarted = false;
@@ -589,6 +599,12 @@ namespace UIFramework
                     listener();
             });
             ShowChanges();
+            // Over the baseline, which has the list as its file has it: it counts as unsaved, as it did before Reset all.
+            if (keepUnsaved != null)
+            {
+                FieldBinding.Apply(pageHost, keepUnsaved, true);
+                keepUnsaved = null;
+            }
             // What the window shows right now, read without touching it: a name half typed or a cell being edited
             // stays as it is (an action that follows the fields asks 350 ms after a change, in the middle of typing).
             ctx.LiveSettings = () =>
@@ -619,11 +635,11 @@ namespace UIFramework
                     SetStatus(Text.T("status.notSaved"), Theme.DangerText);
                     return false;
                 }
-                baseline.Clear();
-                FieldBinding.Snapshot(pageHost, baseline);
                 repairs.Clear();
                 corrected.Clear();
-                SetStatus(Text.T("status.saved"), Theme.SuccessText);
+                // What reached the fields while the game checked (an answer's `set`) was not written: it is still unsaved.
+                if (Changes() > 0) ShowChanges();
+                else SetStatus(Text.T("status.saved"), Theme.SuccessText);
                 return true;
             }
 
@@ -780,7 +796,7 @@ namespace UIFramework
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(Text.T("import.notWritten", ex.Message), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Box(Text.T("import.notWritten", ex.Message), Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 SafeHook(() => _hooks.OnSaved(merged));
@@ -790,7 +806,8 @@ namespace UIFramework
             }
 
             btnSave.Click += (s, e) => SaveNow();
-            btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = true; window.Close(); } };
+            // What reached the fields while the game checked is asked about, as on any close with unsaved changes.
+            btnSaveExit.Click += (s, e) => { if (SaveNow()) { closeConfirmed = Changes() == 0; window.Close(); } };
             btnCancel.Click += (s, e) =>
             {
                 int n = Changes();
@@ -838,6 +855,13 @@ namespace UIFramework
                 // The lists in their own files are not reset: the game hears of them as they are in those files.
                 Sidecars.Load(fresh, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
                 SafeHook(() => _hooks.OnSaved(fresh));
+                // Nor are they written: rows the user changed in one and has not saved go back into its editor after the
+                // rebuild, still unsaved, as Reset page leaves them. The rebuild alone dropped them without a word.
+                var unsaved = FieldBinding.ChangedKeys(pageHost, baseline);
+                var shown = new JObject();
+                FieldBinding.Save(shown, pageHost);
+                keepUnsaved = new JObject(Sidecars.Of(_spec.ResolvedSettings).Where(st => unsaved.Contains(st.Key) && shown[st.Key] != null)
+                    .Select(st => new JProperty(st.Key, shown[st.Key].DeepClone())));
                 settings = fresh;
                 Rebuild(null);
             };
@@ -1319,6 +1343,11 @@ namespace UIFramework
                 // warning, a game that did not check) leaves nothing behind that a rebuild would show as saved.
                 var draft = (JObject)settings.DeepClone();
                 FieldBinding.Save(draft, root);
+                // The fields as the draft has them become the baseline once it is written. The game's check below runs
+                // the window's dispatcher, and what reaches the fields meanwhile (an answer's `set`, a timer) is not in
+                // the draft: it stays unsaved instead of counting as saved.
+                var drafted = new Dictionary<object, string>();
+                FieldBinding.Snapshot(root, drafted);
                 // After that save: a number it pulled into its min/max shows the limit now and counts as changed; so do
                 // the numbers the window showed repaired since it opened, and what the window's own clamp changed.
                 var changed = FieldBinding.ChangedKeys(root, baseline);
@@ -1359,6 +1388,12 @@ namespace UIFramework
                 // The window's copy is now what was written, so the next save and a rebuild start from there.
                 foreach (var property in target.Properties().ToList())
                     settings[property.Name] = property.Value.DeepClone();
+                if (baseline != null)
+                {
+                    baseline.Clear();
+                    foreach (var field in drafted)
+                        baseline[field.Key] = field.Value;
+                }
                 SafeHook(() => _hooks.OnSaved(settings));
                 _log.Info(_spec.LogPrefix + " Settings saved.");
                 return true;
@@ -1366,7 +1401,7 @@ namespace UIFramework
             catch (Exception ex)
             {
                 Failed("Save error: " + ex.Message);
-                MessageBox.Show(Text.T("dialog.saveFailed.text", ex.Message), Text.T("dialog.saveFailed.title"), MessageBoxButton.OK, MessageBoxImage.Error);
+                Box(Text.T("dialog.saveFailed.text", ex.Message), Text.T("dialog.saveFailed.title"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -1418,7 +1453,7 @@ namespace UIFramework
             if (Patient.IsNoAnswer(fromHost))
             {
                 string why = Patient.Why(fromHost);
-                var unchecked_ = MessageBox.Show(Text.T("dialog.unchecked.text", why.Length > 0 ? why : "-"), Text.T("dialog.unchecked.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var unchecked_ = Box(Text.T("dialog.unchecked.text", why.Length > 0 ? why : "-"), Text.T("dialog.unchecked.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (unchecked_ != MessageBoxResult.Yes)
                     return false;
                 fromHost = null;
@@ -1427,11 +1462,20 @@ namespace UIFramework
                 warnings.AddRange(fromHost.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
             if (warnings.Count > 0)
             {
-                var proceed = MessageBox.Show(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var proceed = Box(Text.T("dialog.warnings.text", string.Join("\n  • ", warnings)), Text.T("dialog.warnings.title"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (proceed != MessageBoxResult.Yes)
                     return false;
             }
             return true;
+        }
+
+        /// <summary>A message box modal to the window, for what follows the game's check. Without an owner WPF takes the
+        /// active window, and the user may have gone to another one while the game took its time: the box then left the
+        /// window open to clicks and to its X, with the save still waiting for the answer.</summary>
+        private MessageBoxResult Box(string text, string title, MessageBoxButton buttons, MessageBoxImage image)
+        {
+            var window = _window;
+            return window != null ? MessageBox.Show(window, text, title, buttons, image) : MessageBox.Show(text, title, buttons, image);
         }
 
         private void SafeHook(Action hook)

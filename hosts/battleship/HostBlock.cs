@@ -144,7 +144,8 @@ public static class UiSchema
         }
         if (s.File != null) item["file"] = s.File;
         if (s.Transient) item["transient"] = true;
-        if (s.Live) item["live"] = true;
+        // A field that asks is asked with what the window shows: a DLL up to 1.9.0 takes those values only for "live".
+        if (s.Live || (s.Ask && s.Kind != "action")) item["live"] = true;
         if (s.Ask) item["ask"] = true;
         if (s.Panel) item["panel"] = true;
         if (s.Auto) item["auto"] = true;
@@ -427,6 +428,9 @@ public static class UiSchema
             K("msgWhisperFleet", "Deine Flotte", "Einem Solo-Spieler geflüstert, wenn seine Schlacht beginnt, solange das Flüstern an ist."),
             K("msgNoStatsFound", "Noch keine Bilanz", "!bstats für einen Spieler ohne Schlachten."),
             K("msgNoLeaderboard", "Bestenliste leer", "!ballstats, bevor irgendjemand eine Bilanz hat."),
+            K("msgStats", "Bilanz", "!bstats: die Bilanz eines Spielers. {abandoned}, {flawless}, {bestWin} (die wenigsten Schüsse in einem Sieg) und {streak} lassen sich ergänzen."),
+            K("msgStatsFree", "Bilanz im Freispiel", "!bstats, solange das Freispiel läuft und keine Punkte im Spiel sind."),
+            K("msgLeaderboard", "Bestenliste", "!ballstats. {entries} sind die Spieler der Rangliste nacheinander, etwa '🥇 Name (+1,200)'."),
             Tx("Solo battle", "Solo-Schlacht"),
             Tx("Return fire", "Erwiderung"),
             Tx("Battle result", "Ergebnis der Schlacht"),
@@ -462,7 +466,7 @@ public static class UiSchema
         .Answer("fleetSummary", "{\"lines\":[{\"text\":\"8×8 · 3 ships · about 36 shots per battle\",\"big\":true},\"10 of 64 squares taken by ships.\"]}")
         .Answer("broadcasterFound", "Found in Streamer.bot: 123456789. Used whenever the channel ID box is empty.")
         .Answer("presetQuick", "{\"status\":\"8×8 with 3 ships filled in; save to keep it.\"}")
-        .Log("Chat Games/Logs", "BSG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Trigger|Trigger", "Board|Board", "Shots|Shots", "Hits|Hits", "Accuracy|Accuracy", "Change|Change" }, results: new[] { "WIN", "LOSS", "TIMEOUT", "ABANDONED", "STOPPED", "CHAT WIN", "CHAT LOSS", "DUEL" }, platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.")
+        .Log("Chat Games/Logs", "BSG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Trigger|Trigger", "Board|Board", "Shots|Shots", "Hits|Hits", "Accuracy|Accuracy", "Change|Change" }, results: new[] { "WIN", "LOSS", "TIMEOUT", "NO-SHOW", "STOPPED", "STARTED" }, platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.")
         .Help(
             H("How a battle plays",
                 Note("A viewer takes command of a fleet against a CPU opponent, the Admiral. Both fleets are placed at random and hidden from the other side. Each shot is a full exchange: the player fires, then the Admiral fires back. Sink the whole enemy fleet to win; lose yours and the battle is over. Nothing is staked up front: sinking one of the Admiral's ships pays its value at once, and losing one of your own costs its value.")),
@@ -723,6 +727,9 @@ public static class UiSchema
         Msg("Cooldown", "userCooldownMessage", "@{user}, you're on cooldown. Try again in {seconds} seconds.", "Per viewer", "Sent while this viewer's own cooldown runs.", new[] { "user", "seconds" }, alias: "UserCooldownMsg"),
         Msg("Stats", "msgNoStatsFound", "@{user}: no battles fought yet. Start one with !battleship", "No record yet", "!bstats for a player with no battles.", new[] { "user" }, alias: "MsgNoStatsFound"),
         Msg("Stats", "msgNoLeaderboard", "No battle records yet.", "Leaderboard empty", "!ballstats before anybody has a record.", new string[0], alias: "MsgNoLeaderboard"),
+        Msg("Stats", "msgStats", "⚓ {user}: {played} battles | {won}W/{lost}L | Win rate: {winrate}% | Accuracy: {accuracy}% ({hits}/{shots}) | Ships sunk: {sunk}, lost: {shipsLost} | Best streak: {bestStreak} | Net: {net} {points}", "Stats reply", "!bstats: a player's record. {abandoned}, {flawless}, {bestWin} (the fewest shots in a win) and {streak} can be added.", new[] { "user", "played", "won", "lost", "abandoned", "winrate", "accuracy", "hits", "shots", "sunk", "shipsLost", "flawless", "bestWin", "streak", "bestStreak", "net", "points" }),
+        Msg("Stats", "msgStatsFree", "⚓ {user}: {played} battles | {won}W/{lost}L | Win rate: {winrate}% | Accuracy: {accuracy}% ({hits}/{shots}) | Ships sunk: {sunk}, lost: {shipsLost} | Best streak: {bestStreak}", "Stats reply in Free game", "!bstats while Free game is on, with no points at stake.", new[] { "user", "played", "won", "lost", "abandoned", "winrate", "accuracy", "hits", "shots", "sunk", "shipsLost", "flawless", "bestWin", "streak", "bestStreak", "net", "points" }),
+        Msg("Stats", "msgLeaderboard", "🏆 Top {count} Admirals ({rankedBy}): {entries}", "Leaderboard", "!ballstats. {entries} is the ranked players one after another, like '🥇 Name (+1,200)'.", new[] { "count", "rankedBy", "entries" }),
     };
 }
 
@@ -1136,7 +1143,9 @@ public static class UiHost
             CPH.LogError("[" + actionName + "] The settings window's request '" + request + "' failed: " + ex.Message);
             answer = request == "saved" ? null : "The game could not answer: " + ex.Message;
         }
-        finally { System.Threading.Volatile.Write(ref _answering, null); }
+        // Only its own: a request that hung and ends while the settings action has gone on with the next one leaves
+        // that one's StillWorking in place.
+        finally { System.Threading.Interlocked.CompareExchange(ref _answering, null, var); }
         CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? AnswerVar(actionName) : var, answer ?? "", false);
         return true;
     }
@@ -1147,7 +1156,7 @@ public static class UiHost
     /// <summary>Says, from inside a request (a Try button that imports a list, say), that the game is still working on
     /// it: the settings action waits 30 seconds from now for the answer, where it otherwise gives up 30 seconds after the
     /// request started. Call it every few seconds while the work goes on. Outside a request, and with a settings action
-    /// from before stub 0.3.1, it does nothing.</summary>
+    /// from before stub 0.3.2, it does nothing.</summary>
     public static void StillWorking()
     {
         string var = System.Threading.Volatile.Read(ref _answering);
@@ -1248,7 +1257,7 @@ public static class UiUpdateNotice
 
     // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
     // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-    internal const string StubVersion = "0.3.1";
+    internal const string StubVersion = "0.3.2";
 
     /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
     /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -1324,12 +1333,15 @@ public static class UiUpdateNotice
     }
 
     /// <summary>Whether a DLL's product version ("1.10.0+stub.0.4.0", read without loading it) asks for a newer settings
-    /// action than <see cref="StubVersion"/>; one that names none fits.</summary>
+    /// action than <see cref="StubVersion"/>; one that names none fits. FileVersionInfo is reached by name: it lives in
+    /// System.dll, and a game action may ship without a reference to it (Streamer.bot compiles with the ones it lists).</summary>
     internal static bool NeedsNewerStub(string dll)
     {
         try
         {
-            string product = System.Diagnostics.FileVersionInfo.GetVersionInfo(dll).ProductVersion ?? "";
+            var info = System.Type.GetType("System.Diagnostics.FileVersionInfo, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true)
+                .GetMethod("GetVersionInfo", new[] { typeof(string) }).Invoke(null, new object[] { dll });
+            string product = info.GetType().GetProperty("ProductVersion").GetValue(info, null) as string ?? "";
             int at = product.IndexOf("+stub.", System.StringComparison.Ordinal);
             if (at < 0) return false;
             string named = product.Substring(at + 6).Trim().TrimStart('v', 'V');
@@ -1838,10 +1850,13 @@ public sealed class UiSettings
             // moment there is no file, and a swap that failed halfway leaves only the .bak.
             for (int attempt = 1; !System.IO.File.Exists(path); attempt++)
             {
-                bool backup = System.IO.File.Exists(path + ".bak");
-                if (!backup && (attempt >= 5 || !System.IO.File.Exists(path + ".tmp"))) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
-                if (attempt >= 5) throw new System.IO.FileNotFoundException("it is missing", path);
-                System.Threading.Thread.Sleep(40);
+                bool backup = System.IO.File.Exists(path + ".bak"), saving = System.IO.File.Exists(path + ".tmp");
+                if (!backup && (attempt >= 5 || !saving)) return new UiSettings(new Newtonsoft.Json.Linq.JObject());
+                // Only a save under way (its .tmp) is waited for. Without one the file is looked for once more, as a
+                // swap may have ended between the looks; still missing, it is read from the .bak at once, not after
+                // 160 ms on every load.
+                if (attempt >= 5 || (!saving && !System.IO.File.Exists(path))) throw new System.IO.FileNotFoundException("it is missing", path);
+                if (saving) System.Threading.Thread.Sleep(40);
             }
             return new UiSettings(Read(path));
         }
@@ -1882,13 +1897,16 @@ public sealed class UiSettings
         if (setting?.Aliases != null)
             for (int i = 0; i < setting.Aliases.Length; i++)
             {
-                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch").
+                // An alias with a dot reaches into an object of the old file ("PlatformEmotes.twitch"). One that is a
+                // setting of its own again holds that setting's value: the window does not move it either.
                 string alias = setting.Aliases[i];
+                if (UiSchema.Find(alias) != null) continue;
                 int dot = alias.IndexOf('.');
                 var old = dot > 0 ? (_root[alias.Substring(0, dot)] as Newtonsoft.Json.Linq.JObject)?[alias.Substring(dot + 1)] : _root[alias];
                 if (old == null || old.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+                // Rounded as the window's store rounds it on the move: 0.07 * 100 is 7.000000000000001 to a double.
                 if (i == 0 && setting.AliasFactor.HasValue && (old.Type == Newtonsoft.Json.Linq.JTokenType.Integer || old.Type == Newtonsoft.Json.Linq.JTokenType.Float))
-                    return System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value;
+                    return System.Math.Round(System.Convert.ToDouble(((Newtonsoft.Json.Linq.JValue)old).Value, System.Globalization.CultureInfo.InvariantCulture) * setting.AliasFactor.Value, 10);
                 return old;
             }
         return setting?.Default == null ? null : Newtonsoft.Json.Linq.JToken.FromObject(setting.Default);

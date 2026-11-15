@@ -70,7 +70,7 @@ namespace UIFramework.Tests
         [Fact]
         public void TheCurrencyNoteIsInEveryLanguage()
         {
-            foreach (var code in new[] { "en", "de", "es" })
+            foreach (var code in new[] { "en", "de", "es", "fr", "pt-BR" })
             {
                 var ui = Conventions.Load(code).Lang.Ui;
                 Assert.Contains("{1}", ui["currency.note"]);

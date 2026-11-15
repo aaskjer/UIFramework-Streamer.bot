@@ -114,12 +114,7 @@ namespace UIFramework
                 foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "messages"))
                 {
                     string targetId = page.Id;
-                    var entry = Item(page.Title, () =>
-                    {
-                        ctx.Layout.SetField(setting.Key, "page", targetId);
-                        ctx.Layout.SetField(setting.Key, "order", null);
-                        Commit(ctx, targetId);
-                    });
+                    var entry = Item(page.Title, () => MoveToPage(ctx, setting, targetId));
                     entry.IsEnabled = targetId != pageId;
                     move.Items.Add(entry);
                 }
@@ -127,14 +122,30 @@ namespace UIFramework
             }
             // Without the mouse: Tab reaches the field, the Menu key (or Shift+F10) opens this menu, and Move up and
             // Move down, also Alt+Up and Alt+Down, do what dragging does. The moved field keeps the keyboard.
-            List<string> OnPage() => ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            List<string> OnPage() => FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             void Move(int by)
             {
-                var keys = OnPage();
+                var fields = FieldsOn(ctx.Spec, pageId);
+                var keys = fields.Select(s => s.Key).ToList();
                 int at = keys.IndexOf(setting.Key), to = at + by;
                 if (at < 0 || to < 0 || to >= keys.Count) return;
                 _focusField = setting.Key;
-                ReorderFields(ctx, pageId, setting.Key, by < 0 ? keys[to] : to + 1 < keys.Count ? keys[to + 1] : null);
+                // A heading between the field and the next one that way: the step takes the field across it, into the
+                // section on the other side, and leaves it where it is. Swapped with that field, it landed past the
+                // last field of the section above or the first of the one below, and never next to the heading.
+                var lower = fields[Math.Max(at, to)];
+                var heading = fields.Take(Math.Min(at, to) + 1).LastOrDefault(s => s.Section != null);
+                var across = by < 0 ? heading : lower;
+                if (pageId != "messages" && lower.Section != null && lower.Section != heading?.Section && across?.SectionId != null)
+                {
+                    TakeSection(ctx, pageId, setting, across);
+                    Commit(ctx, pageId);
+                    return;
+                }
+                // Down is the next field going up past this one, so the two keep the section they share. Put in front of
+                // the field after the next, this one took that field's section, the next section's at the end of its own.
+                if (by < 0) ReorderFields(ctx, pageId, setting.Key, keys[to]);
+                else ReorderFields(ctx, pageId, keys[to], setting.Key);
             }
             var here = OnPage();
             var up = Item(Text.T("cust.moveUp"), () => Move(-1));
@@ -331,6 +342,20 @@ namespace UIFramework
             }
         }
 
+        /// <summary>The fields the customise mode shows on a page, in their order: the templates on the Messages page, and
+        /// on any other page its fields but those the Messages and Log pages draw wherever they are declared (the sender
+        /// switches, the number format, the log switch). Counted among a page's fields, they took a Move up or Move down
+        /// that changed nothing on it, and lent a field dropped beside them their section.</summary>
+        private static List<Setting> FieldsOn(WindowSpec spec, string pageId)
+        {
+            var senders = spec.Senders;
+            var elsewhere = new HashSet<string>(new[] { senders.UseBot, senders.SendAction, senders.CooldownUseBot, senders.CooldownSendAction, senders.NumberSeparator, spec.Log?.WriteLogKey }
+                .Where(k => k != null), StringComparer.Ordinal);
+            return spec.ResolvedSettings
+                .Where(s => s.Page == pageId && (pageId == "messages" ? s.Kind == "template" : !elsewhere.Contains(s.Key)))
+                .OrderBy(s => s.Order).ToList();
+        }
+
         /// <summary>Puts the dragged field before or after the target. Beside it: both on the target's line (its row,
         /// or a new one named after it). Above or below it: the dragged field on a line of its own.</summary>
         private static void PlaceField(PageContext ctx, string pageId, string dragged, string target, bool before, bool beside)
@@ -351,7 +376,7 @@ namespace UIFramework
             }
             else
                 ctx.Layout.SetField(dragged, "row", "");
-            var onPage = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            var onPage = FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             onPage.Remove(dragged);
             int at = onPage.IndexOf(target);
             int first = at, last = at;
@@ -367,7 +392,7 @@ namespace UIFramework
             {
                 // The same for a line the page puts together by itself (three numbers, two switches): above or below
                 // all of it, not between its fields.
-                var drawn = ctx.Spec.ResolvedSettings.Where(s => s.Page == pageId).OrderBy(s => s.Order).ToList();
+                var drawn = FieldsOn(ctx.Spec, pageId);
                 var lines = Lines(drawn);
                 int LineOf(string key) { int i = drawn.FindIndex(s => s.Key == key); return i < 0 ? -1 : lines[i]; }
                 int line = LineOf(target);
@@ -425,9 +450,7 @@ namespace UIFramework
         /// field on the page. Nothing is written when that leaves the page as it is.</summary>
         private static void ReorderFields(PageContext ctx, string pageId, string dragged, string before)
         {
-            var onPage = ctx.Spec.ResolvedSettings
-                .Where(s => s.Page == pageId)
-                .OrderBy(s => s.Order).Select(s => s.Key).ToList();
+            var onPage = FieldsOn(ctx.Spec, pageId).Select(s => s.Key).ToList();
             var draggedSetting = ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == dragged);
             if (draggedSetting == null || dragged == before) return;
             // A message template stays on the Messages page, and nothing else is dropped between the messages.
@@ -446,6 +469,23 @@ namespace UIFramework
             TakeSection(ctx, pageId, draggedSetting, ctx.Spec.ResolvedSettings.FirstOrDefault(s => s.Key == neighbour));
             for (int i = 0; i < wanted.Count; i++)
                 ctx.Layout.SetField(wanted[i], "order", i * 10);
+            Commit(ctx, pageId);
+        }
+
+        /// <summary>Moves a field to another page (its menu, or dropped on the page in the rail): after the last field of
+        /// its own section where the page has that section, else at the page's end, so no heading shows twice. Every field
+        /// there gets an order, as on a drop: by the order the game declared, the field landed wherever that number fell
+        /// among the orders of a page the user had sorted, often inside another section.</summary>
+        private static void MoveToPage(PageContext ctx, Setting setting, string pageId)
+        {
+            var there = FieldsOn(ctx.Spec, pageId).Where(s => s.Key != setting.Key).ToList();
+            int at = setting.Section == null ? -1 : there.FindLastIndex(s => s.Section == setting.Section);
+            there.Insert(at < 0 ? there.Count : at + 1, setting);
+            ctx.Layout.SetField(setting.Key, "page", pageId);
+            // A row is a line of the page it was on: the field arrives on a line of its own.
+            if (!string.IsNullOrEmpty(setting.Row)) ctx.Layout.SetField(setting.Key, "row", "");
+            for (int i = 0; i < there.Count; i++)
+                ctx.Layout.SetField(there[i].Key, "order", i * 10);
             Commit(ctx, pageId);
         }
 
@@ -599,11 +639,7 @@ namespace UIFramework
                 {
                     var setting = FieldFor(e);
                     if (setting == null) return;
-                    ctx.Layout.SetField(setting.Key, "page", page.Id);
-                    ctx.Layout.SetField(setting.Key, "order", null);
-                    // A row is a line of the page it was on: the field arrives on a line of its own.
-                    if (!string.IsNullOrEmpty(setting.Row)) ctx.Layout.SetField(setting.Key, "row", "");
-                    Commit(ctx, page.Id);
+                    MoveToPage(ctx, setting, page.Id);
                 }
                 else if (e.Data.GetDataPresent(PageFormat))
                 {
@@ -831,14 +867,26 @@ namespace UIFramework
             if (spec.Languages == null || spec.Languages.Count < 2 || !string.IsNullOrEmpty(spec.Language))
                 return null;
             var codes = spec.Languages.ToArray();
-            var language = Ui.PlainCombo(Text.T("cust.language"), codes.Select(LanguageName).ToArray());
-            string current = layout.Language;
-            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, current != null && codes.Contains(current) ? current : "en"));
+            var names = codes.Select(LanguageName).ToArray();
+            var language = Ui.PlainCombo(Text.T("cust.language"), names);
+            // The language the window is in: the layout file's code as Entry.Prepare takes it ("pt-br" is pt-BR).
+            string Current() => Conventions.Match(layout.Language, codes) ?? "en";
+            language.SelectedIndex = Math.Max(0, Array.IndexOf(codes, Current()));
+            // As wide as the longest name in the font the window gives the combo ("Português (Brasil)" was cut at a
+            // fixed 110 px): the text and what the combo keeps beside it (8 px before, 26 for the arrow, the border),
+            // at least the 110 px it always had, at most 220.
             language.Width = 110;
+            language.Loaded += (s, e) =>
+            {
+                var typeface = new Typeface(language.FontFamily, language.FontStyle, language.FontWeight, language.FontStretch);
+                double dip = VisualTreeHelper.GetDpi(language).PixelsPerDip;
+                double longest = names.Max(name => new FormattedText(name, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, language.FontSize, Brushes.Black, dip).Width);
+                language.Width = Math.Max(110, Math.Min(220, Math.Ceiling(longest) + 8 + 26 + 4));
+            };
             language.SelectionChanged += (s, e) =>
             {
                 string code = language.SelectedIndex >= 0 ? codes[language.SelectedIndex] : "en";
-                if (code == (layout.Language ?? "en")) return;
+                if (code == Current()) return;
                 layout.Language = code == "en" ? null : code;
                 changed();
             };

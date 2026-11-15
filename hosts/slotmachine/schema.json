@@ -1,6 +1,6 @@
 {
   "host": "slotmachine",
-  "version": "16.4.2",
+  "version": "16.4.3",
   "settingsFile": "Chat Games/Slot Machine Game/SMG-Settings.json",
   "settings": [
     {
@@ -136,6 +136,17 @@
       "aliases": [
         "MaxEmoteWeight"
       ]
+    },
+    {
+      "key": "odds",
+      "default": null,
+      "kind": "action",
+      "page": "game",
+      "section": "Slots and odds",
+      "label": "What really comes out",
+      "help": "Worked out from 30,000 test spins with the emotes, weights, chances and payouts as they stand on this page, saved or not, and the emotes of the platform picked under Try a spin. For a viewer without Subscriber/VIP boost or Addicted cut, and without the jackpot pool.",
+      "live": true,
+      "panel": true
     },
     {
       "key": "defaultBet",
@@ -1187,6 +1198,36 @@
       "max": "9,999,999"
     },
     "answers": {
+      "odds": {
+        "lines": [
+          "4 slots: Two or three alike pay; all four alike is the jackpot.",
+          {
+            "text": "A bet of 100 comes back as about 93",
+            "big": true
+          },
+          "Worked out from 30,000 test spins with the Twitch emotes, for a viewer without boosts, Addicted cut or jackpot pool."
+        ],
+        "bar": [
+          {
+            "label": "Jackpot",
+            "value": 0.9,
+            "text": "0.9 %",
+            "colour": "#F59E0B"
+          },
+          {
+            "label": "Win",
+            "value": 26.5,
+            "text": "26.5 %",
+            "colour": "#22C55E"
+          },
+          {
+            "label": "Loss",
+            "value": 72.6,
+            "text": "72.6 %",
+            "colour": "#6B7280"
+          }
+        ]
+      },
       "trySpin": {
         "lines": [
           "alice has 12,340 Points and spins for 1,000 Points on Twitch.",
@@ -1304,7 +1345,7 @@
             "note": "With the jackpot pool on, every lost bet goes into a pool per platform, and a jackpot with a bet at or above 'Bet to win the pool' takes the pool on top. Twitch subscribers and VIPs can get a boost; viewers on the Addicted list get a cut."
           },
           {
-            "note": "'Try a spin' on the Game page plays one round with the game's own engine and the exact chat message, from the settings as they stand in the window, without sending or saving anything."
+            "note": "'What really comes out' on the Game page shows the odds your settings give, and 'Try a spin' plays one round with the game's own engine and the exact chat message, from the settings as they stand in the window, without sending or saving anything."
           }
         ]
       },
@@ -1418,6 +1459,10 @@
         "rerollAttempts": {
           "label": "Neuziehungen",
           "help": "Wie hartnäckig eine Drehung, die nicht treffen soll, eine Wiederholung vermeidet: jede Walze wird bis zu so oft gezogen. Eine Wiederholung kann trotzdem durchrutschen, vor allem mit wenigen Emotes im Spiel."
+        },
+        "odds": {
+          "label": "Was wirklich herauskommt",
+          "help": "Aus 30.000 Probedrehungen mit den Emotes, Gewichten, Chancen und Auszahlungen, wie sie auf dieser Seite stehen, gespeichert oder nicht, und den Emotes der Plattform, die unter der Probedrehung gewählt ist. Für einen Zuschauer ohne Abonnenten- oder VIP-Bonus und ohne Abzug für Süchtige, und ohne den Jackpot-Topf."
         },
         "emotePoolSize": {
           "label": "Emote-Pool (0 = alle)",
