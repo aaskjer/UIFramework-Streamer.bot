@@ -7,7 +7,7 @@ last; the log names every DLL it tried and why it failed. A DLL saved from a bro
 downloaded from the internet, loads like any other.
 
 **First open without a DLL:** a dialog asks
-- **Yes**: read `lib/v1/latest.json` from this repository (version, URL, SHA-256), download the DLL from the
+- **Yes**: read `lib/v2/latest.json` from this repository (`lib/v1/` for a stub before 0.3.2) (version, URL, SHA-256), download the DLL from the
   release, check the hash, put it under `lib\<version>\UIFramework.dll`, open the window.
 - **No**: the folder `UIFramework\lib` is created and opened in Explorer, with a note to put the file into a
   version folder underneath (the releases link is in the dialog).
@@ -30,7 +30,7 @@ takes effect once Streamer.bot is restarted and which version runs until then. A
 says it again (restart Streamer.bot; no hurry, everything goes on with the running version, so it can wait until
 after the stream), since the window then opens as before and nothing else shows that an update is waiting (stub
 0.3.1; 0.3.0 said "used from the next start" in the dialog only). **No** skips that version: no project is offered
-it again, the update notice at the start does not name it (UIFramework 1.10.0 and on), and the next one is offered
+it again, the update notice at the start does not name it (UIFramework 2.0.0 and on), and the next one is offered
 as usual. **Cancel**, the dialog's X and Esc mean "not now": the next open asks again. (A stub before 0.3.0 had it
 the other way round, so closing the dialog skipped the version for good.) A running DLL is never overwritten: it is
 locked, and .NET Framework does not unload it.
@@ -48,14 +48,14 @@ succeeds and a *No* clear the note.
 
 **What holds for every project:** all projects share the one DLL, so what is decided about it is kept once, beside
 it, in `<Streamer.bot>\UIFramework\loader.json`: `"skipVersion": "1.9.0"` (written by *No* in the update dialog)
-and `"autoUpdate": false` (written by hand: no release check in any project, and from UIFramework 1.10.0 the update
+and `"autoUpdate": false` (written by hand: no release check in any project, and from UIFramework 2.0.0 the update
 notice at the start leaves UIFramework's releases out). A stub before 0.3.0 kept both in each project's
 `uiframework.layout.json`, where they held for that project alone. They are still read there, so a check switched
 off or a version skipped in one project's layout file stays so for that project; the update notice then leaves
 UIFramework out only when every project of the run says so. A `loader.json` that cannot be read counts as empty and
 is not written over (stub 0.3.2; the log says so): *No* then keeps the skip in the project's layout file.
 
-**Where `latest.json` comes from:** first through the GitHub API (`contents/lib/v1/latest.json`, uncached, 60
+**Where `latest.json` comes from:** first through the GitHub API (`contents/lib/v2/latest.json`, uncached, 60
 calls per hour and IP). When the API refuses (its rate limit) or answers with something that is no `latest.json`
 (a network's sign-in page), the stub falls back to raw.githubusercontent.com, whose CDN serves the file up to five
 minutes old. When the network is unreachable or the API timed out, the CDN is not tried: it would only keep the
@@ -65,12 +65,13 @@ whether it asked, skipped or is turned off.
 **Safety:** HTTPS (TLS 1.2 is added only where the process pinned older protocols; Windows' own choice stays
 otherwise), SHA-256 from `latest.json`, and a global mutex so that several hosts do not download at once (one still
 waiting after a minute gives up with a message instead of downloading beside it). The major line is in the path of
-`latest.json` (`lib/v1/`): the release workflow writes 2.0.0 and what follows it to `lib/v2/latest.json`, which
-only a stub made for that line reads (its two `latest.json` addresses name `lib/v2/`), so a v1 stub is never
-offered a 2.x. The DLL's own update check reads the file of its own major line too. The DLLs themselves are not
-kept apart by line: every version goes under `lib\<version>\`, and a stub takes the highest one there that it fits.
-A 2.x that a project with the v2 stub has installed is kept from a v1 settings action by the settings action it
-names (`MinHostStub`, below).
+`latest.json`: the release workflow writes 1.x.y to `lib/v1/latest.json` and 2.0.0 and what follows it to
+`lib/v2/latest.json`. A stub reads the file of its own line (stub 0.3.2 reads `lib/v2/`, every stub before it
+`lib/v1/`), so a v1 stub is never offered a 2.x. The DLL's own update check reads the file of its own major line too.
+The DLLs themselves are not kept apart by line: every version goes under `lib\<version>\`, and a stub takes the
+highest one there that it fits. 2.0.0 breaks nothing and names stub 0.1.0, so a v1 settings action uses it once
+another project has installed it; a later 2.x that would break a project names a newer settings action
+(`MinHostStub`, below), and a v1 stub then passes it over.
 
 The hash is kept beside the DLL (`UIFramework.dll.sha256`, written before the DLL is moved in) and checked on every
 load. A file damaged since is set aside as `UIFramework.dll.broken`, an older one opens the window, and the next
@@ -78,7 +79,7 @@ open offers that version again. From stub 0.3.2 that holds also while another UI
 instance, by a host block as Streamer.bot started); the window then opens with the running one. A project's host
 block checks the same hash before it loads the DLL for the update notice or the live check (host block of 1.8.1 and
 on; an older one loaded it unchecked, and the settings action then used what was loaded). It leaves a damaged file
-where it is, for the settings action to set aside, and from 1.10.0 goes on to the next older DLL. It also leaves
+where it is, for the settings action to set aside, and from 2.0.0 goes on to the next older DLL. It also leaves
 out a DLL that needs a newer settings action than the one released with it (`StubVersion` in the host block, kept
 equal to the stub's): only one UIFramework runs in a Streamer.bot, and once the notice had loaded such a DLL, the
 project's own window could not open until a restart (an older host block took the newest DLL). This catches damage,
@@ -118,7 +119,7 @@ stub waits 30 seconds from each call (stub 0.3.2 and on; with an older one the c
 not stand still meanwhile (UIFramework 1.9.0 and on, with any stub): the DLL asks the project from another thread.
 The answers to a Try button and to a trigger's Fire button on the Help page, the emote sources of emote fields and
 of an answer's emotes, and a table's rows arrive when they arrive (the Fire button and the emote sources from
-1.10.0), the button greyed and the table saying that it is asking. The check before a save waits for its answer
+2.0.0), the button greyed and the table saying that it is asking. The check before a save waits for its answer
 with the window alive: it paints and moves but takes no input, since what the answer decides must not be overtaken.
 A value that reaches a field meanwhile stays unsaved, and the questions that follow are modal to the window. Before
 1.9.0 the window's own thread waited, and Windows called a window "not responding" whose project took its time.
@@ -126,7 +127,7 @@ A value that reaches a field meanwhile stays unsaved, and the questions that fol
 No answer is not taken for an answer. A check before saving that got none (a timeout, a disabled action, an action
 that ran without answering) does not count as "no problems": the window asks whether to save unchecked. A Try
 button says that the project did not answer, in the colour of a failure, instead of "done" (a Fire button on the
-Help page, from 1.10.0, gives the settings action's reason where it has one instead of the hint at an older
+Help page, from 2.0.0, gives the settings action's reason where it has one instead of the hint at an older
 version), and a table says so instead of showing as empty (stub 0.3.0 and on; an older stub cannot tell the two
 apart). A window whose request hangs can be closed and opened again, and when the project has not sent its schema
 for a minute, the next run opens the window instead of waiting for it; should the project answer after all, the
@@ -168,12 +169,13 @@ first release of a line makes its folder). `minHostStub` is `MinHostStub` from t
 (raise it there when a release needs a newer stub; the DLL then carries it too). An older tag released late never
 takes `latest.json` back.
 
-**A new major line (2.0.0):** a major version is for what breaks a project as it is (a builder call removed, a
-schema key no longer read). Nothing in a release is special about it except the stub: `FrameworkLine` in
-`stub/Stub.cs` becomes `"v2"`, the one word both `latest.json` addresses are built from, and `<Version>` in
-`UIFramework.csproj` becomes `2.0.0`, with `MinHostStub` raised to that stub's version when the DLL needs it. A
-test (`TheStubsLineIsTheFrameworksMajorVersion`) fails as long as the two disagree, so neither is forgotten. The
-workflow writes `lib/v2/latest.json` by itself, and the DLL reads the file of its own line by itself. A project on
-the v1 stub goes on reading `lib/v1/latest.json` and keeps the last 1.x until it ships the new stub, unless another
-project has installed a 2.x that names no newer settings action (see *Safety*). What 2.0.0 is to take away is
-planned outside this repository.
+**A new major line:** a major version starts a line of its own, and with it a stub that reads its `latest.json`.
+Only the stub is special about it: `FrameworkLine` in `stub/Stub.cs` names the line (`"v2"` since 2.0.0), the one
+word both `latest.json` addresses are built from, and `<Version>` in `UIFramework.csproj` names the major version.
+A test (`TheStubsLineIsTheFrameworksMajorVersion`) fails as long as the two disagree, so neither is forgotten. The
+workflow writes `lib/v<major>/latest.json` by itself, and the DLL reads the file of its own line by itself. A project
+on an older stub goes on reading the old line's file and keeps that line's last release until it ships the new stub,
+unless another project has installed a newer DLL that names no newer settings action (see *Safety*). A major
+version that removes something a project may use (a builder call, a schema key) also raises `MinHostStub` to the
+new stub's version, so that projects on the old stub keep the old line. 2.0.0 removed nothing: it is the line for
+stub 0.3.2, and `MinHostStub` stays 0.1.0.

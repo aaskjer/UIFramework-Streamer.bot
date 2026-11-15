@@ -6,7 +6,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, what was left: a field the user never placed on a page the user sorted, and a range slider whose
+    /// <summary>2.0.0, what was left: a field the user never placed on a page the user sorted, and a range slider whose
     /// default makes it hold whole numbers while its step or limits have a fraction.</summary>
     public class Fixes1100LeftoverResolveTests
     {

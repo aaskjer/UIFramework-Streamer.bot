@@ -64,7 +64,7 @@ Schema.md).
 ## Proofreading a language
 
 The window's texts are in one file per language in [`conventions/lang`](../conventions/lang); the *Languages*
-table below lists them. French and Brazilian Portuguese are new in 1.10.0 and no native speaker has read them
+table below lists them. French and Brazilian Portuguese are new in 2.0.0 and no native speaker has read them
 yet, so corrections there help most.
 
 To see a better wording in the window before you send it, save a file holding only the texts you change as

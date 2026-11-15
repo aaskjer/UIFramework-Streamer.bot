@@ -10,7 +10,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0: the customise mode moves what the page shows, one place at a time.</summary>
+    /// <summary>2.0.0: the customise mode moves what the page shows, one place at a time.</summary>
     public class Fixes1100CustomizeTests
     {
         private static void Sta(Action body)

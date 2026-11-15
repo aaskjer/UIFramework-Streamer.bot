@@ -9,7 +9,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, the controls: a slider's kept value let go on the stop it sits on, decimal stops found by their
+    /// <summary>2.0.0, the controls: a slider's kept value let go on the stop it sits on, decimal stops found by their
     /// number, a range slider over a value that is no number, an answer panel after a failure.</summary>
     public class Fixes1100ControlsTests
     {

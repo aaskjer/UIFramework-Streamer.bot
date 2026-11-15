@@ -11,7 +11,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0: what docs/Schema.md promised of two kinds and the code lacked. A path field's folder button
+    /// <summary>2.0.0: what docs/Schema.md promised of two kinds and the code lacked. A path field's folder button
     /// opens a file's folder, and a browse button beside it chooses a file or a folder with Windows' dialog; a grouplist
     /// field suggests Streamer.bot's groups, which the settings action hands over.</summary>
     public class Fixes1100FieldsTests

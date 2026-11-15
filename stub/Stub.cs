@@ -451,7 +451,7 @@ public class CPHInline
     private const string StubVersion = "0.3.2";
     // The major line this stub is made for: it reads lib/<line>/latest.json and so is never offered a release of
     // another line. A new major version of the framework changes this one word.
-    private const string FrameworkLine = "v1";
+    private const string FrameworkLine = "v2";
     // The API answers with the file as it is on main right now; the raw CDN keeps a copy for up to five minutes and
     // ignores a cache-busting query, so it is the fallback only (rate limit on the API, or the API unreachable).
     private const string LatestApiUrl = "https://api.github.com/repos/aaskjer/UIFramework-Streamer.bot/contents/lib/" + FrameworkLine + "/latest.json?ref=main";
@@ -647,7 +647,7 @@ public class CPHInline
             System.Net.ServicePointManager.SecurityProtocol = current | System.Net.SecurityProtocolType.Tls12;
     }
 
-    /// <summary>What lib/v1/latest.json says: version, download url, sha256. The raw CDN is asked when the API refused
+    /// <summary>What lib/<line>/latest.json says (FrameworkLine): version, download url, sha256. The raw CDN is asked when the API refused
     /// (its rate limit) or answered with something that is no latest.json (a network's sign-in page), not when the
     /// network is unreachable or timed out: that would only keep the window waiting another five seconds.</summary>
     private static JObject FetchLatest()

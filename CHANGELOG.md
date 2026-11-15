@@ -6,12 +6,13 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
-## [Unreleased]
+## [2.0.0] - 2026-11-15
 
 The window comes in French and Brazilian Portuguese, a path field opens Windows' file dialog, and a group field
-suggests Streamer.bot's groups. The DLL's part, the window and the update notice, comes to every project with the
-next UIFramework release; the window still works with every settings action from stub 0.1.0 on. Stub 0.3.2 and its
-host block reach a project when it ships them.
+suggests Streamer.bot's groups. 2.0.0 starts the v2 line: its `latest.json` is `lib/v2/latest.json`, which settings
+action 0.3.2 reads. A project gets 2.0.0 offered once it ships stub 0.3.2 and its host block; one on an older stub
+reads `lib/v1/latest.json`, stays on 1.9.0 and uses 2.0.0 only when another project has installed it. Nothing was
+removed: the window still works with every settings action from stub 0.1.0 on (`MinHostStub` stays 0.1.0).
 
 ### Added
 

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, languages: a code means its language in any case, from a region to its language and back; an
+    /// <summary>2.0.0, languages: a code means its language in any case, from a region to its language and back; an
     /// en.json beside Streamer.bot corrects English; the picker fits its longest name; amounts are grouped as the
     /// language does; the emote tooltip is a window text; every language file the DLL carries is held to English's.</summary>
     public class Fixes1100LangTests

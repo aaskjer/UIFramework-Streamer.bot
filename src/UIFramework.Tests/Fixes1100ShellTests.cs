@@ -16,7 +16,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, the window: a save keeps as unsaved what changed while the game checked it, the questions after
+    /// <summary>2.0.0, the window: a save keeps as unsaved what changed while the game checked it, the questions after
     /// the check belong to the window, Reset all keeps the unsaved rows of a list in a file of its own, and the line for
     /// a list file that could not be read is in the window's language.</summary>
     public class Fixes1100ShellTests

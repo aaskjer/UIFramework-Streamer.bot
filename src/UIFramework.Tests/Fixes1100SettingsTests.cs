@@ -6,7 +6,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0: reading and writing the settings file, and an import going through the fields.</summary>
+    /// <summary>2.0.0: reading and writing the settings file, and an import going through the fields.</summary>
     public class Fixes1100SettingsTests
     {
         private static void Sta(System.Action body)

@@ -13,7 +13,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, lines of
+    /// <summary>2.0.0, the standard pages: the Log page's folder button opens the folder beside Streamer.bot, lines of
     /// one second stand newest first, a line without a time has no time; the Help page's Fire button and the emote
     /// pictures ask the game without holding the window still; the About page's credits and links are translated.</summary>
     public class Fixes1100PagesTests
@@ -272,7 +272,7 @@ namespace UIFramework.Tests
         });
     }
 
-    /// <summary>1.10.0, the update notice: a text with broken braces does not cost the notice; UIFramework is named only
+    /// <summary>2.0.0, the update notice: a text with broken braces does not cost the notice; UIFramework is named only
     /// when the settings of a game would offer it; a game that fixes its window's language gets its notice in it.</summary>
     public class Fixes1100NoticeTests : IDisposable
     {

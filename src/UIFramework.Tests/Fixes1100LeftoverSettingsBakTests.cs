@@ -13,7 +13,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, what was left over: a settings file gone beside its .bak is read from the .bak by the window
+    /// <summary>2.0.0, what was left over: a settings file gone beside its .bak is read from the .bak by the window
     /// too, as the project's UiSettings.Load reads it.</summary>
     public class Fixes1100LeftoverSettingsBakTests : IDisposable
     {

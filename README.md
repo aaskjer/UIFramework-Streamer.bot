@@ -171,7 +171,7 @@ tools/                    update-host-block.ps1     refresh the block in a proje
                           conventions-doc.ps1       the tables in docs/Conventions.md
                           update-twitch-emotes.ps1  Twitch's global emotes for conventions/emotes
                           docs-shots.ps1            the screenshots in docs/images, rendered again
-lib/v1/latest.json        what the loader reads: version, download url, sha256 and minHostStub, the oldest
+lib/v<major>/latest.json  what the loader reads: version, download url, sha256 and minHostStub, the oldest
                           settings action the release works with (one folder per major line)
 docs/                     Getting-Started, Schema, Conventions, Loader, Customize; images/ the screenshots
 .github/workflows/        ci.yml (build, tests and docs/Conventions.md checked on every push and pull request),

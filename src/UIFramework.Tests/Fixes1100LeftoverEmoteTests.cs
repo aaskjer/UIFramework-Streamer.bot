@@ -11,7 +11,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, what the fixes left over: the emotes of an action's answer ask the project for its emote
+    /// <summary>2.0.0, what the fixes left over: the emotes of an action's answer ask the project for its emote
     /// sources without holding the window still.</summary>
     public class Fixes1100LeftoverEmoteTests
     {

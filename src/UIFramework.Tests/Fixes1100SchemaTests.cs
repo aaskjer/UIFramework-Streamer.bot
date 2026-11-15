@@ -10,7 +10,7 @@ using Xunit;
 
 namespace UIFramework.Tests
 {
-    /// <summary>1.10.0, the schema's pages: a field with <c>ask</c> asks with what the window shows, and its answers
+    /// <summary>2.0.0, the schema's pages: a field with <c>ask</c> asks with what the window shows, and its answers
     /// land in the order it asked them.</summary>
     public class Fixes1100SchemaTests
     {
