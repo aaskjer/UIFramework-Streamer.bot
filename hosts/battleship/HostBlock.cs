@@ -428,6 +428,9 @@ public static class UiSchema
             K("msgWhisperFleet", "Deine Flotte", "Einem Solo-Spieler geflüstert, wenn seine Schlacht beginnt, solange das Flüstern an ist."),
             K("msgNoStatsFound", "Noch keine Bilanz", "!bstats für einen Spieler ohne Schlachten."),
             K("msgNoLeaderboard", "Bestenliste leer", "!ballstats, bevor irgendjemand eine Bilanz hat."),
+            K("msgStats", "Bilanz", "!bstats: die Bilanz eines Spielers. {abandoned}, {flawless}, {bestWin} (die wenigsten Schüsse in einem Sieg) und {streak} lassen sich ergänzen."),
+            K("msgStatsFree", "Bilanz im Freispiel", "!bstats, solange das Freispiel läuft und keine Punkte im Spiel sind."),
+            K("msgLeaderboard", "Bestenliste", "!ballstats. {entries} sind die Spieler der Rangliste nacheinander, etwa '🥇 Name (+1,200)'."),
             Tx("Solo battle", "Solo-Schlacht"),
             Tx("Return fire", "Erwiderung"),
             Tx("Battle result", "Ergebnis der Schlacht"),
@@ -463,7 +466,7 @@ public static class UiSchema
         .Answer("fleetSummary", "{\"lines\":[{\"text\":\"8×8 · 3 ships · about 36 shots per battle\",\"big\":true},\"10 of 64 squares taken by ships.\"]}")
         .Answer("broadcasterFound", "Found in Streamer.bot: 123456789. Used whenever the channel ID box is empty.")
         .Answer("presetQuick", "{\"status\":\"8×8 with 3 ships filled in; save to keep it.\"}")
-        .Log("Chat Games/Logs", "BSG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Trigger|Trigger", "Board|Board", "Shots|Shots", "Hits|Hits", "Accuracy|Accuracy", "Change|Change" }, results: new[] { "WIN", "LOSS", "TIMEOUT", "ABANDONED", "STOPPED", "CHAT WIN", "CHAT LOSS", "DUEL" }, platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.")
+        .Log("Chat Games/Logs", "BSG-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Trigger|Trigger", "Board|Board", "Shots|Shots", "Hits|Hits", "Accuracy|Accuracy", "Change|Change" }, results: new[] { "WIN", "LOSS", "TIMEOUT", "NO-SHOW", "STOPPED", "STARTED" }, platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No battles logged yet. Every finished battle lands here once 'Write a log file per day' is on.")
         .Help(
             H("How a battle plays",
                 Note("A viewer takes command of a fleet against a CPU opponent, the Admiral. Both fleets are placed at random and hidden from the other side. Each shot is a full exchange: the player fires, then the Admiral fires back. Sink the whole enemy fleet to win; lose yours and the battle is over. Nothing is staked up front: sinking one of the Admiral's ships pays its value at once, and losing one of your own costs its value.")),
@@ -724,6 +727,9 @@ public static class UiSchema
         Msg("Cooldown", "userCooldownMessage", "@{user}, you're on cooldown. Try again in {seconds} seconds.", "Per viewer", "Sent while this viewer's own cooldown runs.", new[] { "user", "seconds" }, alias: "UserCooldownMsg"),
         Msg("Stats", "msgNoStatsFound", "@{user}: no battles fought yet. Start one with !battleship", "No record yet", "!bstats for a player with no battles.", new[] { "user" }, alias: "MsgNoStatsFound"),
         Msg("Stats", "msgNoLeaderboard", "No battle records yet.", "Leaderboard empty", "!ballstats before anybody has a record.", new string[0], alias: "MsgNoLeaderboard"),
+        Msg("Stats", "msgStats", "⚓ {user}: {played} battles | {won}W/{lost}L | Win rate: {winrate}% | Accuracy: {accuracy}% ({hits}/{shots}) | Ships sunk: {sunk}, lost: {shipsLost} | Best streak: {bestStreak} | Net: {net} {points}", "Stats reply", "!bstats: a player's record. {abandoned}, {flawless}, {bestWin} (the fewest shots in a win) and {streak} can be added.", new[] { "user", "played", "won", "lost", "abandoned", "winrate", "accuracy", "hits", "shots", "sunk", "shipsLost", "flawless", "bestWin", "streak", "bestStreak", "net", "points" }),
+        Msg("Stats", "msgStatsFree", "⚓ {user}: {played} battles | {won}W/{lost}L | Win rate: {winrate}% | Accuracy: {accuracy}% ({hits}/{shots}) | Ships sunk: {sunk}, lost: {shipsLost} | Best streak: {bestStreak}", "Stats reply in Free game", "!bstats while Free game is on, with no points at stake.", new[] { "user", "played", "won", "lost", "abandoned", "winrate", "accuracy", "hits", "shots", "sunk", "shipsLost", "flawless", "bestWin", "streak", "bestStreak", "net", "points" }),
+        Msg("Stats", "msgLeaderboard", "🏆 Top {count} Admirals ({rankedBy}): {entries}", "Leaderboard", "!ballstats. {entries} is the ranked players one after another, like '🥇 Name (+1,200)'.", new[] { "count", "rankedBy", "entries" }),
     };
 }
 
