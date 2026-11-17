@@ -1,6 +1,6 @@
 {
   "host": "hangman",
-  "version": "v13.3.2",
+  "version": "v13.3.3",
   "settingsFile": "Chat Games/Hangman Game/configs.json",
   "settings": [
     {
@@ -2885,7 +2885,11 @@
         "twitch",
         "youtube",
         "kick"
-      ]
+      ],
+      "styles": {
+        "GAME-OVER": "muted",
+        "MISS-*": "warning"
+      }
     },
     "help": [
       {

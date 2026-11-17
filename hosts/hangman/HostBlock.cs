@@ -273,7 +273,8 @@ public static class UiSchema
         .Answer("openOverlayFolder", "Opened Chat Games\\Hangman Game\\Overlay.")
         .Log("Chat Games/Logs", "HM-log*.txt", writeLogKey: "logToFile", columns: new[] { "Player|User", "Platform|Platform", "Round|Round", "Word|Word,Word was", "Guess|Guess,Letter", "Lives|Lives", "Wrong|Wrong,Wrong guesses", "Reward|Reward" },
              results: new[] { "START", "HIT-LETTR", "MISS-LTTR", "DUPE-LTTR", "WIN-LETTR", "WIN-WORD", "MISS-WORD", "MISS-PART", "DUPE-WORD", "GAME-OVER", "TIMEOUT", "STOP", "EVIL-SWAP", "GLITCH-HOLD", "STREAK-END", "AWARD-WIN", "AWARD-LTER", "CP-START", "CP-BAD-INPUT", "REFUND", "BLOCKED", "COOLDOWN", "ANTICHEAT", "ADDICTED", "FREE-START", "FREE-END" },
-             platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.")
+             platforms: new[] { "twitch", "youtube", "kick" }, emptyText: "No rounds logged yet. Every round, guess and payout lands here once 'Write a log file per day' is on.",
+             styles: new[] { "GAME-OVER|muted", "MISS-*|warning" })
         .Help(
             H("A round",
                 Note("A moderator (or anyone, from the Access page) starts a round, a word is drawn from the list and shown masked, and chat guesses letters or the whole word. Lives, wrong guesses, hints and the round clock tick along until somebody solves it, the lives run out, time is up or a moderator stops it."),
