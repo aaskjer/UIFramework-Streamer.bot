@@ -28,6 +28,13 @@ stay the user's.
   like `gear`, `dice`, `coins`; a name the window does not know shows a dot), *Hide* / *Show*, *Move up*,
   *Move down*, *Reset this page*. *About* cannot be hidden. *Help* (*How to play* in the games), *Log* and *About*
   stay at the foot of the page list, under any page the extension puts there.
+- **Groups of pages**, where the extension declares them, are headings in the rail. Outside the mode a click (or
+  Enter, Space, Left and Right) folds a group's pages away and shows them again; that is kept per group, and the
+  group of the page in front stays open. In the mode every group is open. A page moves into another group, or out
+  of every group, by *Move to group* in its menu, by a drop on a page of that group (it takes that page's place)
+  or on the heading (it becomes the group's first page), and step by step with *Move up* and *Move down*, which
+  cross a group's edge. Right-click a heading: *Rename*, *Reset this group's name*. A group left without a page
+  keeps its heading in the mode, to drop a page on.
 - **Without the mouse:** Tab reaches every field and every page. The Menu key (or Shift+F10) opens its menu;
   Alt+Up and Alt+Down move it one place and leave the keyboard on it, so it can be moved further. A field next to a
   section heading crosses it in one step, by key or menu alike: the first field of a section moves up into the
@@ -92,6 +99,9 @@ instead. The window itself stays where it is.
 | `pages.<id>.title`, `.icon`    | how the page is shown                                                        |
 | `pages.<id>.order`             | the order in the top group; pages with an `order` come first                 |
 | `pages.<id>.hidden`            | the page is gone (except `about`)                                            |
+| `pages.<id>.group`             | the group the user put the page into, by the group's id; `""` for out of every group. Left out while the page is where the extension declares it |
+| `groups.<id>.title`            | the user's name for a group's heading                                        |
+| `groups.<id>.folded`           | `true` while the group's pages are folded away. *Reset layout* keeps it, and it holds in a locked window too, like the theme |
 | `fields.<key>.page`            | which page the field belongs to                                              |
 | `fields.<key>.order`           | the order within the page. On a page with orders, a field that has none (new in an update, or given back by *Reset this field*) goes behind the field the extension declares before it. When that field sits in another section, it goes to the end of its own section instead, or to the end of the page when the page lacks that section |
 | `fields.<key>.row`             | the line the field sits on, beside the fields with the same name; `""` puts it on a line of its own, out of a row the extension declared |

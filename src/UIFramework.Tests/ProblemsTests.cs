@@ -94,7 +94,7 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [ { ""key"": ""odd"", ""default"": 1, ""kind"": ""colr"", ""page"": ""game"" } ],
                 ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"", ""log"", ""about"" ], ""log"": { ""folder"": ""Demo/Logs"" } } }");
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "problems-" + System.Guid.NewGuid().ToString("N"), "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "problems-" + System.Guid.NewGuid().ToString("N"), "settings.json"));
             Entry.Prepare(spec, schema);
             Assert.Single(spec.Problems);
             Sta(() =>

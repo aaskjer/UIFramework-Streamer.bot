@@ -105,18 +105,27 @@ namespace UIFramework.Tests
         });
 
         [Fact]
-        public void Masked_and_hide_travel_through_the_schema()
+        public void Masked_and_showWhen_travel_through_the_schema()
         {
-            var root = JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [
+            const string head = @"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [
                 { ""key"": ""source"", ""default"": ""a"", ""kind"": ""options"", ""options"": [ { ""value"": ""a"", ""label"": ""A"" }, { ""value"": ""b"", ""label"": ""B"" } ] },
-                { ""key"": ""secret"", ""default"": """", ""masked"": true, ""requires"": ""hide:source=b"" }
-            ], ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ] } }");
-            var schema = Schema.Parse(root);
-            Assert.True(schema.Settings.Single(s => s.Key == "secret").Masked);
-            Assert.True((bool)schema.Settings.Single(s => s.Key == "secret").ToJson()["masked"]);
-            var spec = Entry.SpecFor(null, schema, System.IO.Path.Combine(System.IO.Path.GetTempPath(), "UIFramework.Tests", "gaps", "settings.json"));
-            Entry.Prepare(spec, schema);
-            Assert.Empty(spec.Problems);   // hide: in front of a condition is understood by the check
+                { ""key"": ""secret"", ""default"": """", ""masked"": true, ";
+            const string tail = @" }
+            ], ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ] } }";
+            WindowSpec Prepared(string condition)
+            {
+                var schema = Schema.Parse(JObject.Parse(head + condition + tail));
+                Assert.True(schema.Settings.Single(s => s.Key == "secret").Masked);
+                Assert.True((bool)schema.Settings.Single(s => s.Key == "secret").ToJson()["masked"]);
+                var spec = Entry.SpecFor(schema, System.IO.Path.Combine(System.IO.Path.GetTempPath(), "UIFramework.Tests", "gaps", "settings.json"));
+                Entry.Prepare(spec, schema);
+                return spec;
+            }
+            Assert.Empty(Prepared(@"""showWhen"": ""source=b""").Problems);
+            // "hide:" in front of a requirement did the same once; it is no longer read, and the red i names showWhen.
+            var problem = Assert.Single(Prepared(@"""requires"": ""hide:source=b""").Problems);
+            Assert.Contains("'secret'", problem);
+            Assert.Contains("showWhen: \"source=b\"", problem);
         }
 
         [Fact]

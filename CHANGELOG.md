@@ -6,6 +6,131 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.1.0] - 2026-11-18
+
+For projects that are no chat game: settings that were Set Arguments or live in several actions, secrets kept in
+Streamer.bot's globals, a status that follows what the project reports, lists and dropdowns the project fills, and
+pages in groups. The settings action finds the project's action by its id. What concerns the settings action and
+the host block reaches a project once it ships stub 0.3.3 and its host block; the rest comes with the DLL. 2.1.0
+stays in the v2 line (`lib/v2/latest.json`). What 2.0.0 still read for older host blocks is gone; no published
+project used any of it.
+
+### Added
+
+In the host block and the DLL, for a project that ships the host block of stub 0.3.3:
+
+- **A Set Argument wins over the settings file: `UiSettings.Load(file).With(args)`.** A Set Argument sub-action
+  named like a key of the table, or like one of its old keys, sets that setting for the run while it holds
+  something; an empty one does not. The value is read as the setting holds it: `yes`, `on`, `1` and `ja` switch
+  on, `2,5` is 2.5, and an argument that does not fit stays out. A project that was set up with Set Arguments so
+  keeps working after its values moved into the settings file, and a value can differ per action. See *Set
+  Arguments* in [docs/Schema.md](docs/Schema.md#the-games-side).
+- **The window shows such a setting as what it is: `arguments: true` in `UiHost.Handle`.** The setting has a *Set
+  Argument* pill and a line naming the argument, and no field: what the file holds does not count while the
+  argument is there. It is not saved, reset or imported. Only the action's own Set Arguments count. The arguments
+  the settings action itself was run with reach the project's action too; settings action 0.3.3 names them
+  (`uiframework.callerArgs`), and they are left out. With an older settings action every argument that fits a
+  setting counts.
+- **A project locks fields itself: `locked: s => "key|why"` in `UiHost.Handle`.** One field per line, asked when
+  the window opens. A locked field shows its value (a `masked` one as dots), a *Locked* pill and the reason. A
+  locked message shows its text on the Messages page with the reason where its chips would be.
+- **The values of the version before come along once: `.Adopt(Old(actionId, …))` on the window.** An import
+  replaces an action with its sub-actions, so a project that moves its Set Arguments into the settings file would
+  lose what the user had set. While nothing has been saved yet, the window reads the old action's active Set
+  Arguments from `<Streamer.bot>\data\actions.json`, or from the ten newest backups where the import has already
+  replaced it, and shows them as unsaved changes; the status line says how many and from where. `"old>new"` leads
+  an argument of another name to its setting, `"#subActionId>key"` takes a Send Message sub-action's text. A value
+  that does not fit its setting is left out, and none reaches the log. See *Values from the version before* in
+  [docs/Schema.md](docs/Schema.md#values-from-the-version-before). For the zips the DLL references
+  `System.IO.Compression`, which is part of .NET Framework: nothing more ships.
+- **A secret lives in a global of Streamer.bot, not in the settings file: `global:` on a setting (stub 0.3.3).**
+  `S("botToken", "", masked: true, global: "MyProject_botToken")`: the settings action reads the persisted global
+  when the window opens and writes it after a save, only when the field changed; an emptied field unsets it. The
+  value is never in the file, an export or the log, an import does not take it, a reset leaves it, and the
+  project's `test`, `validate` and `saved` get `""` or `"*"` in its place. With an older settings action the field
+  is locked and shows nothing. See *A secret in a global* in [docs/Schema.md](docs/Schema.md#the-games-side).
+- **A window names the oldest UIFramework it works with: `requires:` on `UiWindow` (stub 0.3.3).** A UIFramework
+  that knows no `global` would write a secret into the file. With `requires: "…"` the settings action looks at the
+  UIFramework it would open the window with; where that one is older it asks whether to download the newer one,
+  opens the window with it, and otherwise keeps the window closed and says why: the download failed, the newest
+  release is still too old, or an older UIFramework is running and only a restart of Streamer.bot replaces it.
+  It asks also where `autoUpdate` is off or that version was skipped, since the window cannot open without it.
+  The DLL names a `requires` above its own version behind the red **i**.
+- **A status that follows what the project reports: `every:` on an `auto` action, and rows with a label, a pill
+  and a copy button.** With `every: 10` the project is asked again every ten seconds while the box is on the page
+  in front; five seconds is the least. A line of an answer can be `{ "label", "pill", "tone", "text", "copy" }`:
+  the labels of a box share a column, `tone` is `ok`, `warn` or `muted`, and `copy: true` adds a button that puts
+  the text on the clipboard. See *Answers of an action* in [docs/Schema.md](docs/Schema.md#answers-of-an-action).
+- **A button that saves first: `saveFirst: true`.** The window's unsaved changes are saved as *Save* would, the
+  check before saving included, and the project is asked only when that save happened: "Check now" runs with what
+  is on the screen.
+- **A dropdown whose options the project names: `optionsFrom:` and `options:` in `UiHost.Handle` (stub 0.3.3).**
+  `S("region", "", kind: "options", optionsFrom: "countryCode")` asks the project for the options when the pages
+  are built and again shortly after `countryCode` changes, with the values as they stand in the window.
+  `optionsFrom: "groups"` offers Streamer.bot's groups, for a setting that holds one group. The stored value and
+  the default stay entries of their own where no option has them, and the window stays usable while it asks.
+- **Groups of pages in the rail: `.Group(id, title, pages…)` on the window.** A window with many pages puts them
+  under headings. A click folds a group's pages away, kept per user, and going to a page (the search, Ctrl and a
+  number, the tour) opens its group. In the customise mode a page moves into another group by its menu, by a drop
+  or with *Move up* and *Move down*, and a heading can be renamed. A window that declares no group looks as it
+  did. See [docs/Schema.md](docs/Schema.md#the-window) and [docs/Customize.md](docs/Customize.md).
+- **A list the project writes to as well: `rowKey`, `fixedRows`, `filter`.** With `rowKey: "Date,Name"` a save
+  merges the user's changes into the list as the file holds it at that moment, cell by cell, so a row the project
+  added while the window was open is no longer written over. `fixedRows` leaves adding and removing to the
+  project. `filter: "region= || Global=true || Counties~{region}"` shows the rows that fit what the window holds
+  and saves the others back as they were. A JSON array in a read-only column shows as `DE-BY, DE-BW`. See *A list
+  the project fills* in [docs/Schema.md](docs/Schema.md#the-games-side).
+- **The kind `multi`: several of a fixed set of choices.** Check boxes over `options`, stored comma-separated in
+  the options' order and spelling. A stored value none of the options has stays as a chip until the user removes
+  it. `requires` and `showWhen` read it (`key=steam`, `!key`), and `UiSettings.Values(key)` hands the project a
+  `string[]`, for a `namelist` and a `grouplist` too.
+- **The kind `time`: a time of day as `HH:mm`.** The field takes `9`, `9:5`, `0905` or `21h` and writes `09:05`;
+  what is no time stops the save and is named, as a number that is none.
+- **Messages with `%name%` placeholders: `placeholderStyle: "percent"`.** On `UiWindow` for every message, or on
+  one `Msg()`. The chips insert `%user%`, the chat preview fills it, and the red **i** looks for `%name%` in a
+  default text that its `placeholders` do not list. A message that says `braces` keeps `{user}` in a window of
+  the percent style.
+- **The host reader, [`stub/HostReader.cs`](stub/HostReader.cs), for a project with several actions.** One action
+  carries the host block and answers the window; the others carry the reader and read the same file, the `.bak`
+  and a save under way included. It knows no table, so `s.Int("postsPerHour", 6)` names what holds while the file
+  has no value, and `With(args, "dryRun")` lets a Set Argument of a named key win.
+  `tools\update-host-block.ps1 -File … -Reader` refreshes it, and `tools\check-stub.ps1` compiles it the way
+  Streamer.bot does. See *A project with several actions* in
+  [docs/Getting-Started.md](docs/Getting-Started.md#a-project-with-several-actions).
+
+In the settings action, for a project that ships stub 0.3.3:
+
+- **The settings action finds the project's action by its id: `GameActionId`.** Until now it knew the action by
+  its name alone, and a streamer who renamed the action got "There is no action named …" instead of the settings.
+  With the action's id beside `GameActionName` the settings action looks the action up by that id and runs it by
+  that id, whatever it is called, and its messages name it as Streamer.bot has it now. An import keeps an
+  action's id, so a project that ships as an import fills it in once. Without an id, and where no action has it
+  (an action made by hand), the name is used as before; the log says once when an id found nothing.
+
+### Changed
+
+- **The host block and the host reader need no reference to System.Core.** The block used LINQ in four places and
+  a `HashSet` in three, so an action that leaves that reference out could not carry it. They are loops and
+  dictionaries now, and a test reads both files for what would need it again. `tools\check-stub.ps1` cannot show
+  this: its compiler always has System.Core at hand.
+
+### Removed
+
+None of the eight games used any of these. Where a project still declares one of the first four, the window opens
+and the red **i** names it; the last two did nothing before and are gone without a word. So this stays in the v2
+line, and `MinHostStub` stays 0.1.0.
+
+- **`UiWindow.Override` and `overrides` in the schema.** What they said about a setting (page, label, help,
+  section, `hidden`) goes where the setting is declared, `S(…)`. A window that still carries `overrides` shows its
+  settings as the table declares them.
+- **A window the settings action passes itself (a spec).** The generic settings action has passed none since
+  0.9.3; one made by hand that still does gets the window the project declares. `Entry.Show` keeps its five
+  parameters, so every settings action from stub 0.1.0 on still finds it. The preview's `-spec` is gone with it.
+- **`Custom` on a page of the host block.** The generic settings action never built such a page. A schema that
+  still says `"custom": true` is told so, as before.
+- **`requires: "hide:…"`.** `showWhen` does the same. A field that still says it always shows.
+- **`About(authorLink:)`** has done nothing since 0.9.13, and the key **`advanced`** was read and never used.
+
 ## [2.0.0] - 2026-11-15
 
 The window comes in French and Brazilian Portuguese, a path field opens Windows' file dialog, and a group field

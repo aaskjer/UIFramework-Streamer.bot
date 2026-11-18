@@ -43,12 +43,13 @@ namespace UIFramework
                     settings[ct.Key] = chk.IsChecked ?? false;
                 else if (node is TextBox txt && FieldTag.Of(txt.Tag) is FieldTag tt && (transientToo || !tt.Transient))
                 {
-                    // No number in a number box: only one hidden by a condition gets this far (the check before saving
-                    // names a shown one). It keeps what is stored instead of saving 0.
-                    if (!transientToo && IsNumberKind(tt) && !IsValidNumber(tt, txt.Text))
+                    // No number in a number box, no time of day in a time box: only one hidden by a condition gets this far
+                    // (the check before saving names a shown one). It keeps what is stored instead of saving 0.
+                    if (!transientToo && ((IsNumberKind(tt) && !IsValidNumber(tt, txt.Text)) || (tt.Kind == FieldKind.Time && !IsValidTime(tt, txt.Text))))
                         return;
                     settings[tt.Key] = ValueOf(tt, txt.Text, out bool clamped);
-                    // A number pulled into its min/max shows what was saved, so the box and the file never differ.
+                    // A number pulled into its min/max shows what was saved, so the box and the file never differ; so
+                    // does a time typed "9:5" and saved "09:05".
                     if (clamped && !transientToo)
                         txt.Text = Display(tt, settings[tt.Key]);
                 }
@@ -132,10 +133,77 @@ namespace UIFramework
                     return string.Equals(trimmed, "true", StringComparison.OrdinalIgnoreCase);
                 case FieldKind.Template:
                     return text ?? "";
+                case FieldKind.Time:
+                {
+                    // Stored as "HH:mm" however it was typed. Text that is no time of day stays what it is: the check
+                    // before saving names it, and a live snapshot hands the project what the box shows.
+                    if (!TryTime(trimmed, out string time)) return trimmed;
+                    clamped = time != (text ?? "");
+                    return time;
+                }
                 default:
+                    if (tag.Choices != null) return MultiText(tag.Choices, text ?? "");
                     return tag.KeepSpaces ? text ?? "" : trimmed;
             }
         }
+
+        /// <summary>The values a <c>multi</c> field's text names: its choices first, in their own order and spelling
+        /// (blanks around a value and its case do not matter), then the values none of the choices has, as they are
+        /// stored. Each once. A value that is no choice is kept this way until the user takes it out.</summary>
+        public static List<string> MultiValues(string[] choices, string text)
+        {
+            var named = new List<string>();
+            foreach (string part in (text ?? "").Split(','))
+            {
+                string value = part.Trim();
+                if (value.Length > 0 && !named.Contains(value, StringComparer.OrdinalIgnoreCase))
+                    named.Add(value);
+            }
+            var ticked = (choices ?? new string[0]).Where(choice => named.Contains(choice, StringComparer.OrdinalIgnoreCase)).ToList();
+            var others = named.Where(value => !ticked.Contains(value, StringComparer.OrdinalIgnoreCase)).ToList();
+            return ticked.Concat(others).ToList();
+        }
+
+        /// <summary>A stored value as a <c>multi</c> field holds and writes it: its values (<see cref="MultiValues"/>)
+        /// separated by commas, "" for none. An array of values (a file written by hand) is read as those values.</summary>
+        public static string MultiText(string[] choices, JToken value)
+        {
+            string text = value is JArray list ? string.Join(",", list.Where(item => !(item is JContainer)).Select(Invariant))
+                : value is JContainer ? "" : Invariant(value);
+            return string.Join(",", MultiValues(choices, text));
+        }
+
+        /// <summary>A time of day as it may be typed, written as "HH:mm" on the 24-hour clock: hours alone ("9",
+        /// "17"), hours and minutes with a colon, a point or an h between them ("9:5", "09:05", "9.05", "9h05", "9h"),
+        /// or three or four digits ("905", "0905"). False for anything else, 24:00 and 9:60 included.</summary>
+        public static bool TryTime(string text, out string time)
+        {
+            time = null;
+            string t = (text ?? "").Trim();
+            string hours = t, minutes = "";
+            int mark = t.IndexOfAny(new[] { ':', '.', 'h', 'H' });
+            if (mark >= 0)
+            {
+                hours = t.Substring(0, mark);
+                minutes = t.Substring(mark + 1);
+                if (minutes.Length > 2) return false;
+            }
+            else if (t.Length == 3 || t.Length == 4)
+            {
+                hours = t.Substring(0, t.Length - 2);
+                minutes = t.Substring(t.Length - 2);
+            }
+            if (hours.Length < 1 || hours.Length > 2 || !IsDigits(hours) || (minutes.Length > 0 && !IsDigits(minutes))) return false;
+            int hour = int.Parse(hours, CultureInfo.InvariantCulture);
+            int minute = minutes.Length == 0 ? 0 : int.Parse(minutes, CultureInfo.InvariantCulture);
+            if (hour > 23 || minute > 59) return false;
+            time = hour.ToString("00", CultureInfo.InvariantCulture) + ":" + minute.ToString("00", CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        /// <summary>Whether a time box's text can be saved: a time of day, or nothing where the field may be empty.</summary>
+        public static bool IsValidTime(FieldTag tag, string text) =>
+            string.IsNullOrWhiteSpace(text) ? tag != null && tag.AllowEmpty : TryTime(text, out _);
 
         private static long ClampWhole(FieldTag tag, long value, long typeMin, long typeMax)
         {
@@ -246,8 +314,13 @@ namespace UIFramework
                     if (d <= long.MinValue) return long.MinValue.ToString(CultureInfo.InvariantCulture);
                     return ((long)d).ToString(CultureInfo.InvariantCulture);
                 }
+                case FieldKind.Time:
+                    // As it is stored, "09:05" also for a "9:5" from a file written by hand. What is no time of day
+                    // shows empty, as a number box does for what is no number: the check before saving then names the
+                    // field, unless it may be empty.
+                    return value is JContainer || !TryTime(Invariant(value), out string time) ? "" : time;
                 default:
-                    return Invariant(value);
+                    return tag.Choices != null ? MultiText(tag.Choices, value) : Invariant(value);
             }
         }
 
@@ -352,7 +425,8 @@ namespace UIFramework
         /// <summary>The keys of the number boxes whose value, as the window would save it, is not the one the settings
         /// hold: a value outside the field's limits or not a number, which the box shows as its limit or its default.
         /// The window writes these with the next save, so the box and the file agree. A key the settings do not have
-        /// is left to the game's own default.</summary>
+        /// is left to the game's own default. The same goes for a time (text that is none, or one written another
+        /// way than "HH:mm") and for the ticked values of a multi field in another spelling than the options'.</summary>
         public static HashSet<string> Repaired(JObject settings, object root) => Repaired(settings, root, false);
 
         /// <summary>The same; with <paramref name="shownOtherwise"/> only the keys whose box reads other than the file's
@@ -370,10 +444,14 @@ namespace UIFramework
                 JToken would;
                 if (node is TextBox txt)
                 {
-                    // Number boxes only: a text is shown as it is stored.
-                    if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
+                    // Number boxes, a time and the ticked values of a multi field, which are written in one spelling
+                    // ("09:05", the options' own): any other text is shown as it is stored.
+                    if (!IsNumberKind(tag) && tag.Kind != FieldKind.Time && tag.Choices == null) return;
                     would = ValueOf(tag, txt.Text);
-                    if (shownOtherwise && Display(tag, have) == Display(tag, would)) return;
+                    // Text that is no time of day shows as nothing, and so does the empty box of a time that may be
+                    // empty: the two read alike, yet the file's text goes with the next save, which is told.
+                    bool noTime = tag.Kind == FieldKind.Time && (have is JContainer || !IsValidTime(tag, Invariant(have)));
+                    if (shownOtherwise && !noTime && Display(tag, have) == Display(tag, would)) return;
                 }
                 else if (node is CheckBox chk) would = chk.IsChecked ?? false;                    // "yes" shown as off
                 else if (node is ComboBox cmb && cmb.SelectedItem is ComboBoxItem selected) would = ComboValue(tag, selected.Tag);
@@ -451,7 +529,6 @@ namespace UIFramework
             });
         }
 
-        /// <summary>Number fields whose text is not a usable number, as "Label: 'text'" lines.</summary>
         /// <summary>A value from outside (an import) as the window would save it: through the field that shows its key,
         /// so a number is pulled into the field's limits, a switch is a switch and a dropdown one of its options.
         /// Returns why the value cannot be taken (in the window's language), or null with what to store in
@@ -478,6 +555,19 @@ namespace UIFramework
                     if (value is JContainer || !IsValidNumber(tag, text)) problem = Text.T("import.why.number");
                     else result = ValueOf(tag, text);
                 }
+                else if (node is TextBox && tag.Kind == FieldKind.Time)
+                {
+                    // As typed into the field: "9:5" is taken as "09:05", nothing only where the field may be empty.
+                    if (value is JContainer || !IsValidTime(tag, Invariant(value))) problem = Text.T("import.why.time");
+                    else result = ValueOf(tag, Invariant(value));
+                }
+                else if (node is TextBox && tag.Choices != null)
+                {
+                    // As the file's value is read: in the options' spelling and order, a value none of them has kept
+                    // (the field shows it, to be taken out there).
+                    if (value is JObject || (value is JArray items && items.Any(item => item is JContainer))) problem = Text.T("import.why.text");
+                    else result = MultiText(tag.Choices, value);
+                }
                 else if (node is TextBox)
                 {
                     // As a save takes the box's text: a name, path, colour or token without spaces at either end.
@@ -488,8 +578,10 @@ namespace UIFramework
                 {
                     string wanted = Invariant(value);
                     var item = cmb.Items.OfType<ComboBoxItem>().FirstOrDefault(i => string.Equals(Invariant(ComboValue(tag, i.Tag)), wanted, StringComparison.OrdinalIgnoreCase));
-                    if (item == null) problem = Text.T("import.why.option");
-                    else result = ComboValue(tag, item.Tag);
+                    if (item != null) result = ComboValue(tag, item.Tag);
+                    // A dropdown the project names the options of holds what the file holds, offered right now or not.
+                    else if (tag.OptionsAsked && !(value is JContainer)) result = wanted;
+                    else problem = Text.T("import.why.option");
                 }
                 else if (node is OptionSlider slider)
                 {
@@ -507,20 +599,39 @@ namespace UIFramework
             return problem;
         }
 
-        public static List<string> InvalidNumberFields(object root)
+        /// <summary>Number fields whose text is not a usable number, as "Label: 'text'" lines.</summary>
+        public static List<string> InvalidNumberFields(object root) => InvalidFields(root, IsNumberKind, IsValidNumber);
+
+        /// <summary>Time fields whose text is no time of day (or empty where the field may not be), named as
+        /// <see cref="InvalidNumberFields"/> names a number field.</summary>
+        public static List<string> InvalidTimeFields(object root) => InvalidFields(root, tag => tag.Kind == FieldKind.Time, IsValidTime);
+
+        private static List<string> InvalidFields(object root, Func<FieldTag, bool> ofKind, Func<FieldTag, string, bool> valid)
         {
             var invalid = new List<string>();
             VisitTree(root, o =>
             {
-                if (!(o is TextBox box) || !(FieldTag.Of(box.Tag) is FieldTag tag)) return;
-                if (tag.Kind != FieldKind.Int && tag.Kind != FieldKind.Long && tag.Kind != FieldKind.Double) return;
+                if (!(o is TextBox box) || !(FieldTag.Of(box.Tag) is FieldTag tag) || !ofKind(tag)) return;
                 // Never saved, or hidden by a showWhen or a section's condition: nothing to stop a save for.
                 if (tag.Transient || HiddenOnPage(box, root)) return;
                 string text = box.Text.Trim();
-                if (!IsValidNumber(tag, text))
+                if (!valid(tag, text))
                     invalid.Add(FieldLabel(box) + (text.Length == 0 ? ": " + Text.T("field.empty") : ": '" + text + "'"));
             });
             return invalid;
+        }
+
+        /// <summary>What stops a save, as the text of its dialog: the number fields without a usable number and the
+        /// time fields without a time of day, each under its own sentence. Null when nothing stops it.</summary>
+        public static string WhyNotSaved(object root, out string title)
+        {
+            var numbers = InvalidNumberFields(root);
+            var times = InvalidTimeFields(root);
+            title = numbers.Count > 0 ? Text.T("dialog.invalidNumbers.title") : times.Count > 0 ? Text.T("dialog.invalidTimes.title") : null;
+            var said = new List<string>();
+            if (numbers.Count > 0) said.Add(Text.T("dialog.invalidNumbers.text", string.Join("\n", numbers)));
+            if (times.Count > 0) said.Add(Text.T("dialog.invalidTimes.text", string.Join("\n", times)));
+            return said.Count == 0 ? null : string.Join("\n\n", said);
         }
 
         private static bool IsNumberKind(FieldTag tag) => tag.Kind == FieldKind.Int || tag.Kind == FieldKind.Long || tag.Kind == FieldKind.Double;

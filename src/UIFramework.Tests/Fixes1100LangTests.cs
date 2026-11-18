@@ -45,7 +45,7 @@ namespace UIFramework.Tests
             if (layoutLanguage != null)
                 File.WriteAllText(Path.Combine(folder, LayoutFile.FileName), new JObject { ["language"] = layoutLanguage }.ToString());
             var schema = Schema.Parse(schemaJson);
-            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(folder, "settings.json"));
             spec.Language = fixedLanguage;
             Entry.Prepare(spec, schema);
             return spec;

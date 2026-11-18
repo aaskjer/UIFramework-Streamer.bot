@@ -248,7 +248,7 @@ namespace UIFramework.Tests
                 { ""key"": ""d"", ""default"": 1, ""page"": ""game"", ""section"": ""Payout"" }
             ], ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ] } }");
             var schema = Schema.Parse(root);
-            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(folder, "settings.json"));
             spec.Layout = LayoutFile.Load(Path.Combine(folder, "settings.json"));
             Entry.Prepare(spec, schema);
             return spec;

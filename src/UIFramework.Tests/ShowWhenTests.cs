@@ -36,7 +36,7 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [ " + settings + @" ],
                 ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ], ""sections"": [ " + sections + @" ] } }"));
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", name, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", name, "settings.json"));
             Entry.Prepare(spec, schema);
             return spec;
         }
@@ -93,7 +93,7 @@ namespace UIFramework.Tests
                 { ""key"": ""a"", ""default"": """", ""page"": ""game"" }, { ""key"": ""b"", ""default"": """", ""page"": ""game"" },
                 { ""key"": ""c"", ""default"": 1, ""page"": ""game"", ""row"": ""declared"" }, { ""key"": ""d"", ""default"": 2, ""page"": ""game"", ""row"": ""declared"" } ],
                 ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ] } }"));
-            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(folder, "settings.json"));
             Entry.Prepare(spec, schema);
             var byKey = spec.ResolvedSettings.ToDictionary(s => s.Key);
             Assert.Equal("row-a", byKey["a"].Row);

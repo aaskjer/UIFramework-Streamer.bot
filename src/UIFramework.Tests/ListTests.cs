@@ -136,7 +136,7 @@ namespace UIFramework.Tests
         {
             try
             {
-                var spec = Entry.SpecFor(null, schema, SettingsPath);
+                var spec = Entry.SpecFor(schema, SettingsPath);
                 Entry.Prepare(spec, schema);
                 return (JObject)spec.Defaults.DeepClone();
             }

@@ -85,7 +85,7 @@ equal to the stub's): only one UIFramework runs in a Streamer.bot, and once the 
 project's own window could not open until a restart (an older host block took the newest DLL). This catches damage,
 not someone who can write to the Streamer.bot folder: a DLL put in by hand has no hash file and is loaded as it is.
 
-A release whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.2 now) is not
+A release whose `latest.json` names a `minHostStub` above the stub's own version (`StubVersion`, 0.3.3 now) is not
 offered to that stub; the project has to ship the newer settings action first. The same holds for a DLL that is
 there already, installed by another project. A DLL names the stub it needs in its product version
 (`1.8.4+stub.0.1.0`, from `MinHostStub` in `UIFramework.csproj`); a stub from 0.2.1 on reads that without loading
@@ -178,4 +178,6 @@ on an older stub goes on reading the old line's file and keeps that line's last 
 unless another project has installed a newer DLL that names no newer settings action (see *Safety*). A major
 version that removes something a project may use (a builder call, a schema key) also raises `MinHostStub` to the
 new stub's version, so that projects on the old stub keep the old line. 2.0.0 removed nothing: it is the line for
-stub 0.3.2, and `MinHostStub` stays 0.1.0.
+stub 0.3.2, and `MinHostStub` stays 0.1.0. 2.1.0 took out what no published project used (the CHANGELOG lists it)
+and stays in the v2 line: a project that still declares one of those things gets its window, with a line behind
+the red **i**, so no settings action has to be kept away from it.

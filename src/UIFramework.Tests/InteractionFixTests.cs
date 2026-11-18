@@ -94,9 +94,9 @@ namespace UIFramework.Tests
             var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [
                 { ""key"": ""plain"", ""default"": 1, ""page"": ""game"" },
                 { ""key"": ""secret"", ""default"": 1, ""page"": ""game"", ""hidden"": true },
-                { ""key"": ""veiled"", ""default"": 1, ""page"": ""game"" } ],
-                ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"" ], ""overrides"": { ""veiled"": { ""hidden"": true } } } }");
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Folder(), "settings.json"));
+                { ""key"": ""veiled"", ""default"": 1, ""page"": ""game"", ""hidden"": true } ],
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"" ] } }");
+            var spec = Entry.SpecFor(schema, Path.Combine(Folder(), "settings.json"));
             spec.Customizing = true;
             Entry.Prepare(spec, schema);
             bool Hidden(string key) => spec.ResolvedSettings.First(s => s.Key == key).Hidden;
@@ -112,7 +112,7 @@ namespace UIFramework.Tests
                 Entry.Prepare(spec, schema);
             }
 
-            foreach (string key in new[] { "secret", "veiled" })   // hidden by the schema, hidden by the spec's override
+            foreach (string key in new[] { "secret", "veiled" })   // both hidden by the schema
             {
                 Assert.True(Hidden(key));
                 ShowOrHide(key, "cust.show");
@@ -278,7 +278,7 @@ namespace UIFramework.Tests
                 { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""group"": ""Game"", ""label"": ""Win"" },
                 { ""key"": ""msgWait"", ""default"": ""{user} waits"", ""kind"": ""template"", ""group"": ""Cooldown"", ""label"": ""Wait"" } ],
                 ""window"": { ""title"": ""Demo"", ""pages"": [ ""messages"", ""log"", ""about"" ], ""log"": { ""folder"": ""Demo/Logs"", ""writeLogKey"": ""logToFile"" } } }");
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Folder(), "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Folder(), "settings.json"));
             Entry.Prepare(spec, schema);
             var parts = new WindowParts();
             var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, new QuietLog(), new EmptyLog());

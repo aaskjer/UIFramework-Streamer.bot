@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Newtonsoft.Json.Linq;
 
@@ -42,9 +43,6 @@ namespace UIFramework
         /// <summary>Sections shown only while a condition holds, by their declared (English) name.</summary>
         public readonly Dictionary<string, string> SectionConditions = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        /// <summary>What the spec changes about single settings, by key.</summary>
-        public readonly Dictionary<string, FieldOverride> Overrides = new Dictionary<string, FieldOverride>(StringComparer.Ordinal);
-
         /// <summary>Fixed sample values for the chat preview, by placeholder. Live ones (points name, amounts)
         /// are added by <see cref="Resolve"/>.</summary>
         public readonly Dictionary<string, string> Samples = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -52,7 +50,11 @@ namespace UIFramework
         /// <summary>Language code for the conventions' labels; null takes the layout file's, then "en".</summary>
         public string Language;
 
-        /// <summary>Every setting after <see cref="Resolve"/>, completed and overridden.</summary>
+        /// <summary>How the messages write their placeholders (<see cref="TokenStyle"/>): null or "braces" for {name},
+        /// "percent" for %name%. A message can say its own.</summary>
+        public string PlaceholderStyle;
+
+        /// <summary>Every setting after <see cref="Resolve"/>, completed.</summary>
         public readonly List<Setting> ResolvedSettings = new List<Setting>();
 
         /// <summary>Old key to canonical key, for the store's migration on load.</summary>
@@ -60,6 +62,10 @@ namespace UIFramework
         public readonly Dictionary<string, double> AliasFactors = new Dictionary<string, double>(StringComparer.Ordinal);
         /// <summary>An old key two or more settings share (one old switch that became two): the further canonical keys.</summary>
         public readonly Dictionary<string, List<string>> AliasesShared = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
+        /// <summary>The actions a version before this window kept its settings in (<c>window.adopt</c>): while
+        /// nothing has been saved yet, their values come into the window as unsaved changes (<see cref="Adoption"/>).</summary>
+        public readonly List<AdoptSource> Adopt = new List<AdoptSource>();
 
         /// <summary>Sample answers for the preview: action key to what the host would answer (text or JSON).</summary>
         public readonly Dictionary<string, string> Answers = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -96,6 +102,10 @@ namespace UIFramework
         /// <summary>Whether the host builds the pages the spec marks as custom (<see cref="IHostHooks.BuildPage"/>): a
         /// host in code does, a game behind the generic settings action cannot, and is told so.</summary>
         public bool HostBuildsPages = true;
+        /// <summary>Whether the host reads and writes Streamer.bot's persisted globals for the window
+        /// (<see cref="IHostHooks.HasGlobals"/>): the shell says so before it resolves. Without it a setting kept in a
+        /// global (<c>global</c>) is shown locked.</summary>
+        public bool HostHasGlobals;
         public readonly List<string> Problems = new List<string>();
         /// <summary>What reading the window's declaration found (a tour stop that is none, a help line of no kind):
         /// kept apart, since <see cref="Problems"/> is gathered anew with every resolve, and added to it there.</summary>
@@ -131,6 +141,18 @@ namespace UIFramework
         /// accent colour from uiframework.layout.json are not applied. Theme and language stay the user's.</summary>
         public bool Locked;
 
+        /// <summary>The oldest UIFramework the window works with (<c>requires</c>, "2.1.0"), or null. The settings
+        /// action reads it from the schema and offers the update instead of opening the window with an older DLL.</summary>
+        public string Requires;
+
+        /// <summary>The groups of pages in the rail as the window declares them (<c>groups</c>), in order.</summary>
+        public readonly List<PageGroup> Groups = new List<PageGroup>();
+
+        /// <summary>The groups the rail shows, as <see cref="Resolve"/> leaves them: those of <see cref="Groups"/> that can
+        /// work, each with its heading in the window's language (or as the user renamed it) and its pages as the user's
+        /// layout has them, in the rail's order. A group left without a page has no heading outside the customise mode.</summary>
+        public readonly List<PageGroup> RailGroups = new List<PageGroup>();
+
         /// <summary>The page to show after a reopen, by id.</summary>
         public string ReopenPageId;
 
@@ -154,6 +176,10 @@ namespace UIFramework
         public bool Bottom;
         /// <summary>Hidden by the user's layout; shown dimmed in the customise mode only.</summary>
         public bool Hidden;
+        /// <summary>The id of the group the page sits in in the rail, after the user's layout; null: in none.</summary>
+        public string Group;
+        /// <summary>The group the window declares the page in, whatever the user's layout says; null: in none.</summary>
+        public string DeclaredGroup;
 
         public PageSpec() { }
 
@@ -206,6 +232,14 @@ namespace UIFramework
     {
         public string Group, Key, Label, Help;
         public string[] Tokens = new string[0];
+        /// <summary>The message writes its placeholders as %name% instead of {name} (placeholderStyle "percent").</summary>
+        public bool Percent;
+        /// <summary>Why the message is locked (a Set Argument sets it, or the project locks it), or null: its text is
+        /// then shown and not edited.</summary>
+        public string LockNote;
+
+        /// <summary>A placeholder as this message's text carries it: {user}, or %user%.</summary>
+        public string Placeholder(string token) => TokenStyle.Write(token, Percent);
 
         public MessageDef() { }
 
@@ -213,6 +247,26 @@ namespace UIFramework
         {
             Group = group; Key = key; Label = label; Help = help; Tokens = tokens ?? new string[0];
         }
+    }
+
+    /// <summary>How a message writes its placeholders: {name}, or %name% where a project's texts have always had it
+    /// so (placeholderStyle "percent", on the window or on a single message).</summary>
+    public static class TokenStyle
+    {
+        public const string Braces = "braces", Percent = "percent";
+
+        /// <summary>Whether a declared style is the percent one; anything else, and none, is braces.</summary>
+        public static bool IsPercent(string style) => string.Equals((style ?? "").Trim(), Percent, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Whether a declared style is one there is: none, braces or percent.</summary>
+        public static bool Known(string style) => string.IsNullOrWhiteSpace(style) || IsPercent(style) || string.Equals(style.Trim(), Braces, StringComparison.OrdinalIgnoreCase);
+
+        public static string Write(string token, bool percent) => percent ? "%" + token + "%" : "{" + token + "}";
+
+        /// <summary>The names a text uses as placeholders in its style, each once, in order.</summary>
+        public static IEnumerable<string> In(string text, bool percent) =>
+            System.Text.RegularExpressions.Regex.Matches(text ?? "", percent ? @"%([A-Za-z][A-Za-z0-9_]*)%" : @"\{([A-Za-z][A-Za-z0-9_]*)\}")
+                .Cast<System.Text.RegularExpressions.Match>().Select(m => m.Groups[1].Value).Distinct();
     }
 
     public sealed class AboutSpec

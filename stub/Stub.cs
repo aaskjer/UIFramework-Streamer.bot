@@ -16,13 +16,17 @@ using Newtonsoft.Json.Linq;
 // from the game (a Try button's answer, a check before saving, work after it, the log) goes back to the game
 // action the same way, so this file never changes per project: UiHost.Handle in the game answers.
 //
-// To use it: paste this file as an action's Execute Code, put the name of the game action into GameActionName,
-// and trigger the action however you like. No references to add: the dialogs are Win32 message boxes.
+// To use it: paste this file as an action's Execute Code, put the name of the game action into GameActionName
+// (and its id into GameActionId where the game ships as an import), and trigger the action however you like. No
+// references to add: the dialogs are Win32 message boxes.
 
 public class CPHInline
 {
     // ==== The one line to fill in: the action that holds the game and answers the settings window. ====
     private const string GameActionName = "Demo Game";
+    // Its id in Streamer.bot, where the game ships as an import: an import keeps an action's id, so the settings
+    // open also after someone renamed the action. Empty, or an id no action has: it is found by its name.
+    private const string GameActionId = "";
 
     // Known once the game has described itself: the log prefix the window asked for, the settings file, the
     // window declaration (the generic host reads its log folder and cooldowns from it).
@@ -36,7 +40,7 @@ public class CPHInline
         Window = schema["window"] as JObject ?? new JObject();
         string file = (string)schema["settingsFile"];
         if (string.IsNullOrWhiteSpace(file))
-            throw new InvalidOperationException("The action '" + GameActionName + "' names no settings file (UiHost.Handle's settingsFile).");
+            throw new InvalidOperationException("The action '" + GameName + "' names no settings file (UiHost.Handle's settingsFile).");
         SettingsPath = Path.IsPathRooted(file) ? file : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, file);
         // One prefix from the first line to the last: the one the window declares, else the game action's name. The
         // DLL takes it from Host.WindowLogPrefix, so its lines read the same.
@@ -130,6 +134,37 @@ public class CPHInline
             return JArray.FromObject(groups ?? new List<string>()).ToString(Newtonsoft.Json.Formatting.None);
         }
 
+        // The options of a dropdown that takes them from the game (optionsFrom), with the window's current values.
+        public string Options(string key, string settingsJson) => _owner.AskGame("options", key, settingsJson);
+
+        // A persisted global of Streamer.bot, for a setting the game keeps there instead of in the settings file (a
+        // token another action reads): read and written on Streamer.bot's thread like everything of CPH. Its value is
+        // a secret and never logged.
+        public string GetGlobal(string name)
+        {
+            string value = null;
+            try { _owner.RunOnBot(() => value = _owner.CPH.GetGlobalVar<string>(name, true), true); }
+            catch (Exception ex)
+            {
+                _owner.CPH.LogWarn(LogPrefix + " The global '" + name + "' could not be read for the window: " + ex.Message);
+                return null;
+            }
+            return value;
+        }
+
+        public void SetGlobal(string name, string value)
+        {
+            _owner.RunOnBot(() =>
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(value)) _owner.CPH.UnsetGlobalVar(name, true);
+                    else _owner.CPH.SetGlobalVar(name, value, true);
+                }
+                catch (Exception ex) { _owner.CPH.LogError(LogPrefix + " The global '" + name + "' could not be written: " + ex.Message); }
+            }, false);
+        }
+
         // The log as the window declares it: every file matching the pattern in the folder, oldest file first.
         public IEnumerable<string> ReadLogLines()
         {
@@ -176,7 +211,7 @@ public class CPHInline
                 // UiHost.Handle answers "saved" too: a game action that ran without answering did not hear of it, and
                 // another run would not answer either.
                 if (AskGameNow("saved", null, settingsJson) == null)
-                    throw new InvalidOperationException("the action '" + GameActionName + "' ran but did not answer.");
+                    throw new InvalidOperationException("the action '" + GameName + "' ran but did not answer.");
                 return;
             }
             catch (TimeoutException ex) when (attempt < 3)
@@ -186,7 +221,7 @@ public class CPHInline
             catch (Exception ex)
             {
                 CPH.LogError(LogPrefix + " The game did not hear of the save: " + ex.Message);
-                _tell("The settings are saved, but the action '" + GameActionName + "' did not hear of it:\n\n" + ex.Message +
+                _tell("The settings are saved, but the action '" + GameName + "' did not hear of it:\n\n" + ex.Message +
                     "\n\nWhat the game set up from the settings before (an overlay, a timed action) stays so until it hears of a save. Save once more, or restart Streamer.bot.");
                 return;
             }
@@ -244,7 +279,7 @@ public class CPHInline
         if (!done.Wait(_toStart))
         {
             if (Interlocked.CompareExchange(ref state, 2, 0) == 0)
-                throw new TimeoutException("the action '" + GameActionName + "' did not answer within five seconds.");
+                throw new TimeoutException("the action '" + GameName + "' did not answer within five seconds.");
             // It has started: its answer is on the way, unless the game's handler hangs. One that says it still works
             // gets its time again from then.
             var until = DateTime.UtcNow + _toFinish;
@@ -252,7 +287,7 @@ public class CPHInline
             {
                 var beat = LastBeat();
                 if (beat == null || beat.Value + _toFinish <= DateTime.UtcNow)
-                    throw new TimeoutException("the action '" + GameActionName + "' " + (beat == null ? "started but did not finish within 30 seconds" : "said it was still working, then nothing more for 30 seconds") + "; its answer is not used.");
+                    throw new TimeoutException("the action '" + GameName + "' " + (beat == null ? "started but did not finish within 30 seconds" : "said it was still working, then nothing more for 30 seconds") + "; its answer is not used.");
                 until = beat.Value + _toFinish;
             }
         }
@@ -351,7 +386,7 @@ public class CPHInline
             if (since != 0 && DateTime.UtcNow.Ticks - since > TimeSpan.FromSeconds(35).Ticks)
                 Interlocked.CompareExchange(ref _askGate, new Gate(), gate);
             else if (DateTime.UtcNow >= deadline)
-                throw new TimeoutException("another request to the action '" + GameActionName + "' has not finished.");
+                throw new TimeoutException("another request to the action '" + GameName + "' has not finished.");
         }
     }
 
@@ -362,8 +397,7 @@ public class CPHInline
         string legacy = request == "describe" ? SchemaVar(GameActionName) : AnswerVar(GameActionName);
         string var = legacy + "." + Guid.NewGuid().ToString("N");
         // Before anything is set: what is set below is unset in the finally, which this check is not inside.
-        if (!CPH.ActionExists(GameActionName))
-            throw new InvalidOperationException("There is no action named '" + GameActionName + "' in this Streamer.bot. GameActionName in the settings action must be the game action's exact name.");
+        FindGame();
         // Streamer.bot reads a global set to "" back as null: only a variable still holding Pending was never answered into.
         CPH.SetGlobalVar(legacy, Pending, false);
         CPH.SetGlobalVar(var, Pending, false);
@@ -371,12 +405,20 @@ public class CPHInline
         CPH.SetArgument("uiframework.name", name ?? "");
         CPH.SetArgument("uiframework.values", values ?? "");
         CPH.SetArgument("uiframework.var", var);   // where the answer goes; the game uses it over its own name
+        // What this action itself was run with (its trigger's arguments): the game's action inherits them all, and by
+        // this list tells them from the Set Arguments of its own, whose settings the window shows locked.
+        if (request == "describe") CPH.SetArgument("uiframework.callerArgs", CallerArgs());
         string beat = var + ".working";   // UiHost.WorkingKey in the host block
         Volatile.Write(ref _beatKey, beat);
         try
         {
-            if (!CPH.RunAction(GameActionName, true))
-                throw new InvalidOperationException("The action '" + GameActionName + "' did not run. Is it enabled?");
+            // By its id where it was found by that: a name may have changed since, and may be another action's by now.
+            if (!(_gameId != null ? CPH.RunActionById(_gameId, true) : CPH.RunAction(GameName, true)))
+            {
+                string was = GameName;
+                _gameId = _gameName = null;   // looked for again with the next request: it may be gone, or back
+                throw new InvalidOperationException("The action '" + was + "' did not run. Is it enabled?");
+            }
             string answer = CPH.GetGlobalVar<string>(var, false);
             if (answer == Pending) answer = CPH.GetGlobalVar<string>(legacy, false);
             return answer == Pending ? null : answer ?? "";
@@ -391,6 +433,66 @@ public class CPHInline
             // Only where the game left one: SetData adds the key, also for null, and nothing takes it out again.
             try { if (AppDomain.CurrentDomain.GetData(beat) != null) AppDomain.CurrentDomain.SetData(beat, null); } catch (Exception) { }
         }
+    }
+
+    // The game action as this Streamer.bot has it: its id when GameActionId found it (it is then run by that id,
+    // whatever it is called now) and its name, for the messages. Null until it was looked for.
+    private string _gameId, _gameName;
+    // GameActionId, as a field: a test names another.
+    private static string _wantedId = GameActionId;
+
+    /// <summary>The game action's name as Streamer.bot has it now, once it was found; until then the declared one.</summary>
+    private string GameName { get { return _gameName ?? GameActionName; } }
+
+    /// <summary>Finds the game action: by GameActionId where an action has that id, else by GameActionName. An id
+    /// survives a rename and an import of a newer version; a name is all there is for an action made by hand.</summary>
+    private void FindGame()
+    {
+        if (_gameName != null) return;
+        string wanted = (_wantedId ?? "").Trim();
+        if (wanted.Length > 0)
+        {
+            Guid id;
+            if (!Guid.TryParse(wanted, out id))
+                WarnOnce("GameActionId '" + wanted + "' in the settings action is no action id (Streamer.bot's are GUIDs); the action is looked for by its name, '" + GameActionName + "'.");
+            else
+            {
+                var actions = CPH.GetActions();
+                if (actions != null)
+                    foreach (var action in actions)
+                        if (action != null && action.Id == id)
+                        {
+                            _gameId = id.ToString();
+                            _gameName = string.IsNullOrEmpty(action.Name) ? GameActionName : action.Name;
+                            return;
+                        }
+            }
+        }
+        if (CPH.ActionExists(GameActionName))
+        {
+            // An action made by hand has an id of its own: said once, since a rename would then lose it.
+            if (wanted.Length > 0)
+                WarnOnce("No action has the id " + wanted + " (GameActionId in the settings action); the game action was found by its name, '" + GameActionName + "'. It is found so only as long as it keeps that name.");
+            _gameName = GameActionName;
+            return;
+        }
+        throw new InvalidOperationException(wanted.Length > 0
+            ? "There is no action with the id " + wanted + " in this Streamer.bot, and none named '" + GameActionName + "'. The settings action finds the game action by GameActionId (the id the import gave it) or by GameActionName (its exact name)."
+            : "There is no action named '" + GameActionName + "' in this Streamer.bot. GameActionName in the settings action must be the game action's exact name.");
+    }
+
+    /// <summary>The names of the arguments this action runs with, one per line; the framework's own are left out.</summary>
+    private string CallerArgs()
+    {
+        try
+        {
+            var names = new List<string>();
+            if (args != null)
+                foreach (var name in new List<string>(args.Keys))
+                    if (!name.StartsWith("uiframework.", StringComparison.Ordinal)) names.Add(name);
+            return string.Join("\n", names);
+        }
+        catch (Exception) { return ""; }
     }
 
     /// <summary>What the window gets when the game did not answer at all (a timeout, a disabled or missing action),
@@ -417,7 +519,7 @@ public class CPHInline
         {
             RunOnBot(() => answer = AskGameNow(request, name, values), true);
             if (answer == null)
-                throw new InvalidOperationException("the action '" + GameActionName + "' ran but did not answer.");
+                throw new InvalidOperationException("the action '" + GameName + "' ran but did not answer.");
         }
         catch (Exception ex)
         {
@@ -431,7 +533,7 @@ public class CPHInline
     {
         string schema = AskGameNow("describe", null, null);
         if (string.IsNullOrEmpty(schema))
-            throw new InvalidOperationException("The action '" + GameActionName + "' ran but did not answer with its settings.\n\n" +
+            throw new InvalidOperationException("The action '" + GameName + "' ran but did not answer with its settings.\n\n" +
                 "Look in Streamer.bot's log just above this line. A game action that ran shows there as 'InlineCode :: Running default entry point' (log level debug); " +
                 "nothing of the kind means the action has no enabled Execute Code sub-action with the game in it. A compile error or an exception from the game shows there too.\n" +
                 "Then check the action's code: Execute() must call UiHost.Handle(args, CPH, ...) before anything else, and the host block " +
@@ -448,7 +550,7 @@ public class CPHInline
     private const string FrameworkName = "UIFramework for streamer.bot";
     // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
     // and is not offered to this one, and an installed DLL that asks for a newer one is passed over (0.2.1 and on).
-    private const string StubVersion = "0.3.2";
+    private const string StubVersion = "0.3.3";
     // The major line this stub is made for: it reads lib/<line>/latest.json and so is never offered a release of
     // another line. A new major version of the framework changes this one word.
     private const string FrameworkLine = "v2";
@@ -606,13 +708,16 @@ public class CPHInline
 
     // The dialogs are Win32 message boxes (user32), so the action needs no WPF references. Each runs on a thread
     // of its own: the action runs on Streamer.bot's thread, which is no place for a dialog.
-    private const uint MbOk = 0x0, MbYesNoCancel = 0x3, MbIconQuestion = 0x20, MbIconWarning = 0x30, MbIconInformation = 0x40;
+    private const uint MbOk = 0x0, MbYesNoCancel = 0x3, MbYesNo = 0x4, MbIconQuestion = 0x20, MbIconWarning = 0x30, MbIconInformation = 0x40;
     private const int IdCancel = 2, IdYes = 6, IdNo = 7;
 
     [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
     private static extern int MessageBoxW(IntPtr owner, string text, string caption, uint type);
 
-    private static int Ask(string text, uint buttons, uint icon)
+    private static int Ask(string text, uint buttons, uint icon) => _ask(text, buttons, icon);
+
+    // The box itself, in a field like _tell: a test answers in the user's place.
+    private static Func<string, uint, uint, int> _ask = (text, buttons, icon) =>
     {
         int result = 0;
         var thread = new Thread(() =>
@@ -624,7 +729,7 @@ public class CPHInline
         thread.Start();
         thread.Join();
         return result;
-    }
+    };
 
     // WebClient waits 100 s by default (and 300 s for each read of the body); a release check at window open gets five.
     private sealed class QuickWebClient : System.Net.WebClient
@@ -654,13 +759,17 @@ public class CPHInline
     {
         try
         {
-            var latest = FetchLatestNow();
+            var latest = _fetchLatest();
             _latestSeen = latest;
             _latestFailed = false;
             return latest;
         }
         catch (Exception) { _latestFailed = true; throw; }
     }
+
+    // GitHub, in two fields: a test answers with a latest.json and a file of its own.
+    private static Func<JObject> _fetchLatest = FetchLatestNow;
+    private static Action<Uri, string> _fetchFile = FetchFile;
 
     private static JObject FetchLatestNow()
     {
@@ -795,7 +904,7 @@ public class CPHInline
                 EnsureTls12();
                 DownloadWithRetry(uri, temp, (from, to) =>
                 {
-                    FetchFile(from, to);
+                    _fetchFile(from, to);
                     string actual = HashOf(to);
                     if (actual != expected)
                         throw new InvalidDataException("the downloaded file does not match the published hash (" + actual + " vs " + expected + ")");
@@ -1011,6 +1120,127 @@ public class CPHInline
     }
 
     // ================================================================================================
+    // REQUIRES: the oldest UIFramework the window works with (UiWindow's requires, "2.1.0"). An older DLL does
+    // not know what the window declares (a secret kept in a global would land in the settings file), so the
+    // window is not opened with it: the newer release is offered, and where it cannot be had the window stays
+    // closed and a message says why.
+    // ================================================================================================
+
+    /// <summary>The version the window asks for; null when it asks for none, or names what is no version (the log
+    /// says so, and nothing is checked).</summary>
+    private static Version RequiredFramework()
+    {
+        var token = Window["requires"];
+        if (token == null || token.Type == JTokenType.Null) return null;
+        string text = token.Type == JTokenType.String ? ((string)token).Trim() : token.ToString(Newtonsoft.Json.Formatting.None);
+        if (text.Length == 0) return null;
+        var version = token.Type == JTokenType.String ? Full(ParseVersion(text)) : null;
+        if (version == null) WarnOnce("The window requires UIFramework '" + text + "', which is no version number like 2.1.0; it is not checked.");
+        return version;
+    }
+
+    /// <summary>The version of an installed UIFramework.dll: the folder it is in (lib\2.1.0\), as everywhere in the
+    /// loader, or the file's own where the folder names none. Null when neither says.</summary>
+    private static Version VersionAt(string dllPath)
+    {
+        try { return Full(ParseVersion(Path.GetFileName(Path.GetDirectoryName(dllPath)))) ?? Full(AssemblyName.GetAssemblyName(dllPath).Version); }
+        catch (Exception) { return null; }
+    }
+
+    /// <summary>The same for one that is running.</summary>
+    private static Version VersionRunning(Assembly assembly)
+    {
+        if (assembly == null) return null;
+        try { return Full(ParseVersion(VersionOf(assembly))) ?? Full(assembly.GetName().Version); }
+        catch (Exception) { return null; }
+    }
+
+    /// <summary>The version this open would show the window with: the UIFramework running in this Streamer.bot already
+    /// (only a restart replaces it), else the given DLL.</summary>
+    private static Version WouldUse(string dllPath)
+    {
+        Assembly runs;
+        lock (BridgeGate) runs = _show?.DeclaringType?.Assembly ?? LoadedFramework();
+        return runs != null ? VersionRunning(runs) : VersionAt(dllPath);
+    }
+
+    // A version nobody can tell is not called too old: the DLL is loaded, and then says its own.
+    private static bool Older(Version version, Version required) => required != null && version != null && version < required;
+
+    private static string Shown(Version version) => version == null ? "?" : version.ToString(version.Revision > 0 ? 4 : 3);
+
+    /// <summary>The window needs a newer UIFramework than this open would use: <paramref name="installed"/>, or the one
+    /// running in this Streamer.bot already. The release latest.json names is offered whatever autoUpdate and
+    /// skipVersion say: they keep a release from being offered at every open, and without this one the window does not
+    /// open at all. Returns the DLL to open the window with, or null once the user knows why it stays closed.</summary>
+    private string FetchRequired(string installed, Version required)
+    {
+        var have = VersionAt(installed);
+        Assembly runs;
+        lock (BridgeGate) runs = _show?.DeclaringType?.Assembly ?? LoadedFramework();
+        string running = runs != null ? Shown(VersionRunning(runs)) : null;
+        string need = "This extension's settings window needs " + FrameworkName + " " + Shown(required) + " or newer";
+        // Installed already, by an earlier download or by another extension: only the running one stands in the way.
+        // A restart that did not help ends here again: an extension whose settings action the newer one does not fit
+        // loads the older one as Streamer.bot starts.
+        if (runs != null && have != null && have >= required)
+            return Closed(need + ". Version " + Shown(have) + " is installed, but " + running + " is running in this Streamer.bot already and stays in use until it is restarted.\n\n" +
+                "Restart Streamer.bot, then open the settings again. If this comes up again after the restart, another extension loads the older version as Streamer.bot starts: update that one too.");
+        need += runs != null ? " (running: " + running + ")" : " (installed: " + Shown(have) + ")";
+        JObject latest;
+        Version newest;
+        try
+        {
+            // Not asked for twice in one run: a first install just before this has it already.
+            latest = _latestSeen ?? FetchLatest();
+            newest = Full(ParseVersion(ReleaseVersion(latest)));
+        }
+        catch (Exception ex)
+        {
+            return Closed(need + ", and the newest release could not be looked up:\n\n" + ex.Message +
+                "\n\nThe settings window stays closed. Try again in a moment. Releases: " + FrameworkReleasesUrl);
+        }
+        if (NeedsNewerStub(latest) != null)
+            return Closed(need + ". The newest release, " + Shown(newest) + ", needs a newer settings action (stub " + (string)latest["minHostStub"] + ", this extension's is " + StubVersion + ").\n\n" +
+                "Update the extension; the settings window stays closed until then.");
+        if (newest < required)
+            return Closed(need + ", and the newest release is " + Shown(newest) + ".\n\nThe settings window stays closed until a newer one is out.");
+        CPH.LogInfo(LogPrefix + " The window needs UIFramework " + Shown(required) + " or newer; " + Shown(newest) + " is available, asking.");
+        var answer = Ask(need + ". Version " + Shown(newest) + " is available.\n\n" +
+            "Yes: download it now" + (runs != null
+                ? ". The settings open with it once Streamer.bot is restarted: version " + running + " is running here already and stays in use until then."
+                : " and open the settings with it. Streamer.bot needs no restart.") + "\n" +
+            "No: not now. The settings window stays closed until it is installed.",
+            MbYesNo, MbIconQuestion);
+        if (answer != IdYes)
+        {
+            CPH.LogWarn(LogPrefix + " UIFramework " + Shown(newest) + " not downloaded; the window needs " + Shown(required) + " or newer and stays closed.");
+            return null;
+        }
+        try
+        {
+            string path = Download(latest);
+            NoteLayout("frameworkAvailable", null);
+            CPH.LogInfo(LogPrefix + " UIFramework " + Shown(newest) + " downloaded to " + path + (runs != null ? "; it is used from the next start of Streamer.bot." : "."));
+            if (runs == null) return path;
+            return Closed(FrameworkName + " " + Shown(newest) + " is downloaded.\n\n" +
+                "Restart Streamer.bot, then open the settings again: version " + running + " is running here already, and a running version cannot be swapped.");
+        }
+        catch (Exception ex)
+        {
+            return Closed("The download failed:\n\n" + ex.Message + "\n\n" + need + ", so it stays closed. Releases: " + FrameworkReleasesUrl);
+        }
+    }
+
+    /// <summary>Says why the window stays closed, in a box and in the log; null, for the caller to hand on.</summary>
+    private string Closed(string message)
+    {
+        CPH.LogWarn(LogPrefix + " " + message.Replace("\n\n", " ").Replace("\n", " "));
+        Ask(message, MbOk, MbIconWarning);
+        return null;
+    }
+
+    // ================================================================================================
     // BRIDGE: reflection into the DLL. LoadFrom, so every host in this Streamer.bot shares one instance.
     // ================================================================================================
 
@@ -1187,7 +1417,7 @@ public class CPHInline
         // One later run takes over, not every one that comes at once.
         if (Interlocked.CompareExchange(ref _askingSince, DateTime.UtcNow.Ticks, since) != since)
             return false;
-        CPH.LogWarn(LogPrefix + " The action '" + GameActionName + "' has not answered for a minute; this run opens the settings window instead.");
+        CPH.LogWarn(LogPrefix + " The action '" + GameName + "' has not answered for a minute; this run opens the settings window instead.");
         return true;
     }
 
@@ -1235,7 +1465,7 @@ public class CPHInline
         if (Interlocked.CompareExchange(ref _askingSince, long.MaxValue, since) != since)
         {
             takenOver = true;
-            CPH.LogInfo(LogPrefix + " The request to the action '" + GameActionName + "' has ended, but a later run took over the settings window meanwhile; this run leaves it to that one.");
+            CPH.LogInfo(LogPrefix + " The request to the action '" + GameName + "' has ended, but a later run took over the settings window meanwhile; this run leaves it to that one.");
             return true;
         }
         Volatile.Write(ref _askingGame, 0);
@@ -1271,7 +1501,16 @@ public class CPHInline
         }
         try
         {
-            dll = OfferUpdate(dll);
+            // The oldest UIFramework the window works with (its requires): where this open would use an older one, the
+            // newer release is offered in place of the usual release check, and without it the window stays closed.
+            var required = RequiredFramework();
+            if (Older(WouldUse(dll), required))
+            {
+                dll = FetchRequired(dll, required);
+                if (dll == null) return false;
+            }
+            else
+                dll = OfferUpdate(dll);
             // The UIFramework that ran before this open: only beside that one does the chosen DLL wait for the next start,
             // and only while it is there (Bind sets a damaged one aside). One this open loads because the chosen one
             // failed is no such case.
@@ -1282,6 +1521,13 @@ public class CPHInline
             string refused = null;
             foreach (var candidate in new[] { dll }.Concat(FrameworkCandidates().Where(c => !string.Equals(c, dll, StringComparison.OrdinalIgnoreCase))))
             {
+                // An older one stands in for a newer one that cannot be loaded only where the window works with it.
+                // (Beside a running UIFramework Bind takes that one whatever the candidate; the check after it speaks.)
+                if (running == null && Older(VersionAt(candidate), required))
+                {
+                    CPH.LogWarn(LogPrefix + " " + candidate + " is older than the window works with (UIFramework " + Shown(required) + " or newer) and is not used.");
+                    continue;
+                }
                 try
                 {
                     if (Bind(candidate)) { bound = true; break; }
@@ -1302,6 +1548,13 @@ public class CPHInline
             if (!bound)
             {
                 Ask(refused ?? "No installed UIFramework.dll could be loaded; the log names each one and why.\n\nReleases: " + FrameworkReleasesUrl, MbOk, MbIconWarning);
+                return false;
+            }
+            // What Bind took is what counts: a UIFramework another extension loaded while a question was up is shared,
+            // however old, and only a restart replaces it.
+            if (Older(VersionRunning(_show.DeclaringType?.Assembly), required))
+            {
+                FetchRequired(dll, required);
                 return false;
             }
             Volatile.Write(ref _shownSchema, schema);

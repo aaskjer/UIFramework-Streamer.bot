@@ -8,6 +8,10 @@
 #   tools\update-host-block.ps1 -File ... -Into "C:\...\BlackjackStats.cs" -HostName blackjack
 #       afterwards copies the file's block, as it then is, into the game's other action and into
 #       hosts\blackjack\HostBlock.cs (tools\copy-host-block.ps1); with -Check the copies are checked too
+#   tools\update-host-block.ps1 -File "C:\...\My Project\Reader.cs" -Reader [-Check]
+#       the host reader (stub\HostReader.cs) of an action that only reads the settings: its block
+#       ("// --- UIFramework host reader" to "// --- end UIFramework host reader ---") holds nothing of the
+#       project's own and is replaced whole
 #
 # A block from before the window declaration gets the template's "Window = null" line; set it after.
 # Before it writes, the file is copied to <file>.bak. It refuses, and writes nothing, when the old block holds code
@@ -17,6 +21,7 @@ param(
     [Parameter(Mandatory = $true)] [string] $File,
     [switch] $Check,
     [switch] $Force,
+    [switch] $Reader,
     [string] $Template,
     [string[]] $Into = @(),
     [string] $HostName
@@ -29,7 +34,12 @@ function Full([string] $path) { if ($path) { $ExecutionContext.SessionState.Path
 $File = Full $File
 $Template = Full $Template
 $Into = @($Into | ForEach-Object { Full $_ })
-if (-not $Template) { $Template = Join-Path $root 'stub\HostSchema.cs' }
+$templateName = if ($Reader) { 'HostReader.cs' } else { 'HostSchema.cs' }
+if (-not $Template) { $Template = Join-Path $root ('stub\' + $templateName) }
+# The two markers a block stands between, and what it is called in a message.
+$what = if ($Reader) { 'host reader' } else { 'host block' }
+$openMark = '^\s*// --- UIFramework ' + $what
+$closeMark = '^\s*// --- end UIFramework ' + $what + ' ---'
 $utf8 = New-Object Text.UTF8Encoding $false
 $nl = "`n"
 
@@ -58,38 +68,45 @@ function Split-Block([string[]] $lines) {
 $templateText = [IO.File]::ReadAllText($Template, [Text.Encoding]::UTF8).Replace("`r`n", "`n").TrimEnd("`n")
 $templateLines = $templateText.Split("`n")
 # Only what stands between the template's two markers is the block; the note above them stays in the template.
-$tFirst = [Array]::FindIndex($templateLines, [Predicate[string]] { param($l) $l -match '^\s*// --- UIFramework host block' })
-$tLast = [Array]::FindIndex($templateLines, [Predicate[string]] { param($l) $l -match '^\s*// --- end UIFramework host block ---' })
-if ($tFirst -lt 0 -or $tLast -le $tFirst) { throw "No UIFramework host block (its two markers) in the template $Template" }
+$tFirst = [Array]::FindIndex($templateLines, [Predicate[string]] { param($l) $l -match $openMark })
+$tLast = [Array]::FindIndex($templateLines, [Predicate[string]] { param($l) $l -match $closeMark })
+if ($tFirst -lt 0 -or $tLast -le $tFirst) { throw "No UIFramework $what (its two markers) in the template $Template" }
 $templateLines = $templateLines[$tFirst..$tLast]
 $fileText = [IO.File]::ReadAllText($File, [Text.Encoding]::UTF8)
 $crlf = $fileText.Contains("`r`n")
 $fileLines = $fileText.Replace("`r`n", "`n").Split("`n")
 
-$first = [Array]::FindIndex($fileLines, [Predicate[string]] { param($l) $l -match '^\s*// --- UIFramework host block' })
-$last = [Array]::FindIndex($fileLines, [Predicate[string]] { param($l) $l -match '^\s*// --- end UIFramework host block ---' })
-if ($first -lt 0 -or $last -lt 0 -or $last -le $first) { throw "No UIFramework host block (its two markers) in $File" }
+$first = [Array]::FindIndex($fileLines, [Predicate[string]] { param($l) $l -match $openMark })
+$last = [Array]::FindIndex($fileLines, [Predicate[string]] { param($l) $l -match $closeMark })
+if ($first -lt 0 -or $last -lt 0 -or $last -le $first) { throw "No UIFramework $what (its two markers) in $File" }
 $indent = [regex]::Match($fileLines[$first], '^\s*').Value
 
 $blockLines = $fileLines[$first..$last] | ForEach-Object { if ($_.StartsWith($indent)) { $_.Substring($indent.Length) } else { $_ } }
-$have = Split-Block $blockLines
-$want = Split-Block $templateLines
+if ($Reader) {
+    # A reader has no window and no table: the whole block is the template's.
+    $have = @{ Head = @($blockLines); Region = @(); Tail = @() }
+    $newBlock = @($templateLines)
+} else {
+    $have = Split-Block $blockLines
+    $want = Split-Block $templateLines
 
-# The template's head and tail around the file's own window and table; a file without a window gets the
-# template's window lines in front of its table.
-$region = @()
-if (-not $have.HasWindow) { $region += $want.Region[0..($want.TableAt - $want.WindowAt - 1)] }
-$region += $have.Region
-$newBlock = @($want.Head) + $region + @($want.Tail)
+    # The template's head and tail around the file's own window and table; a file without a window gets the
+    # template's window lines in front of its table.
+    $region = @()
+    if (-not $have.HasWindow) { $region += $want.Region[0..($want.TableAt - $want.WindowAt - 1)] }
+    $region += $have.Region
+    $newBlock = @($want.Head) + $region + @($want.Tail)
+}
 $newBlockText = (($newBlock | ForEach-Object { if ($_.Length -gt 0) { $indent + $_ } else { $_ } }) -join $nl)
 $oldBlockText = ($fileLines[$first..$last] -join $nl)
 
 if ($newBlockText -ceq $oldBlockText) {   # -ceq: a change in letter case is a change too
-    Write-Host "  ok   $File carries the current host block"
+    Write-Host "  ok   $File carries the current $what"
     exit (Copy-Out)
 }
 if ($Check) {
-    Write-Host "  FAIL $File carries an older host block; run tools\update-host-block.ps1 -File on it" -ForegroundColor Red
+    $again = if ($Reader) { ' with -Reader' } else { '' }
+    Write-Host "  FAIL $File carries an older $what; run tools\update-host-block.ps1 -File on it$again" -ForegroundColor Red
     exit 1
 }
 
@@ -103,9 +120,9 @@ foreach ($l in $templateLines) { [void]$templateSet.Add($l.Trim()) }
 # branch whose merge kept the other side's file.
 $repoRoot = Split-Path -Parent $PSScriptRoot
 try {
-    $revisions = @(git -C $repoRoot log --all --full-history --format=%H -- stub/HostSchema.cs 2>$null)
+    $revisions = @(git -C $repoRoot log --all --full-history --format=%H -- "stub/$templateName" 2>$null)
     foreach ($rev in $revisions) {
-        foreach ($l in @(git -C $repoRoot show "${rev}:stub/HostSchema.cs" 2>$null)) { [void]$templateSet.Add(([string]$l).Trim()) }
+        foreach ($l in @(git -C $repoRoot show "${rev}:stub/$templateName" 2>$null)) { [void]$templateSet.Add(([string]$l).Trim()) }
     }
 } catch { }
 $dropped = @(@($have.Head) + @($have.Tail) | Where-Object {
@@ -119,7 +136,8 @@ $closed = ([regex]::Matches($regionText, '\}')).Count
 if (-not $Force -and ($dropped.Count -gt 0 -or $opened -ne $closed)) {
     if ($opened -ne $closed) { Write-Host "  STOP the Window and Table in $File open $opened braces and close $closed; their end is unclear" -ForegroundColor Red }
     if ($dropped.Count -gt 0) {
-        Write-Host "  STOP the update would drop these lines of $File's host block (outside its Window and Table):" -ForegroundColor Red
+        $where = if ($Reader) { '' } else { ' (outside its Window and Table)' }
+        Write-Host "  STOP the update would drop these lines of $File's $what${where}:" -ForegroundColor Red
         $dropped | Select-Object -First 15 | ForEach-Object { Write-Host "         $_" -ForegroundColor Red }
     }
     Write-Host "       Nothing was written. Move your code out of the block, or run again with -Force." -ForegroundColor Red
@@ -134,5 +152,5 @@ Copy-Item -LiteralPath $File -Destination ($File + '.bak') -Force
 $bytes = [IO.File]::ReadAllBytes($File)
 $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
 [IO.File]::WriteAllText($File, $result, (New-Object Text.UTF8Encoding $bom))
-Write-Host "  updated the host block in $File"
+Write-Host "  updated the $what in $File"
 exit (Copy-Out)

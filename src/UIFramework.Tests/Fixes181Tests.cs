@@ -41,7 +41,7 @@ namespace UIFramework.Tests
                 ["settings"] = JArray.Parse(@"[ { ""key"": ""sides"", ""default"": 6, ""page"": ""game"" } ]"),
                 ["window"] = new JObject { ["title"] = "Demo", ["pages"] = new JArray("game"), ["tour"] = new JArray("search", "save") }
             }.ToString());
-            var spec = Entry.SpecFor(null, schema, Path.Combine(_folder, "tour", "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(_folder, "tour", "settings.json"));
             Entry.Prepare(spec, schema);
             Assert.Equal(2, spec.Tour.Count);
             Assert.Empty(spec.Problems);

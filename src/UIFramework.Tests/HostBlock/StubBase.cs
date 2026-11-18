@@ -12,6 +12,13 @@ namespace Streamer.bot.Plugin.Interface.Model
         public string Name;
         public List<string> Commands = new List<string>();
     }
+
+    public class ActionData
+    {
+        public Guid Id;
+        public string Name;
+        public bool Enabled = true;
+    }
 }
 
 namespace UIFramework.Tests
@@ -19,6 +26,8 @@ namespace UIFramework.Tests
     public class StubBase
     {
         public StubCph CPH = new StubCph();
+        /// <summary>What the action runs with, as Streamer.bot's base class holds it: its trigger's arguments.</summary>
+        public Dictionary<string, object> args = new Dictionary<string, object>();
     }
 
     public sealed class StubCph
@@ -40,7 +49,13 @@ namespace UIFramework.Tests
         public T GetGlobalVar<T>(string name, bool persisted = true) => Globals.TryGetValue(name, out var value) && value is T typed ? typed : default(T);
         public void UnsetGlobalVar(string name, bool persisted = true) { Unset.Add(name); Globals.Remove(name); }
         public bool ActionExists(string name) => Exists;
-        public bool RunAction(string name, bool runImmediately = true) => Game(this);
+        public bool RunAction(string name, bool runImmediately = true) { Ran.Add("name " + name); return Game(this); }
+        /// <summary>The actions this Streamer.bot has, for a settings action that finds its game by id.</summary>
+        public readonly List<Streamer.bot.Plugin.Interface.Model.ActionData> Actions = new List<Streamer.bot.Plugin.Interface.Model.ActionData>();
+        public List<Streamer.bot.Plugin.Interface.Model.ActionData> GetActions() => Actions;
+        public bool RunActionById(string id, bool runImmediately = true) { Ran.Add("id " + id); return Game(this); }
+        /// <summary>How the game action was run, in order: "name &lt;name&gt;" or "id &lt;id&gt;".</summary>
+        public readonly List<string> Ran = new List<string>();
         public List<Streamer.bot.Plugin.Interface.Model.CommandData> GetCommands() => new List<Streamer.bot.Plugin.Interface.Model.CommandData>();
         public void CommandSetGlobalCooldownDuration(string id, int seconds) { }
         public void CommandSetUserCooldownDuration(string id, int seconds) { }

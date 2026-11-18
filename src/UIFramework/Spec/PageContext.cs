@@ -45,6 +45,16 @@ namespace UIFramework
         /// <summary>Runs the action after every change to any field of the window (debounce it yourself).</summary>
         public Action<Action> OnAnyChange { get; internal set; } = listener => { };
 
+        /// <summary>Saves what the window shows unsaved, as its Save button does, the check before saving and its
+        /// question included. True when it is saved or there was nothing to save; false when that save did not happen
+        /// (a number that is none, a warning the user declined). A button with <c>saveFirst</c> asks only after a true.</summary>
+        public Func<bool> SaveChanges { get; internal set; } = () => true;
+
+        /// <summary>The customise bar's Export and Import behind their file dialogs, by the file's path: what the
+        /// tests drive, since a file dialog cannot be.</summary>
+        internal Action<string> ExportTo { get; set; }
+        internal Action<string> ImportFrom { get; set; }
+
         public void OpenUrl(string url) => Web.OpenUrl(url, Log, Spec?.LogPrefix);
     }
 }

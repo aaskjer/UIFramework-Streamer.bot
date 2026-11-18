@@ -227,7 +227,7 @@ namespace UIFramework.Tests
                 SettingsPath = Path.Combine(Folder, "settings.json");
                 files?.Invoke(Folder);
                 var schema = UIFramework.Schema.Parse(schemaJson);
-                var spec = Entry.SpecFor(null, schema, SettingsPath);
+                var spec = Entry.SpecFor(schema, SettingsPath);
                 _runner = new Thread(() => { try { Entry.Show(spec, schema, new QuietLog(), this); } catch (Exception) { } }) { IsBackground = true };
                 _runner.Start();
                 if (!_built.Wait(15000))

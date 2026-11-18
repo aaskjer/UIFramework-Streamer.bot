@@ -114,7 +114,8 @@ by step, each step with the ready file to paste, then shows how to make it your 
 1. Paste the host block from `stub/HostSchema.cs` into your extension's action, right below its usings (it needs
    none of its own), and fill in its table (one line per setting) and its window (title, pages, help).
 2. Call `UiHost.Handle(args, CPH, ...)` first thing in `Execute()`; it answers the settings window.
-3. Make a second action from `stub/Stub.cs`, put the first action's name into `GameActionName` and give it a
+3. Make a second action from `stub/Stub.cs`, put the first action's name into `GameActionName` (and its id into
+   `GameActionId`, so a rename does not lose it) and give it a
    trigger. The window opens with pages, validation, a customise mode, export/import and self-updates.
 
 [docs/Getting-Started.md](docs/Getting-Started.md#what-your-users-get-on-their-machine) also says what your users
@@ -153,16 +154,18 @@ src/UIFramework.Tests     xUnit; HostBlock/ stands in for Streamer.bot, so stub/
                           compile into the tests
 src/UIFramework.Preview   opens the window without Streamer.bot
 stub/                     Stub.cs, the generic settings action (loader + bridge); HostSchema.cs, the host block a
-                          project pastes in
+                          project pastes in; HostReader.cs, what the other actions of a project with several carry
+                          instead, to read the settings
 examples/DemoGame/        the smallest game with a window: DemoGame.cs, DemoGame.sb (the import), schema.json,
                           a README
 hosts/<name>/             for each of the eight games: schema.json, what it answers, with the window (read by the
                           tests and the screenshots), and HostBlock.cs, the game's table and window in the current host
-                          block (a game takes it over with its next release)
+                          block (a game takes it over with its next release); hosts/gamecheck has the schema.json alone
 conventions/              keys.json, lang/<code>.json and emotes/, embedded into the DLL
 assets/logo/              the logo, the wordmark and the mark in several sizes (its README says which file is for
                           what); the two logo PNGs are embedded into the DLL for the About page
 tools/                    update-host-block.ps1     refresh the block in a project's action, keeping its table
+                                                    (-Reader: the host reader of an action that only reads)
                           copy-host-block.ps1       a game's block into its other action and into hosts/<name>/
                           check-stub.ps1            compile the stub and the demo the Streamer.bot way; needs a
                                                     Streamer.bot install (-StreamerBotPath) and the RoslynHost a

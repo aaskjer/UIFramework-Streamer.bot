@@ -384,6 +384,8 @@ namespace UIFramework
             {
                 var box = f.TemplateBox(def.Group + ": " + def.Label, def.Key);
                 box.Visibility = Visibility.Collapsed;
+                // A message a Set Argument sets, or one the project locks: read, not typed into.
+                if (def.LockNote != null) box.IsReadOnly = true;
                 box.GotKeyboardFocus += (sender, e) => touched.Add(box);
                 editors.Children.Add(box);
             }
@@ -475,7 +477,7 @@ namespace UIFramework
                 string actionKey = cooldown ? keys.CooldownSendAction : keys.SendAction;
                 bool bot = botKey == null || f.LiveSwitch(botKey);
                 bool action = actionKey != null && f.LiveSwitch(actionKey);
-                RenderChat(preview, FillTemplate(text, picked), bot, action);
+                RenderChat(preview, FillTemplate(text, picked, current.Percent), bot, action);
             }
 
             void Pick(string key)
@@ -489,12 +491,15 @@ namespace UIFramework
                 help.Inlines.Add(new Run("  ·  " + current.Help));
 
                 tokens.Children.Clear();
-                if (current.Tokens.Length == 0)
+                // A locked message says why where its chips would be: a chip would write into a text nobody may edit.
+                if (current.LockNote != null)
+                    tokens.Children.Add(new TextBlock { Text = current.LockNote, FontSize = 12, Foreground = Theme.MutedFg, TextWrapping = TextWrapping.Wrap });
+                else if (current.Tokens.Length == 0)
                     tokens.Children.Add(new TextBlock { Text = Text.T("messages.noPlaceholders"), FontSize = 12, Foreground = Theme.MutedFg });
                 string target = current.Key;
-                foreach (var token in current.Tokens)
+                foreach (var token in current.LockNote != null ? new string[0] : current.Tokens)
                 {
-                    string placeholder = "{" + token + "}";
+                    string placeholder = current.Placeholder(token);
                     var chip = Ui.ChipButton(placeholder, spec.TokenHelp?.Invoke(target, token));
                     chip.Click += (sender, e) =>
                     {
@@ -542,11 +547,12 @@ namespace UIFramework
             return Ui.Scroll(page);
         }
 
-        public static string FillTemplate(string template, Dictionary<string, string> values)
+        /// <summary>A message with its placeholders filled: {name}, or %name% for a message in the percent style.</summary>
+        public static string FillTemplate(string template, Dictionary<string, string> values, bool percent = false)
         {
             string text = template ?? "";
             foreach (var pair in values)
-                text = text.Replace("{" + pair.Key + "}", pair.Value ?? "");
+                text = text.Replace(TokenStyle.Write(pair.Key, percent), pair.Value ?? "");
             return text;
         }
 

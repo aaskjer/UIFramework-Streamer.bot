@@ -242,8 +242,30 @@ namespace UIFramework
                 Title = Str(e, "title"),
                 Icon = Str(e, "icon"),
                 Order = Int(e, "order"),
-                Hidden = Bool(e, "hidden")
+                Hidden = Bool(e, "hidden"),
+                Group = Str(e, "group")
             };
+        }
+
+        /// <summary>What the user changed about a group of pages in the rail (<c>groups.&lt;id&gt;</c>): the heading's name
+        /// (<c>title</c>, from the customise mode) and whether it is folded (<c>folded</c>, from a click on the heading).</summary>
+        public LayoutGroup Group(string id)
+        {
+            var e = Entry("groups", id, false);
+            if (e == null) return null;
+            return new LayoutGroup { Title = Str(e, "title"), Folded = Bool(e, "folded") == true };
+        }
+
+        /// <summary>Whether the user folded a group in the rail. Kept whatever the window locks, like the theme.</summary>
+        public bool GroupFolded(string id) => id != null && Bool(Entry("groups", id, false), "folded") == true;
+
+        /// <summary>Sets one property of a group's entry; null removes it. The file is not written here.</summary>
+        public void SetGroup(string id, string property, JToken value)
+        {
+            var e = Entry("groups", id, value != null);
+            if (e == null) return;
+            if (value == null || value.Type == JTokenType.Null) e.Remove(property); else e[property] = value;
+            Prune("groups", id);
         }
 
         public LayoutField Field(string key)
@@ -281,13 +303,15 @@ namespace UIFramework
         public void ResetPage(string id) { (Root["pages"] as JObject)?.Remove(id); Prune("pages", id); }
         public void ResetField(string key) { (Root["fields"] as JObject)?.Remove(key); Prune("fields", key); }
 
-        /// <summary>Drops every page and field override and the help lines under the fields; the theme, the language
-        /// and the update preference stay.</summary>
+        /// <summary>Drops every page and field override, the names the user gave the groups in the rail and the help
+        /// lines under the fields; the theme, the language, the update preference and which groups are folded stay.</summary>
         public void ResetLayout()
         {
             Root.Remove("pages");
             Root.Remove("fields");
             Root.Remove("helpLines");
+            foreach (var group in (Root["groups"] as JObject)?.Properties().Select(p => p.Name).ToList() ?? new List<string>())
+                if (Root["groups"]?[group] is JObject) SetGroup(group, "title", null);
         }
 
         /// <summary>How many things the customise mode changed: the pages and fields that carry an override, and the
@@ -295,6 +319,7 @@ namespace UIFramework
         public int ChangeCount =>
             ((Root["pages"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0) +
             ((Root["fields"] as JObject)?.Properties().Count(p => p.Value is JObject o && o.HasValues) ?? 0) +
+            ((Root["groups"] as JObject)?.Properties().Count(p => Str(p.Value, "title") != null) ?? 0) +
             (HelpLines ? 1 : 0);
     }
 
@@ -303,6 +328,15 @@ namespace UIFramework
         public string Title, Icon;
         public int? Order;
         public bool? Hidden;
+        /// <summary>The group in the rail the user moved the page into, by its id; "" takes it out of every group. Null
+        /// leaves it where the window declares it.</summary>
+        public string Group;
+    }
+
+    public sealed class LayoutGroup
+    {
+        public string Title;
+        public bool Folded;
     }
 
     public sealed class LayoutField

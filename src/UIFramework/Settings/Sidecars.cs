@@ -16,8 +16,9 @@ namespace UIFramework
     /// </summary>
     public static class Sidecars
     {
+        // Not one that names a global as well: such a value is in no file (Resolve names the declaration).
         public static IEnumerable<Setting> Of(IEnumerable<Setting> settings) =>
-            (settings ?? Enumerable.Empty<Setting>()).Where(s => !string.IsNullOrWhiteSpace(s.File));
+            (settings ?? Enumerable.Empty<Setting>()).Where(s => !string.IsNullOrWhiteSpace(s.File) && s.Global == null);
 
         public static string PathOf(Setting setting, string settingsPath)
         {
@@ -49,10 +50,12 @@ namespace UIFramework
             }
         }
 
-        /// <summary>A transient setting is never written: it only exists while the window is open. Neither is a note.</summary>
+        /// <summary>A transient setting is never written: it only exists while the window is open. Neither is a note,
+        /// nor a value kept in a global of Streamer.bot (<see cref="Globals"/>): every write of the settings file and
+        /// the export come through here, so a secret reaches neither, and one an older file holds goes with the write.</summary>
         public static void DropTransient(JObject main, IEnumerable<Setting> schema)
         {
-            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient || s.Kind == "note"))
+            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient || s.Kind == "note" || s.Global != null))
                 main.Remove(setting.Key);
         }
 
@@ -63,8 +66,13 @@ namespace UIFramework
         /// moving out of the settings file into its own lands there. A file that cannot be read is kept as .broken
         /// before it is written over; one that is held open by another program (the game writing it) stops the write
         /// with an IOException instead. A file of a key in <paramref name="skip"/> (a list the window could not read when
-        /// it opened, so it shows defaults) is never written.</summary>
-        public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath, ISet<string> only = null, ISet<string> skip = null)
+        /// it opened, so it shows defaults) is never written.
+        /// <para>A list with a <c>rowKey</c> whose key is in <paramref name="loaded"/> (the rows the window loaded) is
+        /// not put over the file's list: it is merged with it as the file holds it at this moment
+        /// (<see cref="ListMerge"/>), and what was written is put back into <paramref name="settings"/> under its key.
+        /// A file or a property that is not there, or is no array, has nothing to merge with.</para></summary>
+        public static JObject Split(JObject settings, IEnumerable<Setting> schema, string settingsPath, ISet<string> only = null, ISet<string> skip = null,
+            IDictionary<string, JArray> loaded = null)
         {
             var main = (JObject)settings.DeepClone();
             foreach (var group in Of(schema).GroupBy(s => PathOf(s, settingsPath), StringComparer.OrdinalIgnoreCase))
@@ -98,6 +106,15 @@ namespace UIFramework
                 foreach (var setting in group)
                 {
                     var value = settings[setting.Key]?.DeepClone() ?? new JArray();
+                    // A list the project writes to as well: the rows it added or removed since the window read the
+                    // file stay as the project has them, the user's changes go in.
+                    var there = string.IsNullOrWhiteSpace(setting.Field) ? root : (root as JObject)?[setting.Field];
+                    if (loaded != null && loaded.TryGetValue(setting.Key, out var was) && was != null && ListMerge.Applies(setting)
+                        && value is JArray mine && there is JArray theirs)
+                    {
+                        value = ListMerge.Merge(was, mine, theirs, setting);
+                        settings[setting.Key] = value.DeepClone();
+                    }
                     if (string.IsNullOrWhiteSpace(setting.Field))
                         root = value;
                     else

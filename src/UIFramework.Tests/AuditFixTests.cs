@@ -44,7 +44,7 @@ namespace UIFramework.Tests
         {
             var root = JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [" + settings + @"], ""window"": " + window + " }");
             var schema = Schema.Parse(root);
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Folder(), "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Folder(), "settings.json"));
             Entry.Prepare(spec, schema);
             return spec;
         }

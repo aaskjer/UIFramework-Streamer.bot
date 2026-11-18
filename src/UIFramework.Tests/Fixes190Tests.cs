@@ -43,7 +43,7 @@ namespace UIFramework.Tests
             try
             {
                 var schema = Schema.Parse(schemaJson);
-                var spec = Entry.SpecFor(null, schema, null);
+                var spec = Entry.SpecFor(schema, null);
                 spec.HostBuildsPages = hostBuildsPages;
                 Entry.Prepare(spec, schema);
                 return spec;

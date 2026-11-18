@@ -45,7 +45,7 @@ namespace UIFramework.Tests
             if (layout != null) File.WriteAllText(Path.Combine(folder, "uiframework.layout.json"), layout);
             var schema = Schema.Parse(JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [ " + settings + @" ],
                 ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [""*""] } ], ""sections"": [ " + sections + @" ] } }"));
-            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(folder, "settings.json"));
             Entry.Prepare(spec, schema);
             return spec;
         }

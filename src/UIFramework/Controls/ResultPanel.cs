@@ -16,10 +16,32 @@ namespace UIFramework
     /// (segments <c>{label, value, text, colour}</c>, drawn proportionally with a legend, the colour as #rrggbb;
     /// without one the segments take the accent, the success colour and the surface in turn). A line
     /// <c>{emotes: [codes], platform, text}</c> shows the emotes as pictures (see <see cref="EmotePictures"/>),
-    /// each with its name beneath, after the text when there is one.
+    /// each with its name beneath, after the text when there is one. A line <c>{label, text, copy}</c> is a labelled
+    /// value, the labels of one box in a column of their own; with <c>copy</c> a small button puts the text on the
+    /// clipboard. A line <c>{pill, tone}</c> is a pill, its tone <c>ok</c>, <c>warn</c> or <c>muted</c> (green,
+    /// amber, grey, the colours of the Log page's results); it may have a <c>label</c> in front and a <c>text</c>
+    /// behind it.
     /// </summary>
     public static class ResultPanel
     {
+        /// <summary>What a copy button does with its text: onto the clipboard. A test puts its own here.</summary>
+        public static Action<string> Copy = text => Clipboard.SetText(text);
+
+        /// <summary>How long a copy button says that it copied, in milliseconds.</summary>
+        public const int SaidMs = 1500;
+
+        /// <summary>The colours of a pill's tone: <c>ok</c> green, <c>warn</c> amber, <c>muted</c> and whatever else
+        /// grey, as the Log page colours its results.</summary>
+        public static PillStyle Tone(string tone)
+        {
+            switch ((tone ?? "").Trim().ToLowerInvariant())
+            {
+                case "ok": return PillStyle.Success;
+                case "warn": return PillStyle.Warning;
+                default: return PillStyle.Muted;
+            }
+        }
+
         /// <summary>The answer as a JSON object, or null for plain text.</summary>
         public static JObject TryParse(string result)
         {
@@ -40,6 +62,7 @@ namespace UIFramework
             if (structured == null)
             {
                 panel.Children.Clear();
+                panel.Tag = null;
                 var line = Line(text, false);
                 if (failed) { line.Foreground = new SolidColorBrush(Theme.DangerText); line.Tag = Failure; }
                 panel.Children.Add(line);
@@ -56,7 +79,14 @@ namespace UIFramework
                     panel.Children.Add(Line(status, false));
                 return;
             }
+            // The answer the box shows already (an auto action that asks again every few seconds): nothing is drawn
+            // anew, so a tooltip stays up and a copy button keeps the cursor and what it just said.
+            if (panel.Children.Count > 0 && Equals(panel.Tag, text))
+                return;
             panel.Children.Clear();
+            panel.Tag = text;
+            // The labels of the box's values share one column, as wide as the longest of them.
+            Grid.SetIsSharedSizeScope(panel, true);
 
             var lines = structured["lines"] as JArray ?? new JArray();
             var bar = (structured["bar"] as JArray ?? new JArray()).OfType<JObject>().ToList();
@@ -70,6 +100,8 @@ namespace UIFramework
                         panel.Children.Add(Line(caption, false));
                     panel.Children.Add(Emotes(codes, (string)pictures["platform"], hooks));
                 }
+                else if (line is JObject row && (Said(row["label"]).Length > 0 || Said(row["pill"]).Length > 0 || Copies(row)))
+                    panel.Children.Add(Row(row));
                 else
                 {
                     bool big = line is JObject o && (bool?)o["big"] == true;
@@ -140,6 +172,129 @@ namespace UIFramework
         /// <summary>An emote without a picture, drawn as its text in the picture's place.</summary>
         private static TextBlock Glyph(string code) =>
             new TextBlock { Text = code, FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center, Foreground = Theme.LabelFg };
+
+        /// <summary>A line's text whatever the answer wrote it as (a number, a switch); "" for none.</summary>
+        private static string Said(JToken value) => value is JValue ? FieldBinding.Invariant(value) : "";
+
+        private static bool Copies(JObject row) =>
+            row["copy"]?.Type == JTokenType.Boolean && (bool)row["copy"] && Said(row["text"]).Length > 0;
+
+        /// <summary>A line that is more than text: a label in the box's label column, then a pill, the value and its
+        /// copy button, whichever of them the line has. Nothing is cut off in a narrow window or a wordy language: the
+        /// value wraps, with the button still beside it, and goes under its pill where the two do not fit side by side.</summary>
+        private static FrameworkElement Row(JObject row)
+        {
+            string label = Said(row["label"]), pill = Said(row["pill"]), text = Said(row["text"]);
+            // Left-aligned and as wide as what is in it, so the copy button sits at the end of a short value, not at
+            // the far end of the box. The button is measured first; the pill and the value share what it leaves.
+            var content = new DockPanel { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
+            if (Copies(row))
+            {
+                var copy = CopyButton(text, label);
+                DockPanel.SetDock(copy, Dock.Right);
+                content.Children.Add(copy);
+            }
+            var flow = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
+            if (pill.Length > 0)
+            {
+                var shown = Pill(pill, Said(row["tone"]));
+                if (text.Length > 0) shown.Margin = new Thickness(0, 0, 8, 0);
+                flow.Children.Add(shown);
+            }
+            if (text.Length > 0)
+            {
+                // The value as a line of its own is drawn, `big` for a headline figure included.
+                var value = Line(text, row["big"]?.Type == JTokenType.Boolean && (bool)row["big"]);
+                value.VerticalAlignment = VerticalAlignment.Center;
+                flow.Children.Add(value);
+            }
+            content.Children.Add(flow);
+
+            // Every row as high as one with a pill or a button, so a box of them reads as a table.
+            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2), MinHeight = 22 };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "ResultLabel" });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            if (label.Length > 0)
+            {
+                // A long label (another language's) wraps rather than pushing the value out of the box.
+                grid.Children.Add(new TextBlock
+                {
+                    Text = label, FontSize = 12.5, Foreground = Theme.SubFg, TextWrapping = TextWrapping.Wrap, MaxWidth = 180,
+                    VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 14, 0)
+                });
+                Grid.SetColumn(content, 1);
+            }
+            else
+                Grid.SetColumnSpan(content, 2);
+            grid.Children.Add(content);
+            return grid;
+        }
+
+        /// <summary>A pill in its tone's colours, with a line around it between the two. The box it sits in is the
+        /// grey a muted pill is filled with, and in the light theme about as bright as a green or amber one: the line
+        /// keeps each of them a pill there.</summary>
+        private static Border Pill(string text, string tone)
+        {
+            var colours = Ui.PillColours(Tone(tone));
+            var pill = Ui.Pill(text, colours.Background, colours.Foreground);
+            pill.Margin = new Thickness(0);
+            pill.HorizontalAlignment = HorizontalAlignment.Left;
+            pill.BorderThickness = new Thickness(1);
+            pill.BorderBrush = new SolidColorBrush(Colours.Mix(colours.Foreground, colours.Background, 0.55));
+            // A pill is a word or two; one that is a sentence wraps rather than running out of the box.
+            ((TextBlock)pill.Child).TextWrapping = TextWrapping.Wrap;
+            return pill;
+        }
+
+        /// <summary>The small button behind a value: its text goes onto the clipboard, and for a moment the button
+        /// says so, with a tick in place of its two sheets and the word over it as its tooltip (or why nothing was
+        /// copied, when another program holds the clipboard). Nothing on the page moves for it.</summary>
+        private static Button CopyButton(string text, string label)
+        {
+            string tip = Text.T("panel.copy");
+            // Several values of one box may have one: each says which value it copies.
+            string name = label.Length > 0 ? tip + ": " + label : tip;
+            var button = Ui.IconButton(Icons.Copy, Icons.Font, tip);
+            button.Width = 22;
+            button.Height = 22;
+            button.FontSize = 11;
+            button.Margin = new Thickness(6, 0, 0, 0);
+            button.VerticalAlignment = VerticalAlignment.Center;
+            System.Windows.Automation.AutomationProperties.SetName(button, name);
+            ToolTip said = null;
+            var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(SaidMs) };
+            void Rest()
+            {
+                back.Stop();
+                if (said != null) said.IsOpen = false;
+                said = null;
+                button.Content = Icons.Copy;
+                button.Foreground = Theme.SubFg;
+                button.ToolTip = tip;
+                System.Windows.Automation.AutomationProperties.SetName(button, name);
+            }
+            back.Tick += (sender, e) => Rest();
+            button.Click += (sender, e) =>
+            {
+                Rest();
+                string words;
+                bool copied = true;
+                try { Copy(text); words = Text.T("panel.copied"); }
+                catch (Exception ex) { copied = false; words = Text.T("panel.notCopied", ex.Message); }
+                button.Content = copied ? Icons.Check : Icons.Copy;
+                button.Foreground = new SolidColorBrush(copied ? Theme.SuccessText : Theme.DangerText);
+                System.Windows.Automation.AutomationProperties.SetName(button, words);
+                said = Ui.Tip(words);
+                said.PlacementTarget = button;
+                said.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
+                button.ToolTip = said;
+                // Opened here, not by the mouse resting on the button; a button in no window has nowhere to open it.
+                if (PresentationSource.FromVisual(button) != null)
+                    said.IsOpen = true;
+                back.Start();
+            };
+            return button;
+        }
 
         private static TextBlock Line(string text, bool big) => new TextBlock
         {

@@ -172,6 +172,43 @@ namespace UIFramework
         public FrameworkElement DoubleField(string label, string key, string tooltip) =>
             Ui.Labeled(label, DoubleBox(label, key, tooltip));
 
+        /// <summary>A time of day, stored as "HH:mm" on the 24-hour clock. The box takes "9:5", "0905" or "9" (see
+        /// <see cref="FieldBinding.TryTime"/>) and shows "09:05" once the cursor leaves it; text that is no time of day
+        /// stays, for the check before saving to name, as in a number box. It may be empty only where the default is.
+        /// A stored value the field cannot take ("abc", nothing where a time is due) shows the default, as a number
+        /// box does, and is not saved back.</summary>
+        public FrameworkElement TimeField(string label, string key, string tooltip)
+        {
+            var tag = new FieldTag(key, FieldKind.Time) { AllowEmpty = FieldBinding.Invariant(_defaults[key]).Trim().Length == 0 };
+            var stored = Token(key);
+            bool usable = !(stored is JContainer) && FieldBinding.IsValidTime(tag, FieldBinding.Invariant(stored));
+            var box = new TextBox
+            {
+                Text = FieldBinding.Display(tag, usable ? stored : _defaults[key]),
+                Tag = tag,
+                MaxLength = 5,
+                ToolTip = (string.IsNullOrEmpty(tooltip) ? "" : tooltip + "\n") + Text.T("field.time.tip")
+            };
+            Ui.StyleInput(box);
+            AutomationProperties.SetName(box, label);
+            _parts.Boxes[key] = box;
+            // Digits and what may stand between hours and minutes; anything else is not typed and not pasted.
+            bool Allowed(string text) => text.Length > 0 && text.All(c => (c >= '0' && c <= '9') || c == ':' || c == '.' || c == 'h' || c == 'H');
+            box.PreviewTextInput += (s, e) => e.Handled = !Allowed(e.Text);
+            box.PreviewKeyDown += (s, e) => { if (e.Key == Key.Space) e.Handled = true; };
+            DataObject.AddPastingHandler(box, (s, e) =>
+            {
+                if (!e.DataObject.GetDataPresent(DataFormats.Text) || !Allowed(((string)e.DataObject.GetData(DataFormats.Text)).Trim()))
+                    e.CancelCommand();
+            });
+            box.LostFocus += (s, e) =>
+            {
+                if (FieldBinding.TryTime(box.Text, out string time) && time != box.Text)
+                    box.Text = time;
+            };
+            return Ui.Labeled(label, box);
+        }
+
         /// <summary>A plain text setting, saved as typed: spaces at either end stay (see <see cref="FieldTag.KeepSpaces"/>).</summary>
         public FrameworkElement TextField(string label, string key, string tooltip)
         {
@@ -305,6 +342,87 @@ namespace UIFramework
 
         public FrameworkElement StringComboField(string label, string key, (string Value, string Label)[] options, string tooltip) =>
             Ui.Labeled(label, StringCombo(label, key, options, tooltip));
+
+        /// <summary>A dropdown whose options come from the project (<c>optionsFrom</c>) and change under it. It offers
+        /// the options last handed to <paramref name="offer"/>; the <paramref name="declared"/> ones until then, and
+        /// again when it is handed none. The stored value and the setting's default are entries of their own where no
+        /// option has them (an empty one as a blank entry at the top), so a save that does not touch the dropdown
+        /// writes back what the file holds, and a reset finds the default. What is selected stays selected when the
+        /// new entries have it, and the field does not count as changed by that; a pick they no longer have goes back
+        /// to the stored value. The dropdown never picks an option by itself.</summary>
+        public FrameworkElement OfferedComboField(string label, string key, IList<(string Value, string Label)> declared, string tooltip,
+            out Action<IList<(string Value, string Label)>> offer)
+        {
+            var combo = NewCombo(key, FieldKind.String, tooltip);
+            ((FieldTag)combo.Tag).OptionsAsked = true;
+            // The label each value was last offered with: an entry the options no longer have keeps reading as it did.
+            var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+            void Offer(IList<(string Value, string Label)> options)
+            {
+                var entries = new List<(string Value, string Label)>();
+                bool Has(string value) => entries.Any(e => Same(e.Value, value));
+                foreach (var option in options != null && options.Count > 0 ? options : declared ?? new List<(string Value, string Label)>())
+                {
+                    string value = option.Value ?? "";
+                    if (Has(value)) continue;
+                    labels[value] = string.IsNullOrEmpty(option.Label) ? value : option.Label;
+                    entries.Add((value, labels[value]));
+                }
+                void Keep(string value)
+                {
+                    if (Has(value)) return;
+                    if (value.Length == 0) entries.Insert(0, ("", ""));
+                    else entries.Add((value, labels.TryGetValue(value, out string known) ? known : value));
+                }
+                // The file's value as it stands now: a save since the page was built has put the window's into it.
+                string stored = String(key);
+                Keep(FieldBinding.Invariant(_defaults[key]));
+                Keep(stored);
+
+                var selected = combo.SelectedItem as ComboBoxItem;
+                string held = selected?.Tag as string;
+                bool stays = held != null && Has(held);
+                var fresh = new List<ComboBoxItem>();
+                ComboBoxItem chosen = null;
+                foreach (var entry in entries)
+                {
+                    // The selected entry stays the object it is, with the text the file has it in: nothing is selected
+                    // anew, so nothing that follows the field hears of a change that is none.
+                    bool same = stays && Same(entry.Value, held);
+                    var item = same ? selected : new ComboBoxItem { Tag = entry.Value };
+                    item.Content = entry.Label;
+                    if (entry.Label.Length == 0) item.MinHeight = 24;
+                    if (same || (!stays && chosen == null && Same(entry.Value, stored))) chosen = item;
+                    fresh.Add(item);
+                }
+
+                if (stays)
+                {
+                    for (int i = combo.Items.Count - 1; i >= 0; i--)
+                        if (!ReferenceEquals(combo.Items[i], selected))
+                            combo.Items.RemoveAt(i);
+                    int at = fresh.IndexOf(selected);
+                    for (int i = 0; i < at; i++) combo.Items.Insert(i, fresh[i]);
+                    for (int i = at + 1; i < fresh.Count; i++) combo.Items.Add(fresh[i]);
+                }
+                else
+                {
+                    // The new entries first, then the selection, then the old ones go: selected once, not emptied in between.
+                    var old = combo.Items.Cast<object>().ToList();
+                    foreach (var item in fresh) combo.Items.Add(item);
+                    combo.SelectedItem = chosen;
+                    foreach (var item in old) combo.Items.Remove(item);
+                }
+            }
+
+            Offer(null);
+            AutomationProperties.SetName(combo, label);
+            _parts.Combos[key] = combo;
+            offer = Offer;
+            return Ui.Labeled(label, combo);
+        }
 
         public FrameworkElement IntCombo(string label, string key, (int Value, string Label)[] options, string tooltip)
         {
@@ -762,6 +880,115 @@ namespace UIFramework
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = row
             };
+        }
+
+        // ---- Several of a set ---------------------------------------------------------------------------
+
+        /// <summary>The Tag of the chip a multi field shows for a stored value none of its choices has, for tests.</summary>
+        public const string MultiKeptTag = "uiframework.multi.kept";
+
+        /// <summary>The options a multi field can offer. Its values are stored between commas, so an option whose value
+        /// is empty or holds a comma is left out (the check names it), and so is one that repeats another's value.</summary>
+        public static List<SettingOption> MultiChoices(List<SettingOption> options)
+        {
+            var offered = new List<SettingOption>();
+            foreach (var option in options ?? new List<SettingOption>())
+            {
+                string value = (option.Value ?? "").Trim();
+                if (value.Length == 0 || value.Contains(",") || offered.Any(o => string.Equals(o.Value, value, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                offered.Add(new SettingOption { Value = value, Label = string.IsNullOrWhiteSpace(option.Label) ? value : option.Label });
+            }
+            return offered;
+        }
+
+        /// <summary>What a multi field that is only shown says: the labels of the ticked choices, then any stored value
+        /// that is none of them, as it is stored.</summary>
+        public static string MultiLabels(List<SettingOption> options, JToken value)
+        {
+            var offered = MultiChoices(options);
+            return string.Join(", ", FieldBinding.MultiValues(offered.Select(o => o.Value).ToArray(), FieldBinding.MultiText(null, value))
+                .Select(v => offered.FirstOrDefault(o => string.Equals(o.Value, v, StringComparison.OrdinalIgnoreCase))?.Label ?? v));
+        }
+
+        /// <summary>Several of a fixed set of choices, as check boxes that wrap to several per line. The ticked values
+        /// live as comma-separated text, in the order of the choices and in their spelling, in a hidden box carrying the
+        /// tag, as a name list's do: saving, resetting, change tracking and conditions work on it unchanged. A stored
+        /// value that is none of the choices (an older list, a typo in the file) stays stored and shows as a chip behind
+        /// the boxes, where it can be taken out.</summary>
+        public FrameworkElement MultiField(string label, string key, List<SettingOption> options, string tooltip)
+        {
+            var offered = MultiChoices(options);
+            var tag = new FieldTag(key, FieldKind.String) { Choices = offered.Select(o => o.Value).ToArray() };
+            var store = new TextBox { Text = FieldBinding.Display(tag, Token(key)), Tag = tag, Visibility = Visibility.Collapsed };
+            _parts.Boxes[key] = store;
+            _parts.Choices[key] = tag.Choices;
+
+            bool IsChoice(string value) => tag.Choices.Contains(value, StringComparer.OrdinalIgnoreCase);
+            var wrap = new WrapPanel();
+            AutomationProperties.SetName(wrap, label);
+            var boxes = new List<CheckBox>();
+            // While the boxes are set from the text, they do not write it back.
+            bool drawing = false;
+            void Write()
+            {
+                if (drawing) return;
+                var values = boxes.Where(b => b.IsChecked == true).Select(b => (string)b.Tag)
+                    .Concat(FieldBinding.MultiValues(tag.Choices, store.Text).Where(v => !IsChoice(v)));
+                store.Text = string.Join(",", values);
+            }
+            foreach (var option in offered)
+            {
+                var box = new CheckBox
+                {
+                    // A text block of its own, so a long choice wraps instead of being cut. The Tag is the value it
+                    // stores, not a FieldTag: the boxes are the field's furniture, the hidden box is the setting.
+                    Content = new TextBlock { Text = option.Label, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center },
+                    Tag = option.Value,
+                    ToolTip = string.IsNullOrEmpty(tooltip) ? null : tooltip,
+                    Margin = new Thickness(0, 2, 18, 6),
+                    Template = Ui.CheckTemplate(),
+                    Foreground = Theme.LabelFg,
+                    Cursor = Cursors.Hand,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                AutomationProperties.SetName(box, option.Label);
+                box.Checked += (sender, e) => Write();
+                box.Unchecked += (sender, e) => Write();
+                boxes.Add(box);
+                wrap.Children.Add(box);
+            }
+
+            void Draw()
+            {
+                var values = FieldBinding.MultiValues(tag.Choices, store.Text);
+                drawing = true;
+                try
+                {
+                    foreach (var box in boxes)
+                        box.IsChecked = values.Contains((string)box.Tag, StringComparer.OrdinalIgnoreCase);
+                }
+                finally { drawing = false; }
+                for (int i = wrap.Children.Count - 1; i >= 0; i--)
+                    if (!(wrap.Children[i] is CheckBox))
+                        wrap.Children.RemoveAt(i);
+                foreach (var kept in values.Where(v => !IsChoice(v)))
+                {
+                    string value = kept;
+                    var chip = NameChip(value, () => store.Text = string.Join(",",
+                        FieldBinding.MultiValues(tag.Choices, store.Text).Where(v => !string.Equals(v, value, StringComparison.OrdinalIgnoreCase))));
+                    chip.Tag = MultiKeptTag;
+                    chip.ToolTip = Text.T("field.multi.unknown");
+                    wrap.Children.Add(chip);
+                }
+            }
+            store.TextChanged += (sender, e) => Draw();
+            Draw();
+
+            var panel = new StackPanel();
+            panel.Children.Add(wrap);
+            panel.Children.Add(store);
+            return panel;
         }
 
         // ---- Colours -------------------------------------------------------------------------------------

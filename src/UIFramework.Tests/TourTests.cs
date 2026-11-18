@@ -65,7 +65,7 @@ namespace UIFramework.Tests
         {
             var schema = SchemaWithTour(JArray.Parse(@"[ ""start"", ""sides"", ""page:game"", ""page:messages"", ""customise"", { ""text"": ""note"" },
                 ""nosuchkey"", ""page:nosuchpage"" ]"));
-            var spec = Entry.SpecFor(null, schema, TempSettings("tour-check"));
+            var spec = Entry.SpecFor(schema, TempSettings("tour-check"));
             Entry.Prepare(spec, schema);
             Assert.Equal(8, spec.Tour.Count);
             Assert.Equal(2, spec.Problems.Count);

@@ -15,8 +15,10 @@ namespace UIFramework
         public const string Help = "";
 
         public const string Sun = "", Moon = "", Reset = "", Refresh = "";
-        public const string Remove = "", Open = "", ChevronDown = "";
+        public const string Remove = "", Open = "", ChevronDown = "", ChevronRight = "";
         public const string Edit = "", Pin = "", Folder = "", Check = "";
+        /// <summary>The two sheets of a copy button (an answer's value with <c>copy</c>).</summary>
+        public const string Copy = "";
         public const string Undo = "";
         public const string Eye = "";
         public const string Export = "", Import = "";

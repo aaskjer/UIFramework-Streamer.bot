@@ -16,6 +16,10 @@ namespace UIFramework
         public readonly Dictionary<string, ComboBox> Combos = new Dictionary<string, ComboBox>(StringComparer.Ordinal);
         public readonly Dictionary<string, OptionSlider> Sliders = new Dictionary<string, OptionSlider>(StringComparer.Ordinal);
         public readonly Dictionary<string, ListEditor> Lists = new Dictionary<string, ListEditor>(StringComparer.Ordinal);
+        /// <summary>The choices of every <c>multi</c> setting, shown or not: a condition on one asks whether a value is
+        /// ticked, also when the field is hidden and the saved text is read. The field itself is in <see cref="Boxes"/>,
+        /// the hidden box that holds the ticked values as comma-separated text.</summary>
+        public readonly Dictionary<string, string[]> Choices = new Dictionary<string, string[]>(StringComparer.Ordinal);
         /// <summary>Every setting's whole field as its page shows it (label, control, help), for the tour to point at.</summary>
         public readonly Dictionary<string, System.Windows.FrameworkElement> Elements = new Dictionary<string, System.Windows.FrameworkElement>(StringComparer.Ordinal);
 

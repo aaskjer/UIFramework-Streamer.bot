@@ -360,6 +360,103 @@ namespace UIFramework.Tests
 
         // ---- asking the game ----
 
+        // ---- finding the game action ----
+
+        private static Streamer.bot.Plugin.Interface.Model.ActionData Action(string id, string name) =>
+            new Streamer.bot.Plugin.Interface.Model.ActionData { Id = Guid.Parse(id), Name = name };
+
+        private const string GameId = "7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f";
+
+        [Fact]
+        public void TheGameActionIsFoundByItsIdWhateverItIsCalledNow()
+        {
+            Set("_wantedId", GameId.ToUpperInvariant());
+            try
+            {
+                var stub = new StubUnderTest();
+                stub.CPH.Exists = false;                                     // nobody is called GameActionName any more
+                stub.CPH.Actions.Add(Action("11111111-2222-4333-8444-555555555555", "Another"));
+                stub.CPH.Actions.Add(Action(GameId, "My Renamed Game"));
+                stub.CPH.Game = cph => { cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "answered", false); return true; };
+                Assert.Equal("answered", Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Equal(new[] { "id " + GameId }, stub.CPH.Ran.ToArray());   // run by its id, not by a name
+                // A message names the action as Streamer.bot has it now.
+                stub.CPH.Game = cph => false;
+                var ex = Assert.Throws<InvalidOperationException>(() => Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Contains("'My Renamed Game'", ex.Message);
+            }
+            finally { Set("_wantedId", ""); }
+        }
+
+        [Fact]
+        public void AnIdNoActionHasFallsBackToTheNameAndSaysSo()
+        {
+            Set("_wantedId", GameId);
+            try
+            {
+                var heard = Hearing();
+                var stub = new StubUnderTest();
+                stub.CPH.Actions.Add(Action("11111111-2222-4333-8444-555555555555", "Another"));
+                stub.CPH.Game = cph => { cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "by name", false); return true; };
+                Assert.Equal("by name", Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Equal(new[] { "name " + Constant("GameActionName") }, stub.CPH.Ran.ToArray());
+                Assert.Contains(heard, line => line.Contains(GameId) && line.Contains("found by its name"));
+
+                // Neither the id nor the name: the message names both ways.
+                var gone = new StubUnderTest();
+                gone.CPH.Exists = false;
+                var ex = Assert.Throws<InvalidOperationException>(() => Call(gone, "AskGameNow", "test", "x", "{}"));
+                Assert.Contains(GameId, ex.Message);
+                Assert.Contains("'" + Constant("GameActionName") + "'", ex.Message);
+                Assert.Empty(gone.CPH.Ran);
+            }
+            finally { Set("_wantedId", ""); }
+        }
+
+        [Fact]
+        public void WithoutAnIdTheGameActionIsFoundByItsNameAsBefore()
+        {
+            var stub = new StubUnderTest();
+            stub.CPH.Actions.Add(Action(GameId, "Whatever"));                // no id declared: the list is not looked at
+            stub.CPH.Game = cph => { cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "ok", false); return true; };
+            Assert.Equal("ok", Call(stub, "AskGameNow", "test", "x", "{}"));
+            Assert.Equal(new[] { "name " + Constant("GameActionName") }, stub.CPH.Ran.ToArray());
+
+            // An id that is none is said once, and the name is used.
+            Set("_wantedId", "not-an-id");
+            try
+            {
+                var heard = Hearing();
+                var other = new StubUnderTest();
+                other.CPH.Game = stub.CPH.Game;
+                Assert.Equal("ok", Call(other, "AskGameNow", "test", "x", "{}"));
+                Assert.Contains(heard, line => line.Contains("'not-an-id'") && line.Contains("no action id"));
+            }
+            finally { Set("_wantedId", ""); }
+        }
+
+        [Fact]
+        public void DescribeNamesTheArgumentsTheSettingsActionItselfRunsWith()
+        {
+            // The game's action inherits them all; by this list it tells them from the Set Arguments of its own.
+            var stub = new StubUnderTest();
+            stub.args["user"] = "alice";
+            stub.args["command"] = "!settings";
+            stub.args["uiframework.request"] = "left over";
+            var seen = new List<object>();
+            stub.CPH.Game = cph =>
+            {
+                seen.Add(cph.Arguments.TryGetValue("uiframework.callerArgs", out var names) ? names : null);
+                cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "{}", false);
+                return true;
+            };
+            Call(stub, "AskGameNow", "describe", null, null);
+            Assert.Equal("user\ncommand", seen[0]);
+            stub.args.Clear();
+            Call(stub, "AskGameNow", "describe", null, null);
+            Assert.Equal("", seen[1]);                              // none: said, so the game knows the list is whole
+        }
+
         [Fact]
         public void EveryRequestHasAVariableOfItsOwnAndLeavesNoneBehind()
         {
@@ -833,6 +930,9 @@ namespace UIFramework.Tests
         }
 
         public string Dll(string version) => Path.Combine(Lib, version, "UIFramework.dll");
+
+        /// <summary>A probe of a test's own inside this Streamer.bot, with a settings action of its own.</summary>
+        public T Create<T>() where T : MarshalByRefObject => (T)_domain.CreateInstanceFromAndUnwrap(typeof(T).Assembly.Location, typeof(T).FullName);
 
         public void Dispose()
         {

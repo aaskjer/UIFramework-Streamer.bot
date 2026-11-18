@@ -44,7 +44,7 @@ namespace UIFramework.Tests
             try
             {
                 var schema = Schema.Parse(schemaJson);
-                var spec = Entry.SpecFor(null, schema, null);
+                var spec = Entry.SpecFor(schema, null);
                 Entry.Prepare(spec, schema);
                 return spec;
             }
@@ -278,9 +278,9 @@ namespace UIFramework.Tests
         {
             // The Messages and the Log page drew them from the window's keys, hidden or not.
             var spec = Prepared(Head + @"{ ""key"": ""useBot"", ""default"": true }, { ""key"": ""sendAction"", ""default"": false, ""hidden"": true },
-                { ""key"": ""numberSeparator"", ""default"": "","" }, { ""key"": ""logToFile"", ""default"": true, ""page"": ""log"", ""hidden"": true },
+                { ""key"": ""numberSeparator"", ""default"": "","", ""hidden"": true }, { ""key"": ""logToFile"", ""default"": true, ""page"": ""log"", ""hidden"": true },
                 { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"", ""page"": ""messages"" } ],
-                ""window"": { ""title"": ""Demo"", ""pages"": [ ""messages"", ""log"", ""about"" ], ""overrides"": { ""numberSeparator"": { ""hidden"": true } },
+                ""window"": { ""title"": ""Demo"", ""pages"": [ ""messages"", ""log"", ""about"" ],
                     ""log"": { ""folder"": ""Demo/Logs"", ""files"": ""log*.txt"", ""writeLogKey"": ""logToFile"" } } }");
             var shown = Shown(spec, new EmptyLog());
             Assert.Contains("useBot", shown["messages"]);

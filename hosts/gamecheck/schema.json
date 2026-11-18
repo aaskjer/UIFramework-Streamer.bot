@@ -1,0 +1,1005 @@
+{
+  "host": "gamecheck",
+  "version": "v1.0.1",
+  "settingsFile": "GameCheck\\GameCheck-Settings.json",
+  "settings": [
+    {
+      "key": "discordNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "How the actions post",
+      "help": "Each action posts either with a Discord bot - bot token and channel ID - or through a webhook URL. With a bot the messages can be pinned and older copies cleaned up; a webhook needs no bot at all. When both are filled in, the bot is used."
+    },
+    {
+      "key": "salesDiscord",
+      "default": "own",
+      "kind": "options",
+      "page": "discord",
+      "section": "How the actions post",
+      "label": "Game Sale Check posts with",
+      "help": "One set of fields for both actions, or a bot, channel or webhook of its own for Game Sale Check.",
+      "options": [
+        {
+          "value": "own",
+          "label": "its own bot, channel or webhook"
+        },
+        {
+          "value": "same",
+          "label": "the bot, channel or webhook of Free Game Check"
+        }
+      ],
+      "shows": {
+        "own": [
+          "salesBotToken",
+          "salesChannelId",
+          "salesWebhookUrl"
+        ]
+      }
+    },
+    {
+      "key": "freeBotToken",
+      "default": "",
+      "page": "discord",
+      "section": "Free Game Check",
+      "label": "Bot token",
+      "help": "The token of your Discord bot. Kept in the persisted global variable FreeGameCheck_botToken, never in the settings file.",
+      "masked": true,
+      "global": "FreeGameCheck_botToken",
+      "aliases": [
+        "free.botToken"
+      ]
+    },
+    {
+      "key": "freeChannelId",
+      "default": "",
+      "page": "discord",
+      "section": "Free Game Check",
+      "label": "Channel ID",
+      "help": "The ID of the channel the bot posts in - a long number. A pasted channel link (discord.com/channels/...) is turned into the ID.",
+      "aliases": [
+        "free.channelId"
+      ]
+    },
+    {
+      "key": "freeWebhookUrl",
+      "default": "",
+      "page": "discord",
+      "section": "Free Game Check",
+      "label": "Webhook URL",
+      "help": "Instead of a bot: a webhook of the channel. Kept in the persisted global variable FreeGameCheck_webhookUrl, never in the settings file.",
+      "masked": true,
+      "global": "FreeGameCheck_webhookUrl",
+      "aliases": [
+        "free.webhookUrl"
+      ]
+    },
+    {
+      "key": "freeBotOnlyNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Free Game Check",
+      "help": "A webhook can neither pin nor delete, so these apply only to an action that posts with a bot."
+    },
+    {
+      "key": "freePinMessage",
+      "default": false,
+      "page": "discord",
+      "section": "Free Game Check",
+      "label": "Pin the messages",
+      "help": "Pins every message the action posts, so it stays at the top of the channel.",
+      "aliases": [
+        "free.pinMessage"
+      ]
+    },
+    {
+      "key": "freeCleanupDuplicates",
+      "default": true,
+      "page": "discord",
+      "section": "Free Game Check",
+      "label": "Delete older copies of the messages",
+      "help": "Deletes older copies of the action's messages that are still in the channel, e.g. after its state was lost.",
+      "aliases": [
+        "free.cleanupDuplicates"
+      ]
+    },
+    {
+      "key": "salesBotToken",
+      "default": "",
+      "page": "discord",
+      "section": "Game Sale Check",
+      "label": "Bot token",
+      "help": "The token of your Discord bot. Kept in the persisted global variable GameSaleCheck_botToken, never in the settings file.",
+      "masked": true,
+      "global": "GameSaleCheck_botToken",
+      "aliases": [
+        "sales.botToken"
+      ]
+    },
+    {
+      "key": "salesChannelId",
+      "default": "",
+      "page": "discord",
+      "section": "Game Sale Check",
+      "label": "Channel ID",
+      "help": "The ID of the channel the bot posts in - a long number. A pasted channel link (discord.com/channels/...) is turned into the ID.",
+      "aliases": [
+        "sales.channelId"
+      ]
+    },
+    {
+      "key": "salesWebhookUrl",
+      "default": "",
+      "page": "discord",
+      "section": "Game Sale Check",
+      "label": "Webhook URL",
+      "help": "Instead of a bot: a webhook of the channel. Kept in the persisted global variable GameSaleCheck_webhookUrl, never in the settings file.",
+      "masked": true,
+      "global": "GameSaleCheck_webhookUrl",
+      "aliases": [
+        "sales.webhookUrl"
+      ]
+    },
+    {
+      "key": "salesBotOnlyNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Game Sale Check",
+      "help": "A webhook can neither pin nor delete, so these apply only to an action that posts with a bot."
+    },
+    {
+      "key": "salesPinMessage",
+      "default": false,
+      "page": "discord",
+      "section": "Game Sale Check",
+      "label": "Pin the messages",
+      "help": "Pins every message the action posts, so it stays at the top of the channel.",
+      "aliases": [
+        "sales.pinMessage"
+      ]
+    },
+    {
+      "key": "salesCleanupDuplicates",
+      "default": true,
+      "page": "discord",
+      "section": "Game Sale Check",
+      "label": "Delete older copies of the messages",
+      "help": "Deletes older copies of the action's messages that are still in the channel, e.g. after its state was lost.",
+      "aliases": [
+        "sales.cleanupDuplicates"
+      ]
+    },
+    {
+      "key": "discordTokenNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Where to find these",
+      "help": "Bot token: Discord Developer Portal, your application, Bot, Reset Token. Invite the bot to your server; it needs to see the channel, send messages, embed links and read the message history, and to pin messages for 'Pin the messages'."
+    },
+    {
+      "key": "discordChannelNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Where to find these",
+      "help": "Channel ID: switch on Developer Mode (User Settings, Advanced), then right-click the channel and pick Copy Channel ID. A pasted channel link works too."
+    },
+    {
+      "key": "discordWebhookNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Where to find these",
+      "help": "Webhook URL: the channel's settings, Integrations, Webhooks, New Webhook, Copy Webhook URL."
+    },
+    {
+      "key": "discordPortalNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Where to find these",
+      "help": "Open the Discord Developer Portal: https://discord.com/developers/applications"
+    },
+    {
+      "key": "discordSecretsNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Where to find these",
+      "help": "Tokens, webhook URLs and keys are kept in persisted global variables (FreeGameCheck_... and GameSaleCheck_...), never in the settings file, so an exported action carries no secrets."
+    },
+    {
+      "key": "freePostedNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "What is posted",
+      "help": "One Discord message per topic, edited in place whenever something changes. Switching a topic off deletes its message."
+    },
+    {
+      "key": "freeIncludeGame",
+      "default": true,
+      "page": "free",
+      "section": "What is posted",
+      "label": "Free games",
+      "help": "Games that are free to keep for a while.",
+      "aliases": [
+        "free.includeGame"
+      ]
+    },
+    {
+      "key": "freeIncludeDlc",
+      "default": true,
+      "page": "free",
+      "section": "What is posted",
+      "label": "Free DLC and add-ons",
+      "help": "Free DLC and add-ons.",
+      "aliases": [
+        "free.includeDlc"
+      ]
+    },
+    {
+      "key": "freeIncludeLoot",
+      "default": false,
+      "page": "free",
+      "section": "What is posted",
+      "label": "Free loot, betas and in-game items",
+      "help": "Free in-game items, betas and loot (Prime Gaming and others).",
+      "aliases": [
+        "free.includeLoot"
+      ]
+    },
+    {
+      "key": "freeIncludeDemos",
+      "default": false,
+      "page": "free",
+      "section": "What is posted",
+      "label": "Popular new demos",
+      "help": "Popular new demos from Steam and Nintendo's European eShop.",
+      "aliases": [
+        "free.includeDemos"
+      ]
+    },
+    {
+      "key": "freeDemoLimit",
+      "default": 10,
+      "page": "free",
+      "section": "Demos",
+      "label": "Demos per platform",
+      "help": "How many demos per platform (1 - 25). A Nintendo game out for Switch and Switch 2 counts once.",
+      "min": 1.0,
+      "max": 25.0,
+      "requires": "freeIncludeDemos",
+      "aliases": [
+        "free.demoLimit"
+      ]
+    },
+    {
+      "key": "freeDemoMaxAgeDays",
+      "default": 30,
+      "page": "free",
+      "section": "Demos",
+      "label": "Demos up to",
+      "help": "Steam: demos out for at most this many days. Nintendo: games out for at most this many days, or still to come (1 - 365).",
+      "min": 1.0,
+      "max": 365.0,
+      "unit": "days old",
+      "requires": "freeIncludeDemos",
+      "aliases": [
+        "free.demoMaxAgeDays"
+      ]
+    },
+    {
+      "key": "freeSourcesNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "Sources",
+      "help": "Epic Games and Steam are read straight from the stores, Prime Gaming from LootScraper's feeds."
+    },
+    {
+      "key": "freeUseGamerPower",
+      "default": true,
+      "page": "free",
+      "section": "Sources",
+      "label": "Fill the gaps with GamerPower",
+      "help": "GamerPower lists giveaways the other sources do not know: itch.io, Stove, VR, mobile and more. Steam and Epic Games always come from the stores themselves.",
+      "aliases": [
+        "free.useGamerPower"
+      ]
+    },
+    {
+      "key": "freeItadKey",
+      "default": "",
+      "page": "free",
+      "section": "Sources",
+      "label": "IsThereAnyDeal API key",
+      "help": "Optional. With a key, IsThereAnyDeal's giveaway list is read too. Kept in the persisted global variable FreeGameCheck_itadKey, never in the settings file.",
+      "masked": true,
+      "global": "FreeGameCheck_itadKey",
+      "aliases": [
+        "free.itadKey"
+      ]
+    },
+    {
+      "key": "freeItadNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "Sources",
+      "help": "Get a free IsThereAnyDeal API key: https://isthereanydeal.com/apps/my/"
+    },
+    {
+      "key": "freeCountry",
+      "default": "",
+      "page": "free",
+      "section": "Your country",
+      "label": "Country",
+      "help": "A two-letter code like DE. Steam and Epic Games giveaways are checked for this country. Empty: no check.",
+      "aliases": [
+        "free.country"
+      ]
+    },
+    {
+      "key": "freeRegionMode",
+      "default": "hide",
+      "kind": "options",
+      "page": "free",
+      "section": "Your country",
+      "label": "Games not free there",
+      "help": "What happens to a giveaway that is not free in your country.",
+      "requires": "freeCountry",
+      "options": [
+        {
+          "value": "hide",
+          "label": "Leave them out"
+        },
+        {
+          "value": "strike",
+          "label": "List them struck through"
+        },
+        {
+          "value": "off",
+          "label": "List them like the rest"
+        }
+      ],
+      "aliases": [
+        "free.regionMode"
+      ]
+    },
+    {
+      "key": "freeCountryNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "Your country",
+      "help": "Leave the country empty to list everything that is free anywhere."
+    },
+    {
+      "key": "freePlatformsNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "Platforms left out",
+      "help": "Giveaways on the platforms ticked here are not posted."
+    },
+    {
+      "key": "freeExcludePlatforms",
+      "default": "",
+      "kind": "multi",
+      "page": "free",
+      "section": "Platforms left out",
+      "label": "Platforms left out",
+      "help": "Platforms whose giveaways are not posted.",
+      "options": [
+        "Steam",
+        "Epic Games",
+        "GOG",
+        "Prime Gaming",
+        "Ubisoft",
+        "EA",
+        "Blizzard/Activision",
+        "Xbox",
+        "PlayStation",
+        "Nintendo",
+        "itch.io",
+        "Humble Store",
+        "IndieGala",
+        "Meta Quest",
+        "Stove",
+        "Mobile",
+        "Other"
+      ],
+      "aliases": [
+        "free.excludePlatforms"
+      ]
+    },
+    {
+      "key": "freeNewBadgeHours",
+      "default": 1,
+      "page": "free",
+      "section": "Marks",
+      "label": "New mark for",
+      "help": "A new giveaway is marked 🆕 for this many hours after it first shows up.",
+      "min": 0.0,
+      "max": 999999.0,
+      "unit": "hours",
+      "aliases": [
+        "free.newBadgeHours"
+      ]
+    },
+    {
+      "key": "freeSoonHours",
+      "default": 24,
+      "page": "free",
+      "section": "Marks",
+      "label": "Ending-soon mark",
+      "help": "A giveaway is marked 🔥 when it ends within this many hours.",
+      "min": 0.0,
+      "max": 999999.0,
+      "unit": "hours",
+      "aliases": [
+        "free.soonHours"
+      ]
+    },
+    {
+      "key": "freeMarksNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "Marks",
+      "help": "Both marks appear and go on the minute - the action plans a run for it."
+    },
+    {
+      "key": "freeLauncherLinks",
+      "default": false,
+      "page": "free",
+      "section": "Links",
+      "label": "Open Steam and Epic games in their launcher",
+      "help": "Steam and Epic games open in Steam or the Epic Games Launcher instead of the browser.",
+      "aliases": [
+        "free.launcherLinks"
+      ]
+    },
+    {
+      "key": "freeLinksNote",
+      "default": null,
+      "kind": "note",
+      "page": "free",
+      "section": "Links",
+      "help": "Discord only opens web links, so the link goes through a small page on aaskjer.github.io that hands it to the launcher, with the store page as a fallback."
+    },
+    {
+      "key": "freeEmbedColorGames",
+      "default": "F5A623",
+      "kind": "colour",
+      "page": "free",
+      "section": "Colours",
+      "label": "Games colour",
+      "help": "The colour of the free games message.",
+      "aliases": [
+        "free.embedColorGames"
+      ]
+    },
+    {
+      "key": "freeEmbedColorDlc",
+      "default": "9B59B6",
+      "kind": "colour",
+      "page": "free",
+      "section": "Colours",
+      "label": "DLC colour",
+      "help": "The colour of the free DLC message.",
+      "aliases": [
+        "free.embedColorDlc"
+      ]
+    },
+    {
+      "key": "freeEmbedColorLoot",
+      "default": "3498DB",
+      "kind": "colour",
+      "page": "free",
+      "section": "Colours",
+      "label": "Loot colour",
+      "help": "The colour of the free loot message.",
+      "aliases": [
+        "free.embedColorLoot"
+      ]
+    },
+    {
+      "key": "freeEmbedColorDemos",
+      "default": "1ABC9C",
+      "kind": "colour",
+      "page": "free",
+      "section": "Colours",
+      "label": "Demos colour",
+      "help": "The colour of the demos message.",
+      "aliases": [
+        "free.embedColorDemos"
+      ]
+    },
+    {
+      "key": "salesPostedNote",
+      "default": null,
+      "kind": "note",
+      "page": "sales",
+      "section": "What is posted",
+      "help": "Two Discord messages, edited in place whenever something changes. Switching one off deletes it."
+    },
+    {
+      "key": "salesIncludeEvents",
+      "default": true,
+      "page": "sales",
+      "section": "What is posted",
+      "label": "Sale events",
+      "help": "The store-wide sales running now and coming up: Steam's seasonal sales, Epic's and GOG's sales.",
+      "aliases": [
+        "sales.includeEvents"
+      ]
+    },
+    {
+      "key": "salesIncludeDeals",
+      "default": true,
+      "page": "sales",
+      "section": "What is posted",
+      "label": "Top deals",
+      "help": "The popular games on sale right now, per store: price, regular price, discount and end.",
+      "aliases": [
+        "sales.includeDeals"
+      ]
+    },
+    {
+      "key": "salesIncludeFests",
+      "default": true,
+      "page": "sales",
+      "section": "Sale events",
+      "label": "Also themed sales (Steam Fests and the like)",
+      "help": "Also Steam's themed sales (Fests) and the like, not only the big seasonal ones.",
+      "requires": "salesIncludeEvents",
+      "aliases": [
+        "sales.includeFests"
+      ]
+    },
+    {
+      "key": "salesEventLookaheadDays",
+      "default": 30,
+      "page": "sales",
+      "section": "Sale events",
+      "label": "Upcoming sales",
+      "help": "Upcoming sales are listed this many days ahead (0 - 366). 0: only the running ones.",
+      "min": 0.0,
+      "max": 366.0,
+      "unit": "days ahead",
+      "requires": "salesIncludeEvents",
+      "aliases": [
+        "sales.eventLookaheadDays"
+      ]
+    },
+    {
+      "key": "salesEventsNote",
+      "default": null,
+      "kind": "note",
+      "page": "sales",
+      "section": "Sale events",
+      "help": "The next big sale is always named in the message, however far ahead it is."
+    },
+    {
+      "key": "salesCountry",
+      "default": "",
+      "page": "sales",
+      "section": "Top deals",
+      "label": "Country",
+      "help": "A two-letter code like DE: prices and currency of that country. Empty: US.",
+      "requires": "salesIncludeDeals",
+      "aliases": [
+        "sales.country"
+      ]
+    },
+    {
+      "key": "salesDealLimit",
+      "default": 8,
+      "page": "sales",
+      "section": "Top deals",
+      "label": "Deals per store",
+      "help": "How many deals per store (1 - 25).",
+      "min": 1.0,
+      "max": 25.0,
+      "requires": "salesIncludeDeals",
+      "aliases": [
+        "sales.dealLimit"
+      ]
+    },
+    {
+      "key": "salesMinDiscount",
+      "default": 50,
+      "page": "sales",
+      "section": "Top deals",
+      "label": "Min. discount",
+      "help": "Only deals with at least this discount, in percent (1 - 99).",
+      "min": 1.0,
+      "max": 99.0,
+      "unit": "%",
+      "requires": "salesIncludeDeals",
+      "aliases": [
+        "sales.minDiscount"
+      ]
+    },
+    {
+      "key": "salesMaxPrice",
+      "default": 0.0,
+      "kind": "double",
+      "page": "sales",
+      "section": "Top deals",
+      "label": "Max. price",
+      "help": "Only deals up to this price, in the currency of the country. 0: any price.",
+      "min": 0.0,
+      "requires": "salesIncludeDeals",
+      "aliases": [
+        "sales.maxPrice"
+      ]
+    },
+    {
+      "key": "salesItadKey",
+      "default": "",
+      "page": "sales",
+      "section": "Top deals",
+      "label": "IsThereAnyDeal API key",
+      "help": "Optional. With a key, the deals of other shops (Humble, Fanatical, Green Man Gaming, ...) are added, and 📉 marks a deal at its lowest price ever. Kept in the persisted global variable GameSaleCheck_itadKey, never in the settings file.",
+      "masked": true,
+      "global": "GameSaleCheck_itadKey",
+      "aliases": [
+        "sales.itadKey"
+      ]
+    },
+    {
+      "key": "salesDealsNote",
+      "default": null,
+      "kind": "note",
+      "page": "sales",
+      "section": "Top deals",
+      "help": "Empty country: US prices. Nintendo's deals come from its European eShop, so they show only for European countries. Max. price 0 means any price."
+    },
+    {
+      "key": "salesPlatformsNote",
+      "default": null,
+      "kind": "note",
+      "page": "sales",
+      "section": "Stores left out",
+      "help": "Sales and deals of the stores ticked here are not posted."
+    },
+    {
+      "key": "salesExcludePlatforms",
+      "default": "",
+      "kind": "multi",
+      "page": "sales",
+      "section": "Stores left out",
+      "label": "Stores left out",
+      "help": "Stores whose sales and deals are not posted.",
+      "options": [
+        "Steam",
+        "Epic Games",
+        "GOG",
+        "Nintendo",
+        "Humble Store",
+        "Fanatical",
+        "Green Man Gaming",
+        "GamesPlanet",
+        "Ubisoft",
+        "EA",
+        "Blizzard/Activision",
+        "Xbox",
+        "PlayStation",
+        "IndieGala",
+        "itch.io",
+        "Other"
+      ],
+      "aliases": [
+        "sales.excludePlatforms"
+      ]
+    },
+    {
+      "key": "salesNewBadgeHours",
+      "default": 6,
+      "page": "sales",
+      "section": "Marks",
+      "label": "New mark for",
+      "help": "A deal new in the list, or a sale that just started, is marked 🆕 for this many hours.",
+      "min": 0.0,
+      "max": 999999.0,
+      "unit": "hours",
+      "aliases": [
+        "sales.newBadgeHours"
+      ]
+    },
+    {
+      "key": "salesSoonHours",
+      "default": 24,
+      "page": "sales",
+      "section": "Marks",
+      "label": "Ending-soon mark",
+      "help": "A sale or deal is marked 🔥 when it ends within this many hours.",
+      "min": 0.0,
+      "max": 999999.0,
+      "unit": "hours",
+      "aliases": [
+        "sales.soonHours"
+      ]
+    },
+    {
+      "key": "salesLauncherLinks",
+      "default": false,
+      "page": "sales",
+      "section": "Links",
+      "label": "Open Steam and Epic deals in their launcher",
+      "help": "Steam and Epic deals open in Steam or the Epic Games Launcher instead of the browser.",
+      "aliases": [
+        "sales.launcherLinks"
+      ]
+    },
+    {
+      "key": "salesLinksNote",
+      "default": null,
+      "kind": "note",
+      "page": "sales",
+      "section": "Links",
+      "help": "Discord only opens web links, so the link goes through a small page on aaskjer.github.io that hands it to the launcher, with the store page as a fallback."
+    },
+    {
+      "key": "salesEmbedColorEvents",
+      "default": "E67E22",
+      "kind": "colour",
+      "page": "sales",
+      "section": "Colours",
+      "label": "Sale events colour",
+      "help": "The colour of the sale events message.",
+      "aliases": [
+        "sales.embedColorEvents"
+      ]
+    },
+    {
+      "key": "salesEmbedColorDeals",
+      "default": "2ECC71",
+      "kind": "colour",
+      "page": "sales",
+      "section": "Colours",
+      "label": "Top deals colour",
+      "help": "The colour of the top deals message.",
+      "aliases": [
+        "sales.embedColorDeals"
+      ]
+    },
+    {
+      "key": "scheduleNote",
+      "default": null,
+      "kind": "note",
+      "page": "schedule",
+      "section": "How the actions keep time",
+      "help": "No Streamer.bot timer is needed. Give each action the trigger 'Streamer.bot Started': every run plans the next one itself - the regular check below, or earlier when a mark runs out, a giveaway, sale or deal starts or ends, or a message is due to be posted anew."
+    },
+    {
+      "key": "scheduleResendNote",
+      "default": null,
+      "kind": "note",
+      "page": "schedule",
+      "section": "How the actions keep time",
+      "help": "A resend keeps the time of day of the round before; a round missed while Streamer.bot was off starts anew."
+    },
+    {
+      "key": "freeCheckIntervalMinutes",
+      "default": 60,
+      "page": "schedule",
+      "section": "Free Game Check",
+      "label": "Check every",
+      "help": "Minutes between two regular checks of the stores (5 - 1440).",
+      "min": 5.0,
+      "max": 1440.0,
+      "unit": "minutes",
+      "aliases": [
+        "free.checkIntervalMinutes"
+      ]
+    },
+    {
+      "key": "freeResendIntervalDays",
+      "default": 0,
+      "page": "schedule",
+      "section": "Free Game Check",
+      "label": "Post anew every",
+      "help": "Post every message anew every this many days - all of them together, in their usual order - instead of only editing them. 0: never.",
+      "min": 0.0,
+      "max": 999999.0,
+      "unit": "days",
+      "aliases": [
+        "free.resendIntervalDays"
+      ]
+    },
+    {
+      "key": "freeDeleteOldOnResend",
+      "default": true,
+      "page": "schedule",
+      "section": "Free Game Check",
+      "label": "Delete the old message when posting anew",
+      "help": "On a resend, delete the previous message. Off: it stays in the channel.",
+      "requires": "freeResendIntervalDays>0",
+      "aliases": [
+        "free.deleteOldOnResend"
+      ]
+    },
+    {
+      "key": "salesCheckIntervalMinutes",
+      "default": 60,
+      "page": "schedule",
+      "section": "Game Sale Check",
+      "label": "Check every",
+      "help": "Minutes between two regular checks of the stores (5 - 1440).",
+      "min": 5.0,
+      "max": 1440.0,
+      "unit": "minutes",
+      "aliases": [
+        "sales.checkIntervalMinutes"
+      ]
+    },
+    {
+      "key": "salesResendIntervalDays",
+      "default": 0,
+      "page": "schedule",
+      "section": "Game Sale Check",
+      "label": "Post anew every",
+      "help": "Post every message anew every this many days - all of them together, in their usual order - instead of only editing them. 0: never.",
+      "min": 0.0,
+      "max": 999999.0,
+      "unit": "days",
+      "aliases": [
+        "sales.resendIntervalDays"
+      ]
+    },
+    {
+      "key": "salesDeleteOldOnResend",
+      "default": true,
+      "page": "schedule",
+      "section": "Game Sale Check",
+      "label": "Delete the old message when posting anew",
+      "help": "On a resend, delete the previous message. Off: it stays in the channel.",
+      "requires": "salesResendIntervalDays>0",
+      "aliases": [
+        "sales.deleteOldOnResend"
+      ]
+    },
+    {
+      "key": "statusNote",
+      "default": null,
+      "kind": "note",
+      "page": "status",
+      "help": "This is what each action reported on its last run. A Set Argument you removed stays locked in this window until the action has run again (Check now) and the window is reopened."
+    },
+    {
+      "key": "statusMessagesNote",
+      "default": null,
+      "kind": "note",
+      "page": "status",
+      "help": "The message IDs are the Discord messages each action edits in place. To compare: Developer Mode on in Discord, right-click a message, Copy Message ID."
+    },
+    {
+      "key": "freeStatus",
+      "default": null,
+      "kind": "action",
+      "page": "status",
+      "section": "Free Game Check",
+      "label": "Status",
+      "help": "What Free Game Check reported on its last run.",
+      "panel": true,
+      "auto": true,
+      "every": 10
+    },
+    {
+      "key": "freeCheckNow",
+      "default": null,
+      "kind": "action",
+      "page": "status",
+      "section": "Free Game Check",
+      "label": "Check now",
+      "help": "Runs Free Game Check now, the way its own schedule would.",
+      "saveFirst": true
+    },
+    {
+      "key": "salesStatus",
+      "default": null,
+      "kind": "action",
+      "page": "status",
+      "section": "Game Sale Check",
+      "label": "Status",
+      "help": "What Game Sale Check reported on its last run.",
+      "panel": true,
+      "auto": true,
+      "every": 10
+    },
+    {
+      "key": "salesCheckNow",
+      "default": null,
+      "kind": "action",
+      "page": "status",
+      "section": "Game Sale Check",
+      "label": "Check now",
+      "help": "Runs Game Sale Check now, the way its own schedule would.",
+      "saveFirst": true
+    }
+  ],
+  "window": {
+    "title": "GameCheck",
+    "releases": "aaskjer/GameCheck",
+    "logo": "https://github.com/aaskjer/GameCheck/blob/main/Assets/logo.png?raw=true",
+    "logPrefix": "[GameCheck/Settings]",
+    "requires": "2.1.0",
+    "pages": [
+      {
+        "id": "discord",
+        "title": "Discord",
+        "icon": "chat"
+      },
+      {
+        "id": "free",
+        "title": "Free games",
+        "icon": "gift"
+      },
+      {
+        "id": "sales",
+        "title": "Sales",
+        "icon": "coins"
+      },
+      {
+        "id": "schedule",
+        "title": "Schedule",
+        "icon": "clock"
+      },
+      {
+        "id": "status",
+        "title": "Status",
+        "icon": "chart"
+      },
+      "about"
+    ],
+    "about": {
+      "credits": "Free games and game sales, posted to Discord by Streamer.bot.\nResponsible: aaskjer\nCredits: nate1280 / Streamer.bot, GamerPower · IsThereAnyDeal · LootScraper and YOU ♡",
+      "sections": [
+        {
+          "heading": "Where the settings live",
+          "lines": [
+            {
+              "note": "GameCheck\\GameCheck-Settings.json in the Streamer.bot folder."
+            },
+            {
+              "note": "Both actions read this file on every run; a Set Argument in an action still wins over it. Tokens, webhook URLs and keys are in persisted global variables instead (FreeGameCheck_... and GameSaleCheck_...)."
+            }
+          ]
+        },
+        {
+          "heading": "Trademarks",
+          "lines": [
+            {
+              "note": "Steam, Epic Games, GOG, Nintendo, Prime Gaming and all store and game names are trademarks of their owners. None of them is affiliated with or endorses GameCheck."
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
+        },
+        {
+          "text": "IsThereAnyDeal API keys",
+          "url": "https://isthereanydeal.com/apps/my/"
+        },
+        {
+          "text": "GamerPower",
+          "url": "https://www.gamerpower.com"
+        },
+        {
+          "text": "LootScraper by Eiko Wagenknecht",
+          "url": "https://github.com/eikowagenknecht/lootscraper"
+        }
+      ]
+    }
+  }
+}

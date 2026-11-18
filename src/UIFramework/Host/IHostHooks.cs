@@ -42,6 +42,21 @@ namespace UIFramework
         /// <summary>The names of Streamer.bot's user groups as a JSON array, for the chips of a grouplist field to
         /// suggest. Asked once per window, off the window's thread. Null: nothing to suggest.</summary>
         string Groups();
+
+        /// <summary>The options of a dropdown that takes them from the project (<c>optionsFrom</c>), by its key, with
+        /// the values as they stand in the window: a JSON array of "value", "value|Label" or
+        /// <c>{ "value", "label" }</c>. Null: the project names none.</summary>
+        string Options(string key, JObject settings);
+
+        /// <summary>Whether the host reads and writes Streamer.bot's persisted globals for the window (a setting with
+        /// <c>global</c>): a settings action from stub 0.3.3 on does. Without it such a field is shown locked.</summary>
+        bool HasGlobals { get; }
+
+        /// <summary>The text of a persisted global, or null when there is none.</summary>
+        string GetGlobal(string name);
+
+        /// <summary>Writes a persisted global; an empty text clears it. False when it could not be handed over.</summary>
+        bool SetGlobal(string name, string value);
     }
 
     /// <summary>A hooks implementation that does nothing, for previews and hosts without extras.</summary>
@@ -55,5 +70,9 @@ namespace UIFramework
         public virtual string EmoteSources() => null;
         public virtual string Validate(JObject settings) => null;
         public virtual string Groups() => null;
+        public virtual string Options(string key, JObject settings) => null;
+        public virtual bool HasGlobals => false;
+        public virtual string GetGlobal(string name) => null;
+        public virtual bool SetGlobal(string name, string value) => false;
     }
 }

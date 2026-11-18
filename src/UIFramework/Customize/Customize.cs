@@ -216,13 +216,9 @@ namespace UIFramework
             return box;
         }
 
-        /// <summary>Whether the game itself hides a field (its schema, or the spec's override of it), whatever the
-        /// user's layout says.</summary>
+        /// <summary>Whether the game itself hides a field (its schema), whatever the user's layout says.</summary>
         private static bool HiddenByGame(WindowSpec spec, string key)
-        {
-            if (spec.Overrides.TryGetValue(key, out var over) && over.Hidden.HasValue) return over.Hidden.Value;
-            return spec.Schema?.Settings.FirstOrDefault(s => s.Key == key)?.Hidden == true;
-        }
+            => spec.Schema?.Settings.FirstOrDefault(s => s.Key == key)?.Hidden == true;
 
         /// <summary>What Show and Hide write into the layout: nothing (null, which takes the layout's own word away)
         /// where the game says the same already, the wanted state where it does not. A field the game hides has no
@@ -412,7 +408,7 @@ namespace UIFramework
         private static bool SharesRow(string row) => !string.IsNullOrEmpty(row) && !row.StartsWith("~", StringComparison.Ordinal);
 
         // The kinds the page lines up three to a row (SchemaPage keeps the same list).
-        private static readonly HashSet<string> NumberKinds = new HashSet<string> { "int", "long", "double", "percent", "duration" };
+        private static readonly HashSet<string> NumberKinds = new HashSet<string> { "int", "long", "double", "percent", "duration", "time" };
 
         /// <summary>The line each field of a page sits on, as the page draws them (SchemaPage.Fill): fields naming
         /// the same row share one, and so do up to three numbers or two switches that follow each other within a
@@ -564,26 +560,53 @@ namespace UIFramework
             });
             hide.IsEnabled = !fixedPage;
             menu.Items.Add(hide);
+            // In a window that groups its pages: into another group (behind its last page), or out of every group (to
+            // just below the group it was in). The pages at the foot of the rail are in no group.
+            if (!page.Bottom && ctx.Spec.RailGroups.Count > 0)
+            {
+                var into = new MenuItem { Header = Text.T("cust.moveToGroup") };
+                foreach (var group in ctx.Spec.RailGroups)
+                {
+                    string groupId = group.Id;
+                    var entry = Item(group.Title, () => MoveToGroup(ctx, page, groupId, topPages()));
+                    entry.IsEnabled = page.Group != groupId;
+                    into.Items.Add(entry);
+                }
+                into.Items.Add(new Separator());
+                var none = Item(Text.T("cust.noGroup"), () => MoveToGroup(ctx, page, null, topPages()));
+                none.IsEnabled = page.Group != null;
+                into.Items.Add(none);
+                menu.Items.Add(into);
+            }
             // Without the mouse (the rail's items take the keyboard, see Rail.Item): the Menu key opens this menu, and
             // Move up and Move down, also Alt+Up and Alt+Down, do what dragging a page does.
             void Move(int by)
             {
                 if (page.Bottom) return;
-                var order = topPages().Select(p => p.Id).ToList();
+                var pages = topPages();
+                var order = pages.Select(p => p.Id).ToList();
                 int at = order.IndexOf(page.Id), to = at + by;
-                if (at < 0 || to < 0 || to >= order.Count) return;
-                var moved = MovePage(order, page.Id, order[to]);
-                for (int i = 0; i < moved.Count; i++)
-                    ctx.Layout.SetPage(moved[i], "order", i * 10);
+                if (at < 0) return;
+                var next = to >= 0 && to < pages.Count ? pages[to] : null;
+                if (next == null && page.Group == null) return;
+                if (next?.Group != page.Group)
+                {
+                    // A group's heading or end between the page and the next one that way: the step takes the page
+                    // across it, out of its group or into the one on the other side, and leaves it where it is.
+                    WriteOrder(ctx, order);
+                    SetGroup(ctx, page, page.Group != null ? null : next.Group);
+                }
+                else
+                    WriteOrder(ctx, MovePage(order, page.Id, order[to]));
                 _focusPage = page.Id;
                 Commit(ctx, page.Id);
             }
             var top = page.Bottom ? new List<string>() : topPages().Select(p => p.Id).ToList();
             var up = Item(Text.T("cust.moveUp"), () => Move(-1));
-            up.IsEnabled = top.IndexOf(page.Id) > 0;
+            up.IsEnabled = top.IndexOf(page.Id) > 0 || (top.Count > 0 && page.Group != null);
             up.InputGestureText = "Alt+↑";
             var down = Item(Text.T("cust.moveDown"), () => Move(1));
-            down.IsEnabled = top.IndexOf(page.Id) >= 0 && top.IndexOf(page.Id) < top.Count - 1;
+            down.IsEnabled = top.IndexOf(page.Id) >= 0 && (top.IndexOf(page.Id) < top.Count - 1 || page.Group != null);
             down.InputGestureText = "Alt+↓";
             menu.Items.Add(up);
             menu.Items.Add(down);
@@ -645,13 +668,85 @@ namespace UIFramework
                 {
                     string dragged = Dragged(ctx, e.Data, PageFormat);
                     if (dragged == null || dragged == page.Id || page.Bottom) return;
-                    var order = MovePage(topPages().Select(p => p.Id).ToList(), dragged, page.Id);
-                    for (int i = 0; i < order.Count; i++)
-                        ctx.Layout.SetPage(order[i], "order", i * 10);
+                    var pages = topPages();
+                    WriteOrder(ctx, MovePage(pages.Select(p => p.Id).ToList(), dragged, page.Id));
+                    // Dropped on a page of a group, it joins that group; on a page in none, it leaves its own.
+                    var moved = pages.FirstOrDefault(p => p.Id == dragged);
+                    if (moved != null && moved.Group != page.Group) SetGroup(ctx, moved, page.Group);
                     Commit(ctx, dragged);
                 }
                 e.Handled = true;
             };
+        }
+
+        // ---- The groups of pages in the rail ---------------------------------------------------------------
+
+        /// <summary>A group's heading in the customise mode: its menu renames it (an empty name gives the declared one
+        /// back), and a page dropped on it joins the group as its first page.</summary>
+        public static void AttachGroup(PageContext ctx, PageGroup group, Border heading, Func<List<PageSpec>> topPages)
+        {
+            heading.AllowDrop = true;
+            heading.ToolTip = Text.T("cust.group.tip", group.Title);
+            var menu = new ContextMenu();
+            menu.Items.Add(Item(Text.T("cust.rename"), () =>
+            {
+                string name = Prompt(heading, Text.T("cust.rename.group", group.Title), Text.T("cust.title"), group.Title);
+                if (name == null) return;
+                ctx.Layout.SetGroup(group.Id, "title", name.Trim().Length == 0 ? null : (JToken)name.Trim());
+                Commit(ctx, null);
+            }));
+            var reset = Item(Text.T("cust.resetGroup"), () => { ctx.Layout.SetGroup(group.Id, "title", null); Commit(ctx, null); });
+            reset.IsEnabled = ctx.Layout.Group(group.Id)?.Title != null;
+            menu.Items.Add(reset);
+            heading.ContextMenu = menu;
+            heading.DragOver += (s, e) =>
+            {
+                e.Effects = Dragged(ctx, e.Data, PageFormat) != null ? DragDropEffects.Move : DragDropEffects.None;
+                e.Handled = true;
+            };
+            heading.Drop += (s, e) =>
+            {
+                e.Handled = true;
+                string dragged = Dragged(ctx, e.Data, PageFormat);
+                var pages = topPages();
+                var page = dragged == null ? null : pages.FirstOrDefault(p => p.Id == dragged);
+                if (page != null) MoveToGroup(ctx, page, group.Id, pages, first: true);
+            };
+        }
+
+        /// <summary>What a move writes as a page's group (<c>pages.&lt;id&gt;.group</c>): nothing (null, which takes the
+        /// layout's own word away) where the window declares the page there already, else the group's id, or "" for
+        /// out of every group.</summary>
+        public static JToken GroupOverride(string group, string declared) => group == declared ? null : (JToken)(group ?? "");
+
+        private static void SetGroup(PageContext ctx, PageSpec page, string group)
+            => ctx.Layout.SetPage(page.Id, "group", GroupOverride(group, page.DeclaredGroup));
+
+        /// <summary>The rail's order, written for every page above the foot, as a drag writes it: with it the order the
+        /// customise mode shows is the one the next resolve starts from, groups and all.</summary>
+        private static void WriteOrder(PageContext ctx, List<string> order)
+        {
+            for (int i = 0; i < order.Count; i++)
+                ctx.Layout.SetPage(order[i], "order", i * 10);
+        }
+
+        /// <summary>Moves a page into a group, behind its last page (<paramref name="first"/>: in front of its first), or
+        /// out of every group (null), to just below the group it was in.</summary>
+        private static void MoveToGroup(PageContext ctx, PageSpec page, string group, List<PageSpec> pages, bool first = false)
+        {
+            if (group == page.Group && !first) return;
+            var order = pages.Select(p => p.Id).ToList();
+            var beside = pages.Where(p => p.Id != page.Id && p.Group != null && p.Group == (group ?? page.Group)).Select(p => p.Id).ToList();
+            if (beside.Count > 0)
+            {
+                order.Remove(page.Id);
+                bool before = first && group != null;
+                order.Insert(order.IndexOf(before ? beside[0] : beside[beside.Count - 1]) + (before ? 0 : 1), page.Id);
+            }
+            WriteOrder(ctx, order);
+            SetGroup(ctx, page, group);
+            _focusPage = page.Id;
+            Commit(ctx, page.Id);
         }
 
         /// <summary>The rail's order after a page is dropped on another: the dragged page takes the target's place,

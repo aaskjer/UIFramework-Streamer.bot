@@ -213,16 +213,21 @@ namespace UIFramework
 
         /// <summary>"Reset all": a copy of the settings with the default of every setting the window shows. Keys it
         /// has no field for (a game's own state in the file), hidden, transient and read-only settings and those kept
-        /// in a file of their own keep their values. With <paramref name="shown"/> (the keys the window has a field for), so do settings on a page the
+        /// in a file of their own or in a global of Streamer.bot keep their values. With <paramref name="shown"/> (the keys the window has a field for), so do settings on a page the
         /// user hid or that no page shows.</summary>
         public static JObject ResetShown(JObject current, JObject defaults, IEnumerable<Setting> settings, ISet<string> shown = null)
         {
             var fresh = (JObject)(current ?? new JObject()).DeepClone();
             foreach (var setting in settings)
-                if (!setting.Hidden && !setting.Transient && !setting.ReadOnly && string.IsNullOrWhiteSpace(setting.File) && defaults.Property(setting.Key) != null && (shown == null || shown.Contains(setting.Key)))
+                if (!setting.Hidden && !setting.Transient && !setting.ReadOnly && !KeptByReset(setting) && setting.Global == null && defaults.Property(setting.Key) != null && (shown == null || shown.Contains(setting.Key)))
                     fresh[setting.Key] = defaults[setting.Key].DeepClone();
             return fresh;
         }
+
+        /// <summary>A list a reset leaves as it is: one kept in a file of its own (its editor has Restore defaults), and
+        /// one with fixed rows, whose rows the project sets: the defaults would add or remove some.</summary>
+        public static bool KeptByReset(Setting setting) =>
+            !string.IsNullOrWhiteSpace(setting.File) || (setting.FixedRows && setting.Kind == "list");
 
         private static JToken Convert(JToken value, double factor, JToken shape)
         {
