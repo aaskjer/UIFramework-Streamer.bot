@@ -114,6 +114,7 @@ The demo becomes your own project in `DemoGame.cs` (save it under your project's
    | Name | Where | What it is for |
    |------|-------|----------------|
    | `GameActionName` | the settings action (`Stub.cs`), its one line to fill in | the action the settings action runs to ask your project; it must be that action's exact name in Streamer.bot. Also the prefix of the settings' log lines, `[<name>/Settings]` |
+   | `GameActionId` | the settings action (`Stub.cs`), the line below it; optional | your action's id in Streamer.bot (a GUID; every run gets it as the argument `actionId`, and an export carries it). With it the settings action finds your action by the id and runs it by the id, so the settings still open after a streamer renamed the action; an import keeps the id. Left empty, or where no action has that id (an action made by hand), the action is found by `GameActionName`, and the log says so once (stub 0.3.3) |
    | `ActionName` | your action, passed to `UiHost.Handle` and `UiUpdateNotice.Startup` | the prefix of your action's own log lines, `[<name>]`. `null` in `UiHost.Handle` takes the name Streamer.bot gives the run |
    | the host id (`"demo"`) | `UiHost.Handle`, `UiUpdateNotice.Startup` | a short name for the framework's files and the update notice; it never shows |
    | `SettingsFile` | your action | where the settings live, relative to the Streamer.bot folder; the layout file sits beside it |
@@ -236,6 +237,67 @@ answer", not "done". So inside `test`, `validate`, `saved`, `table` and `emotes`
 - An action you run from there runs as usual: the host block clears the window's arguments (`uiframework.request`
   and the others) before your handler runs. A host block older than UIFramework 1.2.0 does not;
   [Loader.md](Loader.md) has the line to add then.
+
+### Settings that were Set Arguments
+
+A project that was set up with Set Argument sub-actions keeps them working. Read the settings with
+`UiSettings.Load(SettingsFile, CPH.LogWarn).With(args)` and pass `arguments: true` to `UiHost.Handle`:
+
+```csharp
+if (UiHost.Handle(args, CPH, ActionName, "myproject", CurrentVersion, SettingsFile, arguments: true))
+    return true;
+var s = UiSettings.Load(SettingsFile, CPH.LogWarn).With(args);
+```
+
+A Set Argument named like a setting, or like one of its old keys (`aliases`), then wins over the file, and the
+window shows that setting with a *Set Argument* pill and the argument's name instead of a field. Whoever only
+pastes the new code keeps their values, and a value can still differ per action (a dry run for one of three).
+[Schema.md](Schema.md#the-games-side) says how a value is read and which arguments count.
+
+An import replaces an action together with its sub-actions, so a Set Argument the user changed is back at its
+shipped value after every update. A value that should last belongs in the settings file, which no import touches;
+a Set Argument is for the exception.
+
+The version that moves the values into the file takes the old ones along once. Name the action the earlier
+version kept them in, and the window shows them as unsaved changes the first time it opens, read from
+Streamer.bot's actions or from its last backups:
+
+```csharp
+public static readonly UiWindow Window = new UiWindow("My Project")
+    .Adopt(Old("5d80b7e4-2c19-4a63-8f05-e1b6a3d92c47", "sendAsMe>sendAction"));
+```
+
+An argument named like a setting needs no mapping; `"old>new"` leads one of another name to its setting.
+[Schema.md](Schema.md#values-from-the-version-before) has the rest: Send Message texts, where it looks, what it
+leaves out.
+
+### A project with several actions
+
+One action answers the window, the others only read the settings.
+
+- **The host action** carries the host block with the table and calls `UiHost.Handle`. Where the working actions
+  run all the time, or may be deleted one by one, make it an action of its own that does nothing else
+  (`My Project Settings Host`). The settings action names it in `GameActionName`.
+- **Every other action** carries the host reader instead of the host block:
+  [`stub/HostReader.cs`](../stub/HostReader.cs), from `// --- UIFramework host reader` to
+  `// --- end UIFramework host reader ---`, right below its `using` lines. It knows no table, so each call names
+  what holds while the file has no value:
+
+  ```csharp
+  var s = UiSettings.Load("My Project/settings.json", CPH.LogWarn).With(args, "dryRun");
+  string url = s.String("webhookUrl");
+  int perHour = s.Int("postsPerHour", 6);
+  bool dryRun = s.Bool("dryRun");
+  ```
+
+  `With(args, keys…)` lets a Set Argument of a named key win over the file, for a value that differs per action.
+  `tools\update-host-block.ps1 -File … -Reader` refreshes the reader, as it refreshes the host block.
+- **Do not rename a key** once readers exist. The window writes the new name back with the first save, and a
+  reader would go on looking for the old one. `aliases` are for a project whose every action carries the table.
+- **Work that takes long** (a web request, a download, a check run) does not go into a `test` handler. Start the
+  working action with `CPH.RunAction(name, false)` and answer that it has started.
+- **`UiHost.Handle` comes before any lock, run check or timer** of the host action. The window's request has to
+  be answered also while the action's own work is under way.
 
 ### Points
 

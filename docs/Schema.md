@@ -50,7 +50,9 @@ conventions cannot know.
 | `step`         | no       | the step of a `slider` over a range                                                          |
 | `unit`         | no       | in brackets behind the label (`s`, `%`, `px`); a slider shows it after its value, and a `percent` always says `%` |
 | `options`      | no       | the choices of `options` or a `slider`: `["a", "b"]`, with labels `[{ "value": "a", "label": "Label A" }]`; the host block's short form `"a|Label A"` is read from a schema written by hand too |
+| `optionsFrom`  | no       | for a dropdown whose options the project names (`options:` in `UiHost.Handle`): the key of the field they depend on. The project is asked when the pages are built and again shortly after that field changes, with the values as they stand in the window (the regions of the country picked). `"groups"` offers Streamer.bot's groups without asking the project; `""` asks once. Options the setting declares itself show until the answer is there, and stay when the project names none. The stored value and the default are never lost: where no option has them they are entries of their own, and such a dropdown never picks an option by itself. A pick the new options lack goes back to the stored value |
 | `placeholders` | no       | for `template`: the names without braces, shown as chips                                    |
+| `placeholderStyle` | no   | for `template`: `percent` for a message whose text writes `%user%` where the others write `{user}`. Its chips insert the placeholders so, the preview fills them, and the check of the default text looks for them. For every message at once it goes on the window (`placeholderStyle:` on `UiWindow`); a message that says `braces` keeps `{user}` there (host block: `placeholderStyle:` on `Msg()`) |
 | `section`      | no       | a heading; where it changes, a new section of the page begins                               |
 | `group`        | no       | for `template`: the group in the message picker (host block: `group:` on `S()` as well as `Msg()`) |
 | `factor`       | no       | for `percent`: stored = typed × factor (0.01 stores a fraction; default 1)                  |
@@ -60,10 +62,11 @@ conventions cannot know.
 | `hidden`       | no       | true: no field, but the value stays in the file; the user can show it in the customise mode unless the window is locked |
 | `confirm`      | no       | for `action`: a yes/no question before the project is asked                                 |
 | `row`          | no       | the name of a row: settings that name the same row one after the other share one line of the page, whatever their kind (a bet, a role and a Try button; a button takes the width it needs, an answer `panel` goes under the row); without it numbers sit three to a line, switches two, everything else alone |
-| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold. To hide it instead, use `showWhen` (`hide:` in front of a `requires` did the same before there was a `showWhen` and is still read; a section heading whose fields are all hidden hides with them). `!key` holds while a switch is off or a field (or a list) is empty. A key the window does not show (hidden by the user) is read from its saved value. A condition compares the value as it is stored, shown or not: a `percent` as the number, or as the fraction where `factor` is 0.01 (`reshuffleThreshold>=0.5` for 50 %), a `duration` in seconds, an "unlimited" 0 as the large number it is saved as. `<`, `<=`, `>`, `>=` need a number on both sides; the check names one that compares text |
+| `requires`     | no       | a `bool`'s key, or a condition on any field (`numberOfSlots>=5`, `cpBetMode=fixed`, `mode!=free`; `=`, `!=`, `<`, `<=`, `>`, `>=`): the field is greyed out while it does not hold. To hide it instead, use `showWhen` (a section heading whose fields are all hidden hides with them). `hide:` in front of a `requires` did the same before there was a `showWhen`; it is no longer read, the field then always shows, and the red **i** names the `showWhen` to write. `!key` holds while a switch is off or a field (or a list) is empty. A key the window does not show (hidden by the user) is read from its saved value. A condition compares the value as it is stored, shown or not: a `percent` as the number, or as the fraction where `factor` is 0.01 (`reshuffleThreshold>=0.5` for 50 %), a `duration` in seconds, an "unlimited" 0 as the large number it is saved as. `<`, `<=`, `>`, `>=` need a number on both sides; the check names one that compares text |
 | `showWhen`     | no       | the field is shown only while the condition holds, whatever its kind (a field, a switch, a note, a button, a list): `questionSource=igdb`; several values, one of which must be picked, `questionSource=opentdb|wikidata`; none of them, `questionSource!=custom|igdb`; several conditions that must all hold, `mixOwn && questionSource!=custom`; a switch that is off, `!useBot`. `requires` still greys out; both can be set |
 | `shows`        | no       | on a dropdown: per option value the keys of the fields that option shows, `{ "igdb": ["igdbClientId", "igdbClientSecret"], "opentdb": ["cacheSize"] }` (host block: `shows: new[] { "igdb: igdbClientId, igdbClientSecret", "opentdb: cacheSize" }`). A field named by several options shows with any of them; a field with a `showWhen` of its own needs both |
 | `masked`       | no       | true: a text field shown as dots, with an eye button that reveals it (a token, a client secret); the value is saved like any other |
+| `global`       | no       | the name of a persisted global of Streamer.bot that holds this value instead of the settings file (a token another action reads from there). The settings action reads it when the window opens and writes it after a save; the value is never in the file, an export or the log, and a reset leaves it. Needs stub 0.3.3; see *A secret in a global* under *The game's side* |
 | `readOnly`     | no       | true: shown, not editable (a status the project writes); `readonly` is read too (host block: `readOnly:` on `S()`) |
 | `twitchOnly`   | no       | a switch carries a "Twitch only" pill; any other field with a label says "(Twitch only)" in it (a reward's id, a button)                                         |
 | `transient`    | no       | true: shown, never saved, never counted as a change; only a live snapshot for the project carries it (the inputs of a Try button) |
@@ -71,7 +74,12 @@ conventions cannot know.
 | `ask`          | no       | on a field that is no button: the project is asked whenever the field changes (`test` with the field's key and the live values), and `set` in its answer fills other fields (a preset slider that sets five numbers). `live` on such a field meant the same before `ask` had a name and is still read. UIFramework 1.9.0 hands `ask` alone the saved values and the live ones only with `live` beside it; the host block writes `live` beside `ask`, so a 1.9.0 window asks with the live values too |
 | `panel`        | no       | for `action`: the answer is shown in a box under the button instead of the footer; its `status` still goes to the footer |
 | `auto`         | no       | for `action`: no button; the project is asked when the page is shown and shortly after every change in the window (odds that follow the settings). It always gets the values as they stand in the window and has its own box: `live` and `panel` come with it |
+| `every`        | no       | for an `auto` action: asked again every so many seconds while its box is on the page in front (a status). 5 at least; a lower number is taken as 5 and named behind the red **i**. Another page, a hidden box and a closed window stop it; coming back asks at once |
+| `saveFirst`    | no       | for a button: the window's unsaved changes are saved first, exactly as *Save* would (its check and question included), and the project is asked only when that save happened. Without unsaved changes it just asks |
 | `columns`      | for `list`, `table` | `"key|kind|label"` per column; kinds `string`, `text` (multi-line, double width), `int`, `long`, `double` (half as wide), `bool`, `emote` (a text field with the picture beside it; a fourth part `|twitch`, `|youtube` or `|kick` says where the picture comes from: Kick from `[emote:ID:name]` or the short `ID:name`, Twitch by name from Twitch/7TV/BTTV/FFZ with what the project's `emotes` answer lists, YouTube's own emojis by their `:name:` from a table inside the DLL, a Unicode emoji shows itself). A trailing `|readonly` (`readOnly: true` in JSON) makes a column the project fills and the user only reads; a flag right after the kind (`"wins|int|readonly"`, `"face|emote|twitch"`) leaves the key as the header. A number column takes only a number: anything else puts the cell back to what it held. From eight rows a list gets a search box that hides the rows the text does not occur in |
+| `rowKey`       | no       | for a `list` the project writes to as well: the columns that together name a row, `"Date,Name"`. A save then merges, by that key, what the window loaded, what it holds now and what the file holds at that moment: a row the project added meanwhile stays, a cell the user changed wins, a row the user removed goes. See *A list the project fills* under *The game's side* |
+| `fixedRows`    | no       | for a `list`: rows are neither added nor removed in the window, only their cells edited; there is no *Restore defaults*, and a reset leaves the list alone |
+| `filter`       | no       | for a `list`: the rows shown, conditions joined by `\|\|`: `region= \|\| Global=true \|\| Counties~{region}`. The left side is a column of the list (in its exact spelling), else a setting of the window; `{key}` is a setting's current value. `=` and `!=` compare as text ignoring case, `~` is "contains" (for an array in the cell: one element equals it). A row that does not fit is hidden, not removed: it is saved back as it was |
 | `file`         | no       | a file next to the settings file that holds this value instead (a word bank, a question list); relative or absolute |
 | `field`        | no       | with `file`: the property in that file that holds the value; without it the file itself is the value |
 | `platform`     | no       | for `emote`: `twitch`, `youtube` or `kick`, where the picture comes from                     |
@@ -94,7 +102,18 @@ A list's `columns` are objects in the schema, `{ "key": "word", "kind": "text", 
 
 What the red **i** names in a declaration, beyond a key or an option that does not exist: `panel`, `auto` or
 `confirm` on a field that is no button; `placeholders` on one that is no message; a `platform` other than twitch,
-youtube or kick; a `{placeholder}` in a message's default text that its `placeholders` do not list; `twitchOnly` on
+youtube or kick; a `{placeholder}` in a message's default text that its `placeholders` do not list (a
+`%placeholder%` in the percent style); a `placeholderStyle` that is neither `braces` nor `percent`, or one on a field
+that is no message; a field the project locks that is no setting; `every` on anything but an `auto` action,
+`saveFirst` on anything but a button; `rowKey`, `fixedRows` or `filter` on a field that is no list, a `rowKey`
+column the list does not have, a `filter` condition without an operator or one that names what is neither a column
+nor a setting (such a condition counts as holding, so every row shows); `optionsFrom` on a field that is no dropdown, one that names itself or a key
+that is no setting; a `multi` without options, or whose default names a value none of them has; a
+`time` with `min` or `max`, or whose default is not written `HH:mm`; a `global` on a button, a note, a table or a
+list, without a name, together with `file`, or named by two settings (such a field is locked, so its value never
+falls back to a file); a `requires` that is no version, or above the UIFramework that opened the window; a group of pages without an id
+or a title, two with the same id, one that names a page the window does not have, a page at the foot, or a page
+another group names already; `twitchOnly` on
 a note; an `options` field without options, a slider with neither options nor both `min` and `max`, a slider over a
 range whose default is a whole number while its `step`, `min` or `max` has a fraction (such a slider holds whole
 numbers; a default written `1.0` makes one of decimals), a `list` without columns; a page the window names by its id
@@ -103,7 +122,9 @@ stays there); a `custom` page behind the generic settings action, which builds n
 the tour wants a `Tip`, and a `Tip` among a help section's lines (the host block hands all four as one type, so the
 wrong one compiles); a style of the Log page's colours that is none; a log declared with its folder and files whose
 page the window does not name (there is then no Log page, and no switch for the log). An unknown kind is told the
-kinds there are.
+kinds there are. So is what an older host block could say and the window no longer reads: `overrides` in the window
+(`UiWindow.Override`; page, label, help, section and `hidden` go where the setting is declared), and a window the
+settings action passes itself.
 
 ## Kinds
 
@@ -118,9 +139,11 @@ kinds there are.
 | `string`    | string      | one-line text field                        | saved as typed, spaces at either end included (a prefix `"🎲 "`) |
 | `text`      | string      | multi-line text field                      |                                                       |
 | `template`  | string      | multi-line, placeholder chips, chat preview| `placeholders`; the preview fills them with samples   |
-| `options`   | string      | dropdown                                   | `options` required                                    |
+| `options`   | string      | dropdown                                   | `options` required, unless `optionsFrom` has the project name them |
 | `namelist`  | string      | chips, Enter adds one                      | stored comma-separated                                |
 | `grouplist` | string      | chips with Streamer.bot's groups suggested | stored comma-separated; the groups come from the settings action (stub 0.3.2 and on), asked once when a group field first gets the cursor; Up/Down and Enter or a click add one, and a typed name goes in as typed. With an older settings action the field takes typed names only |
+| `multi`     | string      | check boxes over `options`                 | several of a fixed set of choices. Stored comma-separated, the ticked values in the options' order and spelling: `"steam,gog"`, nothing ticked `""`. A stored value none of the options has stays, shown as a chip with a cross, until the user removes it. `UiSettings.Values(key)` reads it as a `string[]`. Conditions: `!key` holds while nothing is stored, `key=steam` while steam is ticked, `key=steam\|gog` while one of them is, `key!=steam\|gog` while neither is. A DLL before this kind shows a text field and names the kind behind the red **i**; the value stays |
+| `time`      | string      | a time of day, `HH:mm`                     | the 24-hour clock. The field takes `9`, `9:5`, `0905`, `9.05` or `21h` and writes `09:05`; text that is no time stays in the box and stops the save, as for a number. Empty is allowed only where the default is empty. `min` and `max` do nothing here. Sits three to a line with the numbers |
 | `path`      | string      | text field with a button for Windows' file or folder dialog and one that opens the folder in Explorer | relative to the Streamer.bot folder is fine; a value or default that names a file (`overlay\state.json`) gets a file dialog, and the folder button opens the folder the file is in; a choice is written as a full path |
 | `colour`    | string      | colour field with a picker                 | `#rrggbb` or `#aarrggbb`; the kind `color` is read too |
 | `emote`     | string      | text field with the emote's picture beside | `platform` says `twitch`, `youtube` or `kick`; Twitch's global emotes show without a Twitch login, the channel's once Streamer.bot has one |
@@ -150,6 +173,17 @@ The project answers `test` with a line of text, or with a JSON object:
 - `lines` are drawn one under the other in the action's box, so they need `panel` or `auto`; a line with `emotes`
   shows them as pictures with their names beneath (on YouTube a Unicode emoji shows itself, and a shortcode without
   a picture its text), after its `text` when there is one.
+- A line can be a row with a label, a pill and a value, for a status:
+
+  ```json
+  { "lines": [ { "label": "Action", "pill": "Running", "tone": "ok", "text": "since 14:02" },
+               { "label": "Action id", "text": "4f1c…", "copy": true },
+               { "pill": "Paused", "tone": "warn" } ] }
+  ```
+
+  The parts stand in that order: `label`, `pill`, `text`, and with `copy: true` a small button that puts the text
+  on the clipboard. The labels of one box share a column. `tone` is `ok` (green), `warn` (amber) or `muted` (grey,
+  also for anything else). With `every` on an `auto` action the box follows what the project reports.
 - `bar` is a stacked bar with a legend, in the same box.
 - `set` puts values into other fields of the window as if typed (nothing is saved until Save: a preset button). A
   field whose value changes glows in the accent colour for a moment. An answer that arrives while a save waits for
@@ -161,8 +195,7 @@ The project answers `test` with a line of text, or with a JSON object:
 
 ## The window
 
-The window declaration says what the window is called and how it is laid out; it used to be a spec JSON in the
-settings action. Everything is optional. A page a setting names but the window does not is made up on the way;
+The window declaration says what the window is called and how it is laid out. Everything is optional. A page a setting names but the window does not is made up on the way;
 `messages` appears once there are templates, `help` once there are help sections, custom triggers or methods, and
 `log` only where the window names it. `help`, `log` and `about` sit together at the foot of the rail, in that order,
 whatever order the window declares them in (a page of the project's own with `bottom` goes above them).
@@ -176,14 +209,13 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
     .Senders(cooldownGroup: "Cooldown")
     .Samples("user", "alice", "bet", "1,500", "cards", "🂫(10) 🂺(10)")
     .Answer("resetLeaderboard", "The leaderboard is empty.")
-    .Override("egg", hidden: true)
     .Help(H("Playing a hand", Cmd("!blackjack <bet>", "Deals you in."), "A note.", Link("Guide", "https://…")))
     .About(credits: "Responsible: aaskjer", links: new[] { Link("Discord", "https://…") });
 ```
 
 | Part                 | Meaning                                                                                              |
 |----------------------|------------------------------------------------------------------------------------------------------|
-| `UiWindow(title, …)` | the window title and About heading; `releases` is `owner/repo` on GitHub (repository and releases links, the update check); `logo` a URL; `logPrefix` for the framework's log lines (default `[Title/Settings]`); `width`, `height` |
+| `UiWindow(title, …)` | the window title and About heading; `releases` is `owner/repo` on GitHub (repository and releases links, the update check); `logo` a URL; `logPrefix` for the framework's log lines (default `[Title/Settings]`); `width`, `height`; `placeholderStyle: "percent"` for a project whose messages write `%user%` instead of `{user}` (in the schema `"placeholderStyle": "percent"`); `requires: "2.1.0"` for the oldest UIFramework the window works with: a settings action from stub 0.3.3 on offers that update instead of opening the window with an older one, and without it the window stays closed (in the schema `"requires"`) |
 | `Pages(…)`           | the pages in order: `P(id, title, icon, fields…)` or the id of a standard page (`messages`, `log`, `help`, `about`). `icon` is an emoji or a conventions name (`gear`, `dice`, `coins`, `clock`, `shield`, `chat`, `trophy`, `monitor`, `list`, `book`, `info`, `cards`, `chart`, `gift`). `fields` are keys or patterns like `overlay*` the page claims ahead of their own page; a pattern never takes a template off the Messages page, a full key does (it is then that page's field, not an entry of the Messages picker); a field the user moved to another page in the customise mode stays there. `P(...).AtBottom()` puts a page of the project's own at the foot of the rail, above How to play, Log and About (in the schema `"bottom": true`) |
 | `InLanguage(code)`   | the window's language whatever the user's is (`"de"`): the window then offers none to pick. In the schema `"language": "de"` |
 | `Log(folder, files, …)` | the Log page: the folder (relative to the Streamer.bot folder) and the files in it (`BJG-log*.txt`), which the settings action reads and the page follows as they change; `writeLogKey` the bool behind "Write a log file per day", `writeLogLabel` (another wording for that switch) and `writeLogHelp`, `columns` after Time and Result as `"Header|field"` (a field may name several keys, `"Word|Word,Word was"`: the first the line has is shown), `results` for the filter, `platforms`, `emptyText`, `styles` and `outcome` (see *The colours of the results* below). Headers and `emptyText` translate through `Tx`. The page reads lines as `[yyyy-MM-dd HH:mm:ss] RESULT \| User: name \| Platform: twitch \| Key: value \| …`, and older lines in columns (`yyyy-MM-dd HH:mm:ss RESULT  user  [R1\|id] Key: value \| …`) as well |
@@ -192,12 +224,13 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Senders(…)`         | the keys of the sender switches on the Messages page where they differ from the conventions' (`useBot`, `sendAction`, `cooldownUseBot`, `cooldownSendAction`, `numberSeparator`); null takes one off the Messages page; `cooldownGroup` names the group the cooldown senders sit in. A switch the Messages page does not draw (the window has no messages, or none in the cooldown group, or null took it off) is a field on its own page, and `hidden` hides one like any setting |
 | `Samples("k", "v", …)` | fixed sample values for the chat preview's placeholders; live ones (`pointsName`, `amount`, `min`, `max`) the window adds |
 | `Answer(action, text)` | what an action would answer, for the framework's preview and screenshots only                      |
-| `Override(key, …)`   | `page`, `label`, `help`, `section`, `hidden`, `order` of one setting, where the table should not say it |
 | `Help(H(heading, lines…), …)` | the Help page: a line is a note (a string), `Cmd(command, what)` or `Link(text, url)`         |
 | `Lang(code, texts…)` | the project's own texts in another language (see *Languages* below): `K(key, label, help)`, `Pg(id, title)`, `Tx(declared, translation)`, `Ui(key, text)` for the window's own texts, `Ph(placeholder, help)`. A language with a conventions file is offered anyway; `Lang` adds the project's words to it, or offers a language the framework does not have |
 | `Lock()`             | locks the layout: no customise mode (the pen button is gone, and with it export and import), and a user's renames, moves, hidden fields and accent colour in `uiframework.layout.json` are not applied. The theme stays the user's, and so do the language, picked in the footer when the window offers more than one, and the help under the fields (the bulb beside it). In the schema `"locked": true` |
-| `About(credits, sections, links, streamerBotLink, authorLink, defaultLinks)` | the About page: the project's credits under its name (none unless given), sections like help, the project's own links; `Tx` translates credits and link texts. It ends with the framework's links from `conventions/keys.json` (`about.links`: the UIFramework page, Streamer.bot, *Report something that looks wrong*, which goes to the project's issues when it names its repository, else the framework's); `defaultLinks: false` leaves them out, `streamerBotLink: false` only that one. `authorLink` does nothing any more. The framework's logo sits faint in the page's bottom right corner (its tooltip names the version, a click opens the framework's page); a project cannot remove it. In the schema `about: { credits, sections, links: [ { text, url } ], defaultLinks, streamerBotLink }` |
+| `About(credits, sections, links, streamerBotLink, defaultLinks)` | the About page: the project's credits under its name (none unless given), sections like help, the project's own links; `Tx` translates credits and link texts. It ends with the framework's links from `conventions/keys.json` (`about.links`: the UIFramework page, Streamer.bot, *Report something that looks wrong*, which goes to the project's issues when it names its repository, else the framework's); `defaultLinks: false` leaves them out, `streamerBotLink: false` only that one. The framework's logo sits faint in the page's bottom right corner (its tooltip names the version, a click opens the framework's page); a project cannot remove it. In the schema `about: { credits, sections, links: [ { text, url } ], defaultLinks, streamerBotLink }` |
 | `Tour(Tip(target, title, text), …)` | a tour of the window that starts by itself on its first open; see *The tour* below |
+| `Group(id, title, pages…)` | a group of pages in the rail, for a window with many: a heading the user can fold, with the pages it names under it in that order. A group sits where the first of its pages comes in `Pages`; a page no group names stays where it is, and *How to play*, *Log*, *About* and a page with `bottom` stay at the foot, in no group. The title translates through `Tx`. The user folds groups, and in the customise mode moves pages between them and renames a heading ([Customize.md](Customize.md)). A UIFramework before this release shows the pages without the headings. In the schema `"groups": [ { "id", "title", "pages": [ … ] } ]` |
+| `Adopt(Old(actionId, mappings…), …)` | the action a version before this window kept its settings in, as Set Argument sub-actions: while nothing has been saved yet, their values come into the window as unsaved changes; see *Values from the version before* below |
 
 ### The colours of the results
 
@@ -334,7 +367,7 @@ one of the window's own texts by its key in `conventions/lang/en.json`'s `ui` se
 and `Ph(placeholder, help)` a placeholder chip's help; what the project leaves out stays English.
 
 Settings the window puts on a standard page (a switch on `log`) sit above that page's own content. Within a
-page the table's order holds (`Override(order:)` moves one); a heading where `section` changes.
+page the table's order holds; a heading where `section` changes.
 
 What the project declares is checked when the window opens: an unknown kind, a requirement on a key that is not a
 setting, a page naming a pattern no setting matches, a minimum above a maximum, a section condition for a section
@@ -350,8 +383,45 @@ report. The pages show none of it, and every line is in Streamer.bot's log as we
 </p>
 
 Until UIFramework 0.9.3 the stub could carry a spec of its own (the JSON with the same parts as the builder; see the
-git history of `docs/Spec.md` and `stub/Stub.spec.cs`). The stub passes none now, but a settings action made by hand
-still can, and the DLL lets that spec win over the window in the schema.
+git history of `docs/Spec.md` and `stub/Stub.spec.cs`). The stub passes none, and one a settings action made by hand
+still passes is no longer read: the window is the one the schema declares, and the red **i** says so.
+
+### Values from the version before
+
+A project that kept its settings in Set Argument sub-actions loses them with the import of its new version: the
+import replaces the action, sub-actions included. `Adopt` gets them back once.
+
+```csharp
+    .Adopt(Old("5d80b7e4-2c19-4a63-8f05-e1b6a3d92c47", "sendAsMe>sendAction", "#3f6c1a52-8b0e-4d47-9a61-c2e5d7f04b18>msgConfirm"))
+```
+
+`Old` names the action the earlier version kept its values in, by its id in Streamer.bot (a GUID; an import keeps
+it), then the mappings:
+
+- An argument named like a key of the table, or like one of its old keys (`aliases`), needs none.
+- `"old>new"` leads an argument of another name to a setting.
+- `"#subActionId>key"` takes the text of a Send Message sub-action (Twitch, YouTube or Kick), named by the
+  sub-action's id.
+
+It happens while nothing has been saved yet, neither the settings file nor its `.bak`. The values come into the
+fields as unsaved changes, the status line says how many and where from ("3 values taken over from the backup of
+2026-11-15"), and the user looks them over and saves. A window closed without saving brings them again.
+
+The action is looked for in `<Streamer.bot>\data\actions.json`, then in the ten newest `backup\backup-*.zip`, the
+newest first; the first place where it gives a value for a setting counts. An import under the same id leaves the
+action where it was, without its Set Arguments, so the backup from before the import is the one that has them.
+Only `<Streamer.bot>\backup` is read, not a backup folder set elsewhere.
+
+Only active sub-actions count, inside groups too; a disabled one, and what a disabled group holds, does not. Of
+two Set Arguments of one name the last wins, as when the action ran. A value is read as the setting holds it and
+left out when it does not fit: a switch from `true`/`false`, `yes`/`no`, `on`/`off`, `ja`/`nein` or `1`/`0`, a
+whole number from digits, a decimal with a point or a comma, a dropdown's value as one of its options. A list, a
+button, a `readOnly` and a `transient` setting take none, and neither does a setting the window has no field for.
+
+No value reaches the log, since it may be a webhook or a token: the log names counts, the action's id and the
+file. The red **i** names an id that is no GUID, a mapping of neither form, and one that leads to a key that is no
+setting or takes no value. In the schema: `"adopt": [ { "action": "<id>", "map": [ "old>new", "#<subActionId>>key" ] } ]`
+in the window; a DLL that does not know it opens the window without the values.
 
 ## The game's side
 
@@ -364,17 +434,53 @@ describe answer leaves a line in Streamer.bot's log.
 
 | Request    | When                                     | The project's part                                                  |
 |------------|------------------------------------------|---------------------------------------------------------------------|
-| `describe` | the window opens                         | nothing: `UiSchema.ToJson` answers with the table and the window    |
+| `describe` | the window opens                         | nothing: `UiSchema.ToJson` answers with the table and the window; with `arguments: true` also the settings a Set Argument sets, with `locked: s => …` the fields that are locked (both below) |
 | `test`     | a Try button, a field with `ask`, an auto action | `test: (name, s) => …` answers by the setting's key, with the saved values, or with the values as they stand in the window for `live`, `ask` and `auto`; null for "no answer" |
 | `validate` | before a save                            | `validate: s => …` answers the problems one per line ("Minimum bet is above the maximum"), or null; the window shows them and asks whether to save anyway |
 | `saved`    | after a save, with the saved values      | `saved: s => …` writes an overlay, restarts a timer; the cooldowns the window declares are set by the settings action before this |
 | `table`    | a `table` field is shown                 | `table: key => …` answers a JSON array of objects whose fields the columns name |
+| `options`  | a dropdown with `optionsFrom` is built, or the field it names changed | `options: (key, s) => …` answers the options by the dropdown's key as a `string[]`, each `"value"` or `"value\|Label"`, with the values as they stand in the window; null leaves the options the setting declares (stub 0.3.3 and on) |
 | `emotes`   | the window opens, for emote pictures     | `emotes: () => …` answers the sources as JSON: `{ "twitchUserId": "…", "clientId": "…", "token": "…", "youtube": { ":name:": "picture url" } }` (the broadcaster's Twitch id and Streamer.bot's Twitch client id and token, for the channel's own emotes and its 7TV, BTTV and FFZ sets; without them the global emotes still have their pictures); the `youtube` object adds to or replaces entries of the built-in table of YouTube's own emojis |
 
 **A request that takes long on purpose** (a Try button that imports a word list) calls `UiHost.StillWorking()`
 every few seconds while it works. The settings action gives a request 30 seconds once it has started and then
 stops waiting for its answer; each `StillWorking()` gives it 30 seconds from then (stub 0.3.2 and on; an older
 stub ignores it). Outside a request it does nothing.
+
+**Set Arguments.** `UiSettings.Load(file).With(args)` lays the run's arguments over the file: a Set Argument
+sub-action named like a key of the table, or like an old key of one (`aliases`), wins while it holds something; an
+empty one does not. The value becomes what the setting holds: `yes`, `on`, `1` and `ja` switch on, `2,5` is 2.5. An
+argument that does not fit (text for a number) and a list stay as the file has them. So an action that was set up
+with Set Arguments keeps working once its values live in the settings file, and a value can differ per action (a
+dry run for one of three). Pass `arguments: true` to `UiHost.Handle` beside it: the window then shows such a setting
+with a *Set Argument* pill and the argument's name instead of a field, since what the file holds does not count
+while the argument is there. Only the action's own Set Arguments count, the ones that stand before its code. The
+arguments the settings action itself was run with (its trigger's) reach your action too; from stub 0.3.3 it names
+them (`uiframework.callerArgs`), and they are left out. In the schema: `"arguments": { "sendAction": "sendAsMe" }`,
+key and argument name, or a list of keys.
+
+**A locked field.** `locked: s => "tournamentOdds|Set by the tournament.\nleague"` in `UiHost.Handle` names the
+fields that are locked when the window opens, one per line as `key|why`; it gets the settings as the file has them.
+A locked field shows its value (a `masked` one as dots), a *Locked* pill and the reason, and is not edited, reset or
+imported, like a `readOnly` one. In the schema: `"lockedFields": { "tournamentOdds": "Set by the tournament." }`. A
+message locked either way shows its text on the Messages page with the reason where its chips would be.
+
+**A secret in a global.** `S("botToken", "", masked: true, global: "MyProject_botToken")` keeps the value in a
+persisted global of Streamer.bot, where the project's other actions read it, and out of the settings file, so an
+exported settings file carries no secret. The settings action reads the global when the window opens and writes
+it after a save, and only when the field changed; an emptied field unsets the global. The value is never written
+to the file, an export or the log, an import does not take it, and a reset leaves it. A value an older file holds
+under that key goes with the next save. Your handlers never get it either: in `test`, `validate` and `saved` such
+a setting is `""` when it is empty and `"*"` when it holds something, which is enough to say "neither a token nor
+a webhook is set"; read the value itself with `CPH.GetGlobalVar<string>(name, true)`. With a settings action
+before stub 0.3.3, and in the preview, the field is locked and shows nothing. A UIFramework before this release
+knows no `global` and would write the value into the file, so declare `requires:` on the window with it.
+
+**The values of a `multi`, a `namelist` or a `grouplist`** come as a `string[]` from `UiSettings.Values(key)`:
+trimmed, without empty and repeated ones. The host reader has `Values(key, fallback)`.
+
+**A project with several actions** gives one action the host block and the others the host reader
+(`stub/HostReader.cs`); see *A project with several actions* in [Getting-Started.md](Getting-Started.md).
 
 **The points system.** `UiCurrency.Detect(CPH, settings)` gives the user variable the points live in
 (`Variable`), what they are called (`Name`) and where that came from (`Source`): StreamUP's Currency Core
@@ -405,6 +511,19 @@ default other than the one it passes.
 
 `actionName` in `UiHost.Handle` is the prefix of your action's log lines; `null` takes the name Streamer.bot gives
 the run.
+
+**A list the project fills** (holidays it downloads, birthdays a chat command adds) is edited in the window
+while the project goes on writing to it. `rowKey` names the columns that tell a row from the others, and a save
+of a list the user changed is a merge by that key, cell by cell: what the user changed wins, everything else is
+the file's at that moment, the read-only columns and the properties no column shows included. A row the user
+removed is removed; one the project removed comes back only where the user changed it. The order is the file's,
+and a row the user added goes behind the row it followed in the window. A row whose key is incomplete (a part
+missing, empty, 0 or false) is told apart by all the window shows of it, and of two rows with one key the first is
+paired with the first, so none is lost; the red **i** names two default rows with one key. After such a save the
+list shows what was written. An import is no merge: it puts its list over the file's. `fixedRows` keeps the rows
+the project's (no adding, no removing), `filter` shows the ones that fit what the window holds, applied when the
+list loads and when a setting it names changes. A JSON array in a cell of a read-only column shows as
+`DE-BY, DE-BW` and is written back as the array.
 
 **A file of its own (`file`, `field`):** the value is read on open from `<folder of the settings file>\<file>`
 (the property `field`, or the file itself) and written back there on save, atomically with a `.bak`; the rest of
