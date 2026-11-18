@@ -13,7 +13,8 @@ namespace UIFramework.Tests
             var english = Conventions.Default.Lang;
             var german = Conventions.Load("de").Lang;
             Assert.True(english.Ui.Count > 150, "the English ui section is missing or thin");
-            var missing = english.Ui.Keys.Where(k => !german.Ui.TryGetValue(k, out var text) || text == english.Ui[k] && !k.StartsWith("btn.ok") && !k.StartsWith("about.version") && !k.StartsWith("about.links") && !k.StartsWith("about.releases") && !k.StartsWith("pill.update")).ToList();
+            var missing = english.Ui.Keys.Where(k => !german.Ui.TryGetValue(k, out var text) || text == english.Ui[k] && !k.StartsWith("btn.ok") && !k.StartsWith("about.version") && !k.StartsWith("about.links") && !k.StartsWith("about.releases") && !k.StartsWith("pill.update")
+                && k != "field.setArgument").ToList();   // Streamer.bot's own name for the sub-action, in every language
             Assert.True(missing.Count == 0, "not translated: " + string.Join(", ", missing));
             var extra = german.Ui.Keys.Where(k => !english.Ui.ContainsKey(k)).ToList();
             Assert.True(extra.Count == 0, "German has keys English lacks: " + string.Join(", ", extra));

@@ -26,13 +26,14 @@ namespace UIFramework
 
             spec.Problems.Clear();
             spec.Problems.AddRange(spec.ReadProblems);
+            CheckRequires(spec);
 
-            // 1. Complete every setting and lay the spec's overrides on top.
+            // 1. Complete every setting.
             var settings = new List<Setting>();
             var declaredSections = new HashSet<string>(StringComparer.Ordinal);
             // Where the game put each field, before the user's layout moves it: what the check of split sections reads.
             var asDeclared = new List<(string Key, string Page, int Order, string Section, bool Hidden)>();
-            // What the game hides (`hidden`, Override), before the user's layout: the same with every resolve.
+            // What the game hides (`hidden`), before the user's layout: the same with every resolve.
             var hiddenByGame = new HashSet<string>(StringComparer.Ordinal);
             // Each field's order as the project declares it, and the fields the user's layout gives an order of its own:
             // what places a field the user never placed on a page the user sorted.
@@ -47,14 +48,12 @@ namespace UIFramework
                     spec.Problems.Add("'" + declared.Key + "' is a known key of the conventions (" + (Conventions.Default.Lang.Key(declared.Key).Label ?? declared.Key) +
                         ", " + knownKey.Kind + "), declared as '" + declared.Kind + "': it still takes the conventions' limits, old keys and translations. A key of the game's own fits another meaning.");
                 var setting = conventions.Complete(declared);
-                if (spec.Overrides.TryGetValue(setting.Key, out var over))
+                // A value a Set Argument of the project's action sets, or one the project locks: shown, not edited.
+                // A button, a note and a table hold no value to lock.
+                if (setting.Kind != "action" && setting.Kind != "note" && setting.Kind != "table")
                 {
-                    setting.Page = over.Page ?? setting.Page;
-                    setting.Label = over.Label ?? setting.Label;
-                    setting.Help = over.Help ?? setting.Help;
-                    setting.Section = over.Section ?? setting.Section;
-                    if (over.Hidden.HasValue) setting.Hidden = over.Hidden.Value;
-                    if (over.Order.HasValue) setting.Order = over.Order.Value;
+                    if (schema.Arguments.TryGetValue(setting.Key, out var argument)) { setting.Argument = argument; setting.ReadOnly = true; }
+                    else if (schema.LockedFields.TryGetValue(setting.Key, out var why)) { setting.LockReason = why ?? ""; setting.ReadOnly = true; }
                 }
                 string declaredSection = setting.Section;
                 if (declaredSection != null) declaredSections.Add(declaredSection);
@@ -69,7 +68,7 @@ namespace UIFramework
                     var text = lang.Key(setting.Key);
                     var own = lang.OwnKey(setting.Key);
                     var english = lang.EnglishKey(setting.Key);
-                    string declaredLabel = over?.Label ?? declared.Label, declaredHelp = over?.Help ?? declared.Help;
+                    string declaredLabel = declared.Label, declaredHelp = declared.Help;
                     string ownLabel = declaredLabel != null && declaredLabel != english.Label ? lang.TextOrNull(setting.Label) : null;
                     string ownHelp = declaredHelp != null && declaredHelp != english.Help ? lang.TextOrNull(setting.Help) : null;
                     // The key's text where it is a translation: a language without a conventions file of its own has
@@ -113,6 +112,7 @@ namespace UIFramework
                 setting.SectionShowWhen = sectionName != null && spec.SectionConditions.TryGetValue(sectionName, out var sectionCondition) ? sectionCondition : null;
                 settings.Add(setting);
             }
+            CheckGlobals(spec, settings);
             Shows(spec, settings);
             spec.ResolvedSettings.Clear();
             spec.ResolvedSettings.AddRange(settings);
@@ -169,7 +169,12 @@ namespace UIFramework
             spec.Senders.CooldownGroupShown = lang.Translates ? lang.Text(spec.Senders.CooldownGroup) : null;
             spec.Messages.Clear();
             foreach (var setting in settings.Where(s => s.Kind == "template" && s.Page == "messages" && !s.Hidden).OrderBy(s => s.Order))
-                spec.Messages.Add(new MessageDef(setting.Group ?? lang.Page("messages") ?? "Messages", setting.Key, setting.Label, setting.Help ?? "", (setting.Placeholders ?? new List<string>()).ToArray()));
+                spec.Messages.Add(new MessageDef(setting.Group ?? lang.Page("messages") ?? "Messages", setting.Key, setting.Label, setting.Help ?? "", (setting.Placeholders ?? new List<string>()).ToArray())
+                {
+                    Percent = TokenStyle.IsPercent(setting.PlaceholderStyle ?? spec.PlaceholderStyle),
+                    LockNote = setting.Argument != null ? Text.T("field.setArgument.why", setting.Argument)
+                        : setting.LockReason == null ? null : setting.LockReason.Trim().Length > 0 ? setting.LockReason : Text.T("field.locked")
+                });
             if (spec.SampleValues == null)
                 spec.SampleValues = ctx => SampleValues(ctx, settings);
             // Set again on every resolve, so a language switch reaches the placeholder chips' tooltips too.
@@ -307,6 +312,12 @@ namespace UIFramework
             int? UserOrder(SpecPage p) => Array.IndexOf(TrailingPages, p.Id) >= 0 || p.Bottom ? null : layout?.Page(p.Id)?.Order;
             pageOrder = pageOrder.OrderBy(p => UserOrder(p).HasValue ? 0 : 1).ThenBy(p => UserOrder(p) ?? 0).ThenBy(Rank).ToList();
 
+            // The groups of pages in the rail: a group sits where the first of its pages does, with all its pages under
+            // its heading; a page in no group stays where the order above puts it.
+            var groupOf = new Dictionary<string, string>(StringComparer.Ordinal);
+            var declaredIn = new Dictionary<string, string>(StringComparer.Ordinal);
+            pageOrder = Grouped(spec, pageOrder, layout, lang, UserOrder, groupOf, declaredIn);
+
             spec.Pages.Clear();
             foreach (var page in pageOrder)
             {
@@ -363,14 +374,109 @@ namespace UIFramework
                     var captured = fields;
                     build = ctx => SchemaPage.Prepend(ctx, captured, inner(ctx));
                 }
-                spec.Pages.Add(new PageSpec(page.Id, title, icon, build, bottom) { Hidden = hidden });
+                spec.Pages.Add(new PageSpec(page.Id, title, icon, build, bottom)
+                {
+                    Hidden = hidden,
+                    Group = groupOf.TryGetValue(page.Id, out var inGroup) ? inGroup : null,
+                    DeclaredGroup = declaredIn.TryGetValue(page.Id, out var declaredGroup) ? declaredGroup : null
+                });
             }
+        }
+
+        /// <summary>The pages in the rail's order with the window's groups (<see cref="WindowSpec.Groups"/>): each group
+        /// where the first of its pages sits in <paramref name="pageOrder"/>, its pages together in the order the group
+        /// names them (the user's order first, where the customise mode wrote one); a page in no group where it was; the
+        /// pages at the foot last, in no group. The user's layout moves a page into another group or out of every group
+        /// (<c>pages.&lt;id&gt;.group</c>) and renames a heading (<c>groups.&lt;id&gt;.title</c>). What a declaration gets
+        /// wrong is named among the problems. Fills <see cref="WindowSpec.RailGroups"/>, and for every page in a group
+        /// <paramref name="groupOf"/> (after the layout) and <paramref name="declaredIn"/> (as declared).</summary>
+        private static List<SpecPage> Grouped(WindowSpec spec, List<SpecPage> pageOrder, LayoutFile layout, Lang lang, Func<SpecPage, int?> userOrder,
+            Dictionary<string, string> groupOf, Dictionary<string, string> declaredIn)
+        {
+            spec.RailGroups.Clear();
+            if (spec.Groups.Count == 0) return pageOrder;
+            bool AtFoot(SpecPage p) => p.Bottom || Array.IndexOf(TrailingPages, p.Id) >= 0;
+            var byId = new Dictionary<string, SpecPage>(StringComparer.Ordinal);
+            foreach (var page in pageOrder)
+                if (page.Id != null && !byId.ContainsKey(page.Id)) byId[page.Id] = page;
+
+            // The pages each group names, in its order, as far as they can be its pages.
+            var named = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            foreach (var group in spec.Groups)
+            {
+                string id = (group.Id ?? "").Trim();
+                if (id.Length == 0)
+                {
+                    spec.Problems.Add("A group of pages" + (string.IsNullOrWhiteSpace(group.Title) ? "" : " ('" + group.Title.Trim() + "')")
+                        + " has no id; it is left out, and its pages stay in no group. Write Group(\"id\", \"Title\", pages…).");
+                    continue;
+                }
+                if (named.ContainsKey(id))
+                {
+                    spec.Problems.Add("Two groups of pages have the id '" + id + "'; the second is left out, and its pages stay where they are.");
+                    continue;
+                }
+                if (string.IsNullOrWhiteSpace(group.Title))
+                    spec.Problems.Add("The group '" + id + "' has no title; its heading shows '" + Conventions.Humanize(id) + "'.");
+                var pages = named[id] = new List<string>();
+                foreach (var pageId in group.Pages)
+                {
+                    if (pageId == null || !byId.TryGetValue(pageId, out var page))
+                        spec.Problems.Add("The group '" + id + "' names the page '" + pageId + "', which the window does not have.");
+                    else if (AtFoot(page))
+                        spec.Problems.Add("The group '" + id + "' names the page '" + pageId + "', which sits at the foot of the rail; it stays there, in no group.");
+                    else if (declaredIn.TryGetValue(pageId, out var other))
+                    {
+                        if (other != id)
+                            spec.Problems.Add("The groups '" + other + "' and '" + id + "' both name the page '" + pageId + "'; it stays in '" + other + "'.");
+                    }
+                    else
+                    {
+                        declaredIn[pageId] = id;
+                        pages.Add(pageId);
+                    }
+                }
+                // A declared text, like a section's name: in another language through the project's texts. The user's
+                // name for the heading has the last word.
+                string title = string.IsNullOrWhiteSpace(group.Title) ? Conventions.Humanize(id) : lang.Translates ? lang.Text(group.Title) : group.Title;
+                spec.RailGroups.Add(new PageGroup { Id = id, Title = layout?.Group(id)?.Title ?? title });
+            }
+
+            var top = pageOrder.Where(p => !AtFoot(p)).ToList();
+            foreach (var page in top)
+            {
+                // "" is out of every group; a group the window no longer has is as if the user had said nothing.
+                string mine = layout?.Page(page.Id)?.Group;
+                if (mine != null && mine.Length > 0 && !named.ContainsKey(mine)) mine = null;
+                string group = mine ?? (declaredIn.TryGetValue(page.Id, out var declared) ? declared : null);
+                if (!string.IsNullOrEmpty(group)) groupOf[page.Id] = group;
+            }
+            int NamedAt(SpecPage p)
+            {
+                int at = named[groupOf[p.Id]].IndexOf(p.Id);
+                return at < 0 ? int.MaxValue : at;
+            }
+            var members = top.Where(p => groupOf.ContainsKey(p.Id)).GroupBy(p => groupOf[p.Id], StringComparer.Ordinal).ToDictionary(g => g.Key,
+                g => g.OrderBy(p => userOrder(p).HasValue ? 0 : 1).ThenBy(p => userOrder(p) ?? 0).ThenBy(NamedAt).ToList(), StringComparer.Ordinal);
+
+            var rail = new List<SpecPage>();
+            var placed = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var page in top)
+            {
+                if (!groupOf.TryGetValue(page.Id, out var group)) rail.Add(page);
+                else if (placed.Add(group)) rail.AddRange(members[group]);
+            }
+            rail.AddRange(pageOrder.Where(AtFoot));
+            foreach (var group in spec.RailGroups)
+                if (members.TryGetValue(group.Id, out var its))
+                    group.Pages.AddRange(its.Select(p => p.Id));
+            return rail;
         }
 
         private static readonly HashSet<string> Kinds = new HashSet<string>(StringComparer.Ordinal)
         {
             "bool", "int", "long", "duration", "double", "percent", "options", "namelist", "grouplist", "colour", "color",
-            "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list"
+            "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list", "multi", "time"
         };
 
         private static readonly string[] PlatformNames = { "twitch", "youtube", "kick" };
@@ -414,7 +520,12 @@ namespace UIFramework
         private static void CheckCondition(WindowSpec spec, Dictionary<string, Setting> byKey, string owner, string what, string condition)
         {
             string text = (condition ?? "").Trim();
-            if (text.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)) text = text.Substring(5);
+            // "hide:" in front of a requirement hid the field instead of greying it, until showWhen did the same.
+            if (text.StartsWith("hide:", StringComparison.OrdinalIgnoreCase))
+            {
+                spec.Problems.Add(owner + " " + what + " '" + text + "': 'hide:' in front of a requirement is no longer read, and the field always shows. Hide it with showWhen: \"" + text.Substring(5).Trim() + "\".");
+                return;
+            }
             foreach (var part in Requirement.Parse(text))
             {
                 if (part.Op != null && part.Key.StartsWith("!", StringComparison.Ordinal))
@@ -431,7 +542,8 @@ namespace UIFramework
                     spec.Problems.Add(owner + " " + what + " '" + key + "', which is not a setting.");
                     continue;
                 }
-                if ((part.Op == "=" || part.Op == "!=") && gate.Options != null && gate.Options.Count > 0 && (gate.Kind == "options" || gate.Kind == "slider"))
+                // A dropdown the project names the options of (optionsFrom) may hold what it declares no option for.
+                if ((part.Op == "=" || part.Op == "!=") && gate.Options != null && gate.Options.Count > 0 && (gate.Kind == "slider" || gate.Kind == "multi" || (gate.Kind == "options" && gate.OptionsFrom == null)))
                     foreach (var value in part.Values)
                         if (!gate.Options.Any(o => string.Equals(o.Value, value, StringComparison.OrdinalIgnoreCase)))
                             spec.Problems.Add(owner + " " + what + " '" + key + "=" + value + "', but '" + key + "' has no option '" + value + "'.");
@@ -456,6 +568,7 @@ namespace UIFramework
                 case "int": case "long": case "double": case "duration": case "percent":
                     return true;
                 case "slider": case "options":
+                    if (s.Kind == "options" && s.OptionsFrom != null) return true;   // the project's options: not known here
                     return s.Options == null || s.Options.Count == 0 ? s.Kind == "slider" : s.Options.All(o => FieldBinding.TryParseInvariantDouble(o.Value, out _));
                 default:
                     return false;
@@ -474,9 +587,9 @@ namespace UIFramework
                 case "double": case "percent": return "decimal";
                 case "slider": return "slider";
                 case "bool": return "bool";
-                case "list": case "namelist": case "grouplist": case "table": return "list";
+                case "list": case "namelist": case "grouplist": case "multi": case "table": return "list";
                 case "colour": case "color": return "colour";
-                default: return "text";   // string, options, text, template, path, emote, note, action
+                default: return "text";   // string, options, text, template, path, emote, time, note, action
             }
         }
 
@@ -518,6 +631,21 @@ namespace UIFramework
                     if (s.Auto) spec.Problems.Add("'" + s.Key + "' has auto, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
                     else if (s.Panel) spec.Problems.Add("'" + s.Key + "' has panel, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
                     if (s.Confirm != null) spec.Problems.Add("'" + s.Key + "' has confirm, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
+                    // With auto beside it, what is said of auto above says it: the kind is missing.
+                    if (s.Every.HasValue && !s.Auto) spec.Problems.Add("'" + s.Key + "' has every, which only an auto action has (kind action with auto); it does nothing on " + Article(s.Kind) + ".");
+                    if (s.SaveFirst) spec.Problems.Add("'" + s.Key + "' has saveFirst, which only a button has (kind action); it does nothing on " + Article(s.Kind) + ".");
+                }
+                else
+                {
+                    // An interval belongs to the panel that asks by itself, a save before the question to the button
+                    // that is pressed.
+                    if (s.Every.HasValue && !s.Auto)
+                        spec.Problems.Add("'" + s.Key + "' has every, which only an auto action has; a button asks when it is pressed. Add auto for a panel that asks by itself.");
+                    else if (s.Every.HasValue && s.Every.Value < SchemaPage.ShortestEvery)
+                        spec.Problems.Add("'" + s.Key + "' asks every " + s.Every.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " seconds; the shortest is "
+                            + SchemaPage.ShortestEvery + ", which it takes instead.");
+                    if (s.SaveFirst && s.Auto)
+                        spec.Problems.Add("'" + s.Key + "' has saveFirst, which only a button has; an auto action has none to press, and nothing is saved before it asks.");
                 }
                 if (s.TwitchOnly && s.Kind == "note")
                     spec.Problems.Add("'" + s.Key + "' has twitchOnly, which a note cannot show: it has no label to carry the mark.");
@@ -528,16 +656,43 @@ namespace UIFramework
                 foreach (var column in s.Columns ?? new List<SettingColumn>())
                     if (column.Platform != null && Array.IndexOf(PlatformNames, column.Platform.Trim().ToLowerInvariant()) < 0)
                         spec.Problems.Add("The column '" + column.Key + "' of '" + s.Key + "' names the platform '" + column.Platform + "'; it is one of " + string.Join(", ", PlatformNames) + ".");
-                // A {placeholder} in a message's own text that its list lacks gets no chip, no help and no sample in
-                // the preview, and is easily one the game does not fill.
+                if (s.PlaceholderStyle != null && s.Kind != "template")
+                    spec.Problems.Add("'" + s.Key + "' has a placeholderStyle, which only a message has (kind template); it does nothing on " + Article(s.Kind) + ".");
+                else if (!TokenStyle.Known(s.PlaceholderStyle))
+                    spec.Problems.Add("'" + s.Key + "' has the placeholderStyle '" + s.PlaceholderStyle + "'; it is " + TokenStyle.Braces + " ({name}) or " + TokenStyle.Percent + " (%name%). Its placeholders are read as {name}.");
+                // A placeholder in a message's own text that its list lacks gets no chip, no help and no sample in
+                // the preview, and is easily one the game does not fill. Read in the message's style: {name}, or %name%.
                 if (s.Kind == "template" && s.Placeholders != null && s.Placeholders.Count > 0 && s.Default?.Type == Newtonsoft.Json.Linq.JTokenType.String)
-                    foreach (var token in Regex.Matches((string)s.Default, @"\{([A-Za-z][A-Za-z0-9_]*)\}").Cast<Match>().Select(m => m.Groups[1].Value).Distinct())
+                {
+                    bool percent = TokenStyle.IsPercent(s.PlaceholderStyle ?? spec.PlaceholderStyle);
+                    foreach (var token in TokenStyle.In((string)s.Default, percent))
                         if (!s.Placeholders.Contains(token, StringComparer.OrdinalIgnoreCase))
-                            spec.Problems.Add("'" + s.Key + "' uses {" + token + "} in its default text, which its placeholders do not list.");
-                if ((s.Kind == "options" || (s.Kind == "slider" && !(s.Min.HasValue && s.Max.HasValue))) && (s.Options == null || s.Options.Count == 0))
-                    spec.Problems.Add("'" + s.Key + "' is " + (s.Kind == "slider" ? "a slider" : "an options field") + " without options.");
+                            spec.Problems.Add("'" + s.Key + "' uses " + TokenStyle.Write(token, percent) + " in its default text, which its placeholders do not list.");
+                }
+                // A dropdown that takes its options from the project (optionsFrom) needs none of its own.
+                if (((s.Kind == "options" && s.OptionsFrom == null) || s.Kind == "multi" || (s.Kind == "slider" && !(s.Min.HasValue && s.Max.HasValue))) && (s.Options == null || s.Options.Count == 0))
+                    spec.Problems.Add("'" + s.Key + "' is " + (s.Kind == "slider" ? "a slider" : s.Kind == "multi" ? "a multi field" : "an options field") + " without options"
+                        + (s.Kind == "multi" ? "; it is shown as text." : "."));
+                if (s.Kind == "multi")
+                    CheckMulti(spec, s);
+                if (s.Kind == "time")
+                    CheckTime(spec, s);
+                if (s.OptionsFrom != null)
+                {
+                    // What the project is asked again for is a field of the window; "groups" and the empty text name none.
+                    string from = s.OptionsFrom.Trim();
+                    if (s.Kind != "options")
+                        spec.Problems.Add("'" + s.Key + "' has optionsFrom, which only a dropdown has (kind options); it does nothing on " + Article(s.Kind) + ".");
+                    else if (from == s.Key)
+                        spec.Problems.Add("'" + s.Key + "' names itself in optionsFrom: its own choice does not change its options, so the project is asked for them once. Name the field they depend on, or \"\" to ask once.");
+                    else if (from == "groups" && keys.Contains(from))
+                        spec.Problems.Add("'" + s.Key + "' takes its options from 'groups' (optionsFrom), which stands for Streamer.bot's groups, not for the setting 'groups': the project is not asked. A setting of another key can be named.");
+                    else if (from.Length > 0 && from != "groups" && !keys.Contains(from))
+                        spec.Problems.Add("'" + s.Key + "' takes its options from '" + from + "' (optionsFrom), which is not a setting: the project is asked for them once and never again. It is a setting's key, \"groups\" for Streamer.bot's groups, or \"\" to ask once.");
+                }
                 if (s.Kind == "list" && (s.Columns == null || s.Columns.Count == 0))
                     spec.Problems.Add("'" + s.Key + "' is a list without columns.");
+                CheckProjectList(spec, byKey, s);
                 if (!string.IsNullOrWhiteSpace(s.Requires))
                     CheckCondition(spec, byKey, "'" + s.Key + "'", "requires", s.Requires);
                 if (!string.IsNullOrWhiteSpace(s.ShowWhen))
@@ -565,9 +720,13 @@ namespace UIFramework
             foreach (var key in spec.HeaderPillKeys)
                 if (!keys.Contains(key))
                     spec.Problems.Add("The header pill '" + key + "' is not a setting.");
-            foreach (var key in spec.Overrides.Keys)
-                if (!keys.Contains(key))
-                    spec.Problems.Add("The window changes '" + key + "' (UiWindow.Override, or \"overrides\" in the schema), which is not a setting.");
+            if (!TokenStyle.Known(spec.PlaceholderStyle))
+                spec.Problems.Add("The window has the placeholderStyle '" + spec.PlaceholderStyle + "'; it is " + TokenStyle.Braces + " ({name}) or " + TokenStyle.Percent + " (%name%). The placeholders are read as {name}.");
+            // A field the project locks (locked: in UiHost.Handle) has to be one: a key that is none locks nothing.
+            if (spec.Schema != null)
+                foreach (var key in spec.Schema.LockedFields.Keys)
+                    if (!keys.Contains(key))
+                        spec.Problems.Add("The project locks '" + key + "' (locked: in UiHost.Handle, or \"lockedFields\" in the schema), which is not a setting.");
             // The Log page's declared colours: a style the framework does not have is not applied.
             foreach (var style in spec.Log.Styles)
                 if (!LogPage.TryStyle(style.Value, out _))
@@ -585,6 +744,174 @@ namespace UIFramework
                 }
                 else if (!keys.Contains(stop.Target) && Array.IndexOf(TourStop.Parts, stop.Target) < 0)
                     spec.Problems.Add("The tour points at '" + stop.Target + "', which is neither a setting nor a part of the window (" + string.Join(", ", TourStop.Parts) + "); that stop is skipped.");
+            }
+            // The old values the window takes over: an action is found by its id, and a mapping leads to a setting that
+            // takes a value. An old argument the table does not know is no mistake; it is simply not taken.
+            foreach (var source in spec.Adopt)
+            {
+                string id = (source.ActionId ?? "").Trim();
+                if (id.Length == 0)
+                {
+                    spec.Problems.Add("The window takes over old values (UiWindow.Adopt, or \"adopt\" in the schema) from an action without an id; nothing is taken over from it.");
+                    continue;
+                }
+                string owner = "The old values of the action '" + id + "'";
+                if (!Guid.TryParse(id, out _))
+                    spec.Problems.Add("The window takes over old values from the action '" + id + "', which is no action id: Streamer.bot's are GUIDs (36 characters with four dashes), and an action is not found by its name.");
+                foreach (var declared in source.Map)
+                {
+                    if (!Adoption.TryMapping(declared, out bool text, out string old, out string key))
+                    {
+                        spec.Problems.Add(owner + " have the mapping '" + declared + "', which is neither \"old>new\" nor \"#subActionId>key\"; it is left out.");
+                        continue;
+                    }
+                    string what = text ? " take the text of the sub-action '" + old + "' into '" + key + "'" : " map '" + old + "' to '" + key + "'";
+                    if (!byKey.TryGetValue(key, out var target))
+                        spec.Problems.Add(owner + what + ", which is not a setting; that value is not taken over.");
+                    else if (!Adoption.TakesValue(target))
+                        spec.Problems.Add(owner + what + ", " + Article(target.Kind) + ", which takes no value from an old action; that value is not taken over.");
+                    else if (target.Transient || target.ReadOnly)
+                        spec.Problems.Add(owner + what + ", which the window never saves (" + (target.ReadOnly ? "readOnly" : "transient") + "); that value is not taken over.");
+                }
+            }
+        }
+
+        /// <summary>A multi field stores its ticked values as one text, separated by commas, in the options' own spelling:
+        /// an option that cannot be stored so, and a default that names what no option has or is written another way.</summary>
+        private static void CheckMulti(WindowSpec spec, Setting s)
+        {
+            foreach (var option in s.Options ?? new List<SettingOption>())
+                if (string.IsNullOrWhiteSpace(option.Value) || option.Value.Contains(","))
+                    spec.Problems.Add("'" + s.Key + "' has the option '" + option.Value + "', which a multi field cannot store: its ticked values are kept as one text, separated by commas, so a value is neither empty nor holds a comma. That option is left out.");
+            if (s.Default == null || s.Default.Type == JTokenType.Null) return;
+            if (s.Default.Type != JTokenType.String)
+            {
+                spec.Problems.Add("'" + s.Key + "' is a multi field whose default is no text: it is the ticked values, separated by commas (\"a,b\"), or \"\" for none.");
+                return;
+            }
+            var choices = Fields.MultiChoices(s.Options).Select(o => o.Value).ToArray();
+            if (choices.Length == 0) return;   // without options it is shown as text, which is said already
+            var values = FieldBinding.MultiValues(choices, (string)s.Default);
+            var unknown = values.Where(value => !choices.Contains(value, StringComparer.OrdinalIgnoreCase)).ToList();
+            foreach (var value in unknown)
+                spec.Problems.Add("'" + s.Key + "' has '" + value + "' in its default, but it has no option '" + value + "'.");
+            // The project reads the default as it is declared (UiSettings.String), the window writes the options' spelling.
+            if (unknown.Count == 0 && string.Join(",", values) != (string)s.Default)
+                spec.Problems.Add("'" + s.Key + "' has the default '" + (string)s.Default + "', which the window writes as '" + string.Join(",", values)
+                    + "': the options' own spelling, in their order, no blanks. Declare it so, since the project reads the default as it is declared.");
+        }
+
+        /// <summary>A time field holds "HH:mm": limits do nothing on it, and its default is such a time or empty.</summary>
+        private static void CheckTime(WindowSpec spec, Setting s)
+        {
+            if (s.Min.HasValue || s.Max.HasValue)
+                spec.Problems.Add("'" + s.Key + "' has " + (s.Min.HasValue && s.Max.HasValue ? "a min and a max, which do" : s.Min.HasValue ? "a min, which does" : "a max, which does")
+                    + " nothing on a time field: it takes any time of day, 00:00 to 23:59.");
+            if (s.Default == null || s.Default.Type == JTokenType.Null) return;
+            string text = s.Default.Type == JTokenType.String ? (string)s.Default : null;
+            if (text == null)
+                spec.Problems.Add("'" + s.Key + "' is a time field whose default is no text: it is a time of day written \"HH:mm\" (\"09:00\"), or \"\" for none.");
+            else if (text.Trim().Length == 0)
+                return;
+            else if (!FieldBinding.TryTime(text, out string time))
+                spec.Problems.Add("'" + s.Key + "' has the default '" + text + "', which is no time of day: a time field's default is written \"HH:mm\" (\"09:00\"), or \"\" for none. The field starts empty and has to be filled in before a save.");
+            else if (time != text)
+                spec.Problems.Add("'" + s.Key + "' has the default '" + text + "', which the window writes as '" + time + "'. Declare it so, since the project reads the default as it is declared.");
+        }
+
+        /// <summary>A setting kept in a persisted global of Streamer.bot (<c>global</c>, see <see cref="Globals"/>). One
+        /// declared so that it cannot work is named, and so that its value never falls back to the settings file its
+        /// field is locked and the value neither read nor saved. So is every such field while the host has no globals
+        /// (a settings action before stub 0.3.3, a preview), with the reason in the window's language.</summary>
+        private static void CheckGlobals(WindowSpec spec, List<Setting> settings)
+        {
+            const string locked = " The field is locked, and its value is neither read nor saved.";
+            // The first setting that names each global: a second one would show the same value and write over it.
+            var namedBy = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var s in Globals.Of(settings))
+            {
+                if (s.Kind == "action" || s.Kind == "note" || s.Kind == "table")
+                {
+                    // Nothing to lock: it holds no value.
+                    s.GlobalOff = true;
+                    spec.Problems.Add("'" + s.Key + "' has global, which only a field that holds a value has; it does nothing on " + (s.Kind == "action" ? "a button" : "a " + s.Kind) + ".");
+                    continue;
+                }
+                string wrong = null;
+                if (KindFamily(s.Kind) == "list")
+                    wrong = "'" + s.Key + "' has global, which " + Article(s.Kind) + " cannot have: a global holds one text, not rows.";
+                else if (string.IsNullOrWhiteSpace(s.Global))
+                    wrong = "'" + s.Key + "' has global without a name; write the global's name, global: \"MyExtension_token\".";
+                else if (!string.IsNullOrWhiteSpace(s.File))
+                    wrong = "'" + s.Key + "' has global and file: a value kept in a global is in no file, so one of the two has to go.";
+                else if (namedBy.TryGetValue(s.Global, out string first))
+                    wrong = "'" + s.Key + "' names the global '" + s.Global + "', which '" + first + "' names already: two fields cannot share one.";
+                else
+                    namedBy[s.Global] = s.Key;
+                if (wrong != null) spec.Problems.Add(wrong + locked);
+                else if (spec.HostHasGlobals) continue;
+                s.GlobalOff = true;
+                s.ReadOnly = true;
+                // A Set Argument's lock and the project's own say why already.
+                if (!s.Locked) s.LockReason = wrong != null ? "" : Text.T("field.global.locked");
+            }
+        }
+
+        /// <summary>The oldest UIFramework the window works with (<c>requires</c>). A settings action from stub 0.3.3 on
+        /// offers the update instead of opening the window with an older DLL; one before it opens the window all the
+        /// same, and the window says here what that means.</summary>
+        private static void CheckRequires(WindowSpec spec)
+        {
+            if (string.IsNullOrWhiteSpace(spec.Requires)) return;
+            var needs = VersionOf(spec.Requires);
+            var own = VersionOf(Entry.FrameworkVersion);
+            if (needs == null)
+                spec.Problems.Add("The window requires UIFramework '" + spec.Requires.Trim() + "', which is no version number like 2.1.0; it is not checked.");
+            else if (own != null && needs > own)
+                spec.Problems.Add("The window requires UIFramework " + spec.Requires.Trim().TrimStart('v', 'V') + " or newer, and this is " + Entry.FrameworkVersion.TrimStart('v')
+                    + ": what it declares for the newer one may not work. A settings action from stub 0.3.3 on offers the update instead of opening the window; update the extension.");
+        }
+
+        /// <summary>A version as the settings action reads one: numbers with dots, a leading v dropped, a number alone
+        /// as "2.0", missing parts as 0. Null for anything else ("soon", "2.1-beta").</summary>
+        private static Version VersionOf(string text)
+        {
+            text = (text ?? "").Trim().TrimStart('v', 'V');
+            if (!Version.TryParse(text.Contains(".") ? text : text + ".0", out var version)) return null;
+            return new Version(version.Major, version.Minor, Math.Max(0, version.Build), Math.Max(0, version.Revision));
+        }
+
+        /// <summary>A list the project fills as well: <c>rowKey</c>, <c>fixedRows</c> and <c>filter</c> belong to a list,
+        /// a key column is one of its columns, no two default rows share a key, and a filter condition has an operator,
+        /// a left side that is a column or a setting, and only settings as <c>{key}</c>.</summary>
+        private static void CheckProjectList(WindowSpec spec, Dictionary<string, Setting> byKey, Setting s)
+        {
+            var keys = ListMerge.KeyColumns(s.RowKey);
+            var filter = ListFilter.Parse(s.Filter);
+            if (s.Kind != "list")
+            {
+                if (keys.Count > 0) spec.Problems.Add("'" + s.Key + "' has a rowKey, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
+                if (s.FixedRows) spec.Problems.Add("'" + s.Key + "' has fixedRows, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
+                if (filter != null) spec.Problems.Add("'" + s.Key + "' has a filter, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
+                return;
+            }
+            var columns = s.Columns ?? new List<SettingColumn>();
+            foreach (var key in keys.Where(k => !columns.Any(c => c.Key == k)).Distinct(StringComparer.Ordinal))
+                spec.Problems.Add("'" + s.Key + "' has the rowKey '" + s.RowKey.Trim() + "', but the list has no column '" + key + "'. A row that lacks a part of its key is told from the others by all its cells.");
+            foreach (var twice in ListMerge.Duplicates(s.Default as JArray, keys, columns))
+                spec.Problems.Add("'" + s.Key + "' has two default rows with the key '" + twice + "' (rowKey '" + s.RowKey.Trim() + "'); a save tells rows of one key apart by their order only.");
+            foreach (var condition in filter?.Conditions ?? new List<ListFilter.Condition>())
+            {
+                const string shows = " That condition counts as holding, so every row shows.";
+                if (condition.Op == null)
+                {
+                    spec.Problems.Add("'" + s.Key + "' has the filter condition '" + condition.Text + "', which has no operator (=, != or ~)." + shows);
+                    continue;
+                }
+                if (!columns.Any(c => c.Key == condition.Left) && !byKey.ContainsKey(condition.Left))
+                    spec.Problems.Add("'" + s.Key + "' filters by '" + condition.Left + "' in '" + condition.Text + "', which is neither a column of the list nor a setting." + shows);
+                foreach (var key in ListFilter.Keys(condition.Value).Where(k => !byKey.ContainsKey(k)).Distinct(StringComparer.Ordinal))
+                    spec.Problems.Add("'" + s.Key + "' has {" + key + "} in its filter condition '" + condition.Text + "', which is not a setting." + shows);
             }
         }
 

@@ -2,6 +2,7 @@
 # base class, Streamer.bot's injected usings, only the references every action gets.
 #   - stub/Stub.cs, the generic settings action, as it is;
 #   - stub/HostSchema.cs, the host block, alone and without usings;
+#   - stub/HostReader.cs, the host reader of an action that only reads the settings, likewise;
 #   - examples/DemoGame/DemoGame.cs, the example game with the host block (stub/HostSchema.cs) inside; its block
 #     must be the template's (tools/update-host-block.ps1 -Check), and its schema is written to
 #     examples/DemoGame/schema.json for the preview and the docs.
@@ -82,6 +83,9 @@ if (-not (Compile 'stub/Stub.cs compiles as a Streamer.bot action (generic, noth
 
 # 1b. The host block on its own, with no usings: it must not lean on the game's (its place in the game is free).
 if (-not (Compile 'stub/HostSchema.cs compiles alone, with no usings' (Join-Path $root 'stub\HostSchema.cs') 'HostSchema.dll' $refs)) { $failed++ }
+
+# 1c. The host reader, for an action that only reads the settings: alone and without usings, like the block.
+if (-not (Compile 'stub/HostReader.cs compiles alone, with no usings' (Join-Path $root 'stub\HostReader.cs') 'HostReader.dll' $refs)) { $failed++ }
 
 # 2. The example game: the host block inside it must be the template's, and it must compile as an action.
 $demo = Join-Path $root 'examples\DemoGame\DemoGame.cs'

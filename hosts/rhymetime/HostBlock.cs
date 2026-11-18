@@ -19,11 +19,26 @@ public static class UiSchema
         public string Key; public object Default; public string Kind, Page, Section, Group, Label, Help, Unit, Requires, Confirm, Platform, Row;
         public double? Min, Max, Factor; public bool UnlimitedAtZero, Hidden;
         public string[] Options, Placeholders, Aliases; public double? AliasFactor;
+        // For a message whose text writes %name% where the framework writes {name}: "percent". Null takes the window's.
+        public string PlaceholderStyle;
         // For a list: its columns as "key|kind|label" (kinds: string, text, int, double, bool, emote; a trailing "readonly"
         // makes it a column the game fills and the user only reads; an emote column
         // adds "|twitch", "|youtube" or "|kick" for its picture), and the file next to the settings file that holds
         // the rows, with the property in it (no field: the file is the array).
         public string[] Columns; public string File, Field;
+        // Global: a secret kept in a persisted global of Streamer.bot of that name instead of the settings file (a
+        // bot token another action reads from there); the settings action reads and writes it, never the file.
+        // OptionsFrom: the dropdown's options come from the game (UiHost.Handle's options:), asked again whenever
+        // the field of that key changes; "groups" for Streamer.bot's groups, "" to ask once.
+        public string Global, OptionsFrom;
+        // Every: an auto action asks again every so many seconds while its page shows (a status).
+        // SaveFirst: a button saves the window's changes before the game is asked (check now, with what is typed).
+        public int? Every; public bool SaveFirst;
+        // For a list the game writes to as well. RowKey: the columns that name a row ("date,name"): a save merges
+        // with what the file holds then, the game's rows stay and the user's changes win. FixedRows: no adding, no
+        // removing. Filter: the rows shown, "region= || Global=true || Counties~{region}" ({key} is a field's value,
+        // ~ is contains, || is or); the others stay in the file.
+        public string RowKey, Filter; public bool FixedRows;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
         // its answer under the button, Auto asks it on show and after every change without a button (and brings Live
         // and Panel with it). Ask, on any other field, asks the host whenever the field changes (a preset slider whose
@@ -55,7 +70,9 @@ public static class UiSchema
         string[] options = null, string requires = null, string confirm = null, bool hidden = false, string[] aliases = null, double? aliasFactor = null,
         string[] columns = null, string file = null, string field = null, bool transient = false, bool live = false, bool panel = false, bool auto = false,
         string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
-        bool readOnly = false, double? step = null, string group = null, bool ask = false)
+        bool readOnly = false, double? step = null, string group = null, bool ask = false,
+        string global = null, string optionsFrom = null, int? every = null, bool saveFirst = false,
+        string rowKey = null, bool fixedRows = false, string filter = null)
     {
         return new Setting
         {
@@ -63,21 +80,30 @@ public static class UiSchema
             Unit = unit, Factor = factor, UnlimitedAtZero = unlimitedAtZero, Options = options, Requires = requires, Confirm = confirm,
             Hidden = hidden, Aliases = aliases, AliasFactor = aliasFactor, Columns = columns, File = file, Field = field,
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
-            ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask
+            ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask,
+            Global = global, OptionsFrom = optionsFrom, Every = every, SaveFirst = saveFirst,
+            RowKey = rowKey, FixedRows = fixedRows, Filter = filter
         };
     }
 
     /// <summary>A message template: group, key, default text, label, help, placeholders without braces, old key; file and
-    /// field when the text lives in a file of its own next to the settings file (a messages.json).</summary>
+    /// field when the text lives in a file of its own next to the settings file (a messages.json). placeholderStyle
+    /// "percent" for a message that writes %user% where the others write {user} (the whole window: UiWindow).</summary>
     public static Setting Msg(string group, string key, string @default, string label, string help, string[] placeholders, string alias = null,
-        string file = null, string field = null)
+        string file = null, string field = null, string placeholderStyle = null)
         => new Setting { Key = key, Default = @default, Kind = "template", Page = "messages", Group = group, Label = label, Help = help,
-                         Placeholders = placeholders, Aliases = alias == null ? null : new[] { alias }, File = file, Field = field };
+                         Placeholders = placeholders, Aliases = alias == null ? null : new[] { alias }, File = file, Field = field,
+                         PlaceholderStyle = placeholderStyle };
 
     public static string ToJson(string host, string version, string settingsFile) => ToJson(host, version, settingsFile, null);
 
     /// <summary>The schema with the points system the window should show as detected (UiCurrency.Detect).</summary>
-    public static string ToJson(string host, string version, string settingsFile, UiCurrency currency)
+    public static string ToJson(string host, string version, string settingsFile, UiCurrency currency) => ToJson(host, version, settingsFile, currency, null, null);
+
+    /// <summary>The schema as UiHost.Handle answers describe with it: also the settings a Set Argument of this action
+    /// sets (key and the argument's name) and the fields the game locks, one per line as "key|why".</summary>
+    public static string ToJson(string host, string version, string settingsFile, UiCurrency currency,
+        System.Collections.Generic.IDictionary<string, string> arguments, string locked)
     {
         var settings = new Newtonsoft.Json.Linq.JArray();
         foreach (var s in Table)
@@ -86,6 +112,24 @@ public static class UiSchema
         if (Window != null) root["window"] = Window.ToJson();
         if (Window != null && Window.LangMap.Count > 0) root["lang"] = Window.LangMap;
         if (currency != null && currency.Detected) root["currency"] = currency.ToJson();
+        if (arguments != null && arguments.Count > 0)
+        {
+            var map = new Newtonsoft.Json.Linq.JObject();
+            foreach (var pair in arguments) map[pair.Key] = pair.Value;
+            root["arguments"] = map;
+        }
+        if (!string.IsNullOrWhiteSpace(locked))
+        {
+            var map = new Newtonsoft.Json.Linq.JObject();
+            foreach (var line in locked.Split('\n'))
+            {
+                string entry = line.Trim();
+                int bar = entry.IndexOf('|');
+                string key = (bar < 0 ? entry : entry.Substring(0, bar)).Trim();
+                if (key.Length > 0) map[key] = bar < 0 ? "" : entry.Substring(bar + 1).Trim();
+            }
+            if (map.Count > 0) root["lockedFields"] = map;
+        }
         return root.ToString(Newtonsoft.Json.Formatting.None);
     }
 
@@ -119,6 +163,7 @@ public static class UiSchema
             item["options"] = options;
         }
         if (s.Placeholders != null) item["placeholders"] = new Newtonsoft.Json.Linq.JArray(s.Placeholders);
+        if (s.PlaceholderStyle != null) item["placeholderStyle"] = s.PlaceholderStyle;
         if (s.Columns != null)
         {
             var columns = new Newtonsoft.Json.Linq.JArray();
@@ -169,6 +214,13 @@ public static class UiSchema
             item["shows"] = shows;
         }
         if (s.Row != null) item["row"] = s.Row;
+        if (s.Global != null) item["global"] = s.Global;
+        if (s.OptionsFrom != null) item["optionsFrom"] = s.OptionsFrom;
+        if (s.Every.HasValue) item["every"] = s.Every.Value;
+        if (s.SaveFirst) item["saveFirst"] = true;
+        if (s.RowKey != null) item["rowKey"] = s.RowKey;
+        if (s.FixedRows) item["fixedRows"] = true;
+        if (s.Filter != null) item["filter"] = s.Filter;
         if (s.Field != null) item["field"] = s.Field;
         if (s.Aliases != null) item["aliases"] = new Newtonsoft.Json.Linq.JArray(s.Aliases);
         if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new Newtonsoft.Json.Linq.JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -190,6 +242,17 @@ public static class UiSchema
     {
         var parts = new System.Collections.Generic.List<string> { name, code, what };
         if (args != null) parts.AddRange(args);
+        return parts.ToArray();
+    }
+    /// <summary>An action an older version kept its settings in, as Set Argument sub-actions, for UiWindow.Adopt: its
+    /// id in Streamer.bot, then what the table cannot tell by itself. An argument named like a setting's key or one
+    /// of its aliases needs nothing; "old>new" takes the argument "old" into the setting "new", and
+    /// "#subActionId>key" the text of a Send Message sub-action (Twitch, YouTube or Kick) with that sub-action id
+    /// into the setting "key".</summary>
+    public static string[] Old(string actionId, params string[] map)
+    {
+        var parts = new System.Collections.Generic.List<string> { actionId };
+        if (map != null) parts.AddRange(map);
         return parts.ToArray();
     }
     /// <summary>A stop of the window's tour (UiWindow.Tour): what it points at, a heading and a text. The target is a
@@ -449,11 +512,12 @@ public static class UiSchema
 /// made up on the way; how to play, log and about sit at the foot of the page list.</summary>
 public sealed class UiWindow
 {
-    public string Title, Releases, Logo, LogPrefix, Language;
+    public string Title, Releases, Logo, LogPrefix, Language, PlaceholderStyle, Requires;
     public bool Locked;
+    public readonly Newtonsoft.Json.Linq.JArray GroupList = new Newtonsoft.Json.Linq.JArray();
     public double? Width, Height;
     public readonly System.Collections.Generic.List<object> PageList = new System.Collections.Generic.List<object>();
-    public readonly Newtonsoft.Json.Linq.JObject SampleMap = new Newtonsoft.Json.Linq.JObject(), AnswerMap = new Newtonsoft.Json.Linq.JObject(), OverrideMap = new Newtonsoft.Json.Linq.JObject();
+    public readonly Newtonsoft.Json.Linq.JObject SampleMap = new Newtonsoft.Json.Linq.JObject(), AnswerMap = new Newtonsoft.Json.Linq.JObject();
     public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap;
     /// <summary>What Updates(...) declared; null: the framework's defaults.</summary>
     public Newtonsoft.Json.Linq.JObject UpdateOptions;
@@ -461,6 +525,30 @@ public sealed class UiWindow
     public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
     public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JArray TriggerList = new Newtonsoft.Json.Linq.JArray(), MethodList = new Newtonsoft.Json.Linq.JArray();
+    public readonly Newtonsoft.Json.Linq.JArray AdoptList = new Newtonsoft.Json.Linq.JArray();
+
+    /// <summary>Takes over the values of a version that kept its settings as Set Argument sub-actions, each old action
+    /// as UiSchema.Old(actionId, ...). It happens once, while there is no settings file yet: the window looks for the
+    /// action in Streamer.bot's actions, then in Streamer.bot's last backups, the newest first, and shows the values
+    /// of its active Set Arguments as unsaved changes for the user to save. A UIFramework.dll that does not know
+    /// this yet opens the window without them.</summary>
+    public UiWindow Adopt(params string[][] old)
+    {
+        if (old == null) return this;
+        foreach (var o in old)
+        {
+            if (o == null) continue;
+            var entry = new Newtonsoft.Json.Linq.JObject { ["action"] = o.Length > 0 ? o[0] : null };
+            if (o.Length > 1)
+            {
+                var map = new Newtonsoft.Json.Linq.JArray();
+                for (int i = 1; i < o.Length; i++) map.Add(o[i]);
+                entry["map"] = map;
+            }
+            AdoptList.Add(entry);
+        }
+        return this;
+    }
 
     /// <summary>A custom trigger of the game, declared once: UiTriggers.Register registers every one in Init, the Help
     /// page lists it with its arguments, and its Fire button there fires it with the sample values, so a streamer
@@ -528,9 +616,24 @@ public sealed class UiWindow
     /// <param name="title">Window title and About heading.</param>
     /// <param name="releases">"owner/repo" on GitHub: the repository and releases links, the update check.</param>
     /// <param name="logo">URL of the logo, for the window icon and About.</param>
-    public UiWindow(string title, string releases = null, string logo = null, string logPrefix = null, double? width = null, double? height = null)
+    /// <param name="placeholderStyle">"percent" when the messages write their placeholders as %user% instead of {user}:
+    /// the chips insert them so, and the chat preview fills them. A single message can say its own (UiSchema.Msg).</param>
+    /// <param name="requires">The oldest UIFramework the window works with, "2.1.0": a settings action from stub 0.3.3
+    /// on offers the update instead of opening the window with an older one (a secret kept in a global needs it).</param>
+    public UiWindow(string title, string releases = null, string logo = null, string logPrefix = null, double? width = null, double? height = null,
+        string placeholderStyle = null, string requires = null)
     {
-        Title = title; Releases = releases; Logo = logo; LogPrefix = logPrefix; Width = width; Height = height;
+        Title = title; Releases = releases; Logo = logo; LogPrefix = logPrefix; Width = width; Height = height; PlaceholderStyle = placeholderStyle;
+        Requires = requires;
+    }
+
+    /// <summary>A group of pages in the rail, under a heading the user can fold: its id, its title and the ids of
+    /// its pages, in the order the rail shows them. A page no group names stays where Pages puts it. An older
+    /// UIFramework shows the pages without the headings.</summary>
+    public UiWindow Group(string id, string title, params string[] pages)
+    {
+        GroupList.Add(new Newtonsoft.Json.Linq.JObject { ["id"] = id, ["title"] = title, ["pages"] = new Newtonsoft.Json.Linq.JArray(pages ?? new string[0]) });
+        return this;
     }
 
     /// <summary>The game's own texts in another language, laid over the conventions' when the window is in it:
@@ -660,20 +763,6 @@ public sealed class UiWindow
         return this;
     }
 
-    /// <summary>What the window changes about one setting of the table, where the table itself should not say it.</summary>
-    public UiWindow Override(string key, string page = null, string label = null, string help = null, string section = null, bool? hidden = null, int? order = null)
-    {
-        var o = new Newtonsoft.Json.Linq.JObject();
-        if (page != null) o["page"] = page;
-        if (label != null) o["label"] = label;
-        if (help != null) o["help"] = help;
-        if (section != null) o["section"] = section;
-        if (hidden.HasValue) o["hidden"] = hidden.Value;
-        if (order.HasValue) o["order"] = order.Value;
-        OverrideMap[key] = o;
-        return this;
-    }
-
     /// <summary>How the update notice once per Streamer.bot start tells of this game (docs/Schema.md, "Update notice"):
     /// <paramref name="chat"/> a line in every connected chat, with <paramref name="chatText"/> (null: the framework's,
     /// in the window's language); <paramref name="toast"/> a Windows toast, <paramref name="toastAlways"/> or only while no
@@ -705,13 +794,24 @@ public sealed class UiWindow
 
     /// <summary>The About page: the game's credits under its name, sections like help, the game's own links. The page
     /// ends with the framework's links (its page, Streamer.bot, where to report a problem); defaultLinks: false leaves
-    /// them out, streamerBotLink: false only that one. authorLink is kept for older games and no longer does anything.</summary>
-    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool authorLink = true, bool defaultLinks = true)
+    /// them out, streamerBotLink: false only that one.</summary>
+    public UiWindow About(string credits = null, UiSection[] sections = null, UiLine[] links = null, bool streamerBotLink = true, bool defaultLinks = true)
     {
         AboutMap = new Newtonsoft.Json.Linq.JObject();
         if (credits != null) AboutMap["credits"] = credits;
-        if (sections != null) AboutMap["sections"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(sections, s => s.ToJson()));
-        if (links != null) AboutMap["links"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(links, l => new Newtonsoft.Json.Linq.JObject { ["text"] = l.Json["link"], ["url"] = l.Json["url"] }));
+        // Loops, not LINQ: the block compiles in an action that has no reference to System.Core.
+        if (sections != null)
+        {
+            var list = new Newtonsoft.Json.Linq.JArray();
+            foreach (var s in sections) list.Add(s.ToJson());
+            AboutMap["sections"] = list;
+        }
+        if (links != null)
+        {
+            var list = new Newtonsoft.Json.Linq.JArray();
+            foreach (var l in links) list.Add(new Newtonsoft.Json.Linq.JObject { ["text"] = l.Json["link"], ["url"] = l.Json["url"] });
+            AboutMap["links"] = list;
+        }
         if (!streamerBotLink) AboutMap["streamerBotLink"] = false;
         if (!defaultLinks) AboutMap["defaultLinks"] = false;
         return this;
@@ -725,10 +825,17 @@ public sealed class UiWindow
         if (LogPrefix != null) root["logPrefix"] = LogPrefix;
         if (Language != null) root["language"] = Language;
         if (Locked) root["locked"] = true;
+        if (PlaceholderStyle != null) root["placeholderStyle"] = PlaceholderStyle;
+        if (Requires != null) root["requires"] = Requires;
+        if (GroupList.Count > 0) root["groups"] = GroupList;
         if (Width.HasValue) root["width"] = Width.Value;
         if (Height.HasValue) root["height"] = Height.Value;
-        if (PageList.Count > 0) root["pages"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(PageList, p => p is UiPage page ? page.ToJson() : (Newtonsoft.Json.Linq.JToken)p.ToString()));
-        if (OverrideMap.Count > 0) root["overrides"] = OverrideMap;
+        if (PageList.Count > 0)
+        {
+            var pages = new Newtonsoft.Json.Linq.JArray();
+            foreach (var p in PageList) pages.Add(p is UiPage ? ((UiPage)p).ToJson() : (Newtonsoft.Json.Linq.JToken)p.ToString());
+            root["pages"] = pages;
+        }
         if (SenderMap != null) root["senders"] = SenderMap;
         if (SampleMap.Count > 0) root["samples"] = SampleMap;
         if (AnswerMap.Count > 0) root["answers"] = AnswerMap;
@@ -742,6 +849,7 @@ public sealed class UiWindow
         if (TourList.Count > 0) root["tour"] = TourList;
         if (TriggerList.Count > 0) root["triggers"] = TriggerList;
         if (MethodList.Count > 0) root["methods"] = MethodList;
+        if (AdoptList.Count > 0) root["adopt"] = AdoptList;
         return root;
     }
 }
@@ -750,7 +858,7 @@ public sealed class UiWindow
 /// settings it claims ahead of their own page (keys, or patterns like "overlay*").</summary>
 public sealed class UiPage
 {
-    public string Id, Title, Icon; public string[] Fields; public bool Custom, Bottom;
+    public string Id, Title, Icon; public string[] Fields; public bool Bottom;
     public UiPage(string id, string title, string icon, string[] fields) { Id = id; Title = title; Icon = icon; Fields = fields; }
     /// <summary>Puts the page at the foot of the rail, above How to play, Log and About: UiSchema.P("stats", "Stats").AtBottom().</summary>
     public UiPage AtBottom(bool bottom = true) { Bottom = bottom; return this; }
@@ -760,7 +868,6 @@ public sealed class UiPage
         if (Title != null) page["title"] = Title;
         if (Icon != null) page["icon"] = Icon;
         if (Fields != null && Fields.Length > 0) page["fields"] = new Newtonsoft.Json.Linq.JArray(Fields);
-        if (Custom) page["custom"] = true;
         if (Bottom) page["bottom"] = true;
         return page;
     }
@@ -771,7 +878,12 @@ public sealed class UiSection
 {
     public string Heading; public object[] Lines;
     public UiSection(string heading, object[] lines) { Heading = heading; Lines = lines; }
-    public Newtonsoft.Json.Linq.JObject ToJson() => new Newtonsoft.Json.Linq.JObject { ["heading"] = Heading, ["lines"] = new Newtonsoft.Json.Linq.JArray(System.Linq.Enumerable.Select(Lines, l => l is UiLine line ? line.Json : (Newtonsoft.Json.Linq.JToken)l.ToString())) };
+    public Newtonsoft.Json.Linq.JObject ToJson()
+    {
+        var lines = new Newtonsoft.Json.Linq.JArray();
+        foreach (var l in Lines) lines.Add(l is UiLine ? ((UiLine)l).Json : (Newtonsoft.Json.Linq.JToken)l.ToString());
+        return new Newtonsoft.Json.Linq.JObject { ["heading"] = Heading, ["lines"] = lines };
+    }
 }
 
 /// <summary>One translated text for UiWindow.Lang: the section of the language file it goes into, its name there, its value.</summary>
@@ -809,10 +921,17 @@ public static class UiHost
     /// <param name="saved">Runs after a save with the saved values: an overlay to write, a timer to restart. The cooldowns the window declares are set by the settings action itself.</param>
     /// <param name="table">The rows of a table field by its key, as a JSON array of objects.</param>
     /// <param name="emotes">The emote sources for emote fields, as JSON (docs/Schema.md).</param>
+    /// <param name="arguments">True for an action that reads its settings with UiSettings.With(args): a setting a Set
+    /// Argument sub-action of this action sets is then shown locked in the window, with the argument's name.</param>
+    /// <param name="locked">The fields that are locked now, one per line as "key|why" (a status the game holds, a value
+    /// another program manages): shown with the reason, not edited. It gets the settings as the file has them.</param>
+    /// <param name="options">The options of a dropdown declared with optionsFrom, by its key, with the values as they
+    /// stand in the window: each "value" or "value|Label" (the regions of the country picked). Null: none.</param>
     /// <returns>True when the action was called by the settings window and has answered; return true at once then.</returns>
     public static bool Handle(System.Collections.Generic.IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile,
         System.Func<string, UiSettings, string> test = null, System.Func<UiSettings, string> validate = null, System.Action<UiSettings> saved = null,
-        System.Func<string, string> table = null, System.Func<string> emotes = null)
+        System.Func<string, string> table = null, System.Func<string> emotes = null, bool arguments = false, System.Func<UiSettings, string> locked = null,
+        System.Func<string, UiSettings, string[]> options = null)
     {
         string request = Arg(args, "uiframework.request");
         if (request == null && args != null && args.ContainsKey("uiframework.describe")) request = "describe";
@@ -824,7 +943,14 @@ public static class UiHost
         if (request == "describe")
         {
             var currency = UiCurrency.Detect(CPH, null);   // only a detected system goes into the answer; the window shows it
-            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile, currency), false);
+            // The Set Arguments of this action that set a setting: its sub-actions ran before this code, so they are in
+            // args. What the settings action itself was run with (uiframework.callerArgs, stub 0.3.3) is not counted.
+            var set = arguments ? UiSettings.Arguments(args, Arg(args, "uiframework.callerArgs")) : null;
+            string lockedNow = null;
+            if (locked != null)
+                try { lockedNow = locked(UiSettings.Load(settingsFile)); }
+                catch (System.Exception ex) { CPH.LogError("[" + actionName + "] The locked fields could not be told: " + ex.Message); }
+            CPH.SetGlobalVar(string.IsNullOrEmpty(var) ? UiSchema.Var(actionName) : var, UiSchema.ToJson(host, version, settingsFile, currency, set, lockedNow), false);
             CPH.LogInfo("[" + actionName + "] Settings described for the window" + (currency.Detected ? " (" + currency.Source + ": '" + currency.Variable + "')." : "."));
             return true;
         }
@@ -846,6 +972,13 @@ public static class UiHost
                 case "saved": saved?.Invoke(values); break;
                 case "table": answer = table?.Invoke(name); break;
                 case "emotes": answer = emotes?.Invoke(); break;
+                // The options of a dropdown that asks for them (optionsFrom), as a JSON array of "value" or "value|Label".
+                case "options":
+                {
+                    var offered = options?.Invoke(name, values);
+                    answer = offered == null ? null : new Newtonsoft.Json.Linq.JArray(offered).ToString(Newtonsoft.Json.Formatting.None);
+                    break;
+                }
                 default: CPH.LogWarn("[" + actionName + "] The settings window asked for '" + request + "', which this game does not know."); break;
             }
         }
@@ -968,7 +1101,7 @@ public static class UiUpdateNotice
 
     // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
     // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-    internal const string StubVersion = "0.3.2";
+    internal const string StubVersion = "0.3.3";
 
     /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
     /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>
@@ -1006,7 +1139,7 @@ public static class UiUpdateNotice
             string file = candidate.Value, seen;
             try { seen = file + "|" + System.IO.File.GetLastWriteTimeUtc(file).Ticks; }
             catch (System.Exception) { continue; }
-            lock (Refused) if (Refused.Contains(seen)) continue;
+            lock (Refused) if (Refused.ContainsKey(seen)) continue;
             try
             {
                 // As the settings action loads it: not one that asks for a newer settings action than this game's, not a
@@ -1024,9 +1157,10 @@ public static class UiUpdateNotice
 
     // The DLLs found damaged, not fitting or not loading, by path and time written: not hashed and tried again on every
     // call. A file downloaded again (the settings action sets a damaged one aside) is written anew and tried anew.
-    private static readonly System.Collections.Generic.HashSet<string> Refused = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+    // A dictionary where a set would do: HashSet lives in System.Core, which an action need not reference.
+    private static readonly System.Collections.Generic.Dictionary<string, bool> Refused = new System.Collections.Generic.Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
 
-    private static void Refuse(string seen) { lock (Refused) Refused.Add(seen); }
+    private static void Refuse(string seen) { lock (Refused) Refused[seen] = true; }
 
     /// <summary>Whether the DLL still is what was downloaded: its SHA-256 against the .sha256 file the settings action
     /// wrote beside it. A DLL put in by hand has no such file and counts as it is.</summary>
@@ -1295,14 +1429,14 @@ public static class UiLive
     public static UiLiveState YouTubeFromStatuses(System.Collections.Generic.IEnumerable<string> statuses)
     {
         if (statuses == null) return UiLiveState.Unknown;
-        var offline = new System.Collections.Generic.HashSet<string>(new[] { "complete", "completed", "created", "ready", "revoked", "testing", "teststarting", "upcoming", "ended", "offline" }, System.StringComparer.OrdinalIgnoreCase);
+        var offline = new[] { "complete", "completed", "created", "ready", "revoked", "testing", "teststarting", "upcoming", "ended", "offline" };
         bool unknown = false;
         foreach (string status in statuses)
         {
             string s = (status ?? "").Trim();
             if (s.Equals("live", System.StringComparison.OrdinalIgnoreCase) || s.Equals("liveStarting", System.StringComparison.OrdinalIgnoreCase) || s.Equals("active", System.StringComparison.OrdinalIgnoreCase))
                 return UiLiveState.Live;
-            if (!offline.Contains(s)) unknown = true;
+            if (System.Array.IndexOf(offline, (s ?? "").ToLowerInvariant()) < 0) unknown = true;
         }
         return unknown ? UiLiveState.Unknown : UiLiveState.Offline;
     }
@@ -1585,6 +1719,92 @@ public sealed class UiSettings
         }
     }
 
+    /// <summary>The settings with this run's arguments over them: a Set Argument sub-action named like a key of the
+    /// table, or like an old key of one, wins over the file while it holds something (an empty one does not), turned
+    /// into what the setting holds ("yes", "1", "on" for a switch; "2,5" for a number). So a value can differ per
+    /// action, and an action that was configured with Set Arguments keeps working: UiSettings.Load(file).With(args).
+    /// Pass arguments: true to UiHost.Handle, and the window shows such a setting locked. An argument that does not
+    /// fit its setting (text for a number) and a list are left as the file has them.</summary>
+    public UiSettings With(System.Collections.Generic.IDictionary<string, object> args)
+    {
+        if (args == null || args.Count == 0) return this;
+        Newtonsoft.Json.Linq.JObject root = null;
+        foreach (var s in UiSchema.Table)
+        {
+            string name; Newtonsoft.Json.Linq.JToken value;
+            if (!Argument(args, s, out name, out value)) continue;
+            if (root == null) root = (Newtonsoft.Json.Linq.JObject)_root.DeepClone();
+            root[s.Key] = value;
+        }
+        return root == null ? this : new UiSettings(root) { Problem = Problem, FromBackup = FromBackup };
+    }
+
+    /// <summary>The settings an argument sets, by key, with the argument's name (the key, or an old key).
+    /// <paramref name="callerArgs"/> names the arguments that are not this action's own, one per line: those the
+    /// settings action was run with and handed on. They do not count.</summary>
+    public static System.Collections.Generic.Dictionary<string, string> Arguments(System.Collections.Generic.IDictionary<string, object> args, string callerArgs = null)
+    {
+        var found = new System.Collections.Generic.Dictionary<string, string>();
+        if (args == null) return found;
+        var handedOn = new System.Collections.Generic.Dictionary<string, bool>();
+        foreach (var handed in (callerArgs ?? "").Split('\n')) handedOn[handed] = true;
+        foreach (var s in UiSchema.Table)
+        {
+            string name; Newtonsoft.Json.Linq.JToken value;
+            if (Argument(args, s, out name, out value) && !handedOn.ContainsKey(name)) found[s.Key] = name;
+        }
+        return found;
+    }
+
+    // The argument that sets a setting, under its key or the first old key that is no setting of its own, and its
+    // value as the setting holds it. False without one, with an empty one and with one that does not fit.
+    private static bool Argument(System.Collections.Generic.IDictionary<string, object> args, UiSchema.Setting s, out string name, out Newtonsoft.Json.Linq.JToken value)
+    {
+        name = null; value = null;
+        if (s.Transient || s.Kind == "action" || s.Kind == "note" || s.Kind == "table" || s.Kind == "list") return false;
+        var names = new System.Collections.Generic.List<string> { s.Key };
+        if (s.Aliases != null)
+            foreach (var alias in s.Aliases)
+                if (UiSchema.Find(alias) == null) names.Add(alias);
+        foreach (var candidate in names)
+        {
+            object raw;
+            if (!args.TryGetValue(candidate, out raw) || raw == null) continue;
+            if (raw is string && ((string)raw).Trim().Length == 0) continue;
+            value = FromArgument(raw, s.Default);
+            if (value == null) continue;
+            name = candidate;
+            return true;
+        }
+        return false;
+    }
+
+    // An argument's value in the shape of the setting's default: a switch, a whole number, a number, else text.
+    private static Newtonsoft.Json.Linq.JToken FromArgument(object raw, object shape)
+    {
+        string text = raw is bool ? ((bool)raw ? "true" : "false") : System.Convert.ToString(raw, System.Globalization.CultureInfo.InvariantCulture).Trim();
+        if (shape is bool)
+        {
+            switch (text.ToLowerInvariant())
+            {
+                case "true": case "yes": case "on": case "1": case "ja": return true;
+                case "false": case "no": case "off": case "0": case "nein": return false;
+                default: return null;
+            }
+        }
+        bool whole = shape is int || shape is long || shape is short || shape is byte;
+        if (whole || shape is double || shape is float || shape is decimal)
+        {
+            double number;
+            if (raw is bool || !double.TryParse(text.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out number)
+                || double.IsNaN(number) || double.IsInfinity(number)) return null;
+            if (!whole) return number;
+            number = System.Math.Round(number);
+            return number >= long.MaxValue ? long.MaxValue : number <= long.MinValue ? long.MinValue : (long)number;
+        }
+        return shape == null || shape is string ? (Newtonsoft.Json.Linq.JToken)text : null;
+    }
+
     private static Newtonsoft.Json.Linq.JObject Read(string path)
     {
         using (var reader = new Newtonsoft.Json.JsonTextReader(new System.IO.StringReader(ReadWithRetry(path))) { DateParseHandling = Newtonsoft.Json.DateParseHandling.None })
@@ -1664,6 +1884,52 @@ public sealed class UiSettings
         if (t.Type == Newtonsoft.Json.Linq.JTokenType.Integer) return System.Convert.ToString(((Newtonsoft.Json.Linq.JValue)t).Value, System.Globalization.CultureInfo.InvariantCulture);
         if (t.Type == Newtonsoft.Json.Linq.JTokenType.Boolean) return (bool)t ? "true" : "false";
         return t.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    /// <summary>The values of a setting that holds several, stored as text with commas between them: the ticked
+    /// options of a multi field ("steam,gog" is steam and gog), the names of a namelist or a grouplist. Without the
+    /// blanks around a value, without empty and repeated ones; none is an empty array. Where the setting has options,
+    /// a value comes in its option's own spelling whatever its case in the file, the options' values first and in
+    /// their order; a value no option has (an older list, a typo in the file) follows as the file holds it.</summary>
+    public string[] Values(string key)
+    {
+        var named = new System.Collections.Generic.List<string>();
+        var t = Token(key);
+        if (t == null) return named.ToArray();
+        // An array in the file (written by hand) is read as its values.
+        var parts = new System.Collections.Generic.List<string>();
+        if (t is Newtonsoft.Json.Linq.JArray)
+        {
+            foreach (var item in (Newtonsoft.Json.Linq.JArray)t)
+                if (item is Newtonsoft.Json.Linq.JValue && item.Type != Newtonsoft.Json.Linq.JTokenType.Null)
+                    parts.Add(item.Type == Newtonsoft.Json.Linq.JTokenType.String ? (string)item : item.ToString(Newtonsoft.Json.Formatting.None));
+        }
+        else if (!(t is Newtonsoft.Json.Linq.JContainer)) parts.AddRange(String(key).Split(','));
+        foreach (var part in parts)
+        {
+            string value = part.Trim();
+            if (value.Length > 0 && Named(named, value) == null) named.Add(value);
+        }
+        var options = UiSchema.Find(key)?.Options;
+        if (options == null || options.Length == 0) return named.ToArray();
+        var values = new System.Collections.Generic.List<string>();
+        foreach (var option in options)
+        {
+            int bar = option.IndexOf('|');
+            string own = (bar < 0 ? option : option.Substring(0, bar)).Trim();
+            if (own.Length > 0 && Named(named, own) != null && Named(values, own) == null) values.Add(own);
+        }
+        foreach (var value in named)
+            if (Named(values, value) == null) values.Add(value);
+        return values.ToArray();
+    }
+
+    // The value among them that is this one, whatever its case; null when none is.
+    private static string Named(System.Collections.Generic.List<string> values, string value)
+    {
+        foreach (var have in values)
+            if (string.Equals(have, value, System.StringComparison.OrdinalIgnoreCase)) return have;
+        return null;
     }
 
     /// <summary>A ceiling that stores "no limit" as 0: read as long.MaxValue.</summary>

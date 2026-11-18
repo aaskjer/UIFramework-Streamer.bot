@@ -60,7 +60,9 @@ namespace UIFramework
             {
                 string was = box.Text;
                 box.Text = box.Tag is FieldTag tag ? FieldBinding.Display(tag, value) : FieldBinding.Invariant(value);
-                if (!string.Equals(was, box.Text, StringComparison.Ordinal)) Ui.Flash(box);
+                // A multi field's box is hidden behind its check boxes: those glow.
+                if (!string.Equals(was, box.Text, StringComparison.Ordinal))
+                    Ui.Flash(FieldTag.Of(box.Tag)?.Choices != null && box.Parent is System.Windows.FrameworkElement boxes ? boxes : box);
                 return true;
             }
             if (parts.Sliders.TryGetValue(key, out var slider))

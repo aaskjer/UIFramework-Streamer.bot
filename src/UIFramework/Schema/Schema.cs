@@ -16,8 +16,8 @@ namespace UIFramework
         public string Host = "";
         public string Version = "";
         public string SettingsFile = "";
-        /// <summary>The window as the host declares it beside its settings (title, pages, help, about, log): the
-        /// same JSON a stub's spec carries. Null when the stub brings a spec of its own.</summary>
+        /// <summary>The window as the host declares it beside its settings (title, pages, help, about, log). Null
+        /// when it declares none: the window is then named after the host, its pages the ones the settings name.</summary>
         public JObject Window;
 
         /// <summary>The points system the game found installed (<c>currency</c>: source, variable, name), or null:
@@ -27,6 +27,13 @@ namespace UIFramework
         /// (<c>keys</c>, <c>pages</c>, <c>texts</c>), laid over the conventions' when the window is in that language.</summary>
         public JObject Lang;
         public readonly List<Setting> Settings = new List<Setting>();
+
+        /// <summary>The settings a Set Argument sub-action of the project's own action sets (<c>arguments</c>: the
+        /// setting's key and the argument's name, which may be an old key). Such an argument wins over the file
+        /// while it is there, so the window shows the field locked and says where the value comes from.</summary>
+        public readonly Dictionary<string, string> Arguments = new Dictionary<string, string>(StringComparer.Ordinal);
+        /// <summary>The fields the project locks itself (<c>lockedFields</c>: key and why): shown, not edited.</summary>
+        public readonly Dictionary<string, string> LockedFields = new Dictionary<string, string>(StringComparer.Ordinal);
 
         public Setting Find(string key) => Settings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
 
@@ -64,6 +71,16 @@ namespace UIFramework
                     throw new ArgumentException("The schema names '" + setting.Key + "' twice.");
                 schema.Settings.Add(setting);
             }
+            // "arguments": { key: argument name }, or a list of keys whose arguments carry the key's own name.
+            if (root["arguments"] is JObject arguments)
+                foreach (var property in arguments.Properties())
+                    schema.Arguments[property.Name] = property.Value.Type == JTokenType.String && !string.IsNullOrWhiteSpace((string)property.Value) ? (string)property.Value : property.Name;
+            else if (root["arguments"] is JArray argumentKeys)
+                foreach (var key in argumentKeys.Where(k => k.Type == JTokenType.String))
+                    schema.Arguments[(string)key] = (string)key;
+            if (root["lockedFields"] is JObject locked)
+                foreach (var property in locked.Properties())
+                    schema.LockedFields[property.Name] = property.Value.Type == JTokenType.String ? (string)property.Value : "";
             return schema;
         }
 
@@ -79,6 +96,8 @@ namespace UIFramework
             if (Window != null) root["window"] = Window.DeepClone();
             if (Currency != null) root["currency"] = Currency.DeepClone();
             if (Lang != null) root["lang"] = Lang.DeepClone();
+            if (Arguments.Count > 0) root["arguments"] = JObject.FromObject(Arguments);
+            if (LockedFields.Count > 0) root["lockedFields"] = JObject.FromObject(LockedFields);
             return root;
         }
     }
@@ -103,14 +122,45 @@ namespace UIFramework
         public bool UnlimitedAtZero;
         public List<SettingOption> Options;
         public List<string> Placeholders;
+        /// <summary>For a message: "percent" when its text writes %name% instead of {name}; null takes the window's.</summary>
+        public string PlaceholderStyle;
+        /// <summary>A secret that lives in a persisted global of Streamer.bot of this name, not in the settings file:
+        /// the settings action reads it for the window and writes it after a save. Never in the file, an export or the
+        /// log; a reset leaves it. Needs a settings action that knows globals (stub 0.3.3).</summary>
+        public string Global;
+        /// <summary>The setting names a global the window neither reads nor writes: declared so that it cannot work,
+        /// or the host has no globals (<see cref="IHostHooks.HasGlobals"/>). Filled in by <see cref="Resolve"/>, which
+        /// locks the field; not part of a setting's own declaration.</summary>
+        public bool GlobalOff;
+        /// <summary>For a dropdown: its options come from the project (<see cref="IHostHooks.Options"/>), asked when the
+        /// window opens and whenever the field of this key changes. "groups" offers Streamer.bot's groups; an empty
+        /// text asks once.</summary>
+        public string OptionsFrom;
+        /// <summary>For an <c>auto</c> action: asked again every so many seconds while its page shows.</summary>
+        public int? Every;
+        /// <summary>For an action: the window's changes are saved before the project is asked.</summary>
+        public bool SaveFirst;
+        /// <summary>For a list the project writes to as well: the columns that name a row ("date,name"). A save then
+        /// merges with what the file holds at that moment: the project's rows stay, the user's changes win.</summary>
+        public string RowKey;
+        /// <summary>For a list: rows are neither added nor removed, only edited.</summary>
+        public bool FixedRows;
+        /// <summary>For a list: the rows shown, "region= || Global=true || Counties~{region}": conditions joined by
+        /// <c>||</c>, <c>{key}</c> a field's value in the window, <c>~</c> contains. The others stay in the file.</summary>
+        public string Filter;
         public string Requires;
         /// <summary>Settings that name the same row, one after the other, share one line of the page, whatever
         /// their kind: a bet, a role and a Try button side by side.</summary>
         public string Row;
         /// <summary>For an action: the question asked before the host is called. Null asks nothing.</summary>
         public string Confirm;
-        public bool Advanced;
         public bool ReadOnly;
+        /// <summary>The Set Argument that sets this value in the project's action (the schema's <c>arguments</c>), or
+        /// null; and why the project locks the field (its <c>lockedFields</c>), or null. Filled in by
+        /// <see cref="Resolve"/>, which makes either field read-only; not part of a setting's own declaration.</summary>
+        public string Argument, LockReason;
+        /// <summary>Locked by a Set Argument or by the project: shown with a pill and the reason, not edited.</summary>
+        public bool Locked => Argument != null || LockReason != null;
         public bool Hidden;
         /// <summary>Shown and taken into a live snapshot, but never written to the file and never counted as a
         /// change: the inputs of a Try button.</summary>
@@ -196,7 +246,6 @@ namespace UIFramework
                 Requires = (string)item["requires"],
                 Row = (string)item["row"],
                 Confirm = (string)item["confirm"],
-                Advanced = item["advanced"]?.Type == JTokenType.Boolean && (bool)item["advanced"],
                 ReadOnly = (item["readOnly"] ?? item["readonly"])?.Type == JTokenType.Boolean && (bool)(item["readOnly"] ?? item["readonly"]),
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
@@ -207,7 +256,14 @@ namespace UIFramework
                 Panel = item["panel"]?.Type == JTokenType.Boolean && (bool)item["panel"],
                 Auto = item["auto"]?.Type == JTokenType.Boolean && (bool)item["auto"],
                 File = (string)item["file"],
-                Field = (string)item["field"]
+                Field = (string)item["field"],
+                Global = (string)item["global"],
+                OptionsFrom = (string)item["optionsFrom"],
+                Every = item["every"]?.Type == JTokenType.Integer ? (int?)(int)item["every"] : null,
+                SaveFirst = item["saveFirst"]?.Type == JTokenType.Boolean && (bool)item["saveFirst"],
+                RowKey = (string)item["rowKey"],
+                FixedRows = item["fixedRows"]?.Type == JTokenType.Boolean && (bool)item["fixedRows"],
+                Filter = (string)item["filter"]
             };
             // `ask` is the name for a field that asks the game whenever it changes; `live` on anything but a button
             // meant the same and is still read. `auto` (a button's answer without the button) always follows what is
@@ -235,6 +291,8 @@ namespace UIFramework
             }
             if (item["placeholders"] is JArray placeholders)
                 setting.Placeholders = placeholders.Select(p => p.ToString()).ToList();
+            if (item["placeholderStyle"]?.Type == JTokenType.String)
+                setting.PlaceholderStyle = (string)item["placeholderStyle"];
             if (item["columns"] is JArray columns)
                 setting.Columns = columns.Where(c => c is JObject || c.Type == JTokenType.String)
                     .Select(c => c is JObject o ? SettingColumn.Parse(o) : SettingColumn.Parse(c.ToString())).ToList();
@@ -267,10 +325,17 @@ namespace UIFramework
             if (UnlimitedAtZero) item["unlimitedAtZero"] = true;
             if (Options != null) item["options"] = new JArray(Options.Select(o => o.ToJson()));
             if (Placeholders != null) item["placeholders"] = new JArray(Placeholders);
+            if (PlaceholderStyle != null) item["placeholderStyle"] = PlaceholderStyle;
             if (Requires != null) item["requires"] = Requires;
             if (Row != null) item["row"] = Row;
+            if (Global != null) item["global"] = Global;
+            if (OptionsFrom != null) item["optionsFrom"] = OptionsFrom;
+            if (Every.HasValue) item["every"] = Every.Value;
+            if (SaveFirst) item["saveFirst"] = true;
+            if (RowKey != null) item["rowKey"] = RowKey;
+            if (FixedRows) item["fixedRows"] = true;
+            if (Filter != null) item["filter"] = Filter;
             if (Confirm != null) item["confirm"] = Confirm;
-            if (Advanced) item["advanced"] = true;
             if (ReadOnly) item["readOnly"] = true;
             if (Hidden) item["hidden"] = true;
             if (Transient) item["transient"] = true;

@@ -19,17 +19,16 @@ namespace UIFramework
         public bool Bottom;
     }
 
-    /// <summary>What the spec changes about one setting: where it sits, what it is called, whether it shows.</summary>
-    public sealed class FieldOverride
+    /// <summary>A group of pages in the rail, under a heading the user can fold (UiWindow.Group): its id, its title
+    /// and the ids of its pages in the order the rail shows them.</summary>
+    public sealed class PageGroup
     {
-        public string Page, Label, Help, Section;
-        public bool? Hidden;
-        public int? Order;
+        public string Id, Title;
+        public readonly List<string> Pages = new List<string>();
     }
 
     /// <summary>
-    /// Reads the spec JSON a stub carries, or the window a schema declares (the same JSON), into a
-    /// <see cref="WindowSpec"/>. The pages it names are kept as <see cref="WindowSpec.SpecPages"/> for
+    /// Reads the window a schema declares into a <see cref="WindowSpec"/>. The pages it names are kept as <see cref="WindowSpec.SpecPages"/> for
     /// <see cref="Resolve"/> to fill from the schema.
     /// </summary>
     public static class SpecJson
@@ -59,6 +58,19 @@ namespace UIFramework
             if (root["height"] != null) spec.Height = (double)root["height"];
             if (root["language"] != null) spec.Language = (string)root["language"];
             spec.Locked = root["locked"]?.Type == JTokenType.Boolean && (bool)root["locked"];
+            if (root["placeholderStyle"]?.Type == JTokenType.String) spec.PlaceholderStyle = (string)root["placeholderStyle"];
+            if (root["requires"]?.Type == JTokenType.String) spec.Requires = (string)root["requires"];
+            else if (root["requires"] != null && root["requires"].Type != JTokenType.Null)
+                spec.ReadProblems.Add("The window's requires is " + root["requires"].ToString(Formatting.None) + ", which is no version in quotes like \"2.1.0\"; it is not checked.");
+            if (root["groups"] is JArray groups)
+                foreach (var item in groups.OfType<JObject>())
+                {
+                    var group = new PageGroup { Id = (string)item["id"], Title = (string)item["title"] };
+                    if (item["pages"] is JArray groupPages)
+                        group.Pages.AddRange(groupPages.Where(p => p.Type == JTokenType.String).Select(p => (string)p));
+                    // One without an id is kept too: Resolve names it among the problems and leaves it out.
+                    spec.Groups.Add(group);
+                }
 
             if (root["pages"] is JArray pages)
             {
@@ -82,20 +94,10 @@ namespace UIFramework
                 }
             }
 
-            if (root["overrides"] is JObject overrides)
-                foreach (var property in overrides.Properties())
-                {
-                    var o = property.Value as JObject ?? new JObject();
-                    spec.Overrides[property.Name] = new FieldOverride
-                    {
-                        Page = (string)o["page"],
-                        Label = (string)o["label"],
-                        Help = (string)o["help"],
-                        Section = (string)o["section"],
-                        Hidden = o["hidden"]?.Type == JTokenType.Boolean ? (bool?)(bool)o["hidden"] : null,
-                        Order = (int?)o["order"]
-                    };
-                }
+            // UiWindow.Override of an older host block: what it said about a setting belongs in the table.
+            if (root["overrides"] is JObject overrides && overrides.Count > 0)
+                spec.ReadProblems.Add("The window changes " + string.Join(", ", overrides.Properties().Select(p => "'" + p.Name + "'")) +
+                    " (UiWindow.Override, or \"overrides\" in the schema). That is no longer read: say page, label, help, section and hidden where the setting is declared, S(…).");
 
             if (root["samples"] is JObject samples)
                 foreach (var property in samples.Properties())
@@ -144,7 +146,6 @@ namespace UIFramework
                     }
                 if (about["streamerBotLink"]?.Type == JTokenType.Boolean) spec.About.ShowStreamerBotLink = (bool)about["streamerBotLink"];
                 if (about["defaultLinks"]?.Type == JTokenType.Boolean) spec.About.ShowDefaultLinks = (bool)about["defaultLinks"];
-                // "authorLink" of older host blocks is read no more: the framework names no author of its own.
             }
 
             if (root["log"] is JObject log)
@@ -176,6 +177,25 @@ namespace UIFramework
                 foreach (var section in sectionList.OfType<JObject>())
                     if (!string.IsNullOrWhiteSpace((string)section["name"]) && !string.IsNullOrWhiteSpace((string)section["showWhen"]))
                         spec.SectionConditions[(string)section["name"]] = (string)section["showWhen"];
+
+            // The old actions whose values the window takes over: an object with the action's id and its mappings, or
+            // the id alone. What does not fit is told by the resolve, which knows the settings.
+            if (root["adopt"] is JArray adopt)
+                foreach (var item in adopt)
+                {
+                    var source = new AdoptSource();
+                    if (item is JObject old)
+                    {
+                        source.ActionId = (old["action"] as JValue)?.Value?.ToString();
+                        if (old["map"] is JArray map)
+                            source.Map.AddRange(map.OfType<JValue>().Where(m => m.Type != JTokenType.Null).Select(m => m.ToString()));
+                    }
+                    else if (item is JValue id)
+                        source.ActionId = id.Value?.ToString();
+                    else
+                        continue;
+                    spec.Adopt.Add(source);
+                }
 
             if (root["tour"] is JArray tour)
                 foreach (var stop in tour)

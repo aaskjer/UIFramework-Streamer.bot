@@ -27,8 +27,10 @@ namespace UIFramework
             => Shell.Run(spec, log, hooks, pump);
 
         /// <summary>
-        /// The stub's entry point: spec JSON, the schema JSON the host answered describe with, the settings file
-        /// and the host object (see <see cref="ReflectionHost"/>). Blocks until the window closes.
+        /// The stub's entry point: the schema JSON the host answered describe with, the settings file and the host
+        /// object (see <see cref="ReflectionHost"/>). Blocks until the window closes. <paramref name="specJson"/> was
+        /// a window the settings action carried itself; every stub finds this method by its five parameters, so it
+        /// stays, but it is no longer read: the window is the one the schema declares.
         /// </summary>
         public static bool Show(string specJson, string schemaJson, string settingsPath, object host, Action pump = null)
         {
@@ -46,12 +48,13 @@ namespace UIFramework
                 throw new InvalidOperationException(refusal);
             var bridge = new ReflectionHost(host);
             var schema = Schema.Parse(schemaJson);
-            var spec = SpecFor(specJson, schema, settingsPath);
+            var spec = SpecFor(schema, settingsPath);
             spec.HostBuildsPages = false;   // a settings action hands over a schema, never a page of its own
+            if (!string.IsNullOrWhiteSpace(specJson) && SpecJson.Root(specJson).Count > 0)
+                spec.ReadProblems.Add("The settings action passed a window of its own (a spec). That is no longer read: the window is the one the project declares in UiSchema.Window.");
             // A window that declares no log prefix writes with the settings action's, so a game's lines read the same
             // from the first ("the window cannot open") to the last.
-            var declared = SpecJson.Root(specJson);
-            if ((declared.Count > 0 ? declared : schema.Window)?["logPrefix"] == null && !string.IsNullOrWhiteSpace(bridge.HostLogPrefix()))
+            if (schema.Window?["logPrefix"] == null && !string.IsNullOrWhiteSpace(bridge.HostLogPrefix()))
                 spec.LogPrefix = bridge.HostLogPrefix();
             // For the update notice in chat: this game and its version are in use, and so is its settings action.
             try
@@ -90,13 +93,10 @@ namespace UIFramework
                 "). Update the game, or remove this version's folder under <Streamer.bot>\\UIFramework\\lib and restart Streamer.bot, so that an older UIFramework.dll is used.";
         }
 
-        /// <summary>The spec the stub carries, or, when it carries none, the window the schema declares; a
-        /// window without a title is called after the host.</summary>
-        public static WindowSpec SpecFor(string specJson, Schema schema, string settingsPath)
+        /// <summary>The window the schema declares; one without a title is called after the host.</summary>
+        public static WindowSpec SpecFor(Schema schema, string settingsPath)
         {
-            var root = SpecJson.Root(specJson);
-            if (root.Count == 0 && schema.Window != null)
-                root = schema.Window;
+            var root = schema.Window ?? new JObject();
             var spec = SpecJson.Parse(root, settingsPath);
             if (root["title"] == null && !string.IsNullOrWhiteSpace(schema.Host))
                 spec.Title = Conventions.Humanize(schema.Host);
@@ -108,6 +108,8 @@ namespace UIFramework
         /// <summary>Resolves the schema into the spec's pages, then opens the window.</summary>
         public static bool Show(WindowSpec spec, Schema schema, IHostLog log, IHostHooks hooks, Action pump = null)
         {
+            // Known before the first resolve: without globals a setting kept in one is shown locked.
+            spec.HostHasGlobals = hooks != null && hooks.HasGlobals;
             Prepare(spec, schema);
             return Shell.Run(spec, log, hooks, pump);
         }

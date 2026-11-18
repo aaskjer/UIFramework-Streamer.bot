@@ -40,7 +40,7 @@ namespace UIFramework.Tests
         /// <summary>A window in the customise mode, its settings file in a folder of its own.</summary>
         private static WindowSpec Customising(Schema schema)
         {
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Folder(), "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Folder(), "settings.json"));
             spec.Customizing = true;
             Entry.Prepare(spec, schema);
             return spec;
@@ -222,7 +222,7 @@ namespace UIFramework.Tests
                 { ""key"": ""a"", ""default"": 1, ""page"": ""one"" }, { ""key"": ""b"", ""default"": 2, ""page"": ""one"" },
                 { ""key"": ""c"", ""default"": 3, ""page"": ""two"" } ],
                 ""window"": { ""title"": ""Demo"", ""pages"": [ ""one"", ""two"" ] } }");
-            var spec = Entry.SpecFor(null, schema, settingsPath);
+            var spec = Entry.SpecFor(schema, settingsPath);
             Entry.Prepare(spec, schema);
             Assert.Equal(new[] { "b:", "a:" }, Drawn(spec, "one"));
             Assert.Equal(new[] { "two", "one", "about" }, spec.Pages.Select(p => p.Id).ToArray());

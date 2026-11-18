@@ -68,7 +68,10 @@ namespace UIFramework
         {
             _spec = spec ?? throw new ArgumentNullException(nameof(spec));
             _log = log ?? new NullLog();
-            _hooks = hooks ?? new NoHooks();
+            // A window that keeps a setting in a global of Streamer.bot talks to its host through a guard that lets no
+            // such value out; whether the host has globals at all is known before the window resolves.
+            _hooks = Globals.Guard(hooks ?? new NoHooks(), spec);
+            spec.HostHasGlobals = _hooks.HasGlobals;
             if (string.IsNullOrWhiteSpace(spec.SettingsPath))
                 throw new ArgumentException("WindowSpec.SettingsPath is required.");
             _store = new SettingsStore(spec.SettingsPath, spec.Defaults).WithAliases(spec.Aliases, spec.AliasFactors, spec.AliasesShared);
@@ -212,6 +215,9 @@ namespace UIFramework
                 e.Handled = true;
             };
             string fileName = Path.GetFileName(_spec.SettingsPath);
+            // Nothing saved yet, neither the file nor the .bak of one: the one time the values of the version before
+            // this window are looked for (further down, once the settings are resolved).
+            bool neverSaved = !File.Exists(_spec.SettingsPath) && !File.Exists(_store.BackupPath);
             SettingsLoad loaded;
             try { loaded = _store.Load(); }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
@@ -263,6 +269,13 @@ namespace UIFramework
                 _problems.Add("'" + (list?.Label ?? key) + "'" + (list != null ? " (" + System.IO.Path.GetFileName(Sidecars.PathOf(list, _spec.SettingsPath)) + ")" : "")
                     + ": " + Text.T("list.unreadable"));
             }
+            // And the values kept in globals of Streamer.bot, asked of the host. What an older file holds under such a
+            // key is not shown, and goes with the next save.
+            Globals.Load(settings, _spec.ResolvedSettings, _hooks);
+            // What the version before this window kept in its action (window.adopt), read once per open. Every build puts
+            // it into the fields until a settings file is written.
+            var adopted = neverSaved && _spec.Adopt.Count > 0 ? Adoption.Read(_spec, Adoption.Folder, _log) : null;
+            bool adoptedLogged = false;
 
             var window = new Window
             {
@@ -399,30 +412,110 @@ namespace UIFramework
 
             var rail = new Rail();
             int current = 0;
+            // ---- The groups of pages in the rail ----
+            // A group's heading folds its pages away. Whether a group is folded is the user's, kept in the layout file
+            // (groups.<id>.folded) whatever the window locks, like the theme. The group that holds the page shown is
+            // never folded: going to a page unfolds its group, for good. The search and the tour unfold a group for
+            // their time only (revealed). The customise mode shows every group, to arrange the pages in.
+            var groupTitles = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var group in _spec.RailGroups) groupTitles[group.Id] = group.Title;
+            var headings = new Dictionary<string, Border>(StringComparer.Ordinal);
+            var groupPages = new Dictionary<string, StackPanel>(StringComparer.Ordinal);
+            var revealed = new HashSet<string>(StringComparer.Ordinal);
+            bool touring = false;
+            string GroupAt(int index) => index >= 0 && index < pages.Count && !pages[index].Spec.Bottom ? pages[index].Spec.Group : null;
+            bool Folded(string group) => !customizing && layout.GroupFolded(group) && !revealed.Contains(group);
+            void DrawGroups()
+            {
+                foreach (var heading in headings)
+                {
+                    bool folded = Folded(heading.Key), holdsShown = GroupAt(current) == heading.Key;
+                    groupPages[heading.Key].Visibility = folded ? Visibility.Collapsed : Visibility.Visible;
+                    Rail.Fold(heading.Value, folded, customizing || holdsShown);
+                    if (!customizing)
+                        heading.Value.ToolTip = Text.T(folded ? "rail.group.unfold" : holdsShown ? "rail.group.shown" : "rail.group.fold", groupTitles[heading.Key]);
+                }
+            }
+            void KeepFolded(string group, bool folded)
+            {
+                if (layout.GroupFolded(group) == folded) return;
+                layout.SetGroup(group, "folded", folded ? (JToken)true : null);
+                try { layout.Save(); }
+                catch (Exception ex) { _log.Warn(_spec.LogPrefix + " " + LayoutFile.FileName + " not written (which groups are folded is not kept): " + ex.Message); }
+            }
+            void FoldGroup(string group, bool fold)
+            {
+                // The group of the page shown stays open, and so does every group while the window is customised.
+                if (customizing || (fold && GroupAt(current) == group)) return;
+                revealed.Remove(group);
+                KeepFolded(group, fold);
+                DrawGroups();
+            }
             void ShowPage(int index)
             {
                 current = index;
+                string shownGroup = GroupAt(index);
+                if (shownGroup != null && headings.ContainsKey(shownGroup))
+                {
+                    if (touring) revealed.Add(shownGroup);
+                    else KeepFolded(shownGroup, false);
+                }
                 for (int i = 0; i < pages.Count; i++)
                 {
                     pages[i].Page.Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
                     rail.Style(rail.Items[i], i == index);
                 }
+                if (headings.Count > 0) DrawGroups();
                 pageTitle.Text = pages[index].Spec.Title;
                 parts.Refresh(pages[index].Spec.Id);
             }
 
             var railTop = new StackPanel();
             var railBottom = new StackPanel();
+            List<PageSpec> TopPages() => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList();
+            // A group's heading and the panel of its pages under it, between two lines; made when its first page comes,
+            // which is where the group sits in the rail.
+            StackPanel GroupPanel(string id)
+            {
+                if (groupPages.TryGetValue(id, out var its)) return its;
+                if (!groupTitles.ContainsKey(id)) groupTitles[id] = id;
+                var heading = rail.Heading(id, groupTitles[id], () => FoldGroup(id, !Folded(id)), fold => FoldGroup(id, fold));
+                var declared = _spec.RailGroups.FirstOrDefault(g => g.Id == id);
+                if (customizing && declared != null)
+                    Customize.AttachGroup(ctx, declared, heading, TopPages);
+                its = new StackPanel();
+                headings[id] = heading;
+                groupPages[id] = its;
+                railTop.Children.Add(new Border
+                {
+                    BorderThickness = new Thickness(0, 1, 0, 1),
+                    BorderBrush = new SolidColorBrush(Theme.Line),
+                    Padding = new Thickness(0, 2, 0, 0),
+                    Margin = new Thickness(0, 2, 0, 4),
+                    Child = new StackPanel { Children = { heading, its } }
+                });
+                return its;
+            }
+            // In the customise mode a group left without a page keeps its heading, under the last page, to drop one on.
+            bool emptyGroupsShown = !customizing;
+            void EmptyGroups()
+            {
+                if (emptyGroupsShown) return;
+                emptyGroupsShown = true;
+                foreach (var group in _spec.RailGroups) GroupPanel(group.Id);
+            }
             for (int i = 0; i < pages.Count; i++)
             {
                 int index = i;
+                if (pages[i].Spec.Bottom) EmptyGroups();
+                var into = pages[i].Spec.Bottom ? railBottom : GroupAt(i) != null ? GroupPanel(GroupAt(i)) : railTop;
                 var item = rail.Item(pages[i].Spec.Title, pages[i].Spec.Glyph ?? "•", () => ShowPage(index));
                 item.ToolTip = i < 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, i + 1) : i == 9 ? Text.T("rail.shortcut", pages[i].Spec.Title, 0) : pages[i].Spec.Title;
                 if (customizing)
-                    Customize.AttachRail(ctx, pages[i].Spec, item, () => pages.Where(p => !p.Spec.Bottom).Select(p => p.Spec).ToList());
-                if (pages[i].Spec.Bottom) railBottom.Children.Add(item);
-                else railTop.Children.Add(item);
+                    Customize.AttachRail(ctx, pages[i].Spec, item, TopPages);
+                into.Children.Add(item);
             }
+            EmptyGroups();
             var railDock = new DockPanel { Margin = new Thickness(6, 8, 6, 4) };
             DockPanel.SetDock(railBottom, Dock.Bottom);
             railDock.Children.Add(railBottom);
@@ -613,6 +706,19 @@ namespace UIFramework
                 FieldBinding.Save(live, pageHost, transientToo: true);
                 return live;
             };
+            // The old version's values, over the baseline as well and as an answer's `set` arrives: unsaved, for the
+            // user to look at and save. Not in the customise mode, whose values are frozen, and no more once a
+            // settings file is there (saved, reset or imported).
+            if (adopted != null && !customizing && !File.Exists(_spec.SettingsPath))
+            {
+                var taken = adopted.Values.Properties().Where(value => LiveValues.Set(parts, value.Name, value.Value)).Select(value => value.Name).ToList();
+                if (taken.Count > 0)
+                    SetStatus(adopted.Note(taken, out string why), Theme.UnsavedText, why);
+                // The count only: a value may be a webhook or a token.
+                if (!adoptedLogged)
+                    _log.Info(_spec.LogPrefix + " Old values: " + taken.Count + " of " + adopted.Values.Count + " shown in the window, unsaved until the user saves.");
+                adoptedLogged = true;
+            }
 
             var btnTheme = layout.Rainbow
                 ? Ui.IconButton("🌈", null, Text.T("tip.theme"))
@@ -642,6 +748,15 @@ namespace UIFramework
                 else SetStatus(Text.T("status.saved"), Theme.SuccessText);
                 return true;
             }
+            // A button with saveFirst: what the status counts as unsaved (a change, a value shown corrected) is written
+            // as Save writes it before the project is asked; with nothing of the kind it is asked at once. The
+            // customise mode has nothing to save.
+            ctx.SaveChanges = () =>
+            {
+                if (customizing) return true;
+                parts.CommitNames();
+                return (Changes() == 0 && corrected.Count == 0) || SaveNow();
+            };
 
             // A layout change or the mode switch: the content is rebuilt in place on the given page.
             ctx.Reopen = Rebuild;
@@ -668,7 +783,9 @@ namespace UIFramework
             // keys through the aliases, and rebuilds the window on them.
             string hostName = _spec.Schema?.Host ?? _spec.Title ?? "settings";
             string Folder() { try { return Path.GetDirectoryName(_spec.SettingsPath); } catch (Exception) { return null; } }
-            void Export()
+            // The export behind its file dialog. A value kept in a global of Streamer.bot is not in it: DropTransient
+            // leaves it out, as it does for the settings file.
+            void ExportTo(string file)
             {
                 var live = (JObject)settings.DeepClone();
                 Sidecars.DropTransient(live, _spec.ResolvedSettings);
@@ -680,6 +797,20 @@ namespace UIFramework
                     ["exported"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture),
                     ["settings"] = live
                 };
+                try
+                {
+                    File.WriteAllText(file, export.ToString(Formatting.Indented));
+                    SetStatus(Text.T("status.exported", Path.GetFileName(file)), Theme.SuccessText, file);
+                    _log.Info(_spec.LogPrefix + " Settings exported to " + file);
+                }
+                catch (Exception ex)
+                {
+                    SetStatus(Text.T("status.notExported"), Theme.DangerText, ex.Message);
+                    MessageBox.Show(Text.T("export.failed.text", ex.Message), Text.T("export.failed.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            void Export()
+            {
                 var dialog = new Microsoft.Win32.SaveFileDialog
                 {
                     Title = Text.T("export.title"),
@@ -689,19 +820,8 @@ namespace UIFramework
                     AddExtension = true
                 };
                 if (Folder() != null) dialog.InitialDirectory = Folder();
-                if (dialog.ShowDialog(window) != true)
-                    return;
-                try
-                {
-                    File.WriteAllText(dialog.FileName, export.ToString(Formatting.Indented));
-                    SetStatus(Text.T("status.exported", Path.GetFileName(dialog.FileName)), Theme.SuccessText, dialog.FileName);
-                    _log.Info(_spec.LogPrefix + " Settings exported to " + dialog.FileName);
-                }
-                catch (Exception ex)
-                {
-                    SetStatus(Text.T("status.notExported"), Theme.DangerText, ex.Message);
-                    MessageBox.Show(Text.T("export.failed.text", ex.Message), Text.T("export.failed.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                if (dialog.ShowDialog(window) == true)
+                    ExportTo(dialog.FileName);
             }
             void Import()
             {
@@ -712,12 +832,16 @@ namespace UIFramework
                     CheckFileExists = true
                 };
                 if (Folder() != null) dialog.InitialDirectory = Folder();
-                if (dialog.ShowDialog(window) != true)
-                    return;
+                if (dialog.ShowDialog(window) == true)
+                    ImportFrom(dialog.FileName);
+            }
+            // The import behind its file dialog.
+            void ImportFrom(string file)
+            {
                 JObject root;
                 try
                 {
-                    using (var reader = new Newtonsoft.Json.JsonTextReader(new StringReader(File.ReadAllText(dialog.FileName))) { DateParseHandling = Newtonsoft.Json.DateParseHandling.None })
+                    using (var reader = new Newtonsoft.Json.JsonTextReader(new StringReader(File.ReadAllText(file))) { DateParseHandling = Newtonsoft.Json.DateParseHandling.None })
                         root = JObject.Load(reader);
                 }
                 catch (Exception ex)
@@ -750,6 +874,12 @@ namespace UIFramework
                         continue;
                     }
                     string label = declared.Label ?? Conventions.Humanize(declared.Key);
+                    // A value kept in a global of Streamer.bot is in no file, and is taken from none.
+                    if (declared.Global != null)
+                    {
+                        refused.Add(label + " (" + Text.T("import.why.global") + ")");
+                        continue;
+                    }
                     if (declared.ReadOnly)
                     {
                         refused.Add(label + " (" + Text.T("import.why.readOnly") + ")");
@@ -766,11 +896,11 @@ namespace UIFramework
                 string notTaken = refused.Count == 0 ? "" : Text.T("import.refused", refused.Count, string.Join("\n  • ", refused.Take(12)) + (refused.Count > 12 ? "\n  • …" : ""));
                 if (known.Count == 0)
                 {
-                    MessageBox.Show(Text.T("import.nothing", Path.GetFileName(dialog.FileName)) + notTaken, Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Text.T("import.nothing", Path.GetFileName(file)) + notTaken, Text.T("import.dialog.title"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
                 var answer = MessageBox.Show(
-                    (known.Count == 1 ? Text.T("import.confirm.one", Path.GetFileName(dialog.FileName)) : Text.T("import.confirm.many", known.Count, Path.GetFileName(dialog.FileName))) +
+                    (known.Count == 1 ? Text.T("import.confirm.one", Path.GetFileName(file)) : Text.T("import.confirm.many", known.Count, Path.GetFileName(file))) +
                     (unknown == 0 ? "" : unknown == 1 ? Text.T("import.skipped.one") : Text.T("import.skipped.many", unknown)) +
                     notTaken +
                     Text.T("import.written", Path.GetFileName(_spec.SettingsPath)),
@@ -788,6 +918,8 @@ namespace UIFramework
                         Sidecars.Load(merged, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix);
                     foreach (var property in known.Properties())
                         merged[property.Name] = property.Value?.DeepClone();
+                    // The values kept in globals stay the window's: the file has none, and the import brought none.
+                    Globals.Keep(merged, settings, _spec.ResolvedSettings);
                     _spec.Clamp?.Invoke(merged);
                     // The game's own check, as before a save: it may warn, and the user may decline.
                     if (!Checked(merged))
@@ -801,9 +933,11 @@ namespace UIFramework
                 }
                 SafeHook(() => _hooks.OnSaved(merged));
                 settings = merged;
-                _log.Info(_spec.LogPrefix + " Settings imported from " + dialog.FileName + " (" + known.Count + " taken, " + unknown + " skipped) and saved.");
+                _log.Info(_spec.LogPrefix + " Settings imported from " + file + " (" + known.Count + " taken, " + unknown + " skipped) and saved.");
                 Rebuild(null);
             }
+            ctx.ExportTo = ExportTo;
+            ctx.ImportFrom = ImportFrom;
 
             btnSave.Click += (s, e) => SaveNow();
             // What reached the fields while the game checked is asked about, as on any close with unsaved changes.
@@ -827,10 +961,11 @@ namespace UIFramework
                 var confirm = MessageBox.Show(Text.T("dialog.resetPage.text", pages[current].Spec.Title), Text.T("dialog.resetPage.title"), MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (confirm != MessageBoxResult.Yes)
                     return;
-                // As Reset all: a list in a file of its own (its own Restore defaults button resets it), a transient
-                // and a read-only setting keep what they show.
+                // As Reset all: a list in a file of its own (its own Restore defaults button resets it), a list with
+                // fixed rows, a transient and a read-only setting and a value kept in a global of Streamer.bot keep
+                // what they show.
                 var resettable = new JObject(defaults.Properties()
-                    .Where(p => _spec.ResolvedSettings.FirstOrDefault(x => x.Key == p.Name) is var st && (st == null || (string.IsNullOrWhiteSpace(st.File) && !st.Transient && !st.ReadOnly)))
+                    .Where(p => _spec.ResolvedSettings.FirstOrDefault(x => x.Key == p.Name) is var st && (st == null || (!SettingsStore.KeptByReset(st) && !st.Transient && !st.ReadOnly && st.Global == null)))
                     .Select(p => new JProperty(p.Name, p.Value?.DeepClone())));
                 FieldBinding.Apply(pages[current].Page, resettable, true);
                 parts.Refresh(pages[current].Spec.Id);
@@ -846,6 +981,8 @@ namespace UIFramework
                 SettingsLoad now = null;
                 try { now = _store.Load(); } catch (Exception) { now = null; }
                 var fresh = SettingsStore.ResetShown(now != null && now.Damaged == null ? now.Settings : settings, defaults, _spec.ResolvedSettings, FieldBinding.ShownKeys(pageHost));
+                // A value kept in a global of Streamer.bot is not reset: it stays as the window has it.
+                Globals.Keep(fresh, settings, _spec.ResolvedSettings);
                 try { _store.Save(Sidecars.Split(fresh, _spec.ResolvedSettings, _spec.SettingsPath, new HashSet<string>(), _unreadableLists)); }
                 catch (Exception ex)
                 {
@@ -856,12 +993,19 @@ namespace UIFramework
                 Sidecars.Load(fresh, _spec.ResolvedSettings, _spec.SettingsPath, _log, _spec.LogPrefix);
                 SafeHook(() => _hooks.OnSaved(fresh));
                 // Nor are they written: rows the user changed in one and has not saved go back into its editor after the
-                // rebuild, still unsaved, as Reset page leaves them. The rebuild alone dropped them without a word.
+                // rebuild, still unsaved, as Reset page leaves them. The rebuild alone dropped them without a word. The
+                // same for a value kept in a global that the user changed and has not saved.
                 var unsaved = FieldBinding.ChangedKeys(pageHost, baseline);
                 var shown = new JObject();
                 FieldBinding.Save(shown, pageHost);
-                keepUnsaved = new JObject(Sidecars.Of(_spec.ResolvedSettings).Where(st => unsaved.Contains(st.Key) && shown[st.Key] != null)
-                    .Select(st => new JProperty(st.Key, shown[st.Key].DeepClone())));
+                // So with a value kept in a global of Streamer.bot: it is the window's, in no file.
+                // So with a list with fixed rows, wherever it is kept. In a list the project writes to as well (rowKey)
+                // the user's changes go over the list as it is now, so a row the project added meanwhile is in it.
+                keepUnsaved = new JObject(_spec.ResolvedSettings.Where(st => (SettingsStore.KeptByReset(st) || st.Global != null) && unsaved.Contains(st.Key) && shown[st.Key] != null)
+                    .Select(st => new JProperty(st.Key,
+                        ListMerge.Applies(st) && shown[st.Key] is JArray mine && fresh[st.Key] is JArray theirs && parts.Lists.TryGetValue(st.Key, out var list) && list.LoadedRows != null
+                            ? ListMerge.Merge(list.LoadedRows, mine, theirs, st)
+                            : shown[st.Key].DeepClone())));
                 settings = fresh;
                 Rebuild(null);
             };
@@ -1049,7 +1193,7 @@ namespace UIFramework
                 for (int i = 0; i < pages.Count; i++)
                 {
                     int index = i;
-                    entries.Add(new SearchEntry { Kind = SearchEntry.Page, Key = pages[i].Spec.Id, Title = pages[i].Spec.Title, Go = () => ShowPage(index) });
+                    entries.Add(new SearchEntry { Kind = SearchEntry.Page, Key = pages[i].Spec.Id, PageId = pages[i].Spec.Id, Title = pages[i].Spec.Title, Go = () => ShowPage(index) });
                 }
                 foreach (var setting in _spec.ResolvedSettings)
                 {
@@ -1063,9 +1207,12 @@ namespace UIFramework
                     entries.Add(new SearchEntry
                     {
                         Key = setting.Key,
+                        PageId = pages[index].Spec.Id,
                         Title = string.IsNullOrWhiteSpace(setting.Label) ? Conventions.Humanize(setting.Key) : setting.Label,
                         Where = string.IsNullOrWhiteSpace(setting.Section) ? pages[index].Spec.Title : pages[index].Spec.Title + " › " + setting.Section,
                         Help = setting.Help,
+                        // A multi field's choices stand on the page as its check boxes: found by them too.
+                        Also = setting.Kind == "multi" ? string.Join(" ", Fields.MultiChoices(setting.Options).Select(o => o.Label)) : null,
                         Go = () => { ShowPage(index); SearchBar.Reveal(window, layers, shown); }
                     });
                 }
@@ -1080,6 +1227,7 @@ namespace UIFramework
                         {
                             Kind = SearchEntry.Message,
                             Key = message.Key,
+                            PageId = pages[messagesPage].Spec.Id,
                             Title = message.Label,
                             Where = string.IsNullOrWhiteSpace(message.Group) ? pages[messagesPage].Spec.Title : pages[messagesPage].Spec.Title + " › " + message.Group,
                             Help = message.Help,
@@ -1090,6 +1238,20 @@ namespace UIFramework
             }
             search = new SearchBar(window, layers, btnSearch, SearchEntries);
             _search = search;
+            // While the search lists what it found, a folded group that holds one of those pages shows its pages; the
+            // user's folding comes back once the box is empty or the bar closes. Going to a result unfolds its group
+            // for good, as going to a page does.
+            search.Listed = found =>
+            {
+                if (headings.Count == 0) return;
+                revealed.Clear();
+                foreach (var entry in found)
+                {
+                    string holds = GroupAt(pages.FindIndex(p => p.Spec.Id == entry.PageId));
+                    if (holds != null) revealed.Add(holds);
+                }
+                DrawGroups();
+            };
             if (!_spec.Locked) tourParts["customise"] = btnCustomize;
             List<Tour.Stop> TourStops()
             {
@@ -1150,12 +1312,24 @@ namespace UIFramework
                 tour?.End();
                 var stops = TourStops();
                 int back = current;
-                // When it ends, the page that was in front comes back.
-                tour = Tour.Start(window, layers, stops, () => { tour = null; if (back < pages.Count) ShowPage(back); });
+                // A stop on a page of a folded group unfolds it while the tour runs. When it ends, the page that was in
+                // front comes back, and with it the user's folding.
+                touring = stops.Count > 0;
+                tour = Tour.Start(window, layers, stops, () =>
+                {
+                    tour = null;
+                    touring = false;
+                    revealed.Clear();
+                    if (back < pages.Count) ShowPage(back);
+                });
             };
 
             int startPage = _spec.ReopenPageId == null ? -1 : pages.FindIndex(p => p.Spec.Id == _spec.ReopenPageId);
             _spec.ReopenPageId = null;
+            // A window opened anew starts on the first page the rail shows, so a group the user folded stays folded;
+            // with every page in a folded group it starts on the first, whose group unfolds.
+            if (startPage < 0 && headings.Count > 0)
+                startPage = pages.FindIndex(p => !p.Spec.Bottom && (p.Spec.Group == null || !Folded(p.Spec.Group)));
             ShowPage(startPage < 0 ? 0 : startPage);
             if (keepOffset != null && pages[current].Page is ScrollViewer scroller)
             {
@@ -1331,10 +1505,11 @@ namespace UIFramework
         {
             try
             {
-                var invalid = FieldBinding.InvalidNumberFields(root);
-                if (invalid.Count > 0)
+                // A number field without a usable number, a time field without a time of day: named, nothing saved.
+                string invalid = FieldBinding.WhyNotSaved(root, out string invalidTitle);
+                if (invalid != null)
                 {
-                    MessageBox.Show(Text.T("dialog.invalidNumbers.text", string.Join("\n", invalid)), Text.T("dialog.invalidNumbers.title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(invalid, invalidTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
 
@@ -1370,8 +1545,16 @@ namespace UIFramework
                 // window as before.
                 JObject target = draft;
                 ISet<string> only = null;
+                // The lists the project writes to as well (rowKey) among what the user changed, each with the rows the
+                // window loaded: such a list is not put over the file's but merged with it (ListMerge), so a row the
+                // project added or removed meanwhile stays added or removed. One in a file of its own is merged where
+                // that file is read to be written (Sidecars.Split), one in the settings file here.
+                var merging = new Dictionary<string, JArray>(StringComparer.Ordinal);
                 if (baseline != null)
                 {
+                    foreach (var list in _spec.ResolvedSettings.Where(s => changed.Contains(s.Key) && ListMerge.Applies(s) && draft[s.Key] is JArray))
+                        if ((parts.Lists.TryGetValue(list.Key, out var shown) ? shown.LoadedRows : settings[list.Key] as JArray) is JArray loaded)
+                            merging[list.Key] = loaded;
                     var now = _store.Load();
                     if (now.Damaged == null)
                     {
@@ -1380,19 +1563,53 @@ namespace UIFramework
                         var unreadable = new HashSet<string>(StringComparer.Ordinal);
                         Sidecars.Load(target, _spec.ResolvedSettings, _spec.SettingsPath, null, _spec.LogPrefix, unreadable);
                         foreach (var key in changed.Concat(unreadable))
-                            if (draft[key] != null) target[key] = draft[key].DeepClone();
+                        {
+                            if (draft[key] == null) continue;
+                            var inSettingsFile = merging.ContainsKey(key) ? _spec.ResolvedSettings.FirstOrDefault(s => s.Key == key && string.IsNullOrWhiteSpace(s.File)) : null;
+                            target[key] = inSettingsFile != null && target[key] is JArray theirs
+                                ? ListMerge.Merge(merging[key], (JArray)draft[key], theirs, inSettingsFile)
+                                : draft[key].DeepClone();
+                        }
                     }
                     only = changed;
                 }
-                _store.Save(Sidecars.Split(target, _spec.ResolvedSettings, _spec.SettingsPath, only, _unreadableLists));
+                // A value kept in a global of Streamer.bot is the window's, never the file's: what an older file holds
+                // under its key is not laid over it, and Split leaves the key out of what is written.
+                Globals.Keep(target, draft, _spec.ResolvedSettings);
+                _store.Save(Sidecars.Split(target, _spec.ResolvedSettings, _spec.SettingsPath, only, _unreadableLists, merging));
+                // The globals the user changed go to the host now, before the project hears of the save: it reads them
+                // from there. One the host did not take keeps its old value here and stays an unsaved change.
+                var unwritten = Globals.Write(draft, changed, _spec.ResolvedSettings, _hooks);
+                foreach (var setting in unwritten)
+                {
+                    if (settings[setting.Key] != null) target[setting.Key] = settings[setting.Key].DeepClone();
+                    else target.Remove(setting.Key);
+                    Failed("'" + (setting.Label ?? setting.Key) + "' could not be written to Streamer.bot's global '" + setting.Global + "'; it is still unsaved.");
+                }
                 // The window's copy is now what was written, so the next save and a rebuild start from there.
                 foreach (var property in target.Properties().ToList())
                     settings[property.Name] = property.Value.DeepClone();
                 if (baseline != null)
                 {
+                    var before = unwritten.Count == 0 ? null : new Dictionary<object, string>(baseline);
                     baseline.Clear();
                     foreach (var field in drafted)
-                        baseline[field.Key] = field.Value;
+                        baseline[field.Key] = before != null && before.TryGetValue(field.Key, out string was) && field.Key is FrameworkElement control
+                            && unwritten.Any(setting => setting.Key == FieldTag.Of(control.Tag)?.Key) ? was : field.Value;
+                }
+                // A merged list shows what was written, the project's rows among its own, and that is what the window
+                // loaded from now on. One typed in while the project checked keeps its rows, still unsaved: what it held
+                // when Save was pressed is what it loaded.
+                foreach (var key in merging.Keys)
+                {
+                    if (!parts.Lists.TryGetValue(key, out var editor)) continue;
+                    if (target[key] is JArray written && (!drafted.TryGetValue(editor, out string asDrafted) || editor.Serialized == asDrafted))
+                    {
+                        editor.Reload(written);
+                        if (baseline != null) baseline[editor] = editor.Serialized;
+                    }
+                    else if (draft[key] is JArray held)
+                        editor.LoadedRows = (JArray)held.DeepClone();
                 }
                 SafeHook(() => _hooks.OnSaved(settings));
                 _log.Info(_spec.LogPrefix + " Settings saved.");

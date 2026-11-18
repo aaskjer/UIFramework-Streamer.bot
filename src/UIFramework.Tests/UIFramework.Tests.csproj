@@ -19,6 +19,11 @@
     <ProjectReference Include="..\UIFramework\UIFramework.csproj" />
   </ItemGroup>
 
+  <!-- AdoptTests writes backup zips as Streamer.bot does. Part of .NET Framework, as in the DLL's own project. -->
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- The host block a game pastes in, compiled here against a stand-in for Streamer.bot's CPH (HostBlock/Streamerbot.cs). -->
     <Compile Include="..\..\stub\HostSchema.cs" Link="HostBlock\HostSchema.cs" />
@@ -37,6 +42,21 @@
   <Target Name="StubUnderTestCompile" BeforeTargets="CoreCompile" DependsOnTargets="StubUnderTest">
     <ItemGroup>
       <Compile Include="$(IntermediateOutputPath)StubUnderTest.g.cs" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The host reader (stub/HostReader.cs) declares UiSettings as the host block does, since an action carries one of
+       the two. Here both are compiled, so the reader's class gets another name. -->
+  <Target Name="ReaderUnderTest" BeforeTargets="CoreCompile" Inputs="..\..\stub\HostReader.cs;$(MSBuildProjectFullPath)" Outputs="$(IntermediateOutputPath)ReaderUnderTest.g.cs">
+    <PropertyGroup>
+      <ReaderSource>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\stub\HostReader.cs'))</ReaderSource>
+      <ReaderPatched>$(ReaderSource.Replace('UiSettings', 'UiReaderSettings'))</ReaderPatched>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)ReaderUnderTest.g.cs" Lines="$([MSBuild]::Escape($(ReaderPatched)))" Overwrite="true" />
+  </Target>
+  <Target Name="ReaderUnderTestCompile" BeforeTargets="CoreCompile" DependsOnTargets="ReaderUnderTest">
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)ReaderUnderTest.g.cs" />
     </ItemGroup>
   </Target>
 

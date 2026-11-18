@@ -22,12 +22,17 @@ namespace UIFramework
         public string Kind = Setting;
         /// <summary>The setting's key, the message's key or the page's id: found too, for those who know it.</summary>
         public string Key;
+        /// <summary>The id of the page it is on (a page's own id): what the rail unfolds a folded group for.</summary>
+        public string PageId;
         /// <summary>What the result is called: the label, the page's title.</summary>
         public string Title;
         /// <summary>Where it is: "Game › Payouts".</summary>
         public string Where;
         /// <summary>The help text, searched but shown only as the result's second line.</summary>
         public string Help;
+        /// <summary>More words it is found by, searched like the help and not shown: the choices of a multi field,
+        /// which the page shows as its check boxes.</summary>
+        public string Also;
         /// <summary>Brings it to the front: its page, the field in view.</summary>
         public Action Go;
     }
@@ -62,7 +67,7 @@ namespace UIFramework
             foreach (var entry in entries)
             {
                 order++;
-                string title = Fold(entry.Title), key = Fold(entry.Key), where = Fold(entry.Where), help = Fold(entry.Help);
+                string title = Fold(entry.Title), key = Fold(entry.Key), where = Fold(entry.Where), help = Fold(entry.Help + " " + entry.Also);
                 int score = 0;
                 bool all = true;
                 foreach (string word in words)
@@ -89,7 +94,8 @@ namespace UIFramework
 
     /// <summary>The search bar: Ctrl+F or the magnifier in the header opens it under the header's right end, over the
     /// window's content. Typing lists what matches; Up and Down move, Enter or a click goes there, Esc or a click
-    /// beside it closes it. It only finds and shows: nothing in the window changes by it.</summary>
+    /// beside it closes it. It only finds and shows: nothing in the window changes by it (a folded group in the rail
+    /// shows its pages while one of them is found, see <see cref="Listed"/>).</summary>
     public sealed class SearchBar
     {
         public const string BoxName = "SearchBox", RowTag = "uiframework.search.row";
@@ -114,6 +120,14 @@ namespace UIFramework
         /// <summary>What is listed right now, best first.</summary>
         public IReadOnlyList<SearchEntry> Results => _shown;
         public TextBox Box => _box;
+        /// <summary>Told what the bar lists whenever that changes, and nothing once it closes or its box is empty: the
+        /// rail shows the pages of a folded group for as long as one of them is among the results.</summary>
+        public Action<IReadOnlyList<SearchEntry>> Listed;
+
+        private void Tell(IReadOnlyList<SearchEntry> listed)
+        {
+            try { Listed?.Invoke(listed); } catch (Exception) { }
+        }
 
         /// <param name="layers">The grid over the window's content, where the tour and the problems panel go too.</param>
         /// <param name="anchor">The header button the bar hangs under.</param>
@@ -204,6 +218,7 @@ namespace UIFramework
             IsOpen = false;
             _layers.Children.Remove(_panel);
             _layers.Children.Remove(_catcher);
+            Tell(new List<SearchEntry>());
             // Closed without a result (Esc, a click beside it): the keyboard goes back to the field it was in. A
             // result puts the cursor into what was found instead.
             var before = _focusBefore;
@@ -280,6 +295,7 @@ namespace UIFramework
             _scroll.Visibility = _shown.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             _note.Text = query.Trim().Length == 0 ? Text.T("search.hint") : _shown.Count == 0 ? Text.T("search.none", query.Trim()) : Text.T("search.keys");
             if (_shown.Count > 0) Select(0);
+            Tell(_shown);
         }
 
         private Border Row(SearchEntry entry, int index)

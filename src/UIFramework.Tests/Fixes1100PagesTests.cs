@@ -257,7 +257,7 @@ namespace UIFramework.Tests
                 ""lang"": { ""de"": { ""texts"": { ""Responsible: aaskjer"": ""Verantwortlich: aaskjer"", ""Repository"": ""Quellcode"", ""Thanks"": ""Danke"" } } } }");
             try
             {
-                var spec = Entry.SpecFor(null, schema, null);
+                var spec = Entry.SpecFor(schema, null);
                 Entry.Prepare(spec, schema);
                 var parts = new WindowParts();
                 var ctx = Entry.ContextFor(spec, (JObject)spec.Defaults.DeepClone(), parts, null, null);

@@ -21,7 +21,7 @@ namespace UIFramework.Tests
         private static WindowSpec Prepared(string schemaJson, string language)
         {
             var schema = Schema.Parse(schemaJson);
-            var spec = Entry.SpecFor(null, schema, Path.GetTempFileName());
+            var spec = Entry.SpecFor(schema, Path.GetTempFileName());
             spec.Language = language;
             Entry.Prepare(spec, schema);
             return spec;

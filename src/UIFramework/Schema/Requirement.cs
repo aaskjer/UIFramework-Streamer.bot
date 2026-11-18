@@ -12,7 +12,8 @@ namespace UIFramework
     /// it): a key of a switch (<c>"freeGame"</c>), or a comparison on any field, <c>"numberOfSlots>=5"</c>,
     /// <c>"cpBetMode=fixed"</c>, <c>"cpBetMode!=free"</c>, with <c>=</c>, <c>!=</c>, <c>&lt;</c>, <c>&lt;=</c>,
     /// <c>&gt;</c>, <c>&gt;=</c>. <c>=</c> and <c>!=</c> take several values separated by <c>|</c>: one of them,
-    /// none of them (<c>"questionSource=opentdb|wikidata"</c>). Conditions joined by <c>&amp;&amp;</c> must all hold.
+    /// none of them (<c>"questionSource=opentdb|wikidata"</c>). On a <c>multi</c> field <c>=</c> asks whether a value is
+    /// ticked (<c>"platforms=steam"</c>), and <c>!platforms</c> holds while nothing is. Conditions joined by <c>&amp;&amp;</c> must all hold.
     /// The field follows its gates live; a gate the window does not show is read from the saved value, and one the
     /// settings do not know at all counts as holding.
     /// </summary>
@@ -73,23 +74,41 @@ namespace UIFramework
             if (comparisons.Count == 0) return;
             void Apply() => apply(comparisons.All(c => Holds(f, parts, c)));
             foreach (var c in comparisons)
-            {
-                if (parts.Switches.TryGetValue(c.Key, out var toggle))
-                {
-                    toggle.Checked += (sender, e) => Apply();
-                    toggle.Unchecked += (sender, e) => Apply();
-                }
-                else if (parts.Combos.TryGetValue(c.Key, out var combo))
-                    combo.SelectionChanged += (sender, e) => Apply();
-                else if (parts.Boxes.TryGetValue(c.Key, out var box))
-                    box.TextChanged += (sender, e) => Apply();
-                else if (parts.Sliders.TryGetValue(c.Key, out var slider))
-                    slider.ValueChanged += (sender, e) => Apply();
-                else if (parts.Lists.TryGetValue(c.Key, out var list))
-                    list.Changed += Apply;   // "a list is empty" follows the rows as they are added and removed
-            }
+                Listen(parts, c.Key, Apply);
             // Also when no gate is on the window: a hidden gate's saved value decides.
             Apply();
+        }
+
+        /// <summary>Calls <paramref name="changed"/> whenever the field of that key changes in the window. A key the
+        /// window has no field for never does.</summary>
+        public static void Listen(WindowParts parts, string key, Action changed)
+        {
+            if (parts.Switches.TryGetValue(key, out var toggle))
+            {
+                toggle.Checked += (sender, e) => changed();
+                toggle.Unchecked += (sender, e) => changed();
+            }
+            else if (parts.Combos.TryGetValue(key, out var combo))
+                combo.SelectionChanged += (sender, e) => changed();
+            else if (parts.Boxes.TryGetValue(key, out var box))
+                box.TextChanged += (sender, e) => changed();
+            else if (parts.Sliders.TryGetValue(key, out var slider))
+                slider.ValueChanged += (sender, e) => changed();
+            else if (parts.Lists.TryGetValue(key, out var list))
+                list.Changed += changed;   // "a list is empty" follows the rows as they are added and removed
+        }
+
+        /// <summary>A setting's value as the window has it now, saved or not, in the form it would be stored in (as
+        /// <see cref="Holds"/> reads a gate): a switch as true or false, a list as its rows, anything else as its text.
+        /// A setting the window has no field for gives its saved value; null when the settings do not know the key.</summary>
+        public static JToken Live(Fields f, WindowParts parts, string key)
+        {
+            if (parts.Switches.ContainsKey(key)) return f.LiveSwitch(key);
+            if (parts.Boxes.TryGetValue(key, out var box))
+                return FieldTag.Of(box.Tag) is FieldTag tag ? FieldBinding.StoredText(tag, box.Text) : box.Text;
+            if (parts.Combos.ContainsKey(key) || parts.Sliders.ContainsKey(key)) return f.LiveText(key, "");
+            if (parts.Lists.TryGetValue(key, out var list)) return list.Peek;
+            return f.Token(key);
         }
 
         /// <summary>Whether one comparison holds for the live value of its gate. A gate the window does not show (hidden
@@ -119,6 +138,15 @@ namespace UIFramework
             else
                 text = saved is JContainer container && !container.HasValues ? "" : FieldBinding.Invariant(saved);
             text = text.Trim();
+            // A multi field holds several values at once: "key=steam" holds while steam is ticked, "key=steam|gog" while
+            // one of them is, "key!=steam|gog" while none of them is; "key" while anything is ticked, "!key" while nothing is.
+            if (parts.Choices.TryGetValue(c.Key, out var choices) && (c.Op == null || c.Op == "=" || c.Op == "!="))
+            {
+                var ticked = FieldBinding.MultiValues(choices, present ? text : FieldBinding.MultiText(choices, saved));
+                if (c.Op == null) return c.Not ? ticked.Count == 0 : ticked.Count > 0;
+                bool any = c.Values.Any(wanted => ticked.Contains(wanted, StringComparer.OrdinalIgnoreCase));
+                return c.Op == "=" ? any : !any;
+            }
             if (c.Op == null)
                 return c.Not ? text.Length == 0 : text.Length > 0;
             bool Same(string wanted) =>

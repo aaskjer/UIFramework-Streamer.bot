@@ -20,7 +20,9 @@ namespace UIFramework
     /// edited where it stands. A click into a cell edits it, a switch column is a checkbox in every row that toggles
     /// with one click, a read-only column only shows. A search box sits above; Add row, Remove row (the picked rows,
     /// or Delete) and Restore defaults below. A row keeps every property it came with, so keys the game writes and no
-    /// column shows (a timestamp) survive a save.
+    /// column shows (a timestamp) survive a save. With fixed rows there is no Add row, Remove row or Restore defaults,
+    /// and Delete removes nothing; a filter (<see cref="RowFilter"/>) says which rows show, and the search and the
+    /// count work on those. A JSON array in a read-only cell shows as "a, b" and stays the array it is.
     /// </summary>
     public sealed class ListTable
     {
@@ -34,7 +36,9 @@ namespace UIFramework
         private readonly TextBlock _count;
         private readonly TextBlock _empty;
         private readonly Button _remove;
+        private readonly bool _fixedRows;
         private bool _loading;
+        private Func<JObject, bool> _rowFilter;
 
         public readonly FrameworkElement Element;
 
@@ -47,6 +51,8 @@ namespace UIFramework
         {
             public readonly JObject Data;
             public int Number;
+            /// <summary>The list's filter does not show it.</summary>
+            public bool Out;
             private readonly List<SettingColumn> _columns;
             private readonly Action _changed;
             public Record(JObject data, List<SettingColumn> columns, Action changed) { Data = data; _columns = columns; _changed = changed; }
@@ -62,6 +68,9 @@ namespace UIFramework
                     var token = Data[key];
                     if (column?.Kind == "bool")
                         return token != null && token.Type == JTokenType.Boolean && (bool)token;
+                    // An array the project keeps in a cell the user only reads: its elements, not its JSON.
+                    if (column != null && column.ReadOnly && token is JArray array)
+                        return ListMerge.Shown(array);
                     return token == null || token.Type == JTokenType.Null ? "" : token.Type == JTokenType.String ? (string)token : token.ToString(Newtonsoft.Json.Formatting.None);
                 }
                 set
@@ -95,11 +104,12 @@ namespace UIFramework
             public void Refresh() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(Binding.IndexerName));
         }
 
-        public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify)
+        public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify, bool fixedRows = false)
         {
             _columns = columns;
             _defaults = defaults;
             _notify = notify;
+            _fixedRows = fixedRows;
             _view = CollectionViewSource.GetDefaultView(_records);
 
             var panel = new StackPanel();
@@ -113,7 +123,7 @@ namespace UIFramework
             _view.Filter = o =>
             {
                 string needle = (_search.Text ?? "").Trim();
-                return needle.Length == 0 || ((Record)o).Haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+                return !((Record)o).Out && (needle.Length == 0 || ((Record)o).Haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0);
             };
             panel.Children.Add(searchHost);
 
@@ -216,7 +226,7 @@ namespace UIFramework
             }));
             _grid.PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Delete && !IsEditing())
+                if (e.Key == Key.Delete && !IsEditing() && !_fixedRows)
                 {
                     RemoveSelected();
                     e.Handled = true;
@@ -239,8 +249,9 @@ namespace UIFramework
             gridHost.Children.Add(_empty);
             panel.Children.Add(gridHost);
 
-            // The hint names the checkboxes only when the table has a switch column.
-            var hint = Ui.Note(Text.T(_columns.Any(c => c.Kind == "bool" && !c.ReadOnly) ? "list.table.hint" : "list.table.hint.noSwitch"));
+            // The hint names the checkboxes only when the table has a switch column, and Delete only where it removes.
+            bool switches = _columns.Any(c => c.Kind == "bool" && !c.ReadOnly);
+            var hint = Ui.Note(Text.T(_fixedRows ? (switches ? "list.fixed.hint" : "list.fixed.hint.noSwitch") : switches ? "list.table.hint" : "list.table.hint.noSwitch"));
             hint.Margin = new Thickness(0, 6, 0, 0);
             panel.Children.Add(hint);
 
@@ -249,35 +260,38 @@ namespace UIFramework
             DockPanel.SetDock(_count, Dock.Right);
             footer.Children.Add(_count);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            var add = Ui.TextButton(Text.T("list.add"), false);
-            add.Margin = new Thickness(0);
-            add.ToolTip = Text.T("list.add.tip");
-            AutomationProperties.SetName(add, Text.T("list.addTo", label));
-            add.Click += (s, e) =>
+            if (!_fixedRows)
             {
-                CommitEdit();
-                _search.Text = "";
-                var record = Add(new JObject());
-                Renumber();
-                _grid.SelectedItem = record;
-                _grid.ScrollIntoView(record);
-                var first = _grid.Columns.Skip(1).FirstOrDefault(c => !c.IsReadOnly && !(c is DataGridTemplateColumn));
-                if (first != null)
+                var add = Ui.TextButton(Text.T("list.add"), false);
+                add.Margin = new Thickness(0);
+                add.ToolTip = Text.T("list.add.tip");
+                AutomationProperties.SetName(add, Text.T("list.addTo", label));
+                add.Click += (s, e) =>
                 {
-                    _grid.CurrentCell = new DataGridCellInfo(record, first);
-                    _grid.Focus();
-                    _grid.BeginEdit();
-                }
-                Changed();
-            };
-            buttons.Children.Add(add);
-            _remove = Ui.TextButton(Text.T("list.remove"), false);
-            _remove.ToolTip = Text.T("list.remove.tip");
-            _remove.IsEnabled = false;
-            _remove.Click += (s, e) => RemoveSelected();
-            buttons.Children.Add(_remove);
-            _grid.SelectionChanged += (s, e) => _remove.IsEnabled = _grid.SelectedItems.Count > 0;
-            if (_defaults != null && _defaults.Count > 0)
+                    CommitEdit();
+                    _search.Text = "";
+                    var record = Add(new JObject(), false);
+                    Renumber();
+                    _grid.SelectedItem = record;
+                    _grid.ScrollIntoView(record);
+                    var first = _grid.Columns.Skip(1).FirstOrDefault(c => !c.IsReadOnly && !(c is DataGridTemplateColumn));
+                    if (first != null)
+                    {
+                        _grid.CurrentCell = new DataGridCellInfo(record, first);
+                        _grid.Focus();
+                        _grid.BeginEdit();
+                    }
+                    Changed();
+                };
+                buttons.Children.Add(add);
+                _remove = Ui.TextButton(Text.T("list.remove"), false);
+                _remove.ToolTip = Text.T("list.remove.tip");
+                _remove.IsEnabled = false;
+                _remove.Click += (s, e) => RemoveSelected();
+                buttons.Children.Add(_remove);
+                _grid.SelectionChanged += (s, e) => _remove.IsEnabled = _grid.SelectedItems.Count > 0;
+            }
+            if (!_fixedRows && _defaults != null && _defaults.Count > 0)
             {
                 var restore = Ui.TextButton(Text.T("list.restore"), false);
                 restore.ToolTip = Text.T("list.restore.tip");
@@ -332,8 +346,39 @@ namespace UIFramework
             }
         }
 
-        /// <summary>The rows without ending the edit of a cell: what is being typed there is not in it yet.</summary>
-        public JArray Peek => new JArray(_records.Where(r => r.Filled).Select(r => r.Data.DeepClone()));
+        /// <summary>The rows without ending the edit of a cell: what is being typed there is not in it yet. With fixed
+        /// rows none is dropped for being empty.</summary>
+        public JArray Peek => new JArray(_records.Where(Counts).Select(r => r.Data.DeepClone()));
+
+        private bool Counts(Record record) => _fixedRows || record.Filled;
+
+        /// <summary>Which rows show (the list's <c>filter</c>); null shows every row. Applied to the rows as they are
+        /// loaded and again with <see cref="Refilter"/>; a row added here shows until then.</summary>
+        public Func<JObject, bool> RowFilter
+        {
+            get => _rowFilter;
+            set { _rowFilter = value; Refilter(); }
+        }
+
+        /// <summary>Applies the filter again: a setting it reads changed.</summary>
+        public void Refilter()
+        {
+            CommitEdit();
+            foreach (var record in _records)
+                record.Out = _rowFilter != null && !_rowFilter(record.Data);
+            _view.Refresh();
+            Renumber();
+        }
+
+        /// <summary>The rows that show now: those the filter lets through and the search finds.</summary>
+        public JArray ShownRows => new JArray(_view.Cast<Record>().Select(r => r.Data.DeepClone()));
+
+        public string CountText => _count.Text;
+        public string SearchText
+        {
+            get => _search.Text;
+            set => _search.Text = value ?? "";
+        }
 
         public void Set(JArray value)
         {
@@ -342,14 +387,14 @@ namespace UIFramework
             _records.Clear();
             if (value != null)
                 foreach (var item in value.OfType<JObject>())
-                    Add((JObject)item.DeepClone());
+                    Add((JObject)item.DeepClone(), true);
             Renumber();
             _loading = false;
         }
 
-        private Record Add(JObject data)
+        private Record Add(JObject data, bool loaded)
         {
-            var record = new Record(data, _columns, Changed);
+            var record = new Record(data, _columns, Changed) { Out = loaded && _rowFilter != null && !_rowFilter(data) };
             _records.Add(record);
             return record;
         }
@@ -383,25 +428,28 @@ namespace UIFramework
 
         private void Renumber()
         {
-            for (int i = 0; i < _records.Count; i++)
+            // The rows the filter lets through are the list as the user sees it: numbered, counted and searched.
+            int number = 0;
+            foreach (var record in _records)
             {
-                _records[i].Number = i + 1;
-                _records[i].Refresh();
+                record.Number = record.Out ? 0 : ++number;
+                record.Refresh();
             }
             Count();
         }
 
         private void Count()
         {
-            int shown = _view.Cast<object>().Count(), filled = _records.Count(r => r.Filled);
-            _count.Text = shown != _records.Count
-                ? Text.T("list.count.shown", shown, _records.Count)
-                : _records.Count == filled
+            int shown = _view.Cast<object>().Count(), rows = _records.Count(r => !r.Out), filled = _records.Count(r => !r.Out && Counts(r));
+            _count.Text = shown != rows
+                ? Text.T("list.count.shown", shown, rows)
+                : rows == filled
                     ? (filled == 1 ? Text.T("list.count.one") : Text.T("list.count.many", filled))
-                    : Text.T("list.count.filled", filled, _records.Count);
-            _count.ToolTip = Text.T("list.count.tip");
+                    : Text.T("list.count.filled", filled, rows);
+            _count.ToolTip = _fixedRows ? null : Text.T("list.count.tip");
             _empty.Text = _records.Count == 0
-                ? (_defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty"))
+                ? (_fixedRows ? Text.T("list.fixed.empty") : _defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty"))
+                : rows == 0 ? Text.T("list.filter.none")
                 : shown == 0 ? Text.T("log.noMatch") : "";
             _empty.Visibility = _empty.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }

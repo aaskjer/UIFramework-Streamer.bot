@@ -16,6 +16,11 @@ namespace UIFramework
     /// button on every row, Add row and Restore defaults underneath. Its Tag is a <see cref="FieldTag"/> of kind
     /// List, so <see cref="FieldBinding"/> saves, resets and counts it like any other field; the value is a
     /// JSON array of objects whose properties are the column keys. Rows with nothing typed in are dropped.
+    /// <para>A list the project fills as well (<c>rowKey</c>, <c>fixedRows</c>, <c>filter</c>) is written back as it
+    /// was loaded wherever the user changed nothing: a row keeps the properties no column shows and a cell the form
+    /// the file had it in. With <c>fixedRows</c> rows are neither added nor removed here; a filter
+    /// (<see cref="RowFilter"/>) says which rows show, and the search and the count work on those. A JSON array in a
+    /// read-only cell shows as "a, b" and is written back as the array it was.</para>
     /// </summary>
     public sealed class ListEditor : Border
     {
@@ -32,6 +37,9 @@ namespace UIFramework
         private const int SearchFrom = 8;
         private bool _loading;
         private readonly ListTable _table;
+        private readonly bool _fixedRows, _asLoaded;
+        private readonly string _emptyText;
+        private Func<JObject, bool> _rowFilter;
 
         public event Action Changed;
 
@@ -40,12 +48,22 @@ namespace UIFramework
             public Grid Element;
             public readonly Dictionary<string, Control> Cells = new Dictionary<string, Control>(StringComparer.Ordinal);
             public TextBlock Number;
+            /// <summary>The row as it was loaded; null for one added here.</summary>
+            public JObject Source;
+            /// <summary>The list's filter does not show it.</summary>
+            public bool Out;
         }
 
-        public ListEditor(string key, string label, List<SettingColumn> columns, JArray value, JArray defaults, string help, IHostHooks hooks = null)
+        /// <param name="fixedRows">Rows are neither added nor removed here: no Add row, no remove, no Restore defaults.</param>
+        /// <param name="asLoaded">The project fills the list as well: what the user did not change is written back as
+        /// it was loaded. <paramref name="fixedRows"/> brings it along.</param>
+        public ListEditor(string key, string label, List<SettingColumn> columns, JArray value, JArray defaults, string help, IHostHooks hooks = null,
+            bool fixedRows = false, bool asLoaded = false)
         {
             _label = label;
             _hooks = hooks;
+            _fixedRows = fixedRows;
+            _asLoaded = asLoaded || fixedRows;
             _columns = columns != null && columns.Count > 0 ? columns : new List<SettingColumn> { new SettingColumn { Key = "value", Kind = "string", Label = "Value" } };
             _defaults = defaults;
             Tag = new FieldTag(key, FieldKind.List);
@@ -55,9 +73,10 @@ namespace UIFramework
             // A list whose row would not fit one line (a question editor) is a table with an edit panel instead.
             if (ListTable.Suits(_columns))
             {
-                _table = new ListTable(label, _columns, _defaults, () => Changed?.Invoke());
+                _table = new ListTable(label, _columns, _defaults, () => Changed?.Invoke(), _fixedRows);
                 Child = _table.Element;
                 _table.Set(value);
+                LoadedRows = Value;
                 return;
             }
 
@@ -79,7 +98,8 @@ namespace UIFramework
             panel.Children.Add(header);
             panel.Children.Add(_rows);
 
-            _empty = Ui.Note(_defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty"));
+            _emptyText = _fixedRows ? Text.T("list.fixed.empty") : _defaults != null && _defaults.Count > 0 ? Text.T("list.emptyDefaults") : Text.T("list.empty");
+            _empty = Ui.Note(_emptyText);
             _empty.Margin = new Thickness(0, 4, 0, 0);
             panel.Children.Add(_empty);
 
@@ -89,22 +109,25 @@ namespace UIFramework
             footer.Children.Add(_count);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            var add = Ui.TextButton(Text.T("list.add"), false);
-            add.Margin = new Thickness(0);
-            add.ToolTip = Text.T("list.add.tip");
-            AutomationProperties.SetName(add, Text.T("list.addTo", label));
-            add.Click += (sender, e) =>
+            if (!_fixedRows)
             {
-                // A search would hide the new, empty row and the box that gets the focus: it goes first, as in the table.
-                if (_search.Text.Length > 0) _search.Text = "";
-                var row = AddRow(new JObject());
-                Renumber();
-                Notify();
-                var first = row.Cells.Values.OfType<TextBox>().FirstOrDefault();
-                first?.Focus();
-            };
-            buttons.Children.Add(add);
-            if (_defaults != null && _defaults.Count > 0)
+                var add = Ui.TextButton(Text.T("list.add"), false);
+                add.Margin = new Thickness(0);
+                add.ToolTip = Text.T("list.add.tip");
+                AutomationProperties.SetName(add, Text.T("list.addTo", label));
+                add.Click += (sender, e) =>
+                {
+                    // A search would hide the new, empty row and the box that gets the focus: it goes first, as in the table.
+                    if (_search.Text.Length > 0) _search.Text = "";
+                    var row = AddRow(new JObject(), false);
+                    Renumber();
+                    Notify();
+                    var first = row.Cells.Values.OfType<TextBox>().FirstOrDefault();
+                    first?.Focus();
+                };
+                buttons.Children.Add(add);
+            }
+            if (!_fixedRows && _defaults != null && _defaults.Count > 0)
             {
                 var restore = Ui.TextButton(Text.T("list.restore"), false);
                 restore.ToolTip = Text.T("list.restore.tip");
@@ -122,6 +145,54 @@ namespace UIFramework
 
             Child = panel;
             Set(value);
+            LoadedRows = Value;
+        }
+
+        /// <summary>What the window loaded: the rows as the list had them when it was built, or as the last save wrote
+        /// them (<see cref="Reload"/>). What a save of a list with a <c>rowKey</c> compares the rows with to tell what
+        /// the user changed (<see cref="ListMerge"/>). Restore defaults, a reset and an action's <c>set</c> leave it.</summary>
+        public JArray LoadedRows { get; set; }
+
+        /// <summary>The list as a save wrote it: its rows are shown where they differ from the ones here (the project
+        /// added one meanwhile), and they are what the window loaded from now on.</summary>
+        public void Reload(JArray written)
+        {
+            if (!JToken.DeepEquals(Value, written)) Set(written);
+            LoadedRows = Value;
+        }
+
+        /// <summary>Which rows show (the list's <c>filter</c>); null shows every row. Applied to the rows as they are
+        /// loaded and again with <see cref="Refilter"/>, not while a row is typed in. A row added here shows until then.</summary>
+        public Func<JObject, bool> RowFilter
+        {
+            get => _rowFilter;
+            set
+            {
+                _rowFilter = value;
+                if (_table != null) _table.RowFilter = value;
+                Refilter();
+            }
+        }
+
+        /// <summary>Applies the filter again: a setting it reads changed.</summary>
+        public void Refilter()
+        {
+            if (_table != null) { _table.Refilter(); return; }
+            foreach (var row in _items)
+                row.Out = _rowFilter != null && !_rowFilter(Item(row));
+            Renumber();
+        }
+
+        /// <summary>The rows that show now: those the filter lets through and the search finds.</summary>
+        public JArray ShownRows =>
+            _table != null ? _table.ShownRows : new JArray(_items.Where(row => row.Element.Visibility == Visibility.Visible).Select(Item));
+
+        /// <summary>The count under the rows ("3 rows", "2 of 3 shown"), and the text in the search box.</summary>
+        public string CountText => _table != null ? _table.CountText : _count.Text;
+        public string SearchText
+        {
+            get => _table != null ? _table.SearchText : _search.Text;
+            set { if (_table != null) _table.SearchText = value; else _search.Text = value ?? ""; }
         }
 
         /// <summary>The rows as <see cref="Value"/> gives them, but without ending an edit in a table's cell: for a look
@@ -134,24 +205,31 @@ namespace UIFramework
             get
             {
                 if (_table != null) return _table.Value;
-                var array = new JArray();
-                foreach (var row in _items)
-                {
-                    var item = new JObject();
-                    bool any = false;
-                    foreach (var column in _columns)
-                    {
-                        var control = row.Cells[column.Key];
-                        item[column.Key] = CellValue(column, control);
-                        // Typed text or a switch turned on makes the row count; a row of empty cells does not.
-                        if (control is CheckBox check ? check.IsChecked == true : !string.IsNullOrWhiteSpace((control as TextBox)?.Text))
-                            any = true;
-                    }
-                    if (any)
-                        array.Add(item);
-                }
-                return array;
+                return new JArray(_items.Where(Filled).Select(Item));
             }
+        }
+
+        /// <summary>Typed text or a switch turned on makes the row count; a row of empty cells does not. With fixed
+        /// rows every row the list came with counts: none is dropped here.</summary>
+        private bool Filled(Row row) =>
+            (_fixedRows && row.Source != null) || row.Cells.Values.Any(control => control is CheckBox check ? check.IsChecked == true : !string.IsNullOrWhiteSpace((control as TextBox)?.Text));
+
+        /// <summary>The row as it is saved: a cell per column. In a list the project fills as well, the row as it was
+        /// loaded with the cells that read otherwise now laid over it. An array a read-only cell shows goes back as it came.</summary>
+        private JObject Item(Row row)
+        {
+            bool kept = _asLoaded && row.Source != null;
+            var item = kept ? (JObject)row.Source.DeepClone() : new JObject();
+            foreach (var column in _columns)
+            {
+                var typed = CellValue(column, row.Cells[column.Key]);
+                var source = row.Source?[column.Key];
+                if (column.ReadOnly && source is JArray)
+                    item[column.Key] = source.DeepClone();
+                else if (!kept || ListMerge.Canon(column.Kind, source) != ListMerge.Canon(column.Kind, typed))
+                    item[column.Key] = typed;
+            }
+            return item;
         }
 
         /// <summary>Replaces every row.</summary>
@@ -168,7 +246,7 @@ namespace UIFramework
             _rows.Children.Clear();
             if (value != null)
                 foreach (var item in value.OfType<JObject>())
-                    AddRow(item);
+                    AddRow(item, true);
             _loading = false;
             Renumber();
             Notify();
@@ -181,7 +259,7 @@ namespace UIFramework
             var cells = new List<FrameworkElement> { new TextBlock() };
             foreach (var column in _columns)
                 cells.Add(Ui.SmallLabel(column.Label ?? column.Key, 0));
-            cells.Add(new TextBlock());
+            if (!_fixedRows) cells.Add(new TextBlock());
             var grid = Layout(cells.ToArray());
             grid.Margin = new Thickness(0, 0, 0, 2);
             return grid;
@@ -190,7 +268,8 @@ namespace UIFramework
         private Grid Layout(FrameworkElement[] cells)
         {
             // Number | one star-sized cell per column (text columns twice as wide, number columns half: a weight
-            // or a count is short, the emote or text beside it is what needs the room) | remove button.
+            // or a count is short, the emote or text beside it is what needs the room) | remove button (none with
+            // fixed rows).
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
             for (int i = 0; i < _columns.Count; i++)
@@ -198,8 +277,11 @@ namespace UIFramework
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(StarsOf(_columns[i].Kind), GridUnitType.Star) });
             }
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+            if (!_fixedRows)
+            {
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+            }
             for (int i = 0; i < cells.Length; i++)
             {
                 Grid.SetColumn(cells[i], i == 0 ? 0 : i * 2);
@@ -218,9 +300,14 @@ namespace UIFramework
             }
         }
 
-        private Row AddRow(JObject item)
+        private Row AddRow(JObject item, bool loaded)
         {
             var row = new Row();
+            if (loaded)
+            {
+                row.Source = (JObject)item.DeepClone();
+                row.Out = _rowFilter != null && !_rowFilter(row.Source);
+            }
             row.Number = new TextBlock { FontSize = 11, Foreground = Theme.MutedFg, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 7, 0, 0) };
             var cells = new List<FrameworkElement> { row.Number };
             foreach (var column in _columns)
@@ -229,16 +316,19 @@ namespace UIFramework
                 row.Cells[column.Key] = control;
                 cells.Add(column.Kind == "emote" && control is TextBox emote ? WithPicture(column, emote) : control);
             }
-            var remove = Ui.IconButton(Icons.Remove, Icons.Font, Text.T("list.removeRow"));
-            remove.VerticalAlignment = VerticalAlignment.Top;
-            remove.Click += (sender, e) =>
+            if (!_fixedRows)
             {
-                _items.Remove(row);
-                _rows.Children.Remove(row.Element);
-                Renumber();
-                Notify();
-            };
-            cells.Add(remove);
+                var remove = Ui.IconButton(Icons.Remove, Icons.Font, Text.T("list.removeRow"));
+                remove.VerticalAlignment = VerticalAlignment.Top;
+                remove.Click += (sender, e) =>
+                {
+                    _items.Remove(row);
+                    _rows.Children.Remove(row.Element);
+                    Renumber();
+                    Notify();
+                };
+                cells.Add(remove);
+            }
             row.Element = Layout(cells.ToArray());
             row.Element.Margin = new Thickness(0, 0, 0, 6);
             // A row the search kept only because it was being typed in is filtered once the keyboard has left it.
@@ -268,7 +358,8 @@ namespace UIFramework
 
         private Control Cell(SettingColumn column, JToken value)
         {
-            string text = FieldBinding.Invariant(value);
+            // An array the project keeps in a cell the user only reads: its elements, not its JSON.
+            string text = column.ReadOnly && value is JArray array ? ListMerge.Shown(array) : FieldBinding.Invariant(value);
             switch (column.Kind)
             {
                 case "bool":
@@ -348,10 +439,13 @@ namespace UIFramework
 
         private void Renumber()
         {
-            for (int i = 0; i < _items.Count; i++)
-                _items[i].Number.Text = (i + 1).ToString(CultureInfo.InvariantCulture);
-            _empty.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            _searchHost.Visibility = _items.Count >= SearchFrom || _search.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            // The rows the filter lets through are the list as the user sees it: numbered, counted and searched.
+            int count = 0;
+            foreach (var row in _items)
+                row.Number.Text = row.Out ? "" : (++count).ToString(CultureInfo.InvariantCulture);
+            _empty.Text = count == 0 && _items.Count > 0 ? Text.T("list.filter.none") : _emptyText;
+            _empty.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            _searchHost.Visibility = count >= SearchFrom || _search.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
             Filter();
         }
 
@@ -365,20 +459,22 @@ namespace UIFramework
         private void Filter()
         {
             string needle = (_search.Text ?? "").Trim();
-            int shown = 0;
+            int shown = 0, rows = 0, usable = 0;
             foreach (var row in _items)
             {
-                bool hit = Shows(needle, row.Cells.Values.OfType<TextBox>().Select(box => box.Text), row.Element.IsKeyboardFocusWithin);
+                bool hit = !row.Out && Shows(needle, row.Cells.Values.OfType<TextBox>().Select(box => box.Text), row.Element.IsKeyboardFocusWithin);
                 row.Element.Visibility = hit ? Visibility.Visible : Visibility.Collapsed;
                 if (hit) shown++;
+                if (row.Out) continue;
+                rows++;
+                if (Filled(row)) usable++;
             }
-            int usable = Value.Count;
-            _count.Text = needle.Length > 0 && shown != _items.Count
-                ? Text.T("list.count.shown", shown, _items.Count)
-                : _items.Count == usable
+            _count.Text = needle.Length > 0 && shown != rows
+                ? Text.T("list.count.shown", shown, rows)
+                : rows == usable
                     ? (usable == 1 ? Text.T("list.count.one") : Text.T("list.count.many", usable))
-                    : Text.T("list.count.filled", usable, _items.Count);
-            _count.ToolTip = Text.T("list.count.tip");
+                    : Text.T("list.count.filled", usable, rows);
+            _count.ToolTip = _fixedRows ? null : Text.T("list.count.tip");
         }
 
         private void Notify()

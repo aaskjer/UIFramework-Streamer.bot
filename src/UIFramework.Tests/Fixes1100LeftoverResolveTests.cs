@@ -15,7 +15,7 @@ namespace UIFramework.Tests
         {
             string folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "leftover-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(folder);
-            var spec = Entry.SpecFor(null, schema, Path.Combine(folder, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(folder, "settings.json"));
             if (layout != null)
             {
                 var file = LayoutFile.Load(spec.SettingsPath);
@@ -121,7 +121,7 @@ namespace UIFramework.Tests
         private static List<string> Problems(string settings)
         {
             var schema = Schema.Parse(@"{ ""host"": ""demo"", ""settings"": [ " + settings + @" ] }");
-            var spec = Entry.SpecFor(null, schema, null);
+            var spec = Entry.SpecFor(schema, null);
             Entry.Prepare(spec, schema);
             return spec.Problems.ToList();
         }

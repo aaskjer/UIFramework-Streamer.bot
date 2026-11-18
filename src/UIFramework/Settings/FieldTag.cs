@@ -2,7 +2,7 @@ using System;
 
 namespace UIFramework
 {
-    public enum FieldKind { Bool, Int, Long, Double, String, Template, List }
+    public enum FieldKind { Bool, Int, Long, Double, String, Template, List, Time }
 
     /// <summary>
     /// What a control's Tag carries: the setting key and how its text becomes a value. Saving, resetting and
@@ -28,6 +28,18 @@ namespace UIFramework
         /// <summary>A plain text setting: saved as typed, spaces at either end included (a separator " | ", a prefix
         /// "🎲 "). Without it a text is trimmed, as names, paths, colours and tokens want.</summary>
         public bool KeepSpaces;
+
+        /// <summary>A <c>multi</c> field: the values of its choices, in their order. The box then holds the ticked ones
+        /// as comma-separated text (see <see cref="FieldBinding.MultiValues"/>). Null on any other field.</summary>
+        public string[] Choices;
+
+        /// <summary>A <c>time</c> field whose default is empty: it may be left empty. Any other must hold a time.</summary>
+        public bool AllowEmpty;
+
+        /// <summary>A dropdown whose options come from the project (<c>optionsFrom</c>): what it offers is what the
+        /// project names right now, not all it may hold. A value from outside none of its options has (an import) is
+        /// taken as text; the dropdown then keeps it as an entry of its own, as it keeps the stored value.</summary>
+        public bool OptionsAsked;
 
         public FieldTag(string key, FieldKind kind) { Key = key; Kind = kind; }
 

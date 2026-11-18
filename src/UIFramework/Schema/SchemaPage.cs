@@ -17,7 +17,8 @@ namespace UIFramework
     /// </summary>
     public static class SchemaPage
     {
-        private static readonly HashSet<string> NumberKinds = new HashSet<string> { "int", "long", "double", "percent", "duration" };
+        // A time of day is as short as a number and lines up with them.
+        private static readonly HashSet<string> NumberKinds = new HashSet<string> { "int", "long", "double", "percent", "duration", "time" };
 
         public static UIElement Build(PageContext ctx, List<Setting> settings, string pageId = null)
         {
@@ -138,7 +139,7 @@ namespace UIFramework
                 rowKind = null;
             }
 
-            // A heading whose every field is hidden (requires with hide:) hides with them.
+            // A heading whose every field is hidden (showWhen) hides with them.
             void WatchSection()
             {
                 if (heading == null || sectionFields.Count == 0) return;
@@ -234,9 +235,12 @@ namespace UIFramework
             FrameworkElement element;
             if (s.ReadOnly)
             {
-                // Shown, not edited; its help, its conditions and its section's go with it like any field's.
-                var value = new TextBlock { Text = f.String(s.Key), FontSize = 13, Foreground = Theme.LabelFg, Margin = new Thickness(0, 4, 0, 4) };
-                element = Ui.Labeled(label, value);
+                // Shown, not edited; its help, its conditions and its section's go with it like any field's. Several
+                // choices show by their labels, a time as it is written ("09:05"), or as it is stored when it is none.
+                string shown = s.Kind == "multi" ? Fields.MultiLabels(s.Options, f.Token(s.Key))
+                    : s.Kind == "time" && FieldBinding.TryTime(f.String(s.Key), out string time) ? time : f.String(s.Key);
+                var value = new TextBlock { Text = shown, FontSize = 13, Foreground = Theme.LabelFg, Margin = new Thickness(0, 4, 0, 4), TextWrapping = s.Kind == "multi" ? TextWrapping.Wrap : TextWrapping.NoWrap };
+                element = s.Locked ? LockedField(ctx, s, label, value) : Ui.Labeled(label, value);
                 if (!string.IsNullOrEmpty(tip)) element.ToolTip = tip;
             }
             else switch (s.Kind)
@@ -275,6 +279,11 @@ namespace UIFramework
                     element = f.PercentField(label, s.Key, s.Factor ?? 1.0, tip, s.Min ?? 0, s.Max ?? 100);
                     break;
                 case "options":
+                    if (s.OptionsFrom != null)
+                    {
+                        element = OptionsFromField(ctx, s, label, tip);
+                        break;
+                    }
                     var options = (s.Options ?? new List<SettingOption>()).Select(o => (o.Value, o.Label)).ToArray();
                     element = options.Length == 0 ? (s.Masked ? f.MaskedField(label, s.Key, tip) : f.TextField(label, s.Key, tip)) : f.StringComboField(label, s.Key, options, tip);
                     break;
@@ -283,6 +292,16 @@ namespace UIFramework
                     break;
                 case "grouplist":
                     element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip, names => StreamerBotGroups(ctx, names)));
+                    break;
+                case "multi":
+                    // Nothing to tick without options: a text field, as an options field without options is one.
+                    element = Fields.MultiChoices(s.Options).Count == 0
+                        ? f.TextField(label, s.Key, tip)
+                        : Stack(Ui.SmallLabel(label, 6), f.MultiField(label, s.Key, s.Options, tip));
+                    break;
+                case "time":
+                    // A unit is said behind the label, as a number's: "Announce at (UTC)".
+                    element = f.TimeField(WithUnit(label, s.Unit), s.Key, tip);
                     break;
                 case "colour":
                 case "color":
@@ -322,8 +341,15 @@ namespace UIFramework
                     break;
                 case "list":
                 {
-                    var editor = new ListEditor(s.Key, label, Translated(ctx, s.Columns), f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks);
+                    // A list the project fills as well (rowKey, fixedRows, filter) writes back what the user did not
+                    // change as it was loaded. Its filter reads the fields once they are all built.
+                    var columns = Translated(ctx, s.Columns);
+                    var filter = ListFilter.Parse(s.Filter);
+                    var editor = new ListEditor(s.Key, label, columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks,
+                        s.FixedRows, ListMerge.Applies(s) || filter != null);
                     ctx.Parts.Lists[s.Key] = editor;
+                    if (filter != null)
+                        ctx.AfterBuild.Add(() => filter.Wire(ctx.Fields, ctx.Parts, columns, editor));
                     editor.Margin = new Thickness(0, 8, 0, 0);
                     element = string.IsNullOrEmpty(help) ? (FrameworkElement)editor : Stack(Ui.Note(help), editor);
                     break;
@@ -352,21 +378,24 @@ namespace UIFramework
             if (helpLine)
                 element = WithHelpLine(ctx, element, help);
 
-            // Greyed out while `requires` does not hold; hidden while `showWhen`, the section's condition or a
-            // `requires` with "hide:" in front does not. All of the hiding conditions must hold to show the field.
+            // Greyed out while `requires` does not hold; hidden while `showWhen` or the section's condition does not.
+            // All of the hiding conditions must hold to show the field. A `requires` with "hide:" in front is no
+            // longer read (the red i says so): such a field shows, and is not greyed by a key that is none.
             var target = element;
             string grey = null;
             var show = new List<string>();
-            if (!string.IsNullOrWhiteSpace(s.Requires))
-            {
-                string condition = s.Requires.Trim();
-                if (condition.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)) show.Add(condition.Substring(5).Trim());
-                else grey = condition;
-            }
+            if (!string.IsNullOrWhiteSpace(s.Requires) && !s.Requires.Trim().StartsWith("hide:", StringComparison.OrdinalIgnoreCase))
+                grey = s.Requires.Trim();
             if (!string.IsNullOrWhiteSpace(s.ShowWhen)) show.Add(s.ShowWhen.Trim());
             if (!string.IsNullOrWhiteSpace(s.SectionShowWhen)) show.Add(s.SectionShowWhen.Trim());
             if (ctx.Customizing)
                 return element;
+            // A condition on a multi field asks whether a value is ticked, also while that field is hidden and its
+            // saved text is read: every multi setting's choices are known to the conditions, shown or not.
+            if (grey != null || show.Count > 0)
+                foreach (var multi in ctx.Spec?.ResolvedSettings?.Where(x => x.Kind == "multi") ?? Enumerable.Empty<Setting>())
+                    if (!ctx.Parts.Choices.ContainsKey(multi.Key) && Fields.MultiChoices(multi.Options) is var choices && choices.Count > 0)
+                        ctx.Parts.Choices[multi.Key] = choices.Select(o => o.Value).ToArray();
             if (grey != null)
                 ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, grey, on => Grey(target, !on)));
             if (show.Count > 0)
@@ -383,6 +412,36 @@ namespace UIFramework
         /// <summary>Whether the user has the help as lines under the fields (the customise bar's switch) instead of in
         /// the tooltips. The pages the framework draws itself ask this for their own fields.</summary>
         public static bool HelpLines(PageContext ctx) => ctx.Layout?.HelpLines == true;
+
+        /// <summary>A field that is locked: its label with a pill, and under it why. One a Set Argument of the
+        /// project's action sets shows no value: what the file holds is not what counts while the argument is there.
+        /// One the project locks itself shows its value, a secret as dots. One kept in a global the window does not
+        /// read (<see cref="Setting.GlobalOff"/>) shows none either: the window does not know it.</summary>
+        private static FrameworkElement LockedField(PageContext ctx, Setting s, string label, TextBlock value)
+        {
+            bool argument = s.Argument != null;
+            var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
+            head.Children.Add(new TextBlock { Text = label, FontSize = 11, Foreground = Theme.SubFg, VerticalAlignment = VerticalAlignment.Center });
+            head.Children.Add(Ui.Pill(Text.T(argument ? "field.setArgument" : "field.locked"), Theme.AccentSoft, Theme.AccentText));
+            var panel = new StackPanel();
+            panel.Children.Add(head);
+            if (!argument && !s.GlobalOff)
+            {
+                if (s.Masked && value.Text.Length > 0) value.Text = new string('•', 8);
+                panel.Children.Add(value);
+            }
+            string why = argument ? Text.T("field.setArgument.why", s.Argument) : s.LockReason;
+            if (!string.IsNullOrWhiteSpace(why))
+            {
+                // Its own line, not the field's help line: it shows whether the help sits under the fields or in tooltips.
+                var line = Ui.NoteWithLinks(why, ctx.OpenUrl);
+                line.FontSize = 11;
+                line.Margin = new Thickness(0, 3, 0, 6);
+                panel.Children.Add(line);
+            }
+            System.Windows.Automation.AutomationProperties.SetName(panel, label + " (" + Text.T(argument ? "field.setArgument" : "field.locked") + ")");
+            return panel;
+        }
 
         /// <summary>A help text as the small line that goes under a field.</summary>
         public static TextBlock HelpLine(PageContext ctx, string help)
@@ -504,6 +563,121 @@ namespace UIFramework
             return new List<string>();
         }
 
+        /// <summary>How long after the last change of the field a dropdown's <c>optionsFrom</c> names the project is asked
+        /// for the options again, in milliseconds. The tests shorten it.</summary>
+        public static int OptionsFromDelayMs = 350;
+
+        /// <summary>A dropdown whose options come from the project (<c>optionsFrom</c>). "groups": Streamer.bot's groups,
+        /// from the settings action. Otherwise the project is asked (<see cref="IHostHooks.Options"/>) with the values
+        /// as they stand in the window, once every page is built, and again a moment after the last change of the
+        /// field the text names; an empty text, the dropdown's own key or one no field shows asks that once only.</summary>
+        /// <remarks>Asked off the window's thread (<see cref="Patient"/>). Each question has a number: an answer that
+        /// comes after a later question was asked is dropped. A change that leaves the window as it was when the last
+        /// question was asked (there and back within the moment) asks nothing. No options in the answer, no answer and
+        /// one that cannot be read leave the declared options; the latter two leave a line in the log.</remarks>
+        private static FrameworkElement OptionsFromField(PageContext ctx, Setting s, string label, string help)
+        {
+            var declared = (s.Options ?? new List<SettingOption>()).Select(o => (o.Value, o.Label)).ToList();
+            var element = ctx.Fields.OfferedComboField(label, s.Key, declared, help, out var offer);
+            string from = s.OptionsFrom.Trim();
+            if (from == "groups")
+            {
+                ctx.AfterBuild.Add(() => StreamerBotGroups(ctx, names => offer(names.Select(n => (n, n)).ToList())));
+                return element;
+            }
+
+            int asked = 0;
+            string askedWith = null;
+            void Unread(string why) => ctx.Log?.Warn(ctx.Spec?.LogPrefix + " The options of '" + s.Key + "' could not be read: " + why);
+            void Ask()
+            {
+                JObject values;
+                string state;
+                try
+                {
+                    // A copy: the question is put together on another thread while the window goes on changing its own.
+                    values = (JObject)(ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings).DeepClone();
+                    state = values.ToString(Newtonsoft.Json.Formatting.None);
+                }
+                catch (Exception ex) { Unread(ex.Message); return; }
+                if (state == askedWith) return;
+                askedWith = state;
+                int mine = ++asked;
+                Patient.Ask(() => ctx.Hooks.Options(s.Key, values), (json, error) =>
+                {
+                    if (mine != asked) return;
+                    List<SettingOption> options = null;
+                    string failed = error != null ? error.Message : Patient.IsNoAnswer(json) ? Patient.Why(json) : null;
+                    if (failed == null && (options = OfferedOptions(json)) == null)
+                        failed = json.Length > 200 ? json.Substring(0, 200) + "…" : json;
+                    if (failed != null)
+                    {
+                        Unread(failed.Length > 0 ? failed : "no answer");
+                        askedWith = null;   // the same values may be asked with again
+                    }
+                    offer(options?.Select(o => (o.Value, o.Label)).ToList());
+                });
+            }
+
+            ctx.AfterBuild.Add(() =>
+            {
+                if (from.Length > 0 && from != s.Key)
+                {
+                    var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Math.Max(1, OptionsFromDelayMs)) };
+                    timer.Tick += (sender, e) => { timer.Stop(); Ask(); };
+                    OnChange(ctx.Parts, from, () => { timer.Stop(); timer.Start(); });
+                }
+                Ask();
+            });
+            return element;
+        }
+
+        /// <summary>Calls <paramref name="changed"/> whenever the field of this key changes; never for a key no field
+        /// of the window holds.</summary>
+        private static void OnChange(WindowParts parts, string key, Action changed)
+        {
+            if (parts.Switches.TryGetValue(key, out var toggle))
+            {
+                toggle.Checked += (sender, e) => changed();
+                toggle.Unchecked += (sender, e) => changed();
+            }
+            else if (parts.Combos.TryGetValue(key, out var combo))
+                combo.SelectionChanged += (sender, e) => changed();
+            else if (parts.Boxes.TryGetValue(key, out var box))
+                box.TextChanged += (sender, e) => changed();
+            else if (parts.Sliders.TryGetValue(key, out var slider))
+                slider.ValueChanged += (sender, e) => changed();
+            else if (parts.Lists.TryGetValue(key, out var list))
+                list.Changed += changed;
+        }
+
+        /// <summary>The options in the project's answer for a dropdown with <c>optionsFrom</c>: a JSON array of
+        /// "value", "value|Label" or <c>{ "value": ..., "label": ... }</c>; a number is its own value, anything else
+        /// in the array is left out. None for an empty answer; null for one that is no such array.</summary>
+        public static List<SettingOption> OfferedOptions(string json)
+        {
+            var options = new List<SettingOption>();
+            if (string.IsNullOrWhiteSpace(json))
+                return options;
+            JToken answer;
+            try { answer = JsonText.Parse(json); }
+            catch (Exception) { return null; }
+            if (answer.Type == JTokenType.Null) return options;
+            if (!(answer is JArray array)) return null;
+            foreach (var entry in array)
+            {
+                if (entry is JObject o)
+                {
+                    if (!(o["value"] is JValue value) || value.Type == JTokenType.Null) continue;
+                    string text = FieldBinding.Invariant(value);
+                    options.Add(new SettingOption { Value = text, Label = o["label"] is JValue shown && shown.Type != JTokenType.Null ? FieldBinding.Invariant(shown) : text });
+                }
+                else if (entry.Type == JTokenType.String || entry.Type == JTokenType.Integer || entry.Type == JTokenType.Float)
+                    options.Add(SettingOption.Parse(entry));
+            }
+            return options;
+        }
+
         private static FrameworkElement PathField(PageContext ctx, Setting s, string label, string help)
         {
             var box = ctx.Fields.SettingBox(label, s.Key, (string.IsNullOrEmpty(help) ? "" : help + "\n") + Text.T("field.path.tip"));
@@ -544,9 +718,23 @@ namespace UIFramework
             return Ui.Labeled(label, dock);
         }
 
+        /// <summary>The shortest <c>every</c> of an auto action, in seconds. Each question runs the project's action in
+        /// Streamer.bot, one after the other with everything else the window asks; a shorter one is taken as this.</summary>
+        public const int ShortestEvery = 5;
+
+        /// <summary>How long a second of <c>every</c> lasts, in milliseconds. The tests shorten it.</summary>
+        public static int EverySecondMs = 1000;
+
+        /// <summary>The time between two questions of an auto action with <c>every</c>: not below
+        /// <see cref="ShortestEvery"/>, and no longer than a timer runs (some 24 days).</summary>
+        public static TimeSpan EveryInterval(int seconds) =>
+            TimeSpan.FromMilliseconds(Math.Min((long)Math.Max(seconds, ShortestEvery) * Math.Max(1, EverySecondMs), int.MaxValue));
+
         /// <summary>An action: a button that asks the host. With <c>live</c> the host gets the values as they stand
         /// in the window; with <c>panel</c> its answer goes into a panel under the button; with <c>auto</c> there is
-        /// no button, the host is asked when the page is shown and after every change, a moment after the last.</summary>
+        /// no button, the host is asked when the page is shown and after every change, a moment after the last, and
+        /// with <c>every</c> again every so many seconds while the panel shows. With <c>saveFirst</c> the button
+        /// saves the window's changes before it asks.</summary>
         private static FrameworkElement ActionButton(PageContext ctx, Setting s, string label, string help)
         {
             StackPanel panel = null;
@@ -554,20 +742,24 @@ namespace UIFramework
                 panel = new StackPanel();
 
             // Each question has a number: an answer that comes after a later question was asked is not shown over it.
-            int asked = 0;
+            // How many are still out, and whether the window changed since the last one was asked, is what keeps the
+            // interval and a return to the page from asking the same thing twice.
+            int asked = 0, underWay = 0;
+            bool changed = false;
             Button button = null;
             void Run()
             {
                 int mine = ++asked;
-                Ask(ctx, s, label, panel, () => mine == asked, button);
+                changed = false;
+                underWay++;
+                Ask(ctx, s, label, panel, () => mine == asked, button, () => underWay--);
             }
 
             if (s.Auto)
             {
                 var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
                 timer.Tick += (sender, e) => { timer.Stop(); Run(); };
-                ctx.OnAnyChange(() => { timer.Stop(); timer.Start(); });
-                ctx.Parts.OnShow(s.Page ?? "", () => { timer.Stop(); Run(); });
+                ctx.OnAnyChange(() => { changed = true; timer.Stop(); timer.Start(); });
                 var box = new Border
                 {
                     Background = new SolidColorBrush(Theme.Surface),
@@ -577,6 +769,25 @@ namespace UIFramework
                     ToolTip = string.IsNullOrEmpty(help) ? null : help,
                     Child = panel
                 };
+                // With `every` it is asked again every so many seconds, while the panel shows: its page is the one in
+                // front and the window is open. WPF says when that ends (another page, a rebuild, the window closed)
+                // and when it holds again; a hidden panel has no timer running. A question still out is not asked a
+                // second time, and one a change is about to ask is left to that. Not in the customise mode, where
+                // nothing is to be followed.
+                System.Windows.Threading.DispatcherTimer again = null;
+                if (s.Every.HasValue && !ctx.Customizing)
+                {
+                    again = new System.Windows.Threading.DispatcherTimer { Interval = EveryInterval(s.Every.Value) };
+                    again.Tick += (sender, e) => { if (underWay == 0 && !changed) Run(); };
+                    box.IsVisibleChanged += (sender, e) => { again.Stop(); if (box.IsVisible) again.Start(); };
+                }
+                ctx.Parts.OnShow(s.Page ?? "", () =>
+                {
+                    // A question still out that asked with what the window shows now is the one to wait for.
+                    if (underWay == 0 || changed) { timer.Stop(); Run(); }
+                    // The interval counts from here.
+                    if (again != null) { again.Stop(); if (box.IsVisible) again.Start(); }
+                });
                 return Stack(Ui.SmallLabel(label, 0), box);
             }
 
@@ -588,6 +799,10 @@ namespace UIFramework
             {
                 if (s.Confirm != null &&
                     MessageBox.Show(s.Confirm, label, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                    return;
+                // saveFirst: the window's changes are saved as its Save button saves them, the check and its question
+                // included. Without that save the project is not asked: it would answer for what the file still holds.
+                if (s.SaveFirst && !ctx.SaveChanges())
                     return;
                 Run();
             };
@@ -613,7 +828,8 @@ namespace UIFramework
         /// <remarks>The game is asked off the window's thread (<see cref="Patient"/>): an answer that takes its time
         /// leaves the window usable, with the button greyed until it is there. No answer at all (the settings action's
         /// marker) is shown as a failure, not as "done".</remarks>
-        private static void Ask(PageContext ctx, Setting s, string label, StackPanel panel, Func<bool> current = null, Button button = null)
+        /// <param name="done">Called once the question is no longer out: answered, failed, or never asked.</param>
+        private static void Ask(PageContext ctx, Setting s, string label, StackPanel panel, Func<bool> current = null, Button button = null, Action done = null)
         {
             void Failed(string why)
             {
@@ -629,10 +845,11 @@ namespace UIFramework
                 bool live = s.Live || (s.Ask && s.Kind != "action");
                 settings = live && ctx.LiveSettings != null ? ctx.LiveSettings() : (JObject)ctx.Settings.DeepClone();
             }
-            catch (Exception ex) { Failed(ex.Message); return; }
+            catch (Exception ex) { done?.Invoke(); Failed(ex.Message); return; }
             if (button != null) button.IsEnabled = false;
             Patient.Ask(() => ctx.Hooks.Test(s.Key, settings), (result, error) =>
             {
+                done?.Invoke();
                 if (button != null) button.IsEnabled = true;
                 if (current != null && !current()) return;
                 if (error != null) { Failed(error.Message); return; }

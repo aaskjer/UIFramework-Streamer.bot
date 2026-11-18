@@ -196,7 +196,7 @@ namespace UIFramework.Tests
             // The schema the game answers carries its window (the generic stub's path): no spec file beside it.
             string root = FindRepoRoot();
             var schema = Schema.Parse(File.ReadAllText(Path.Combine(root, "hosts", "blackjack", "schema.json")));
-            var spec = Entry.SpecFor(null, schema, Path.GetTempFileName());
+            var spec = Entry.SpecFor(schema, Path.GetTempFileName());
             Entry.Prepare(spec, schema);
             Assert.Equal(10, spec.Pages.Count);
             Assert.Equal("table", spec.Pages[0].Id);

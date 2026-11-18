@@ -20,6 +20,9 @@ namespace UIFramework
     ///   string EmoteSources()                        // JSON: twitchUserId, clientId, token (for emote pictures)
     ///   string Validate(string settingsJson)         // problems before a save, one per line; null = fine
     ///   string Groups()                              // JSON array of Streamer.bot's group names (stub 0.3.2 and on)
+    ///   string Options(string key, string settingsJson) // a dropdown's options from the project (stub 0.3.3 and on)
+    ///   string GetGlobal(string name)                // a persisted global of Streamer.bot (stub 0.3.3 and on)
+    ///   void   SetGlobal(string name, string value)  // writes it; "" clears it
     ///   IEnumerable&lt;string&gt; ReadLogLines()          // or string[] / List&lt;string&gt;; null = no Log page
     ///   string WindowLogPrefix()                     // the prefix of the window's log lines, where it declares none
     /// </code>
@@ -27,7 +30,7 @@ namespace UIFramework
     public sealed class ReflectionHost : IHostLog, IHostHooks
     {
         private readonly object _host;
-        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources, _validate, _groups;
+        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources, _validate, _groups, _options, _getGlobal, _setGlobal;
 
         public ReflectionHost(object host)
         {
@@ -41,6 +44,9 @@ namespace UIFramework
             _emoteSources = Find(type, "EmoteSources");
             _validate = Find(type, "Validate", typeof(string));
             _groups = Find(type, "Groups");
+            _options = Find(type, "Options", typeof(string), typeof(string));
+            _getGlobal = Find(type, "GetGlobal", typeof(string));
+            _setGlobal = Find(type, "SetGlobal", typeof(string), typeof(string));
         }
 
         private static MethodInfo Find(Type type, string name, params Type[] parameters) =>
@@ -108,6 +114,29 @@ namespace UIFramework
         {
             if (_groups == null) return null;
             try { return _groups.Invoke(_host, null) as string; } catch (Exception) { return null; }
+        }
+
+        // A settings action before stub 0.3.3 has neither Options nor the globals: a dropdown that asks for its options
+        // then has none, and a setting kept in a global is shown locked.
+        public string Options(string key, JObject settings)
+        {
+            if (_options == null) return null;
+            try { return _options.Invoke(_host, new object[] { key, (settings ?? new JObject()).ToString(Newtonsoft.Json.Formatting.None) }) as string; }
+            catch (Exception) { return null; }
+        }
+
+        public bool HasGlobals => _getGlobal != null && _setGlobal != null;
+
+        public string GetGlobal(string name)
+        {
+            if (_getGlobal == null) return null;
+            try { return _getGlobal.Invoke(_host, new object[] { name }) as string; } catch (Exception) { return null; }
+        }
+
+        public bool SetGlobal(string name, string value)
+        {
+            if (_setGlobal == null) return false;
+            try { _setGlobal.Invoke(_host, new object[] { name, value ?? "" }); return true; } catch (Exception) { return false; }
         }
     }
 }

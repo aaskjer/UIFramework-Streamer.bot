@@ -475,6 +475,47 @@ namespace UIFramework
             return template;
         }
 
+        /// <summary>A check box in the theme's colours, for one of several choices (a multi field): a small square that
+        /// fills with the accent and shows a tick, the label beside it, wrapping in the width that is left.</summary>
+        public static ControlTemplate CheckTemplate()
+        {
+            var box = new FrameworkElementFactory(typeof(Border), "Box");
+            box.SetValue(FrameworkElement.WidthProperty, 16.0);
+            box.SetValue(FrameworkElement.HeightProperty, 16.0);
+            box.SetValue(Border.CornerRadiusProperty, new CornerRadius(3));
+            box.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+            box.SetValue(Border.BorderBrushProperty, new SolidColorBrush(Theme.InputBorder));
+            box.SetValue(Border.BackgroundProperty, new SolidColorBrush(Theme.InputBg));
+            box.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            var tick = new FrameworkElementFactory(typeof(System.Windows.Shapes.Path), "Tick");
+            tick.SetValue(System.Windows.Shapes.Path.DataProperty, Geometry.Parse("M 3,7.5 L 6,10.5 L 11,4"));
+            tick.SetValue(System.Windows.Shapes.Shape.StrokeProperty, Brushes.White);
+            tick.SetValue(System.Windows.Shapes.Shape.StrokeThicknessProperty, 1.8);
+            tick.SetValue(System.Windows.Shapes.Shape.StrokeStartLineCapProperty, PenLineCap.Round);
+            tick.SetValue(System.Windows.Shapes.Shape.StrokeEndLineCapProperty, PenLineCap.Round);
+            tick.SetValue(System.Windows.Shapes.Shape.StrokeLineJoinProperty, PenLineJoin.Round);
+            tick.SetValue(UIElement.VisibilityProperty, Visibility.Collapsed);
+            box.AppendChild(tick);
+            var content = new FrameworkElementFactory(typeof(ContentPresenter));
+            content.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
+            content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            var root = new FrameworkElementFactory(typeof(DockPanel));
+            root.SetValue(Panel.BackgroundProperty, Brushes.Transparent);
+            box.SetValue(DockPanel.DockProperty, Dock.Left);
+            root.AppendChild(box);
+            root.AppendChild(content);
+            var template = new ControlTemplate(typeof(CheckBox)) { VisualTree = root };
+            var over = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+            over.Setters.Add(new Setter(Border.BorderBrushProperty, new SolidColorBrush(Theme.Accent), "Box"));
+            var on = new Trigger { Property = ToggleButton.IsCheckedProperty, Value = true };
+            on.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Theme.Accent), "Box"));
+            on.Setters.Add(new Setter(Border.BorderBrushProperty, new SolidColorBrush(Theme.Accent), "Box"));
+            on.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible, "Tick"));
+            template.Triggers.Add(over);
+            template.Triggers.Add(on);
+            return template;
+        }
+
         public const int SliderThumb = 18;
 
         /// <summary>A thin track with the accent up to a round thumb, in the theme's colours.</summary>

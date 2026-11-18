@@ -142,6 +142,101 @@ namespace UIFramework.Tests
             finally { field.SetValue(null, before); }
         }
 
+        // ---- Set Arguments (With, arguments: true) ---------------------------------------------------------------
+
+        private static readonly UiSchema.Setting[] ArgumentTable =
+        {
+            UiSchema.S("dryRun", false), UiSchema.S("perHour", 6), UiSchema.S("chance", 0.5), UiSchema.S("webhookUrl", ""),
+            UiSchema.S("sendAction", false, aliases: new[] { "sendAsMe" }), UiSchema.S("names", new string[0], kind: "list", columns: new[] { "name" }),
+            UiSchema.S("check", null, kind: "action")
+        };
+
+        [Fact]
+        public void ASetArgumentWinsOverTheFileAsWhatTheSettingHolds()
+        {
+            WithTable(() =>
+            {
+                var file = UiSettings.Parse(@"{ ""dryRun"": false, ""perHour"": 2, ""chance"": 0.1, ""webhookUrl"": ""https://file.test"" }");
+                var with = file.With(new Dictionary<string, object>
+                {
+                    ["dryRun"] = "Yes", ["perHour"] = "12", ["chance"] = "2,5", ["webhookUrl"] = " https://arg.test ", ["sendAsMe"] = true,
+                    ["user"] = "alice", ["names"] = "b", ["check"] = "x"
+                });
+                Assert.True(with.Bool("dryRun"));
+                Assert.Equal(12, with.Int("perHour"));
+                Assert.Equal(JTokenType.Integer, with.Raw["perHour"].Type);
+                Assert.Equal(2.5, with.Double("chance"));
+                Assert.Equal("https://arg.test", with.String("webhookUrl"));
+                Assert.True(with.Bool("sendAction"));                 // an argument under the old key sets the setting
+                Assert.Null(with.Raw["user"]);                        // an argument that is no setting is none here
+                Assert.Null(with.Raw["names"]);                       // a list is the file's
+                Assert.Null(with.Raw["check"]);
+                Assert.False(file.Bool("dryRun"));                    // the settings read from the file stay as they were
+
+                // An empty argument and one that does not fit leave the file's value; so does no argument at all.
+                var kept = file.With(new Dictionary<string, object> { ["dryRun"] = "maybe", ["perHour"] = "many", ["webhookUrl"] = "  " });
+                Assert.Same(file, kept);
+                Assert.Same(file, file.With(null));
+                Assert.Equal(2, kept.Int("perHour"));
+
+                // Typed arguments, as a C# sub-action sets them.
+                var typed = file.With(new Dictionary<string, object> { ["dryRun"] = 1, ["perHour"] = 7.6, ["chance"] = 3, ["webhookUrl"] = 5 });
+                Assert.True(typed.Bool("dryRun"));
+                Assert.Equal(8, typed.Int("perHour"));
+                Assert.Equal(3.0, typed.Double("chance"));
+                Assert.Equal("5", typed.String("webhookUrl"));
+            }, ArgumentTable);
+        }
+
+        [Fact]
+        public void TheSettingsASetArgumentSetsAreDescribedAndTheCallersArgumentsAreNot()
+        {
+            WithTable(() =>
+            {
+                var cph = new FakeCph();
+                var args = new Dictionary<string, object>
+                {
+                    ["uiframework.request"] = "describe", ["dryRun"] = "true", ["sendAsMe"] = "true", ["perHour"] = "",
+                    ["webhookUrl"] = "https://trigger.test", ["uiframework.callerArgs"] = "user\nwebhookUrl"
+                };
+                Assert.True(UiHost.Handle(args, cph, "Demo Game", "demo", "v1.0.0", "Demo/settings.json", arguments: true,
+                    locked: s => "chance|The odds are set by the tournament.\nperHour"));
+                var described = JObject.Parse((string)cph.Globals[UiSchema.Var("Demo Game")]);
+                // By key, with the argument's own name; the empty one and the one the settings action handed on are left out.
+                Assert.Equal(@"{""dryRun"":""dryRun"",""sendAction"":""sendAsMe""}", described["arguments"].ToString(Formatting.None));
+                Assert.Equal(@"{""chance"":""The odds are set by the tournament."",""perHour"":""""}", described["lockedFields"].ToString(Formatting.None));
+
+                // The window: both kinds of locked field are shown and not edited.
+                var schema = Schema.Parse(described);
+                var spec = Entry.SpecFor(schema, null);
+                Entry.Prepare(spec, schema);
+                Assert.Equal("sendAsMe", spec.ResolvedSettings.First(s => s.Key == "sendAction").Argument);
+                Assert.True(spec.ResolvedSettings.First(s => s.Key == "dryRun").ReadOnly);
+                Assert.Equal("The odds are set by the tournament.", spec.ResolvedSettings.First(s => s.Key == "chance").LockReason);
+                Assert.False(spec.ResolvedSettings.First(s => s.Key == "webhookUrl").Locked);
+                Assert.Empty(spec.Problems);
+
+                // Without arguments: true the action does not read them, and nothing is described; an older settings
+                // action names no arguments of its own, and every argument that fits counts.
+                Assert.True(UiHost.Handle(new Dictionary<string, object>(args), cph, "Demo Game", "demo", "v1.0.0", "Demo/settings.json"));
+                Assert.Null(JObject.Parse((string)cph.Globals[UiSchema.Var("Demo Game")])["arguments"]);
+                args.Remove("uiframework.callerArgs");
+                Assert.True(UiHost.Handle(args, cph, "Demo Game", "demo", "v1.0.0", "Demo/settings.json", arguments: true));
+                Assert.Equal("webhookUrl", (string)JObject.Parse((string)cph.Globals[UiSchema.Var("Demo Game")])["arguments"]["webhookUrl"]);
+            }, ArgumentTable);
+        }
+
+        [Fact]
+        public void ThePlaceholderStyleTravelsThroughTheSchema()
+        {
+            var window = new UiWindow("Demo", placeholderStyle: "percent");
+            Assert.Equal("percent", (string)window.ToJson()["placeholderStyle"]);
+            Assert.Null(new UiWindow("Demo").ToJson()["placeholderStyle"]);
+            var own = UiSchema.Msg("Posts", "msgPost", "%user%: %text%", "Post", "The post.", new[] { "user", "text" }, placeholderStyle: "percent");
+            Assert.Equal("percent", (string)UiSchema.ToJson(own)["placeholderStyle"]);
+            Assert.Null(UiSchema.ToJson(UiSchema.Msg("Posts", "msgPost", "{user}", "Post", "The post.", new[] { "user" }))["placeholderStyle"]);
+        }
+
         [Fact]
         public void AHandlerThatStillWorksSaysSoWhereTheSettingsActionLooks()
         {
@@ -387,7 +482,7 @@ namespace UIFramework.Tests
             Assert.Equal("LOYALTY POINTS", (string)described["currency"]["source"]);
             ((JArray)described["settings"]).Add(new JObject { ["key"] = "pointsVariable", ["default"] = "points" });   // the template's table is empty
             var schema = Schema.Parse(described.ToString());
-            var spec = Entry.SpecFor(null, schema, null);
+            var spec = Entry.SpecFor(schema, null);
             Entry.Prepare(spec, schema);
             Assert.Contains(spec.HeaderPills, pill => pill.Read(null).Text == "LOYALTY POINTS: loyalty");
             Assert.Contains(spec.ResolvedSettings, s => s.Key == "pointsVariable" && s.Help.Contains("LOYALTY POINTS is installed"));
@@ -403,7 +498,6 @@ namespace UIFramework.Tests
                 .Pill("useBot", "Bot on", "Bot off", tooltip: "Who sends")
                 .Samples("user", "alice", "roll", "6")
                 .Answer("tryRoll", "@alice rolls 6")
-                .Override("sides", label: "Die sides")
                 .Help(UiSchema.H("Playing", UiSchema.Cmd("!roll", "Rolls."), "A note.", UiSchema.Link("Guide", "https://example.test")))
                 .About(credits: "By someone", links: new[] { UiSchema.Link("Discord", "https://discord.test") }, defaultLinks: false);
             var json = window.ToJson();
@@ -413,7 +507,7 @@ namespace UIFramework.Tests
 
             var schema = Schema.Parse(SchemaWith(json));
             Assert.NotNull(schema.Window);
-            var spec = Entry.SpecFor(null, schema, TempSettings("builder"));
+            var spec = Entry.SpecFor(schema, TempSettings("builder"));
             Entry.Prepare(spec, schema);
 
             Assert.Equal("Demo Game", spec.Title);
@@ -423,7 +517,6 @@ namespace UIFramework.Tests
             Assert.Equal(new[] { "game", "messages", "help", "log", "about" }, spec.Pages.Select(p => p.Id).ToArray());   // How to play, Log, About at the foot
             Assert.Equal(new[] { "help", "log", "about" }, spec.Pages.Where(p => p.Bottom).Select(p => p.Id).ToArray());
             Assert.Equal("🎲", spec.Pages[0].Glyph);
-            Assert.Equal("Die sides", spec.ResolvedSettings.First(s => s.Key == "sides").Label);
             Assert.Equal("Demo/Logs", spec.Log.Folder);
             Assert.Equal("logToFile", spec.Log.WriteLogKey);
             Assert.Equal("Player", spec.Log.Columns[0].Header);
@@ -440,10 +533,45 @@ namespace UIFramework.Tests
             // The bare template's table declares nothing, so the cooldown reads no setting: that is the one problem.
             Assert.Single(spec.Problems, p => p.Contains("'globalCooldown', which is not a setting"));
 
-            // A spec the stub carries wins over the window in the schema; a window without a title is called after the host.
-            Assert.Equal("Other", Entry.SpecFor(@"{ ""title"": ""Other"" }", schema, TempSettings("builder")).Title);
+            // A window without a title is called after the host.
             var untitled = Schema.Parse(SchemaWith(new JObject { ["pages"] = new JArray("about") }));
-            Assert.Equal("Demo", Entry.SpecFor("", untitled, TempSettings("builder")).Title);
+            Assert.Equal("Demo", Entry.SpecFor(untitled, TempSettings("builder")).Title);
+        }
+
+        [Fact]
+        public void TheOldActionsOfAdoptReachTheSpec()
+        {
+            // Invented ids, in Streamer.bot's shape: two old actions and a Send Message sub-action of the first.
+            const string old = "3f6c1a52-8b0e-4d47-9a61-c2e5d7f04b18", other = "a94d2e70-15c3-4f8b-b6d2-07e3c9815f6a", message = "5d80b7e4-2c19-4a63-8f05-e1b6a3d92c47";
+            var window = new UiWindow("Demo Game").Adopt(UiSchema.Old(old, "seiten>sides", "#" + message + ">msgRoll"), UiSchema.Old(other));
+            var json = window.ToJson();
+            Assert.Equal(old, (string)json["adopt"][0]["action"]);
+            Assert.Equal(new[] { "seiten>sides", "#" + message + ">msgRoll" }, json["adopt"][0]["map"].Select(m => (string)m).ToArray());
+            Assert.Equal(other, (string)json["adopt"][1]["action"]);
+            Assert.Null(json["adopt"][1]["map"]);                                    // nothing to rename: the id alone
+            Assert.Null(new UiWindow("Demo Game").ToJson()["adopt"]);                // nothing declared, nothing in the schema
+
+            // As text through the describe answer, as the settings action hands it to the DLL.
+            var schema = Schema.Parse(SchemaWith(json).ToString(Formatting.None));
+            var spec = Entry.SpecFor(schema, TempSettings("adopt"));
+            Entry.Prepare(spec, schema);
+            Assert.Equal(2, spec.Adopt.Count);
+            Assert.Equal(old, spec.Adopt[0].ActionId);
+            Assert.Equal(new[] { "seiten>sides", "#" + message + ">msgRoll" }, spec.Adopt[0].Map.ToArray());
+            Assert.Equal(other, spec.Adopt[1].ActionId);
+            Assert.Empty(spec.Adopt[1].Map);
+            Assert.Empty(spec.Problems);
+            Assert.Equal("#" + message + ">msgRoll", (string)schema.ToJson()["window"]["adopt"][0]["map"][1]);
+
+            // Several calls add up, and a declaration that cannot work is told by the window.
+            var more = new UiWindow("Demo Game").Adopt(UiSchema.Old(old)).Adopt(UiSchema.Old(null, "seiten>nothere"), UiSchema.Old(other, "seiten>nothere"));
+            Assert.Equal(3, more.AdoptList.Count);
+            var wrong = Schema.Parse(SchemaWith(more.ToJson()));
+            var told = Entry.SpecFor(wrong, TempSettings("adopt"));
+            Entry.Prepare(told, wrong);
+            Assert.Equal(2, told.Problems.Count);
+            Assert.Contains(told.Problems, p => p.Contains("from an action without an id"));
+            Assert.Contains(told.Problems, p => p.Contains("'" + other + "' map 'seiten' to 'nothere', which is not a setting"));
         }
 
         [Fact]
@@ -522,7 +650,7 @@ namespace UIFramework.Tests
                 ""log"": { ""folder"": ""L"", ""writeLogKey"": ""noSuchSwitch"" }, ""headerPills"": [ { ""key"": ""nope"", ""on"": ""On"" } ],
                 ""overrides"": { ""gone"": { ""label"": ""Gone"" } } } }");
             var schema = Schema.Parse(root);
-            var spec = Entry.SpecFor(null, schema, TempSettings("problems"));
+            var spec = Entry.SpecFor(schema, TempSettings("problems"));
             Entry.Prepare(spec, schema);
             Assert.Equal(8, spec.Problems.Count);
             Assert.Contains(spec.Problems, p => p.Contains("'a'") && p.Contains("'knob'"));

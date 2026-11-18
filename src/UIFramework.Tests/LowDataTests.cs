@@ -26,7 +26,7 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [ " + settings + @" ],
                 ""window"": { ""title"": ""T"", ""pages"": [ { ""id"": ""game"", ""fields"": [" + fields + @"] } ] } }"));
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", name, "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", name, "settings.json"));
             Entry.Prepare(spec, schema);
             return spec;
         }
@@ -138,7 +138,7 @@ namespace UIFramework.Tests
         {
             var schema = Schema.Parse(JObject.Parse(@"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"",
                 ""settings"": [ { ""key"": ""msgWin"", ""default"": ""{user} wins"", ""kind"": ""template"" } ], ""lang"": { ""de"": { } } }"));
-            var spec = Entry.SpecFor(null, schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "low-tokens", "settings.json"));
+            var spec = Entry.SpecFor(schema, Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "low-tokens", "settings.json"));
             try
             {
                 spec.Language = "de";

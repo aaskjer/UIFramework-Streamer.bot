@@ -11,7 +11,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>UIFramework</RootNamespace>
     <AssemblyName>UIFramework</AssemblyName>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <!-- The oldest settings action (StubVersion in stub/Stub.cs) this DLL works with. It goes into the product
          version ("1.8.4+stub.0.1.0"), where a stub reads it without loading the file and the DLL reads it to refuse
          an older stub, and the release workflow writes it into latest.json as minHostStub. -->
@@ -30,8 +30,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <!-- Both are part of .NET Framework itself, so nothing more ships with the DLL. System.IO.Compression reads
+       Streamer.bot's backup zips (Settings/Adoption.cs). -->
   <ItemGroup>
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
   </ItemGroup>
 
   <!-- The conventions ship inside the DLL: a host never needs the JSON files next to it. -->
