@@ -411,6 +411,7 @@
     "field.grouplist.hint": "Streamer.bot-Gruppe hinzufügen",
     "field.multi.unknown": "Hier gespeichert, aber keine der Auswahlmöglichkeiten. Bleibt, bis du es entfernst.",
     "field.time.tip": "Eine Uhrzeit im 24-Stunden-Format: 17:30, 9:5, 0905 oder nur 9.",
+    "field.country.none": "Kein Land",
     "dialog.invalidTimes.text": "Diese Felder enthalten keine Uhrzeit, darum wurde nichts gespeichert:\n\n{0}",
     "dialog.invalidTimes.title": "Uhrzeiten prüfen",
     "import.why.time": "keine Uhrzeit",

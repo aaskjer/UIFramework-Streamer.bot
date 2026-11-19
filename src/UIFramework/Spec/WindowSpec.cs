@@ -43,6 +43,10 @@ namespace UIFramework
         /// <summary>Sections shown only while a condition holds, by their declared (English) name.</summary>
         public readonly Dictionary<string, string> SectionConditions = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        /// <summary>Sections whose heading reads otherwise while a condition holds ("Free Game Check and Game Sale
+        /// Check" while one switch joins the two).</summary>
+        public readonly List<SectionTitle> SectionTitles = new List<SectionTitle>();
+
         /// <summary>Fixed sample values for the chat preview, by placeholder. Live ones (points name, amounts)
         /// are added by <see cref="Resolve"/>.</summary>
         public readonly Dictionary<string, string> Samples = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -486,8 +490,45 @@ namespace UIFramework
     }
 
     /// <summary>A pill in the header, redrawn from the live controls on every change.</summary>
+    /// <summary>Another heading for a section while a condition holds: the section by its declared name, on one page
+    /// or (without a page) wherever a section of that name is.</summary>
+    public sealed class SectionTitle
+    {
+        public string Name, Page, Title, When;
+    }
+
+    /// <summary>One thing a header pill can say: its text, its tone (ok, warn, accent, else muted), its tooltip, and
+    /// the condition it says it under (none: always).</summary>
+    public sealed class PillState
+    {
+        public string When, Text, Tone, Tooltip;
+        public List<Requirement.Part> Parts = new List<Requirement.Part>();
+
+        public PillStyle Style
+        {
+            get
+            {
+                switch ((Tone ?? "").Trim().ToLowerInvariant())
+                {
+                    case "ok": case "success": return PillStyle.Success;
+                    case "warn": case "warning": return PillStyle.Warning;
+                    case "accent": return PillStyle.Accent;
+                    default: return PillStyle.Muted;
+                }
+            }
+        }
+
+        /// <summary>The tones a state can name.</summary>
+        public static readonly string[] Tones = { "ok", "warn", "accent", "muted" };
+    }
+
     public sealed class HeaderPill
     {
+        /// <summary>For a pill of several states: the states in order, the first that holds is shown. Null for a pill
+        /// that follows a switch.</summary>
+        public List<PillState> States;
+        /// <summary>For a pill of several states: the tooltip of the state it shows now.</summary>
+        public Func<PageContext, string> ReadTooltip;
         public string Tooltip;
         /// <summary>The tooltip as declared; <see cref="Tooltip"/> is it in the window's language.</summary>
         public readonly string Declared;

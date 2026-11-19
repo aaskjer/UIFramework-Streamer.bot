@@ -12,30 +12,12 @@
       "help": "Each action posts either with a Discord bot - bot token and channel ID - or through a webhook URL. With a bot the messages can be pinned and older copies cleaned up; a webhook needs no bot at all. When both are filled in, the bot is used."
     },
     {
-      "key": "salesDiscord",
-      "default": "own",
-      "kind": "options",
+      "key": "sameDiscord",
+      "default": true,
       "page": "discord",
       "section": "How the actions post",
-      "label": "Game Sale Check posts with",
-      "help": "One set of fields for both actions, or a bot, channel or webhook of its own for Game Sale Check.",
-      "options": [
-        {
-          "value": "own",
-          "label": "its own bot, channel or webhook"
-        },
-        {
-          "value": "same",
-          "label": "the bot, channel or webhook of Free Game Check"
-        }
-      ],
-      "shows": {
-        "own": [
-          "salesBotToken",
-          "salesChannelId",
-          "salesWebhookUrl"
-        ]
-      }
+      "label": "Both actions use the same bot and channel",
+      "help": "On: one set of fields, used by Free Game Check and Game Sale Check alike.\nOff: each action gets its own bot, channel or webhook."
     },
     {
       "key": "freeBotToken",
@@ -45,6 +27,8 @@
       "label": "Bot token",
       "help": "The token of your Discord bot. Kept in the persisted global variable FreeGameCheck_botToken, never in the settings file.",
       "masked": true,
+      "hint": "not set",
+      "row": "freeBot",
       "global": "FreeGameCheck_botToken",
       "aliases": [
         "free.botToken"
@@ -57,6 +41,8 @@
       "section": "Free Game Check",
       "label": "Channel ID",
       "help": "The ID of the channel the bot posts in - a long number. A pasted channel link (discord.com/channels/...) is turned into the ID.",
+      "hint": "not set",
+      "row": "freeBot",
       "aliases": [
         "free.channelId"
       ]
@@ -69,39 +55,10 @@
       "label": "Webhook URL",
       "help": "Instead of a bot: a webhook of the channel. Kept in the persisted global variable FreeGameCheck_webhookUrl, never in the settings file.",
       "masked": true,
+      "hint": "not set - or https://discord.com/api/webhooks/...",
       "global": "FreeGameCheck_webhookUrl",
       "aliases": [
         "free.webhookUrl"
-      ]
-    },
-    {
-      "key": "freeBotOnlyNote",
-      "default": null,
-      "kind": "note",
-      "page": "discord",
-      "section": "Free Game Check",
-      "help": "A webhook can neither pin nor delete, so these apply only to an action that posts with a bot."
-    },
-    {
-      "key": "freePinMessage",
-      "default": false,
-      "page": "discord",
-      "section": "Free Game Check",
-      "label": "Pin the messages",
-      "help": "Pins every message the action posts, so it stays at the top of the channel.",
-      "aliases": [
-        "free.pinMessage"
-      ]
-    },
-    {
-      "key": "freeCleanupDuplicates",
-      "default": true,
-      "page": "discord",
-      "section": "Free Game Check",
-      "label": "Delete older copies of the messages",
-      "help": "Deletes older copies of the action's messages that are still in the channel, e.g. after its state was lost.",
-      "aliases": [
-        "free.cleanupDuplicates"
       ]
     },
     {
@@ -112,6 +69,9 @@
       "label": "Bot token",
       "help": "The token of your Discord bot. Kept in the persisted global variable GameSaleCheck_botToken, never in the settings file.",
       "masked": true,
+      "hint": "not set",
+      "showWhen": "!sameDiscord",
+      "row": "salesBot",
       "global": "GameSaleCheck_botToken",
       "aliases": [
         "sales.botToken"
@@ -124,6 +84,9 @@
       "section": "Game Sale Check",
       "label": "Channel ID",
       "help": "The ID of the channel the bot posts in - a long number. A pasted channel link (discord.com/channels/...) is turned into the ID.",
+      "hint": "not set",
+      "showWhen": "!sameDiscord",
+      "row": "salesBot",
       "aliases": [
         "sales.channelId"
       ]
@@ -136,24 +99,55 @@
       "label": "Webhook URL",
       "help": "Instead of a bot: a webhook of the channel. Kept in the persisted global variable GameSaleCheck_webhookUrl, never in the settings file.",
       "masked": true,
+      "hint": "not set - or https://discord.com/api/webhooks/...",
+      "showWhen": "!sameDiscord",
       "global": "GameSaleCheck_webhookUrl",
       "aliases": [
         "sales.webhookUrl"
       ]
     },
     {
-      "key": "salesBotOnlyNote",
+      "key": "botOnlyNote",
       "default": null,
       "kind": "note",
       "page": "discord",
-      "section": "Game Sale Check",
+      "section": "Only with a bot",
       "help": "A webhook can neither pin nor delete, so these apply only to an action that posts with a bot."
+    },
+    {
+      "key": "freeBotOnlyCaption",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Only with a bot",
+      "help": "Free Game Check",
+      "row": "botOnlyCaptions"
+    },
+    {
+      "key": "salesBotOnlyCaption",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Only with a bot",
+      "help": "Game Sale Check",
+      "row": "botOnlyCaptions"
+    },
+    {
+      "key": "freePinMessage",
+      "default": false,
+      "page": "discord",
+      "section": "Only with a bot",
+      "label": "Pin the messages",
+      "help": "Pins every message the action posts, so it stays at the top of the channel.",
+      "aliases": [
+        "free.pinMessage"
+      ]
     },
     {
       "key": "salesPinMessage",
       "default": false,
       "page": "discord",
-      "section": "Game Sale Check",
+      "section": "Only with a bot",
       "label": "Pin the messages",
       "help": "Pins every message the action posts, so it stays at the top of the channel.",
       "aliases": [
@@ -161,11 +155,22 @@
       ]
     },
     {
+      "key": "freeCleanupDuplicates",
+      "default": true,
+      "page": "discord",
+      "section": "Only with a bot",
+      "label": "Delete older copies",
+      "help": "Deletes older copies of the action's messages that are still in the channel, e.g. after its state was lost.",
+      "aliases": [
+        "free.cleanupDuplicates"
+      ]
+    },
+    {
       "key": "salesCleanupDuplicates",
       "default": true,
       "page": "discord",
-      "section": "Game Sale Check",
-      "label": "Delete older copies of the messages",
+      "section": "Only with a bot",
+      "label": "Delete older copies",
       "help": "Deletes older copies of the action's messages that are still in the channel, e.g. after its state was lost.",
       "aliases": [
         "sales.cleanupDuplicates"
@@ -201,7 +206,7 @@
       "kind": "note",
       "page": "discord",
       "section": "Where to find these",
-      "help": "Open the Discord Developer Portal: https://discord.com/developers/applications"
+      "help": "[Open the Discord Developer Portal](https://discord.com/developers/applications)"
     },
     {
       "key": "discordSecretsNote",
@@ -319,6 +324,7 @@
       "label": "IsThereAnyDeal API key",
       "help": "Optional. With a key, IsThereAnyDeal's giveaway list is read too. Kept in the persisted global variable FreeGameCheck_itadKey, never in the settings file.",
       "masked": true,
+      "hint": "optional",
       "global": "FreeGameCheck_itadKey",
       "aliases": [
         "free.itadKey"
@@ -330,15 +336,17 @@
       "kind": "note",
       "page": "free",
       "section": "Sources",
-      "help": "Get a free IsThereAnyDeal API key: https://isthereanydeal.com/apps/my/"
+      "help": "[Get a free IsThereAnyDeal API key](https://isthereanydeal.com/apps/my/)"
     },
     {
       "key": "freeCountry",
       "default": "",
+      "kind": "country",
       "page": "free",
       "section": "Your country",
       "label": "Country",
-      "help": "A two-letter code like DE. Steam and Epic Games giveaways are checked for this country. Empty: no check.",
+      "help": "Steam and Epic Games giveaways are checked for this country. No country: no check.",
+      "row": "freeCountry",
       "aliases": [
         "free.country"
       ]
@@ -366,6 +374,7 @@
           "label": "List them like the rest"
         }
       ],
+      "row": "freeCountry",
       "aliases": [
         "free.regionMode"
       ]
@@ -376,7 +385,7 @@
       "kind": "note",
       "page": "free",
       "section": "Your country",
-      "help": "Leave the country empty to list everything that is free anywhere."
+      "help": "Pick no country to list everything that is free anywhere."
     },
     {
       "key": "freePlatformsNote",
@@ -480,6 +489,7 @@
       "section": "Colours",
       "label": "Games colour",
       "help": "The colour of the free games message.",
+      "row": "freeColours1",
       "aliases": [
         "free.embedColorGames"
       ]
@@ -492,6 +502,7 @@
       "section": "Colours",
       "label": "DLC colour",
       "help": "The colour of the free DLC message.",
+      "row": "freeColours1",
       "aliases": [
         "free.embedColorDlc"
       ]
@@ -504,6 +515,7 @@
       "section": "Colours",
       "label": "Loot colour",
       "help": "The colour of the free loot message.",
+      "row": "freeColours2",
       "aliases": [
         "free.embedColorLoot"
       ]
@@ -516,6 +528,7 @@
       "section": "Colours",
       "label": "Demos colour",
       "help": "The colour of the demos message.",
+      "row": "freeColours2",
       "aliases": [
         "free.embedColorDemos"
       ]
@@ -588,10 +601,11 @@
     {
       "key": "salesCountry",
       "default": "",
+      "kind": "country",
       "page": "sales",
       "section": "Top deals",
       "label": "Country",
-      "help": "A two-letter code like DE: prices and currency of that country. Empty: US.",
+      "help": "Prices and currency of this country. No country: US.",
       "requires": "salesIncludeDeals",
       "aliases": [
         "sales.country"
@@ -641,6 +655,14 @@
       ]
     },
     {
+      "key": "salesDealsNote",
+      "default": null,
+      "kind": "note",
+      "page": "sales",
+      "section": "Top deals",
+      "help": "No country: US prices. Nintendo's deals come from its European eShop, so they show only for European countries. Max. price 0 means any price."
+    },
+    {
       "key": "salesItadKey",
       "default": "",
       "page": "sales",
@@ -648,18 +670,21 @@
       "label": "IsThereAnyDeal API key",
       "help": "Optional. With a key, the deals of other shops (Humble, Fanatical, Green Man Gaming, ...) are added, and 📉 marks a deal at its lowest price ever. Kept in the persisted global variable GameSaleCheck_itadKey, never in the settings file.",
       "masked": true,
+      "hint": "optional",
       "global": "GameSaleCheck_itadKey",
       "aliases": [
         "sales.itadKey"
       ]
     },
     {
-      "key": "salesDealsNote",
+      "key": "salesUseFreeKey",
       "default": null,
-      "kind": "note",
+      "kind": "action",
       "page": "sales",
       "section": "Top deals",
-      "help": "Empty country: US prices. Nintendo's deals come from its European eShop, so they show only for European countries. Max. price 0 means any price."
+      "label": "Use the key of Free Game Check",
+      "help": "Copies the IsThereAnyDeal key from the Free games page.",
+      "live": true
     },
     {
       "key": "salesPlatformsNote",
@@ -754,6 +779,7 @@
       "section": "Colours",
       "label": "Sale events colour",
       "help": "The colour of the sale events message.",
+      "row": "salesColours",
       "aliases": [
         "sales.embedColorEvents"
       ]
@@ -766,6 +792,7 @@
       "section": "Colours",
       "label": "Top deals colour",
       "help": "The colour of the top deals message.",
+      "row": "salesColours",
       "aliases": [
         "sales.embedColorDeals"
       ]
@@ -777,14 +804,6 @@
       "page": "schedule",
       "section": "How the actions keep time",
       "help": "No Streamer.bot timer is needed. Give each action the trigger 'Streamer.bot Started': every run plans the next one itself - the regular check below, or earlier when a mark runs out, a giveaway, sale or deal starts or ends, or a message is due to be posted anew."
-    },
-    {
-      "key": "scheduleResendNote",
-      "default": null,
-      "kind": "note",
-      "page": "schedule",
-      "section": "How the actions keep time",
-      "help": "A resend keeps the time of day of the round before; a round missed while Streamer.bot was off starts anew."
     },
     {
       "key": "freeCheckIntervalMinutes",
@@ -867,6 +886,14 @@
       ]
     },
     {
+      "key": "scheduleResendNote",
+      "default": null,
+      "kind": "note",
+      "page": "schedule",
+      "section": "Game Sale Check",
+      "help": "A resend keeps the time of day of the round before; a round missed while Streamer.bot was off starts anew."
+    },
+    {
       "key": "statusNote",
       "default": null,
       "kind": "note",
@@ -930,7 +957,7 @@
     "releases": "aaskjer/GameCheck",
     "logo": "https://github.com/aaskjer/GameCheck/blob/main/Assets/logo.png?raw=true",
     "logPrefix": "[GameCheck/Settings]",
-    "requires": "2.1.0",
+    "requires": "2.2.0",
     "pages": [
       {
         "id": "discord",
@@ -940,17 +967,17 @@
       {
         "id": "free",
         "title": "Free games",
-        "icon": "gift"
+        "icon": "🎮"
       },
       {
         "id": "sales",
         "title": "Sales",
-        "icon": "coins"
+        "icon": "🛍️"
       },
       {
         "id": "schedule",
         "title": "Schedule",
-        "icon": "clock"
+        "icon": "🕒"
       },
       {
         "id": "status",
@@ -958,6 +985,70 @@
         "icon": "chart"
       },
       "about"
+    ],
+    "headerPills": [
+      {
+        "states": [
+          {
+            "text": "Free: bot",
+            "when": "freeBotToken && freeChannelId",
+            "tone": "ok",
+            "tooltip": "Free Game Check posts with a bot."
+          },
+          {
+            "text": "Free: webhook",
+            "when": "freeWebhookUrl",
+            "tone": "accent",
+            "tooltip": "Free Game Check posts through a webhook."
+          },
+          {
+            "text": "Free: not set up",
+            "tone": "warn",
+            "tooltip": "Free Game Check has no Discord connection yet (Discord page)."
+          }
+        ]
+      },
+      {
+        "states": [
+          {
+            "text": "Sales: bot",
+            "when": "sameDiscord && freeBotToken && freeChannelId",
+            "tone": "ok",
+            "tooltip": "Game Sale Check posts with a bot."
+          },
+          {
+            "text": "Sales: bot",
+            "when": "!sameDiscord && salesBotToken && salesChannelId",
+            "tone": "ok",
+            "tooltip": "Game Sale Check posts with a bot."
+          },
+          {
+            "text": "Sales: webhook",
+            "when": "sameDiscord && freeWebhookUrl",
+            "tone": "accent",
+            "tooltip": "Game Sale Check posts through a webhook."
+          },
+          {
+            "text": "Sales: webhook",
+            "when": "!sameDiscord && salesWebhookUrl",
+            "tone": "accent",
+            "tooltip": "Game Sale Check posts through a webhook."
+          },
+          {
+            "text": "Sales: not set up",
+            "tone": "warn",
+            "tooltip": "Game Sale Check has no Discord connection yet (Discord page)."
+          }
+        ]
+      }
+    ],
+    "sections": [
+      {
+        "name": "Free Game Check",
+        "title": "Free Game Check and Game Sale Check",
+        "titleWhen": "sameDiscord",
+        "page": "discord"
+      }
     ],
     "about": {
       "credits": "Free games and game sales, posted to Discord by Streamer.bot.\nResponsible: aaskjer\nCredits: nate1280 / Streamer.bot, GamerPower · IsThereAnyDeal · LootScraper and YOU ♡",

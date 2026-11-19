@@ -411,6 +411,7 @@
     "field.grouplist.hint": "Ajoutez un groupe Streamer.bot",
     "field.multi.unknown": "Enregistré ici, mais ce n'est pas l'un des choix. Il reste jusqu'à ce que vous le retiriez.",
     "field.time.tip": "Une heure de la journée au format 24 heures : 17:30, 9:5, 0905 ou simplement 9.",
+    "field.country.none": "Aucun pays",
     "dialog.invalidTimes.text": "Ces champs ne contiennent pas d'heure de la journée, rien n'a donc été enregistré :\n\n{0}",
     "dialog.invalidTimes.title": "Vérifiez les heures",
     "import.why.time": "pas une heure de la journée",

@@ -219,9 +219,9 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 325 of 325 |
-| `lang/en.json` | 82 | 14 | 16 | 0 | 325 |
-| `lang/es.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 325 of 325 |
-| `lang/fr.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 325 of 325 |
-| `lang/pt-BR.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 325 of 325 |
+| `lang/de.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
+| `lang/en.json` | 82 | 14 | 16 | 0 | 326 |
+| `lang/es.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
+| `lang/fr.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
+| `lang/pt-BR.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
 <!-- generated:end -->

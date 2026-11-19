@@ -169,6 +169,8 @@ namespace UIFramework
         public bool TwitchOnly;
         /// <summary>A text field whose value is shown as dots until its eye button reveals it (a token, a secret).</summary>
         public bool Masked;
+        /// <summary>Grey text inside a one-line text field while it is empty ("not set", "optional"), masked or not.</summary>
+        public string Hint;
         /// <summary>The field is shown only while this condition holds (<see cref="Requirement"/>):
         /// <c>"questionSource=igdb"</c>, <c>"questionSource=opentdb|wikidata"</c>, <c>"mode!=free &amp;&amp; useBot"</c>.</summary>
         public string ShowWhen;
@@ -251,6 +253,7 @@ namespace UIFramework
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
                 TwitchOnly = item["twitchOnly"]?.Type == JTokenType.Boolean && (bool)item["twitchOnly"],
                 Masked = item["masked"]?.Type == JTokenType.Boolean && (bool)item["masked"],
+                Hint = item["hint"]?.Type == JTokenType.String ? (string)item["hint"] : null,
                 ShowWhen = (string)item["showWhen"],
                 Live = item["live"]?.Type == JTokenType.Boolean && (bool)item["live"],
                 Panel = item["panel"]?.Type == JTokenType.Boolean && (bool)item["panel"],
@@ -341,6 +344,7 @@ namespace UIFramework
             if (Transient) item["transient"] = true;
             if (TwitchOnly) item["twitchOnly"] = true;
             if (Masked) item["masked"] = true;
+            if (Hint != null) item["hint"] = Hint;
             if (ShowWhen != null) item["showWhen"] = ShowWhen;
             if (Shows != null) item["shows"] = new JObject(Shows.Select(p => new JProperty(p.Key, new JArray(p.Value))));
             if (Live) item["live"] = true;

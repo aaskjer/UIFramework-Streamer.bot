@@ -175,8 +175,16 @@ namespace UIFramework
 
             if (root["sections"] is JArray sectionList)
                 foreach (var section in sectionList.OfType<JObject>())
-                    if (!string.IsNullOrWhiteSpace((string)section["name"]) && !string.IsNullOrWhiteSpace((string)section["showWhen"]))
-                        spec.SectionConditions[(string)section["name"]] = (string)section["showWhen"];
+                {
+                    string name = Str(section["name"]), page = Str(section["page"]);
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+                    if (!string.IsNullOrWhiteSpace(Str(section["showWhen"])))
+                        spec.SectionConditions[name] = Str(section["showWhen"]);
+                    // Another heading while a condition holds; on one page where the declaration names it.
+                    if (!string.IsNullOrWhiteSpace(Str(section["title"])) && !string.IsNullOrWhiteSpace(Str(section["titleWhen"])))
+                        spec.SectionTitles.Add(new SectionTitle { Name = name, Page = string.IsNullOrWhiteSpace(page) ? null : page.Trim(),
+                            Title = Str(section["title"]), When = Str(section["titleWhen"]).Trim() });
+                }
 
             // The old actions whose values the window takes over: an object with the action's id and its mappings, or
             // the id alone. What does not fit is told by the resolve, which knows the settings.
@@ -220,6 +228,36 @@ namespace UIFramework
             if (root["headerPills"] is JArray pillList)
                 foreach (var pill in pillList.OfType<JObject>())
                 {
+                    if (pill["states"] is JArray stateList)
+                    {
+                        // A pill that says one of several things: the first state whose condition holds, none where
+                        // none does. A field a Set Argument sets counts as filled in: the action has a value for it,
+                        // whatever the window holds.
+                        var states = new List<PillState>();
+                        foreach (var declared in stateList.OfType<JObject>())
+                        {
+                            string text = Str(declared["text"]);
+                            if (string.IsNullOrWhiteSpace(text)) continue;
+                            var state = new PillState { When = Str(declared["when"]), Text = text, Tone = Str(declared["tone"]), Tooltip = Str(declared["tooltip"]) };
+                            state.Parts = Requirement.Parse(state.When);
+                            states.Add(state);
+                        }
+                        if (states.Count == 0) continue;
+                        bool Holds(PageContext ctx, Requirement.Part part)
+                        {
+                            if (part.Op == null && ctx.Spec?.ResolvedSettings?.FirstOrDefault(s => s.Key == part.Key)?.Argument != null)
+                                return !part.Not;
+                            return ctx.Parts != null && ctx.Fields != null && Requirement.Holds(ctx.Fields, ctx.Parts, part);
+                        }
+                        PillState Current(PageContext ctx) => states.FirstOrDefault(state => state.Parts.All(part => Holds(ctx, part)));
+                        string Worded(PageContext ctx, string text) => text == null ? null : ctx.Spec?.Conventions?.Lang?.Text(text) ?? text;
+                        spec.HeaderPills.Add(new HeaderPill(null, ctx => Current(ctx) is PillState now ? (Worded(ctx, now.Text), now.Style) : ((string)null, PillStyle.None))
+                        {
+                            States = states,
+                            ReadTooltip = ctx => Worded(ctx, Current(ctx)?.Tooltip)
+                        });
+                        continue;
+                    }
                     string key = (string)pill["key"];
                     string on = (string)pill["on"], off = (string)pill["off"], tooltip = (string)pill["tooltip"];
                     if (string.IsNullOrEmpty(key)) continue;
@@ -236,6 +274,9 @@ namespace UIFramework
 
             return spec;
         }
+
+        // A text of the declaration; null for anything else (a number, a list, nothing).
+        private static string Str(JToken token) => token != null && token.Type == JTokenType.String ? (string)token : null;
 
         // Pairs in order: an object ({ "WIN-*": "success" }), or a list of "WIN-*|success" as the builder takes them.
         private static void Pairs(JToken declared, List<KeyValuePair<string, string>> into)
