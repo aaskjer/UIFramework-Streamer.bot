@@ -411,6 +411,7 @@
     "field.grouplist.hint": "Adicione um grupo do Streamer.bot",
     "field.multi.unknown": "Salvo aqui, mas não é uma das opções. Fica até você remover.",
     "field.time.tip": "Um horário no formato de 24 horas: 17:30, 9:5, 0905 ou só 9.",
+    "field.country.none": "Nenhum país",
     "dialog.invalidTimes.text": "Estes campos não têm um horário válido, então nada foi salvo:\n\n{0}",
     "dialog.invalidTimes.title": "Confira os horários",
     "import.why.time": "não é um horário",

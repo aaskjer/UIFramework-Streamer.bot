@@ -49,6 +49,8 @@ public static class UiSchema
         public bool TwitchOnly;
         // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
         public bool Masked;
+        // Hint: grey text inside a one-line text field while it is empty ("not set", "optional"), masked or not.
+        public string Hint;
         // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
         // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
         public string ShowWhen; public string[] Shows;
@@ -72,7 +74,7 @@ public static class UiSchema
         string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
         bool readOnly = false, double? step = null, string group = null, bool ask = false,
         string global = null, string optionsFrom = null, int? every = null, bool saveFirst = false,
-        string rowKey = null, bool fixedRows = false, string filter = null)
+        string rowKey = null, bool fixedRows = false, string filter = null, string hint = null)
     {
         return new Setting
         {
@@ -82,7 +84,7 @@ public static class UiSchema
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
             ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask,
             Global = global, OptionsFrom = optionsFrom, Every = every, SaveFirst = saveFirst,
-            RowKey = rowKey, FixedRows = fixedRows, Filter = filter
+            RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint
         };
     }
 
@@ -196,6 +198,7 @@ public static class UiSchema
         if (s.Auto) item["auto"] = true;
         if (s.TwitchOnly) item["twitchOnly"] = true;
         if (s.Masked) item["masked"] = true;
+        if (s.Hint != null) item["hint"] = s.Hint;
         if (s.ReadOnly) item["readOnly"] = true;
         if (s.Step.HasValue) item["step"] = s.Step.Value;
         if (s.ShowWhen != null) item["showWhen"] = s.ShowWhen;
@@ -236,6 +239,10 @@ public static class UiSchema
     /// <summary>A command's cooldowns, set after every save: the command as its text ("!roll"), its name or its id in
     /// Streamer.bot, the setting of its global cooldown and the setting of its per-user cooldown (either may be null).</summary>
     public static string[] C(string command, string globalKey, string userKey) => new[] { command, globalKey, userKey };
+    /// <summary>One thing a header pill can say (UiWindow.Pill): the condition it says it under, as showWhen writes one
+    /// ("botToken &amp;&amp; channelId", "mode=a|b", "!useBot"; null: always), its text, its tone ("ok" green, "warn"
+    /// amber, "accent", else grey) and its tooltip.</summary>
+    public static string[] State(string when, string text, string tone = null, string tooltip = null) => new[] { when, text, tone, tooltip };
     /// <summary>One trigger for UiWindow.Triggers: its name in Streamer.bot, its code, what it is for, and the
     /// arguments that are its own ("name" or "name=sample value").</summary>
     public static string[] Tr(string name, string code, string what = null, params string[] args)
@@ -1005,9 +1012,34 @@ public sealed class UiWindow
 
     /// <summary>A section (by the name its settings declare) shown only while a condition holds, heading and fields
     /// together: "questionSource=igdb", "mode=a|b", "mode!=free && useBot".</summary>
-    public UiWindow Section(string name, string showWhen)
+    /// <remarks>title and titleWhen: the heading reads as title while that condition holds ("Free Game Check and Game
+    /// Sale Check" while one switch joins the two). page: only the section of that name on that page.</remarks>
+    public UiWindow Section(string name, string showWhen = null, string title = null, string titleWhen = null, string page = null)
     {
-        SectionList.Add(new Newtonsoft.Json.Linq.JObject { ["name"] = name, ["showWhen"] = showWhen });
+        var section = new Newtonsoft.Json.Linq.JObject { ["name"] = name };
+        if (showWhen != null) section["showWhen"] = showWhen;
+        if (title != null) section["title"] = title;
+        if (titleWhen != null) section["titleWhen"] = titleWhen;
+        if (page != null) section["page"] = page;
+        SectionList.Add(section);
+        return this;
+    }
+
+    /// <summary>A pill in the window's header that says one of several things (UiSchema.State): the first state whose
+    /// condition holds is shown, none where none holds. It follows the window as it is typed in.</summary>
+    public UiWindow Pill(params string[][] states)
+    {
+        var list = new Newtonsoft.Json.Linq.JArray();
+        foreach (var state in states)
+        {
+            if (state == null || state.Length < 2 || state[1] == null) continue;
+            var item = new Newtonsoft.Json.Linq.JObject { ["text"] = state[1] };
+            if (state[0] != null) item["when"] = state[0];
+            if (state.Length > 2 && state[2] != null) item["tone"] = state[2];
+            if (state.Length > 3 && state[3] != null) item["tooltip"] = state[3];
+            list.Add(item);
+        }
+        PillList.Add(new Newtonsoft.Json.Linq.JObject { ["states"] = list });
         return this;
     }
 

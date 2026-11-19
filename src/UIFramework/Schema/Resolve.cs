@@ -79,6 +79,7 @@ namespace UIFramework
                     setting.Help = own.Help ?? ownHelp ?? keyHelp ?? lang.Text(setting.Help);
                     setting.Section = lang.Text(setting.Section);
                     setting.Group = lang.Text(setting.Group);
+                    setting.Hint = lang.Text(setting.Hint);
                     if (setting.Options != null)
                         foreach (var option in setting.Options)
                             option.Label = lang.Text(option.Label);
@@ -476,7 +477,7 @@ namespace UIFramework
         private static readonly HashSet<string> Kinds = new HashSet<string>(StringComparer.Ordinal)
         {
             "bool", "int", "long", "duration", "double", "percent", "options", "namelist", "grouplist", "colour", "color",
-            "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list", "multi", "time"
+            "path", "emote", "slider", "note", "text", "string", "template", "action", "table", "list", "multi", "time", "country"
         };
 
         private static readonly string[] PlatformNames = { "twitch", "youtube", "kick" };
@@ -589,7 +590,7 @@ namespace UIFramework
                 case "bool": return "bool";
                 case "list": case "namelist": case "grouplist": case "multi": case "table": return "list";
                 case "colour": case "color": return "colour";
-                default: return "text";   // string, options, text, template, path, emote, time, note, action
+                default: return "text";   // string, options, text, template, path, emote, time, country, note, action
             }
         }
 
@@ -621,6 +622,20 @@ namespace UIFramework
                 if (!declaredSections.Contains(section.Key))
                     spec.Problems.Add("The section '" + section.Key + "' has a condition, but no setting is in a section of that name.");
             }
+            foreach (var title in spec.SectionTitles)
+            {
+                CheckCondition(spec, byKey, "The section '" + title.Name + "'", "is titled '" + title.Title + "' when", title.When);
+                if (!declaredSections.Contains(title.Name))
+                    spec.Problems.Add("The section '" + title.Name + "' has another title on a condition, but no setting is in a section of that name.");
+            }
+            foreach (var pill in spec.HeaderPills.Where(p => p.States != null))
+                foreach (var state in pill.States)
+                {
+                    if (!string.IsNullOrWhiteSpace(state.When))
+                        CheckCondition(spec, byKey, "The header pill '" + state.Text + "'", "is shown when", state.When);
+                    if (!string.IsNullOrWhiteSpace(state.Tone) && state.Style == PillStyle.Muted && !string.Equals(state.Tone.Trim(), "muted", StringComparison.OrdinalIgnoreCase))
+                        spec.Problems.Add("The header pill '" + state.Text + "' has the tone '" + state.Tone + "'; it is one of " + string.Join(", ", PillState.Tones) + ". It is shown muted.");
+                }
             foreach (var s in settings)
             {
                 if (s.Kind != null && !Kinds.Contains(s.Kind))
@@ -677,6 +692,11 @@ namespace UIFramework
                     CheckMulti(spec, s);
                 if (s.Kind == "time")
                     CheckTime(spec, s);
+                if (s.Kind == "country")
+                    CheckCountry(spec, s);
+                // The hint stands inside a one-line text box; no other field has one to show it in.
+                if (s.Hint != null && !(s.Kind == "string" || (s.Kind == "options" && s.OptionsFrom == null && (s.Options == null || s.Options.Count == 0))))
+                    spec.Problems.Add("'" + s.Key + "' has a hint, which only a one-line text field shows (kind string, masked or not); it does nothing on " + Article(s.Kind) + ".");
                 if (s.OptionsFrom != null)
                 {
                     // What the project is asked again for is a field of the window; "groups" and the empty text name none.
@@ -817,6 +837,25 @@ namespace UIFramework
                 spec.Problems.Add("'" + s.Key + "' has the default '" + text + "', which is no time of day: a time field's default is written \"HH:mm\" (\"09:00\"), or \"\" for none. The field starts empty and has to be filled in before a save.");
             else if (time != text)
                 spec.Problems.Add("'" + s.Key + "' has the default '" + text + "', which the window writes as '" + time + "'. Declare it so, since the project reads the default as it is declared.");
+        }
+
+        /// <summary>A country field holds a two-letter code, or nothing: its default is one of the two, and so is every
+        /// option that narrows the list.</summary>
+        private static void CheckCountry(WindowSpec spec, Setting s)
+        {
+            if (s.Default != null && s.Default.Type != JTokenType.Null)
+            {
+                string text = s.Default.Type == JTokenType.String ? ((string)s.Default).Trim() : null;
+                if (text == null)
+                    spec.Problems.Add("'" + s.Key + "' is a country field whose default is no text: it is a two-letter code (\"DE\"), or \"\" for no country.");
+                else if (text.Length > 0 && !Countries.IsCode(text))
+                    spec.Problems.Add("'" + s.Key + "' has the default '" + text + "', which is no country code: it is two letters as ISO 3166 has them (\"DE\", \"US\"), or \"\" for no country.");
+                else if (text.Length > 0 && text != text.ToUpperInvariant())
+                    spec.Problems.Add("'" + s.Key + "' has the default '" + text + "', which the window writes as '" + text.ToUpperInvariant() + "'. Declare it so, since the project reads the default as it is declared.");
+            }
+            foreach (var option in s.Options ?? new List<SettingOption>())
+                if (!string.IsNullOrWhiteSpace(option.Value) && !Countries.IsCode(option.Value))
+                    spec.Problems.Add("'" + s.Key + "' offers '" + option.Value + "', which is no country code; it is listed as it is written.");
         }
 
         /// <summary>A setting kept in a persisted global of Streamer.bot (<c>global</c>, see <see cref="Globals"/>). One

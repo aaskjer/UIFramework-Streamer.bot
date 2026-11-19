@@ -549,6 +549,7 @@ namespace UIFramework
                     (string text, PillStyle style) = pillSpec.Read(ctx);
                     pill.Visibility = text == null ? Visibility.Collapsed : Visibility.Visible;
                     if (text == null) continue;
+                    if (pillSpec.ReadTooltip != null) pill.ToolTip = pillSpec.ReadTooltip(ctx);
                     var colours = Ui.PillColours(style);
                     Ui.SetPill(pill, text, colours.Background, colours.Foreground);
                 }

@@ -18,6 +18,18 @@ namespace UIFramework
                 Set(parts, property.Name, property.Value);
         }
 
+        /// <summary>Puts one field's value into another, as if typed: <c>copy</c> in an action's answer,
+        /// <c>{ "to": "from" }</c>. The value is the one the window holds now, saved or not; a field the window has
+        /// no control for gives its saved value, and a key that is no setting copies nothing.</summary>
+        public static void Copy(Fields fields, WindowParts parts, JObject copies)
+        {
+            if (fields == null || parts == null || copies == null)
+                return;
+            foreach (var pair in copies.Properties())
+                if (pair.Value.Type == JTokenType.String && Requirement.Live(fields, parts, (string)pair.Value) is JToken from && from.Type != JTokenType.Null)
+                    Set(parts, pair.Name, from.DeepClone());
+        }
+
         public static bool Set(WindowParts parts, string key, JToken value)
         {
             if (parts.Switches.TryGetValue(key, out var toggle))

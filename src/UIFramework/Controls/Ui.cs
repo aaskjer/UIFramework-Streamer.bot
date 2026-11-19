@@ -197,15 +197,18 @@ namespace UIFramework
         {
             var note = Note("");
             int at = 0;
-            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text ?? "", @"https?://[^\s)\]>""']+"))
+            // An address is a link as it stands; "[words](https://...)" is one that reads as the words.
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text ?? "",
+                @"\[(?<words>[^\[\]\r\n]+)\]\((?<to>https?://[^\s)]+)\)|https?://[^\s)\]>""']+"))
             {
                 if (m.Index > at) note.Inlines.Add(new Run(text.Substring(at, m.Index - at)));
-                string url = m.Value.TrimEnd('.', ',', ';', ':');
+                bool worded = m.Groups["to"].Success;
+                string url = worded ? m.Groups["to"].Value : m.Value.TrimEnd('.', ',', ';', ':');
                 var link = new Hyperlink { Foreground = new SolidColorBrush(Theme.AccentText), Cursor = Cursors.Hand, ToolTip = url };
-                link.Inlines.Add(new Run(url));
+                link.Inlines.Add(new Run(worded ? m.Groups["words"].Value : url));
                 link.Click += (s, e) => open?.Invoke(url);
                 note.Inlines.Add(link);
-                at = m.Index + url.Length;
+                at = m.Index + (worded ? m.Length : url.Length);
             }
             if (at < (text ?? "").Length) note.Inlines.Add(new Run(text.Substring(at)));
             return note;
@@ -345,17 +348,28 @@ namespace UIFramework
             return true;
         }
 
-        /// <summary>A grey hint inside an empty box.</summary>
+        /// <summary>The Tag of the grey hint inside an empty box, for tests.</summary>
+        public const string HintTag = "uiframework.hint";
+
+        /// <summary>A grey hint inside an empty box. Without a hint the box alone, in the same cell.</summary>
         public static Grid WithHint(TextBox box, string hint)
         {
+            if (string.IsNullOrEmpty(hint))
+            {
+                var alone = new Grid();
+                alone.Children.Add(box);
+                return alone;
+            }
             var text = new TextBlock
             {
                 Text = hint,
                 FontSize = 12,
                 Foreground = Theme.MutedFg,
-                Margin = new Thickness(7, 0, 0, 0),
+                Margin = new Thickness(7, 0, 7, 0),
                 VerticalAlignment = VerticalAlignment.Center,
-                IsHitTestVisible = false
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                IsHitTestVisible = false,
+                Tag = HintTag
             };
             var host = new Grid();
             host.Children.Add(box);

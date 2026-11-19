@@ -38,6 +38,12 @@ namespace UIFramework.Preview
 
             var log = new ConsoleLog();
             var hooks = new SampleHooks(settings);
+            // -globals name=value,...: what the preview's globals hold when the window opens (a token for a masked field).
+            foreach (var pair in (Arg(args, "-globals") ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int at = pair.IndexOf('=');
+                if (at > 0) hooks.Globals[pair.Substring(0, at).Trim()] = pair.Substring(at + 1);
+            }
             WindowSpec spec;
             string schemaFile = Arg(args, "-schema");
             if (schemaFile != null)
@@ -113,6 +119,17 @@ namespace UIFramework.Preview
         }
 
         public override void OnSaved(JObject settings) => Interlocked.Exchange(ref _pending, settings);
+
+        /// <summary>Globals of the preview's own, kept while it runs: a setting kept in a global (a token) is a field
+        /// here, as it is behind Streamer.bot. <c>-globals name=value,...</c> fills some before the window opens.</summary>
+        public readonly Dictionary<string, string> Globals = new Dictionary<string, string>(StringComparer.Ordinal);
+        public override bool HasGlobals => true;
+        public override string GetGlobal(string name) => Globals.TryGetValue(name ?? "", out var value) ? value : null;
+        public override bool SetGlobal(string name, string value)
+        {
+            if (string.IsNullOrEmpty(value)) Globals.Remove(name ?? ""); else Globals[name ?? ""] = value;
+            return true;
+        }
 
         /// <summary>The spec's sample answers, so a panel in the preview shows what the host would say.</summary>
         public Dictionary<string, string> Answers = new Dictionary<string, string>(StringComparer.Ordinal);

@@ -153,9 +153,17 @@ namespace UIFramework
                     Flush();
                     WatchSection();
                     section = setting.Section;
-                    heading = Ui.Section(section, firstHeading && page.Children.Count == 0);
+                    var title = Ui.Section(section, firstHeading && page.Children.Count == 0);
+                    heading = title;
                     sectionFields.Clear();
                     page.Children.Add(heading);
+                    // A heading that reads otherwise while a condition holds (.Section(name, title:, titleWhen:)).
+                    var other = ctx.Spec?.SectionTitles.FirstOrDefault(t => t.Name == setting.SectionId && (t.Page == null || t.Page == setting.Page));
+                    if (other != null && wrap == null)
+                    {
+                        string plain = section, worded = ctx.Spec.Conventions?.Lang?.Text(other.Title) ?? other.Title;
+                        ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, other.When, on => title.Text = on ? worded : plain));
+                    }
                 }
 
                 var element = Render(ctx, setting);
@@ -238,7 +246,8 @@ namespace UIFramework
                 // Shown, not edited; its help, its conditions and its section's go with it like any field's. Several
                 // choices show by their labels, a time as it is written ("09:05"), or as it is stored when it is none.
                 string shown = s.Kind == "multi" ? Fields.MultiLabels(s.Options, f.Token(s.Key))
-                    : s.Kind == "time" && FieldBinding.TryTime(f.String(s.Key), out string time) ? time : f.String(s.Key);
+                    : s.Kind == "time" && FieldBinding.TryTime(f.String(s.Key), out string time) ? time
+                    : s.Kind == "country" ? CountryShown(ctx, s, f.String(s.Key)) : f.String(s.Key);
                 var value = new TextBlock { Text = shown, FontSize = 13, Foreground = Theme.LabelFg, Margin = new Thickness(0, 4, 0, 4), TextWrapping = s.Kind == "multi" ? TextWrapping.Wrap : TextWrapping.NoWrap };
                 element = s.Locked ? LockedField(ctx, s, label, value) : Ui.Labeled(label, value);
                 if (!string.IsNullOrEmpty(tip)) element.ToolTip = tip;
@@ -285,7 +294,10 @@ namespace UIFramework
                         break;
                     }
                     var options = (s.Options ?? new List<SettingOption>()).Select(o => (o.Value, o.Label)).ToArray();
-                    element = options.Length == 0 ? (s.Masked ? f.MaskedField(label, s.Key, tip) : f.TextField(label, s.Key, tip)) : f.StringComboField(label, s.Key, options, tip);
+                    element = options.Length == 0 ? (s.Masked ? f.MaskedField(label, s.Key, tip, s.Hint) : f.TextField(label, s.Key, tip, s.Hint)) : f.StringComboField(label, s.Key, options, tip);
+                    break;
+                case "country":
+                    element = f.StringComboField(label, s.Key, CountryOptions(ctx, s, f.String(s.Key)), tip);
                     break;
                 case "namelist":
                     element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.namelist.hint"), tip));
@@ -294,10 +306,13 @@ namespace UIFramework
                     element = Stack(Ui.SmallLabel(label, 6), f.NameList(label, s.Key, Text.T("field.grouplist.hint"), tip, names => StreamerBotGroups(ctx, names)));
                     break;
                 case "multi":
-                    // Nothing to tick without options: a text field, as an options field without options is one.
+                    // Nothing to tick without options: a text field, as an options field without options is one. A field
+                    // named like the heading it stands under shows no caption of its own: the heading says it already.
                     element = Fields.MultiChoices(s.Options).Count == 0
                         ? f.TextField(label, s.Key, tip)
-                        : Stack(Ui.SmallLabel(label, 6), f.MultiField(label, s.Key, s.Options, tip));
+                        : string.Equals((label ?? "").Trim(), (s.Section ?? "").Trim(), StringComparison.OrdinalIgnoreCase)
+                            ? f.MultiField(label, s.Key, s.Options, tip)
+                            : Stack(Ui.SmallLabel(label, 6), f.MultiField(label, s.Key, s.Options, tip));
                     break;
                 case "time":
                     // A unit is said behind the label, as a number's: "Announce at (UTC)".
@@ -355,7 +370,7 @@ namespace UIFramework
                     break;
                 }
                 default:
-                    element = s.Masked ? f.MaskedField(label, s.Key, tip) : f.TextField(label, s.Key, tip);
+                    element = s.Masked ? f.MaskedField(label, s.Key, tip, s.Hint) : f.TextField(label, s.Key, tip, s.Hint);
                     break;
             }
             if (s.Transient)
@@ -404,6 +419,36 @@ namespace UIFramework
                 ctx.AfterBuild.Add(() => Requirement.Wire(ctx.Fields, ctx.Parts, all, on => target.Visibility = on ? Visibility.Visible : Visibility.Collapsed));
             }
             return element;
+        }
+
+        /// <summary>What a country field offers, by the names of the window's language: every country, or the ones its
+        /// <c>options</c> name. An entry for "no country" comes first where the default is none, where an option with
+        /// an empty value names it, or where the file holds none (so opening the window picks no country by itself).
+        /// An option's own label stands in place of the country's name.</summary>
+        public static (string Value, string Label)[] CountryOptions(PageContext ctx, Setting s, string stored)
+        {
+            string language = ctx?.Spec?.Conventions?.Lang?.Code;
+            var declared = (s.Options ?? new List<SettingOption>()).Where(o => o != null).ToList();
+            var none = declared.FirstOrDefault(o => string.IsNullOrWhiteSpace(o.Value));
+            var named = declared.Where(o => !string.IsNullOrWhiteSpace(o.Value)).ToList();
+            var entries = new List<(string Value, string Label)>();
+            bool noDefault = s.Default == null || s.Default.Type == JTokenType.Null || FieldBinding.Invariant(s.Default).Trim().Length == 0;
+            if (none != null || noDefault || string.IsNullOrWhiteSpace(stored))
+                entries.Add(("", none != null && !string.IsNullOrWhiteSpace(none.Label) ? none.Label : Text.T("field.country.none")));
+            foreach (var country in Countries.Listed(language, named.Count > 0 ? named.Select(o => o.Value).Distinct(StringComparer.OrdinalIgnoreCase) : null))
+            {
+                var own = named.FirstOrDefault(o => string.Equals(o.Value.Trim(), country.Code, StringComparison.OrdinalIgnoreCase));
+                bool relabelled = own != null && !string.IsNullOrWhiteSpace(own.Label) && !string.Equals(own.Label.Trim(), own.Value.Trim(), StringComparison.OrdinalIgnoreCase);
+                entries.Add((country.Code, relabelled ? own.Label : country.Label));
+            }
+            return entries.ToArray();
+        }
+
+        /// <summary>A country as a field that is only shown says it: the name with the code, or what is stored.</summary>
+        private static string CountryShown(PageContext ctx, Setting s, string stored)
+        {
+            var entry = CountryOptions(ctx, s, stored).FirstOrDefault(o => string.Equals(o.Value, (stored ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+            return entry.Label ?? stored ?? "";
         }
 
         /// <summary>A field with its help as a small line underneath, links in it clickable.</summary>
@@ -872,6 +917,11 @@ namespace UIFramework
                 JObject structured = ResultPanel.TryParse(result);
                 if (structured?["set"] is JObject values)
                     LiveValues.Apply(ctx.Parts, values);
+                // "copy": { "to": "from" } puts one field's value into another inside the window, as if typed. The
+                // project names the fields and never sees the value: the way to copy a secret, which it is handed
+                // only as "" or "*".
+                if (structured?["copy"] is JObject copies)
+                    LiveValues.Copy(ctx.Fields, ctx.Parts, copies);
                 string status = (string)structured?["status"];
                 string clipboard = (string)structured?["clipboard"];
                 if (clipboard != null)

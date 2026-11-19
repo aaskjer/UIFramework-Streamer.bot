@@ -210,17 +210,20 @@ namespace UIFramework
         }
 
         /// <summary>A plain text setting, saved as typed: spaces at either end stay (see <see cref="FieldTag.KeepSpaces"/>).</summary>
-        public FrameworkElement TextField(string label, string key, string tooltip)
+        /// <param name="hint">Grey text inside the box while it is empty ("not set"); null for none.</param>
+        public FrameworkElement TextField(string label, string key, string tooltip, string hint = null)
         {
             var box = SettingBox(label, key, tooltip);
             ((FieldTag)box.Tag).KeepSpaces = true;
-            return Ui.Labeled(label, box);
+            return Ui.Labeled(label, string.IsNullOrEmpty(hint) ? (FrameworkElement)box : Ui.WithHint(box, hint));
         }
 
         /// <summary>A text field shown as dots (a token, a client secret). The real value lives in the setting's box,
         /// which carries the tag, so saving, resetting, change tracking and <c>set</c> work on it unchanged; a
-        /// PasswordBox in front of it mirrors it both ways, and the eye button swaps the two.</summary>
-        public FrameworkElement MaskedField(string label, string key, string tooltip)
+        /// PasswordBox in front of it mirrors it both ways, and the eye button swaps the two. Both sit in one cell, so
+        /// the field is as wide revealed as it is masked.</summary>
+        /// <param name="hint">Grey text inside the field while it is empty, masked or revealed; null for none.</param>
+        public FrameworkElement MaskedField(string label, string key, string tooltip, string hint = null)
         {
             var box = SettingBox(label, key, tooltip);
             box.Visibility = Visibility.Collapsed;
@@ -240,11 +243,14 @@ namespace UIFramework
                 eye.ToolTip = Text.T(reveal ? "field.masked.hide" : "field.masked.show");
                 if (reveal) box.Focus(); else masked.Focus();
             };
+            // One cell for the two: a DockPanel gave the revealed box only the width of its text, since it fills with
+            // its last child alone. The hint lies over both and shows through neither once there is text.
+            var both = Ui.WithHint(box, hint);
+            both.Children.Insert(1, masked);
             var dock = new DockPanel();
             DockPanel.SetDock(eye, Dock.Right);
             dock.Children.Add(eye);
-            dock.Children.Add(box);
-            dock.Children.Add(masked);
+            dock.Children.Add(both);
             return Ui.Labeled(label, dock);
         }
 
@@ -911,7 +917,8 @@ namespace UIFramework
                 .Select(v => offered.FirstOrDefault(o => string.Equals(o.Value, v, StringComparison.OrdinalIgnoreCase))?.Label ?? v));
         }
 
-        /// <summary>Several of a fixed set of choices, as check boxes that wrap to several per line. The ticked values
+        /// <summary>Several of a fixed set of choices, as check boxes that wrap to several per line, each as wide as the
+        /// widest, so they stand in columns. The ticked values
         /// live as comma-separated text, in the order of the choices and in their spelling, in a hidden box carrying the
         /// tag, as a name list's do: saving, resetting, change tracking and conditions work on it unchanged. A stored
         /// value that is none of the choices (an older list, a typo in the file) stays stored and shows as a chip behind
@@ -959,6 +966,26 @@ namespace UIFramework
                 wrap.Children.Add(box);
             }
 
+            // Every box as wide as the widest (a chip for a kept value too), so they line up under each other however
+            // many fit a line; never wider than the field, so a long choice still wraps.
+            void Align()
+            {
+                if (!wrap.IsLoaded) return;
+                double widest = 0;
+                foreach (FrameworkElement child in wrap.Children)
+                {
+                    child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    widest = Math.Max(widest, child.DesiredSize.Width);
+                }
+                if (widest <= 0) return;
+                double room = wrap.ActualWidth;
+                double width = Math.Ceiling(room > 0 ? Math.Min(widest, room) : widest);
+                if (double.IsNaN(wrap.ItemWidth) || Math.Abs(wrap.ItemWidth - width) > 0.5)
+                    wrap.ItemWidth = width;
+            }
+            wrap.Loaded += (sender, e) => Align();
+            wrap.SizeChanged += (sender, e) => { if (e.WidthChanged) Align(); };
+
             void Draw()
             {
                 var values = FieldBinding.MultiValues(tag.Choices, store.Text);
@@ -979,8 +1006,10 @@ namespace UIFramework
                         FieldBinding.MultiValues(tag.Choices, store.Text).Where(v => !string.Equals(v, value, StringComparison.OrdinalIgnoreCase))));
                     chip.Tag = MultiKeptTag;
                     chip.ToolTip = Text.T("field.multi.unknown");
+                    chip.HorizontalAlignment = HorizontalAlignment.Left;
                     wrap.Children.Add(chip);
                 }
+                Align();
             }
             store.TextChanged += (sender, e) => Draw();
             Draw();

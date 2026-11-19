@@ -269,6 +269,7 @@
     "field.grouplist.hint": "Add a Streamer.bot group",
     "field.multi.unknown": "Saved here, but not one of the choices. It stays until you remove it.",
     "field.time.tip": "A time of day on the 24-hour clock: 17:30, 9:5, 0905 or just 9.",
+    "field.country.none": "No country",
     "dialog.invalidTimes.text": "These fields do not hold a time of day, so nothing was saved:\n\n{0}",
     "dialog.invalidTimes.title": "Check the times",
     "import.why.time": "not a time of day",
