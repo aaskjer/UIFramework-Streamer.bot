@@ -6,6 +6,49 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.2.0] - 2026-11-19
+
+For a window that should look the way a project's own window did: a dropdown of the countries, a header that says
+how things stand, a hint inside an empty field, a heading that follows a switch. And a masked field no longer
+shrinks when it is revealed. The fix and the new look of check boxes come with the DLL; what a project declares
+anew needs the host block of this release. The settings action stays 0.3.3.
+
+### Added
+
+- **The kind `country`: a dropdown of the countries.** It stores the two-letter code of ISO 3166 (`DE`), or `""`
+  for no country; Kosovo is in as `XK`. An entry reads "Germany (DE)", the list is sorted by name, and a typed
+  letter jumps to the first country that starts with it. The names are in the window's language: the English ones
+  are built in, another language's come from Windows (10 from 1703 on), and where it has none the English ones
+  stand. `options` narrow the list to the codes they name, and an option with an empty value names the entry for
+  no country (`"|Everywhere"`). A code the file holds in lower case is read, and written back in upper case; one
+  that is no country stays as an entry of its own. A DLL before 2.2.0 shows a text field.
+- **A header pill that says one of several things: `.Pill(State(when, text, tone, tooltip), …)`.** The first state
+  whose condition holds is shown ("Free: bot", "Free: webhook", "Free: not set up"), none where none holds. A
+  condition is written as `showWhen` writes one, the tone is `ok`, `warn`, `accent` or `muted`. The pill follows
+  the window as it is typed in, and a field a Set Argument sets counts as filled in.
+- **A hint inside an empty text field: `hint:` on `S()`.** Grey text in a one-line text field while it is empty
+  (`not set`, `optional`), in a masked field too.
+- **A section's heading that reads otherwise on a condition: `.Section(name, title:, titleWhen:, page:)`.** One set
+  of fields that stands for two actions while a switch joins them says so in its heading. `page` keeps it to the
+  section of that name on one page.
+- **An answer copies one field into another: `copy`.** `"copy": { "salesKey": "freeKey" }` in the answer of a
+  button puts the value the window holds for `freeKey` into `salesKey`, as if typed. The project never sees the
+  value, so a secret can be taken over this way.
+- **A link that reads as words: `[words](https://…)`** in a note, a help line and the reason of a locked field. A
+  bare address is still a link as it stands.
+- **The preview keeps globals of its own** (`-globals name=value,…` fills some), so a setting kept in a global is
+  a field there as it is behind Streamer.bot, not a locked line.
+
+### Changed
+
+- **The check boxes of a `multi` field stand in columns**, each as wide as the widest, where they wrapped ragged
+  before. A `multi` field named like the heading it stands under shows no caption of its own.
+
+### Fixed
+
+- **A masked field keeps its width when the eye button reveals it.** The revealed box was only as wide as its
+  text.
+
 ## [2.1.0] - 2026-11-18
 
 For projects that are no chat game: settings that were Set Arguments or live in several actions, secrets kept in
