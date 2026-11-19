@@ -318,7 +318,7 @@ namespace UIFramework
                 ItemContainerStyle = Ui.ComboItemStyle(),
                 Foreground = new SolidColorBrush(Theme.InputFg)
             };
-            return combo;
+            return Ui.WheelToPage(combo);
         }
 
         public ComboBox StringCombo(string label, string key, (string Value, string Label)[] options, string tooltip)

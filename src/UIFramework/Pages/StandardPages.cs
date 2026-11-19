@@ -343,6 +343,7 @@ namespace UIFramework
                 ItemContainerStyle = Ui.ComboItemStyle(),
                 Foreground = new SolidColorBrush(Theme.InputFg)
             };
+            Ui.WheelToPage(picker);
             string group = null;
             foreach (var def in defs)
             {

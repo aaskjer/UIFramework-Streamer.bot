@@ -277,6 +277,51 @@ namespace UIFramework.Tests
             finally { window.Close(); }
         });
 
+        [Fact]
+        public void AClosedDropdownLeavesTheMouseWheelToThePage() => Sta(() =>
+        {
+            var page = new Page(Settings(
+                @"{ ""key"": ""country"", ""default"": ""DE"", ""kind"": ""country"" }",
+                @"{ ""key"": ""mode"", ""default"": ""a"", ""kind"": ""options"", ""options"": [ ""a"", ""b"", ""c"" ] }"));
+            var scroll = new ScrollViewer { Content = page.Root };
+            var window = new Window { Content = scroll, Width = 320, Height = 200, Left = -20000, Top = -20000,
+                ShowInTaskbar = false, ShowActivated = false, WindowStartupLocation = WindowStartupLocation.Manual };
+            window.Show();
+            try
+            {
+                foreach (string key in new[] { "country", "mode" })
+                {
+                    var combo = page.Parts.Combos[key];
+                    var before = combo.SelectedItem;
+                    int passedOn = 0;
+                    System.Windows.Input.MouseWheelEventHandler count = (sender, e) => { if (!ReferenceEquals(e.OriginalSource, combo)) passedOn += e.Delta; };   // handed on from beside the dropdown, not its own
+                    scroll.AddHandler(UIElement.MouseWheelEvent, count, true);
+
+                    // The wheel over the closed dropdown, as the input system sends it: the preview first, and the
+                    // event itself only where the preview was not taken.
+                    bool Wheel(int delta)
+                    {
+                        var preview = new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, delta) { RoutedEvent = UIElement.PreviewMouseWheelEvent };
+                        combo.RaiseEvent(preview);
+                        if (!preview.Handled)
+                            combo.RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, delta) { RoutedEvent = UIElement.MouseWheelEvent });
+                        return preview.Handled;
+                    }
+                    combo.Focus();
+                    Assert.True(Wheel(-120));
+                    Assert.Same(before, combo.SelectedItem);   // the setting stays
+                    Assert.Equal(-120, passedOn);              // and the page gets the wheel
+
+                    combo.IsDropDownOpen = true;
+                    Assert.False(Wheel(-120));                 // open, the list has it
+                    Assert.Equal(-120, passedOn);
+                    combo.IsDropDownOpen = false;
+                    scroll.RemoveHandler(UIElement.MouseWheelEvent, count);
+                }
+            }
+            finally { window.Close(); }
+        });
+
         // ---- a header pill of several states ---------------------------------------------------------------------
 
         private const string Connection = @"{ ""key"": ""botToken"", ""default"": """", ""masked"": true }, { ""key"": ""channelId"", ""default"": """" }, { ""key"": ""webhookUrl"", ""default"": """" }";

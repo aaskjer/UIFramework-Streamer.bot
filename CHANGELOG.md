@@ -6,6 +6,16 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.2.1] - 2026-11-19
+
+### Fixed
+
+- **A closed dropdown no longer changes when the mouse wheel turns over it.** A dropdown that had just been used
+  stepped through its entries while the page was scrolled with the pointer over it, so a setting changed unseen: a
+  country, among 250 of them, most easily. The wheel now scrolls the page there, and the list while the dropdown is
+  open. This holds for every dropdown of the window, the message picker included; the arrow keys still step through
+  a closed one.
+
 ## [2.2.0] - 2026-11-19
 
 For a window that should look the way a project's own window did: a dropdown of the countries, a header that says
