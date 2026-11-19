@@ -66,6 +66,7 @@ conventions cannot know.
 | `showWhen`     | no       | the field is shown only while the condition holds, whatever its kind (a field, a switch, a note, a button, a list): `questionSource=igdb`; several values, one of which must be picked, `questionSource=opentdb|wikidata`; none of them, `questionSource!=custom|igdb`; several conditions that must all hold, `mixOwn && questionSource!=custom`; a switch that is off, `!useBot`. `requires` still greys out; both can be set |
 | `shows`        | no       | on a dropdown: per option value the keys of the fields that option shows, `{ "igdb": ["igdbClientId", "igdbClientSecret"], "opentdb": ["cacheSize"] }` (host block: `shows: new[] { "igdb: igdbClientId, igdbClientSecret", "opentdb: cacheSize" }`). A field named by several options shows with any of them; a field with a `showWhen` of its own needs both |
 | `masked`       | no       | true: a text field shown as dots, with an eye button that reveals it (a token, a client secret); the value is saved like any other |
+| `hint`         | no       | for a one-line text field, masked or not: grey text inside the field while it is empty (`not set`, `optional`). `Tx` translates it |
 | `global`       | no       | the name of a persisted global of Streamer.bot that holds this value instead of the settings file (a token another action reads from there). The settings action reads it when the window opens and writes it after a save; the value is never in the file, an export or the log, and a reset leaves it. Needs stub 0.3.3; see *A secret in a global* under *The game's side* |
 | `readOnly`     | no       | true: shown, not editable (a status the project writes); `readonly` is read too (host block: `readOnly:` on `S()`) |
 | `twitchOnly`   | no       | a switch carries a "Twitch only" pill; any other field with a label says "(Twitch only)" in it (a reward's id, a button)                                         |
@@ -105,7 +106,9 @@ What the red **i** names in a declaration, beyond a key or an option that does n
 youtube or kick; a `{placeholder}` in a message's default text that its `placeholders` do not list (a
 `%placeholder%` in the percent style); a `placeholderStyle` that is neither `braces` nor `percent`, or one on a field
 that is no message; a field the project locks that is no setting; `every` on anything but an `auto` action,
-`saveFirst` on anything but a button; `rowKey`, `fixedRows` or `filter` on a field that is no list, a `rowKey`
+`saveFirst` on anything but a button; a `hint` on anything but a one-line text field; a `country` whose default is
+neither a code nor empty, or which offers a code that is none; a state of a header pill whose condition names no
+setting, or whose tone is none; another title for a section no setting is in; `rowKey`, `fixedRows` or `filter` on a field that is no list, a `rowKey`
 column the list does not have, a `filter` condition without an operator or one that names what is neither a column
 nor a setting (such a condition counts as holding, so every row shows); `optionsFrom` on a field that is no dropdown, one that names itself or a key
 that is no setting; a `multi` without options, or whose default names a value none of them has; a
@@ -142,15 +145,16 @@ settings action passes itself.
 | `options`   | string      | dropdown                                   | `options` required, unless `optionsFrom` has the project name them |
 | `namelist`  | string      | chips, Enter adds one                      | stored comma-separated                                |
 | `grouplist` | string      | chips with Streamer.bot's groups suggested | stored comma-separated; the groups come from the settings action (stub 0.3.2 and on), asked once when a group field first gets the cursor; Up/Down and Enter or a click add one, and a typed name goes in as typed. With an older settings action the field takes typed names only |
-| `multi`     | string      | check boxes over `options`                 | several of a fixed set of choices. Stored comma-separated, the ticked values in the options' order and spelling: `"steam,gog"`, nothing ticked `""`. A stored value none of the options has stays, shown as a chip with a cross, until the user removes it. `UiSettings.Values(key)` reads it as a `string[]`. Conditions: `!key` holds while nothing is stored, `key=steam` while steam is ticked, `key=steam\|gog` while one of them is, `key!=steam\|gog` while neither is. A DLL before this kind shows a text field and names the kind behind the red **i**; the value stays |
+| `multi`     | string      | check boxes over `options`                 | several of a fixed set of choices. Stored comma-separated, the ticked values in the options' order and spelling: `"steam,gog"`, nothing ticked `""`. A stored value none of the options has stays, shown as a chip with a cross, until the user removes it. The boxes stand in columns, each as wide as the widest; a field named like the heading it stands under shows no caption of its own. `UiSettings.Values(key)` reads it as a `string[]`. Conditions: `!key` holds while nothing is stored, `key=steam` while steam is ticked, `key=steam\|gog` while one of them is, `key!=steam\|gog` while neither is. A DLL before this kind shows a text field and names the kind behind the red **i**; the value stays |
 | `time`      | string      | a time of day, `HH:mm`                     | the 24-hour clock. The field takes `9`, `9:5`, `0905`, `9.05` or `21h` and writes `09:05`; text that is no time stays in the box and stops the save, as for a number. Empty is allowed only where the default is empty. `min` and `max` do nothing here. Sits three to a line with the numbers |
+| `country`   | string      | dropdown over the countries                | stores the two-letter code of ISO 3166 (`DE`), or `""` for no country; Kosovo is in as `XK`. An entry reads "Germany (DE)", the list is sorted by name, and a typed letter jumps to the first country that starts with it. The names are in the window's language: the English ones are built in, another language's come from Windows (10 from 1703 on), and where it has none the English ones stand. An entry for no country comes first where the default is `""`. `options` narrow the list to the codes they name; an option with an empty value names the entry for no country (`"\|Everywhere"`), and one with a label of its own shows that in place of the country's name. A code the file holds in lower case is read, and written back in upper case; one that is no country stays as an entry of its own. A DLL before this kind shows a text field and names the kind behind the red **i**; the value stays |
 | `path`      | string      | text field with a button for Windows' file or folder dialog and one that opens the folder in Explorer | relative to the Streamer.bot folder is fine; a value or default that names a file (`overlay\state.json`) gets a file dialog, and the folder button opens the folder the file is in; a choice is written as a full path |
 | `colour`    | string      | colour field with a picker                 | `#rrggbb` or `#aarrggbb`; the kind `color` is read too |
 | `emote`     | string      | text field with the emote's picture beside | `platform` says `twitch`, `youtube` or `kick`; Twitch's global emotes show without a Twitch login, the channel's once Streamer.bot has one |
 | `slider`    | string/int/double | slider                               | with `options` a slider over the stops (the stop's value is stored, the labels sit under the stops); otherwise from `min` to `max` in `step`, the value beside the label; a default with a decimal makes it a `double` |
 | `list`      | array       | row editor: a cell per column, remove, *Add row*, *Restore defaults*; with a `text` column or more than three columns a table instead, edited in place: one line per row, a click into a cell edits it, a `bool` column is a checkbox in every row, a search box above, Delete removes the picked rows | `columns` required; empty rows are dropped on save; with `file`/`field` in a file of its own; in the table a row keeps the properties no column shows |
 | `table`     | array       | a table, read-only                         | for statistics the project writes; rows from its `table` answer |
-| `note`      | –           | a paragraph on the page (`help`, else a text `default`) | no value; explains what follows; http(s) addresses are links |
+| `note`      | –           | a paragraph on the page (`help`, else a text `default`) | no value; explains what follows; http(s) addresses are links, and `[words](https://…)` is a link that reads as the words |
 | `action`    | –           | a button                                   | no value; asks the project (`test` with the key); the answer is the footer line, with `panel` a box under the button, with `live` from the current values, with `auto` without a button and by itself. See *Answers* below |
 
 <p align="center"><img src="images/emotes-youtube-dark.png" width="460" alt="A list of YouTube emotes with their pictures and weights"></p>
@@ -189,6 +193,9 @@ The project answers `test` with a line of text, or with a JSON object:
   field whose value changes glows in the accent colour for a moment. An answer that arrives while a save waits for
   `validate` is not part of that save and stays unsaved. A `list` takes its rows as an array (or the JSON text of
   one), so an import can fill the list it merged into.
+- `copy` puts one field's value into another inside the window, as if typed: `"copy": { "salesKey": "freeKey" }`,
+  the field it goes to first. The project names the two fields and never sees the value, so this is the way to copy
+  a secret, which reaches the project only as `""` or `"*"`. The value is the one the window holds, saved or not.
 - `status` is the line for the footer, with a box or without.
 - `clipboard` is text the window puts on the clipboard (an overlay URL). Your action runs on Streamer.bot's thread,
   which has no clipboard; the window's thread has one.
@@ -221,6 +228,7 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Log(folder, files, …)` | the Log page: the folder (relative to the Streamer.bot folder) and the files in it (`BJG-log*.txt`), which the settings action reads and the page follows as they change; `writeLogKey` the bool behind "Write a log file per day", `writeLogLabel` (another wording for that switch) and `writeLogHelp`, `columns` after Time and Result as `"Header|field"` (a field may name several keys, `"Word|Word,Word was"`: the first the line has is shown), `results` for the filter, `platforms`, `emptyText`, `styles` and `outcome` (see *The colours of the results* below). Headers and `emptyText` translate through `Tx`. The page reads lines as `[yyyy-MM-dd HH:mm:ss] RESULT \| User: name \| Platform: twitch \| Key: value \| …`, and older lines in columns (`yyyy-MM-dd HH:mm:ss RESULT  user  [R1\|id] Key: value \| …`) as well |
 | `Cooldowns(C(command, global, user), …)` | commands whose cooldowns follow settings: the settings action sets them in Streamer.bot after every save. The command by its id (right-click the command in Streamer.bot, *Copy Id*; an import keeps it, so it is the robust way), or by its text (`!roll`) or name for a command made by hand; `global` and `user` are the keys of the two durations, either may be null |
 | `Pill(key, on, off, tooltip)` | a pill in the header that follows a bool setting                                             |
+| `Pill(State(when, text, tone, tooltip), …)` | a pill in the header that says one of several things: the first state whose condition holds is shown, none where none holds. `when` is a condition as `showWhen` writes one (`"botToken && channelId"`; null: always), `tone` is `ok` (green), `warn` (amber), `accent` or `muted` (grey, also without one). The pill follows the window as it is typed in, and a field a Set Argument sets counts as filled in. `Tx` translates text and tooltip. In the schema `"headerPills": [ { "states": [ { "when", "text", "tone", "tooltip" } ] } ]`. A UIFramework before 2.2.0 shows no such pill |
 | `Senders(…)`         | the keys of the sender switches on the Messages page where they differ from the conventions' (`useBot`, `sendAction`, `cooldownUseBot`, `cooldownSendAction`, `numberSeparator`); null takes one off the Messages page; `cooldownGroup` names the group the cooldown senders sit in. A switch the Messages page does not draw (the window has no messages, or none in the cooldown group, or null took it off) is a field on its own page, and `hidden` hides one like any setting |
 | `Samples("k", "v", …)` | fixed sample values for the chat preview's placeholders; live ones (`pointsName`, `amount`, `min`, `max`) the window adds |
 | `Answer(action, text)` | what an action would answer, for the framework's preview and screenshots only                      |
@@ -323,6 +331,16 @@ In the schema: `window.sections: [ { "name": "IGDB access", "showWhen": "questio
 `showWhen` and its section's both have to hold. A field the user's layout moves to another section takes that
 section's condition, not the one it was declared in. When the window opens, every condition is checked: a key that is
 not a setting, or a value a dropdown has no option for (`questionSource=IGBD`), is listed under the red "i" in the header.
+
+A heading can also read otherwise while a condition holds: one set of fields that stands for two actions while a
+switch joins them.
+
+```csharp
+    .Section("Free Game Check", title: "Free Game Check and Game Sale Check", titleWhen: "sameDiscord", page: "discord")
+```
+
+`page` keeps it to the section of that name on that page; without it, every section of the name changes. In the
+schema `{ "name", "title", "titleWhen", "page" }`, with a `showWhen` beside it or without.
 
 ### Languages
 
