@@ -379,6 +379,22 @@ namespace UIFramework
             return host;
         }
 
+        /// <summary>A closed dropdown leaves the mouse wheel to the page. WPF steps through a dropdown's entries while it
+        /// has the keyboard focus, open or not: scrolling the page with the pointer over a dropdown just used changed
+        /// its value, unseen. Closed, the wheel now scrolls what the dropdown stands in; open, it scrolls the list as
+        /// before. The arrow keys still step through the entries of a closed dropdown.</summary>
+        public static ComboBox WheelToPage(ComboBox combo)
+        {
+            combo.PreviewMouseWheel += (sender, e) =>
+            {
+                if (combo.IsDropDownOpen || e.Handled) return;
+                e.Handled = true;
+                var parent = VisualTreeHelper.GetParent(combo) as UIElement ?? combo.Parent as UIElement;
+                parent?.RaiseEvent(new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) { RoutedEvent = UIElement.MouseWheelEvent });
+            };
+            return combo;
+        }
+
         public static ComboBox PlainCombo(string name, params string[] options)
         {
             var combo = new ComboBox
@@ -394,6 +410,7 @@ namespace UIFramework
             if (options.Length > 0)
                 combo.SelectedIndex = 0;
             AutomationProperties.SetName(combo, name);
+            WheelToPage(combo);
             return combo;
         }
 
