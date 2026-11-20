@@ -12,8 +12,9 @@ namespace UIFramework
 {
     /// <summary>
     /// A field for saturation and brightness and a hue bar, both to click or drag; sliders for red, green and
-    /// blue; a row of ready colours. Every change goes straight into the hex box, and typing in the hex box moves
-    /// the picker along. One instance per window, so opening a second picker closes the first.
+    /// blue, each with a box to type its number into; a row of ready colours; and a box for the hex code. Every
+    /// change goes straight into the field's box, and typing there or in the picker's own boxes moves the picker
+    /// along. One instance per window, so opening a second picker closes the first.
     /// </summary>
     public sealed class ColourPicker
     {
@@ -39,6 +40,18 @@ namespace UIFramework
             // The picker has nothing to set the alpha with: the one the box holds ("#80FF0000") is kept in what it writes.
             byte alpha = start.A;
             bool writing = false;
+            // The picker's own boxes: while it writes into one, that box's change is not a typed one; and the box a
+            // change was typed into keeps its text and its cursor as long as it says the colour the picker shows.
+            bool filling = false;
+            TextBox typingIn = null;
+            void Fill(TextBox box, string text)
+            {
+                if (box.Text == text) return;
+                filling = true;
+                box.Text = text;
+                box.CaretIndex = text.Length;
+                filling = false;
+            }
 
             const double fieldWidth = 220, fieldHeight = 140, trackWidth = 172;
             var hueLayer = new Border { Width = fieldWidth, Height = fieldHeight };
@@ -60,7 +73,7 @@ namespace UIFramework
 
             var tracks = new Border[3];
             var thumbs = new Border[3];
-            var values = new TextBlock[3];
+            var values = new TextBox[3];
             var sliders = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
             string[] names = { "R", "G", "B" };
             Action<int, double> setChannel = null;
@@ -73,7 +86,36 @@ namespace UIFramework
                 var slider = new Canvas { Name = "Slider" + names[i], Width = trackWidth, Height = 12, Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = new Thickness(0, 4, 0, 4) };
                 slider.Children.Add(tracks[i]);
                 slider.Children.Add(thumbs[i]);
-                values[i] = new TextBlock { Width = 34, FontFamily = new FontFamily("Consolas"), FontSize = 12, Foreground = Theme.LabelFg, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+                // The channel's number, to read and to type: 0 to 255, a higher one is taken as 255. Up and Down step by one.
+                var number = new TextBox { Name = "Value" + names[i], Width = 40, MaxLength = 3, FontFamily = new FontFamily("Consolas"), FontSize = 12, TextAlignment = TextAlignment.Right, Margin = new Thickness(8, 0, 0, 0) };
+                Ui.StyleInput(number);
+                number.Height = 22;
+                Ui.DigitsOnly(number);
+                AutomationProperties.SetName(number, names[i]);
+                number.TextChanged += (s, e) =>
+                {
+                    if (filling || !int.TryParse(number.Text, NumberStyles.None, CultureInfo.InvariantCulture, out int typedNumber)) return;
+                    typingIn = number;
+                    try { setChannel(channel, typedNumber); }
+                    finally { typingIn = null; }
+                };
+                // Left empty, or with something the colour does not hold: back to the channel's number.
+                number.LostFocus += (s, e) => Fill(number, Colours.ChannelOf(current, channel).ToString(CultureInfo.InvariantCulture));
+                number.PreviewKeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Up || e.Key == Key.Down)
+                    {
+                        setChannel(channel, Colours.ChannelOf(current, channel) + (e.Key == Key.Up ? 1 : -1));
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Enter)
+                    {
+                        Fill(number, Colours.ChannelOf(current, channel).ToString(CultureInfo.InvariantCulture));
+                        number.SelectAll();
+                        e.Handled = true;
+                    }
+                };
+                values[i] = number;
                 var line = new DockPanel();
                 var label = new TextBlock { Text = names[i], Width = 16, FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Theme.SubFg, VerticalAlignment = VerticalAlignment.Center };
                 DockPanel.SetDock(label, Dock.Left);
@@ -87,7 +129,13 @@ namespace UIFramework
             }
 
             var preview = new Border { Width = 34, Height = 26, CornerRadius = new CornerRadius(4), BorderBrush = new SolidColorBrush(Theme.LineStrong), BorderThickness = new Thickness(1) };
-            var hexText = new TextBlock { FontFamily = new FontFamily("Consolas"), FontSize = 13, Foreground = Theme.LabelFg, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+            // The hex code, to read, copy and type: "#F5A623", "f5a623", with an alpha in front "#80F5A623". Text that is
+            // no colour yet changes nothing, and the box says the picker's colour again once the cursor leaves it.
+            var hexBox = new TextBox { Name = "HexBox", Width = 96, MaxLength = 9, FontFamily = new FontFamily("Consolas"), FontSize = 13, Margin = new Thickness(8, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+            Ui.StyleInput(hexBox);
+            hexBox.Height = 26;
+            AutomationProperties.SetName(hexBox, "Hex");
+            Action<Color> showColour = null;
 
             Action<bool> show = write =>
             {
@@ -103,10 +151,16 @@ namespace UIFramework
                 {
                     tracks[i].Background = new LinearGradientBrush(Colours.WithChannel(current, i, 0), Colours.WithChannel(current, i, 255), 0);
                     Canvas.SetLeft(thumbs[i], Colours.ChannelOf(current, i) / 255.0 * trackWidth - 4);
-                    values[i].Text = Colours.ChannelOf(current, i).ToString(CultureInfo.InvariantCulture);
+                    // "035" being typed is 35 already: the box keeps what is in it.
+                    bool typedSo = ReferenceEquals(typingIn, values[i]) && int.TryParse(values[i].Text, NumberStyles.None, CultureInfo.InvariantCulture, out int typedNumber)
+                        && typedNumber == Colours.ChannelOf(current, i);
+                    if (!typedSo)
+                        Fill(values[i], Colours.ChannelOf(current, i).ToString(CultureInfo.InvariantCulture));
                 }
                 preview.Background = new SolidColorBrush(current);
-                hexText.Text = Colours.ToHex(current);
+                // And "f5a623" being typed is #F5A623 already.
+                if (!(ReferenceEquals(typingIn, hexBox) && Colours.TryParse(hexBox.Text, out Color typedHex) && typedHex == current))
+                    Fill(hexBox, Colours.ToHex(current));
                 if (write && !string.Equals(target.Text.Trim(), Colours.ToHex(current), StringComparison.OrdinalIgnoreCase))
                 {
                     writing = true;
@@ -114,7 +168,7 @@ namespace UIFramework
                     writing = false;
                 }
             };
-            Action<Color> showColour = colour =>
+            showColour = colour =>
             {
                 Colours.RgbToHsv(colour, out double h, out double s, out double v);
                 if (s > 0)
@@ -124,6 +178,26 @@ namespace UIFramework
                 show(true);
             };
             setChannel = (channel, value) => showColour(Colours.WithChannel(current, channel, (int)Math.Round(Math.Max(0, Math.Min(255, value)))));
+            hexBox.TextChanged += (s, e) =>
+            {
+                if (filling || !Colours.TryParse(hexBox.Text, out Color typedColour) || typedColour == current) return;
+                typingIn = hexBox;
+                try
+                {
+                    // An alpha typed is the one written from then on; none typed is opaque, as in the field's own box.
+                    alpha = typedColour.A;
+                    showColour(typedColour);
+                }
+                finally { typingIn = null; }
+            };
+            hexBox.LostFocus += (s, e) => Fill(hexBox, Colours.ToHex(current));
+            hexBox.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key != Key.Enter) return;
+                Fill(hexBox, Colours.ToHex(current));
+                hexBox.SelectAll();
+                e.Handled = true;
+            };
             Ui.Draggable(field, at =>
             {
                 saturation = Math.Max(0, Math.Min(1, at.X / fieldWidth));
@@ -163,7 +237,7 @@ namespace UIFramework
             DockPanel.SetDock(done, Dock.Right);
             bottom.Children.Add(done);
             bottom.Children.Add(preview);
-            bottom.Children.Add(hexText);
+            bottom.Children.Add(hexBox);
 
             var top = new StackPanel { Orientation = Orientation.Horizontal };
             top.Children.Add(field);

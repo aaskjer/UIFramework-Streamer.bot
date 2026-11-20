@@ -148,8 +148,7 @@ namespace UIFramework.Tests
                 Assert.True(picker.IsOpen);
                 Assert.Equal("#80FF0000", box.Text);   // opening writes nothing
                 // The picker stands on the stored red, not on its fallback yellow.
-                Assert.Contains(Find<TextBlock>(popup.Child), t => t.Text == "#80FF0000");
-                Assert.DoesNotContain(Find<TextBlock>(popup.Child), t => t.Text == "#F1C40F");
+                Assert.Equal("#80FF0000", Find<TextBox>(popup.Child).Single(t => t.Name == "HexBox").Text);
 
                 void Wheel(string slider) => Find<Canvas>(popup.Child).Single(c => c.Name == slider)
                     .RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, 0, 120) { RoutedEvent = UIElement.MouseWheelEvent });

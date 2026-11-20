@@ -6,6 +6,16 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.2.2] - 2026-11-20
+
+### Changed
+
+- **The colour picker takes typing.** The hex code under the colours is a box now: a code typed or pasted there
+  (`#F5A623`, `f5a623`, with an alpha in front `#80F5A623`) moves the picker and goes into the field, and it can be
+  copied from there. The numbers beside the red, green and blue sliders are boxes too: 0 to 255, a higher number
+  is taken as 255, and the Up and Down keys step by one. Text that is no colour yet changes nothing, and a box
+  says the picker's colour again once the cursor leaves it.
+
 ## [2.2.1] - 2026-11-19
 
 ### Fixed
