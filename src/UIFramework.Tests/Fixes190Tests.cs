@@ -528,6 +528,7 @@ namespace UIFramework.Tests
                 IEnumerable<string> Texts(object node)
                 {
                     if (node is TextBlock block) yield return block.Text;
+                    if (node is TextBox typed) yield return typed.Text;   // the channels' numbers are boxes to type into
                     if (node is DependencyObject d)
                         foreach (var child in LogicalTreeHelper.GetChildren(d))
                             foreach (var text in Texts(child))
