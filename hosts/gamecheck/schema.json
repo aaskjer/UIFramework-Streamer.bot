@@ -990,6 +990,11 @@
       {
         "states": [
           {
+            "text": "Free: off",
+            "when": "!freeIncludeGame && !freeIncludeDlc && !freeIncludeLoot && !freeIncludeDemos",
+            "tooltip": "Free Game Check posts nothing: every topic is switched off (Free games page)."
+          },
+          {
             "text": "Free: bot",
             "when": "freeBotToken && freeChannelId",
             "tone": "ok",
@@ -1010,6 +1015,11 @@
       },
       {
         "states": [
+          {
+            "text": "Sales: off",
+            "when": "!salesIncludeEvents && !salesIncludeDeals",
+            "tooltip": "Game Sale Check posts nothing: both messages are switched off (Sales page)."
+          },
           {
             "text": "Sales: bot",
             "when": "sameDiscord && freeBotToken && freeChannelId",
