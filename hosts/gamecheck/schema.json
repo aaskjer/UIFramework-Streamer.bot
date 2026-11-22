@@ -1,6 +1,6 @@
 {
   "host": "gamecheck",
-  "version": "v1.0.1",
+  "version": "v2.0.0",
   "settingsFile": "GameCheck\\GameCheck-Settings.json",
   "settings": [
     {
@@ -986,6 +986,93 @@
       },
       "about"
     ],
+    "answers": {
+      "freeStatus": {
+        "lines": [
+          {
+            "pill": "Reported",
+            "tone": "ok",
+            "text": "Last run 2026-11-22 18:00 (12 minutes ago)"
+          },
+          {
+            "label": "Action ID",
+            "text": "00000000-0000-4000-8000-000000000001",
+            "copy": true
+          },
+          {
+            "label": "Discord",
+            "text": "bot, channel 100000000000000001"
+          },
+          {
+            "label": "Free games",
+            "pill": "posted 2 hours ago",
+            "tone": "muted",
+            "text": "100000000000000011",
+            "copy": true
+          },
+          {
+            "label": "Free DLC",
+            "pill": "posted 2 hours ago",
+            "tone": "muted",
+            "text": "100000000000000012",
+            "copy": true
+          },
+          {
+            "label": "Free loot",
+            "text": "no message"
+          },
+          {
+            "label": "New demos",
+            "pill": "posted 3 days ago",
+            "tone": "muted",
+            "text": "100000000000000014",
+            "copy": true
+          },
+          {
+            "label": "Set Arguments",
+            "text": "none - everything comes from this window"
+          }
+        ]
+      },
+      "salesStatus": {
+        "lines": [
+          {
+            "pill": "Reported",
+            "tone": "ok",
+            "text": "Last run 2026-11-22 18:05 (7 minutes ago)"
+          },
+          {
+            "label": "Action ID",
+            "text": "00000000-0000-4000-8000-000000000002",
+            "copy": true
+          },
+          {
+            "label": "Discord",
+            "text": "bot, channel 100000000000000001"
+          },
+          {
+            "label": "Sale events",
+            "pill": "posted 5 hours ago",
+            "tone": "muted",
+            "text": "100000000000000021",
+            "copy": true
+          },
+          {
+            "label": "Top deals",
+            "pill": "posted 5 hours ago",
+            "tone": "muted",
+            "text": "100000000000000022",
+            "copy": true
+          },
+          {
+            "label": "Set Arguments",
+            "text": "none - everything comes from this window"
+          }
+        ]
+      },
+      "freeCheckNow": "Started. The status here refreshes in a moment.",
+      "salesCheckNow": "Started. The status here refreshes in a moment."
+    },
     "headerPills": [
       {
         "states": [
