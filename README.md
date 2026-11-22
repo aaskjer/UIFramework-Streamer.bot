@@ -135,6 +135,9 @@ what users can change, [docs/Conventions.md](docs/Conventions.md) the keys and t
 
 ## 🛠️ Development
 
+[CONTRIBUTING.md](CONTRIBUTING.md) says where fixes, translations and ideas go and what a pull request has to
+pass; a security problem goes through [SECURITY.md](SECURITY.md).
+
 `dotnet build UIFramework.slnx` builds the DLL, the tests and the preview; `dotnet test` runs the tests. CI builds
 with the .NET SDK 10.0.x.
 `src/UIFramework.Preview/bin/Debug/net48/UIFramework.Preview.exe` opens a Blackjack-shaped sample window, or with
