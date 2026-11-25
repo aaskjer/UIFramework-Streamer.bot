@@ -19,14 +19,15 @@ namespace UIFramework.Tests
             var check = UiSchema.ToJson(UiSchema.S("checkNow", null, kind: "action", saveFirst: true));
             Assert.True((bool)check["saveFirst"]);
             var list = UiSchema.ToJson(UiSchema.S("holidays", new string[0], kind: "list", columns: new[] { "date", "name" },
-                rowKey: "date,name", fixedRows: true, filter: "region= || counties~{region}"));
+                rowKey: "date,name", fixedRows: true, filter: "region= || counties~{region}", rowNumbers: false));
             Assert.Equal("date,name", (string)list["rowKey"]);
             Assert.True((bool)list["fixedRows"]);
+            Assert.False((bool)list["rowNumbers"]);
             Assert.Equal("region= || counties~{region}", (string)list["filter"]);
 
             // Left out, none of them is in the schema: an older window reads what it always read.
             var plain = UiSchema.ToJson(UiSchema.S("sides", 6));
-            foreach (string key in new[] { "global", "optionsFrom", "every", "saveFirst", "rowKey", "fixedRows", "filter" })
+            foreach (string key in new[] { "global", "optionsFrom", "every", "saveFirst", "rowKey", "fixedRows", "filter", "rowNumbers" })
                 Assert.Null(plain[key]);
 
             // And the DLL reads each as declared, and writes it back.
@@ -37,6 +38,8 @@ namespace UIFramework.Tests
             Assert.True(Read(check).SaveFirst);
             Assert.Equal("date,name", Read(list).RowKey);
             Assert.True(Read(list).FixedRows);
+            Assert.False(Read(list).RowNumbers);
+            Assert.True(Read(plain).RowNumbers);
             Assert.Equal("region= || counties~{region}", Read(list).Filter);
             Assert.Null(Read(plain).Every);
         }

@@ -686,9 +686,12 @@ namespace UIFramework
                 else SetStatus(n == 1 ? Text.T("status.unsaved.one") : Text.T("status.unsaved.many", n), Theme.UnsavedText);
                 DrawPills();
             }
+            // While rows a project hands over go into their list, the footer waits: what it says is decided once
+            // they count as saved (ctx.Rebase below).
+            bool handing = false;
             FieldBinding.HookChangeTracking(pageHost, () =>
             {
-                ShowChanges();
+                if (!handing) ShowChanges();
                 foreach (var listener in changeListeners)
                     listener();
             });
@@ -707,11 +710,20 @@ namespace UIFramework
                 FieldBinding.Save(live, pageHost, transientToo: true);
                 return live;
             };
-            // Rows the project handed over for a list it keeps are what is saved, not a change of the user's.
-            ctx.Rebase = editor =>
+            // Rows the project handed over for a list it keeps are what is saved, not a change of the user's: the list
+            // shows them and its baseline moves with them. Where that leaves the count of unsaved changes as it was,
+            // the footer keeps what it says (the values taken over from the version before, "Saved"): the rows may
+            // well arrive after that was written. It is written anew where the count moved, or where it still says
+            // that the rows could not be read.
+            ctx.Rebase = (editor, rows, unread) =>
             {
+                int before = Changes();
+                handing = true;
+                try { editor.Reload(rows); }
+                finally { handing = false; }
                 baseline[editor] = editor.Serialized;
-                ShowChanges();
+                if (unread || Changes() != before) ShowChanges();
+                else DrawPills();
             };
             // The old version's values, over the baseline as well and as an answer's `set` arrives: unsaved, for the
             // user to look at and save. Not in the customise mode, whose values are frozen, and no more once a
