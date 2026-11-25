@@ -224,10 +224,11 @@ namespace UIFramework
             return fresh;
         }
 
-        /// <summary>A list a reset leaves as it is: one kept in a file of its own (its editor has Restore defaults), and
-        /// one with fixed rows, whose rows the project sets: the defaults would add or remove some.</summary>
+        /// <summary>A list a reset leaves as it is: one kept in a file of its own (its editor has Restore defaults), one
+        /// with fixed rows, whose rows the project sets (the defaults would add or remove some), and one the project
+        /// keeps itself, which has no defaults: a reset would hand the project an empty list to keep.</summary>
         public static bool KeptByReset(Setting setting) =>
-            !string.IsNullOrWhiteSpace(setting.File) || (setting.FixedRows && setting.Kind == "list");
+            !string.IsNullOrWhiteSpace(setting.File) || (setting.FixedRows && setting.Kind == "list") || ProjectRows.Applies(setting);
 
         private static JToken Convert(JToken value, double factor, JToken shape)
         {

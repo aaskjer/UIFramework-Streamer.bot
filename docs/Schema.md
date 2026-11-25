@@ -81,6 +81,8 @@ conventions cannot know.
 | `rowKey`       | no       | for a `list` the project writes to as well: the columns that together name a row, `"Date,Name"`. A save then merges, by that key, what the window loaded, what it holds now and what the file holds at that moment: a row the project added meanwhile stays, a cell the user changed wins, a row the user removed goes. See *A list the project fills* under *The game's side* |
 | `fixedRows`    | no       | for a `list`: rows are neither added nor removed in the window, only their cells edited; there is no *Restore defaults*, and a reset leaves the list alone |
 | `filter`       | no       | for a `list`: the rows shown, conditions joined by `\|\|`: `region= \|\| Global=true \|\| Counties~{region}`. The left side is a column of the list (in its exact spelling), else a setting of the window; `{key}` is a setting's current value. `=` and `!=` compare as text ignoring case, `~` is "contains" (for an array in the cell: one element equals it). A row that does not fit is hidden, not removed: it is saved back as it was |
+| `format`       | no       | for a `list` of two columns: `pairs` stores it as one line of text, `a:b,c:d`, where a list is otherwise an array of rows. For a project that has always read its pairs so (a name and its points, a word and its answer). The window still shows rows to edit. Reading is generous: entries stand between commas, semicolons or lines, and the first `:` or `=` parts a key from its value; a key alone has an empty value. Writing is strict: `key:value` between commas. The text has no escaping, so a key's cell does not take `: = , ;` and a value's cell does not take `, ;`. The columns are `string`, `int`, `long` or `double`; the default is that text, or rows. The project gets the text in every request, and `UiSettings.Pairs(key)` reads it. A `rowKey` does nothing here: the line is written whole |
+| `rowsFrom`     | no       | for a `list` the project keeps itself (notes in a file per category that its chat commands write, rows in a database): the key of the field its rows depend on, `""` for none. The window neither reads nor writes such a list. It asks the project for the rows (`rows:` in `UiHost.Handle`) when the pages are built and again shortly after that field changes, shows them to edit, counts an edit as an unsaved change, and on Save hands the project the rows as they are, with the rows it was given (`saveRows:`); the project answers the rows as it keeps them. While the list has unsaved changes, the field it depends on does not move on: it goes back, and the footer says to save or undo first. Nothing of the list is in the settings file, an export or a reset, and a default it declares is not shown. Rows the project does not take stay unsaved, with the reason behind the red **i**. See *A list the project keeps* under *The game's side* |
 | `file`         | no       | a file next to the settings file that holds this value instead (a word bank, a question list); relative or absolute |
 | `field`        | no       | with `file`: the property in that file that holds the value; without it the file itself is the value |
 | `platform`     | no       | for `emote`: `twitch`, `youtube` or `kick`, where the picture comes from                     |
@@ -108,7 +110,10 @@ youtube or kick; a `{placeholder}` in a message's default text that its `placeho
 that is no message; a field the project locks that is no setting; `every` on anything but an `auto` action,
 `saveFirst` on anything but a button; a `hint` on anything but a one-line text field; a `country` whose default is
 neither a code nor empty, or which offers a code that is none; a state of a header pill whose condition names no
-setting, or whose tone is none; another title for a section no setting is in; `rowKey`, `fixedRows` or `filter` on a field that is no list, a `rowKey`
+setting, or whose tone is none; another title for a section no setting is in; a `format` on
+anything but a list, one that is not `pairs`, or `pairs` on a list that has not two columns of plain values; the
+page `sblog` named without a Streamer.bot log declared; `rowsFrom` on anything but a list, one that names itself or
+a key that is no setting, or beside `file` or `transient`; `rowKey`, `fixedRows` or `filter` on a field that is no list, a `rowKey`
 column the list does not have, a `filter` condition without an operator or one that names what is neither a column
 nor a setting (such a condition counts as holding, so every row shows); `optionsFrom` on a field that is no dropdown, one that names itself or a key
 that is no setting; a `multi` without options, or whose default names a value none of them has; a
@@ -223,9 +228,10 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | Part                 | Meaning                                                                                              |
 |----------------------|------------------------------------------------------------------------------------------------------|
 | `UiWindow(title, …)` | the window title and About heading; `releases` is `owner/repo` on GitHub (repository and releases links, the update check); `logo` a URL; `logPrefix` for the framework's log lines (default `[Title/Settings]`); `width`, `height`; `placeholderStyle: "percent"` for a project whose messages write `%user%` instead of `{user}` (in the schema `"placeholderStyle": "percent"`); `requires: "2.1.0"` for the oldest UIFramework the window works with: a settings action from stub 0.3.3 on offers that update instead of opening the window with an older one, and without it the window stays closed (in the schema `"requires"`) |
-| `Pages(…)`           | the pages in order: `P(id, title, icon, fields…)` or the id of a standard page (`messages`, `log`, `help`, `about`). `icon` is an emoji or a conventions name (`gear`, `dice`, `coins`, `clock`, `shield`, `chat`, `trophy`, `monitor`, `list`, `book`, `info`, `cards`, `chart`, `gift`). `fields` are keys or patterns like `overlay*` the page claims ahead of their own page; a pattern never takes a template off the Messages page, a full key does (it is then that page's field, not an entry of the Messages picker); a field the user moved to another page in the customise mode stays there. `P(...).AtBottom()` puts a page of the project's own at the foot of the rail, above How to play, Log and About (in the schema `"bottom": true`) |
+| `Pages(…)`           | the pages in order: `P(id, title, icon, fields…)` or the id of a standard page (`messages`, `log`, `sblog`, `help`, `about`). `icon` is an emoji or a conventions name (`gear`, `dice`, `coins`, `clock`, `shield`, `chat`, `trophy`, `monitor`, `list`, `book`, `info`, `cards`, `chart`, `gift`). `fields` are keys or patterns like `overlay*` the page claims ahead of their own page; a pattern never takes a template off the Messages page, a full key does (it is then that page's field, not an entry of the Messages picker); a field the user moved to another page in the customise mode stays there. `P(...).AtBottom()` puts a page of the project's own at the foot of the rail, above How to play, Log and About (in the schema `"bottom": true`) |
 | `InLanguage(code)`   | the window's language whatever the user's is (`"de"`): the window then offers none to pick. In the schema `"language": "de"` |
 | `Log(folder, files, …)` | the Log page: the folder (relative to the Streamer.bot folder) and the files in it (`BJG-log*.txt`), which the settings action reads and the page follows as they change; `writeLogKey` the bool behind "Write a log file per day", `writeLogLabel` (another wording for that switch) and `writeLogHelp`, `columns` after Time and Result as `"Header|field"` (a field may name several keys, `"Word|Word,Word was"`: the first the line has is shown), `results` for the filter, `platforms`, `emptyText`, `styles` and `outcome` (see *The colours of the results* below). Headers and `emptyText` translate through `Tx`. The page reads lines as `[yyyy-MM-dd HH:mm:ss] RESULT \| User: name \| Platform: twitch \| Key: value \| …`, and older lines in columns (`yyyy-MM-dd HH:mm:ss RESULT  user  [R1\|id] Key: value \| …`) as well |
+| `StreamerBotLog(match…)` | Streamer.bot's own log as a page, for a project that logs with `CPH.LogInfo` and writes no file of its own: the lines of one day that hold one of the texts (`"[My Project"`, `"'My Action'"`), whatever the case; without a text, every line. Newest first, with a search, a filter by level (`ERR`, `WRN`, `INF`, `DBG`) and by source, and the day to pick from the log files there are. The source is what stands before ` :: ` in a line, or what the project puts in brackets in front of its own (`[My Project/Settings]`). Lines without a head of their own (a stack trace) go with the entry before them; the box under the list shows the whole entry. The page follows the file while Streamer.bot writes it, and holds the newest 5,000 lines of a day. It comes by itself, at the foot of the rail above About; naming `"sblog"` among the pages gives it a title or an icon of its own. The window reads the file itself, so no settings action is too old for it. In the schema `"streamerBotLog": { "match": [ … ] }`. A UIFramework before 2.3.0 shows no such page |
 | `Cooldowns(C(command, global, user), …)` | commands whose cooldowns follow settings: the settings action sets them in Streamer.bot after every save. The command by its id (right-click the command in Streamer.bot, *Copy Id*; an import keeps it, so it is the robust way), or by its text (`!roll`) or name for a command made by hand; `global` and `user` are the keys of the two durations, either may be null |
 | `Pill(key, on, off, tooltip)` | a pill in the header that follows a bool setting                                             |
 | `Pill(State(when, text, tone, tooltip), …)` | a pill in the header that says one of several things: the first state whose condition holds is shown, none where none holds. `when` is a condition as `showWhen` writes one (`"botToken && channelId"`; null: always), `tone` is `ok` (green), `warn` (amber), `accent` or `muted` (grey, also without one). The pill follows the window as it is typed in, and a field a Set Argument sets counts as filled in. `Tx` translates text and tooltip. In the schema `"headerPills": [ { "states": [ { "when", "text", "tone", "tooltip" } ] } ]`. A UIFramework before 2.2.0 shows no such pill |
@@ -496,6 +502,31 @@ knows no `global` and would write the value into the file, so declare `requires:
 
 **The values of a `multi`, a `namelist` or a `grouplist`** come as a `string[]` from `UiSettings.Values(key)`:
 trimmed, without empty and repeated ones. The host reader has `Values(key, fallback)`.
+
+**A list stored as pairs** (`format: "pairs"`) comes as its keys and values from `UiSettings.Pairs(key)`, a
+`List<KeyValuePair<string, string>>` in the order of the text. The host reader has `Pairs(key, fallback)`.
+
+**A list the project keeps** (`rowsFrom`) never touches a file from the window's side. The project hands the rows
+over and takes them back, under whatever lock its other code uses:
+
+```csharp
+S("notesOf", "", kind: "options", optionsFrom: "", transient: true, label: "Notes of"),
+S("notes", new string[0], kind: "list", rowsFrom: "notesOf", columns: new[] { "text|string|Note", "author|string|By|readonly" }),
+…
+UiHost.Handle(args, CPH, "My Project", "myproject", Version, SettingsFile,
+    options: (key, s) => key == "notesOf" ? NoteFiles() : null,
+    rows: (key, s) => ReadNotes(s.String("notesOf")),                                      // a JSON array of objects
+    saveRows: (key, s, loaded) => KeepNotes(s.String("notesOf"), s.Rows(key), loaded));    // answers the rows as kept
+```
+
+`rows` gets the values as they stand in the window, the ones that are never saved included (the dropdown that picks
+whose rows are meant). `saveRows` gets the same values with the list's rows under its key (`s.Rows(key)`), and the
+rows the window was handed, as JSON. With the two the project tells the user's changes from its own since: a row in
+neither the handed ones nor its file is new from the window, one that was handed and is gone was removed there, and
+one its file has that was never handed came from its own side and stays. A property of a row that no column shows
+(an id, a number) comes back as it was handed. `saveRows` answers the rows as it keeps them, and the window shows
+those. What it throws is the reason the window names, and the list stays unsaved. Both questions travel as a `test`
+request, so every settings action carries them; only the host block has to be this release's.
 
 **A project with several actions** gives one action the host block and the others the host reader
 (`stub/HostReader.cs`); see *A project with several actions* in [Getting-Started.md](Getting-Started.md).

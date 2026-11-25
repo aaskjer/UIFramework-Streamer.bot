@@ -1,6 +1,6 @@
 {
   "host": "gamecheck",
-  "version": "v2.0.0",
+  "version": "v2.1.0",
   "settingsFile": "GameCheck\\GameCheck-Settings.json",
   "settings": [
     {
@@ -957,7 +957,7 @@
     "releases": "aaskjer/GameCheck",
     "logo": "https://github.com/aaskjer/GameCheck/blob/main/Assets/logo.png?raw=true",
     "logPrefix": "[GameCheck/Settings]",
-    "requires": "2.2.0",
+    "requires": "2.3.0",
     "pages": [
       {
         "id": "discord",
@@ -983,6 +983,11 @@
         "id": "status",
         "title": "Status",
         "icon": "chart"
+      },
+      {
+        "id": "sblog",
+        "title": "Log",
+        "icon": "list"
       },
       "about"
     ],
@@ -1147,6 +1152,15 @@
         "page": "discord"
       }
     ],
+    "streamerBotLog": {
+      "match": [
+        "[FreeGames]",
+        "[GameSales]",
+        "[GameCheck/",
+        "[Free Game Check]",
+        "[Game Sale Check]"
+      ]
+    },
     "about": {
       "credits": "Free games and game sales, posted to Discord by Streamer.bot.\nResponsible: aaskjer\nCredits: nate1280 / Streamer.bot, GamerPower · IsThereAnyDeal · LootScraper and YOU ♡",
       "sections": [

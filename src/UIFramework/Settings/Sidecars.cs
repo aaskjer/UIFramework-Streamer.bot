@@ -48,14 +48,17 @@ namespace UIFramework
                     log?.Warn(prefix + " " + Path.GetFileName(path) + " could not be read; the window shows the defaults for '" + setting.Key + "': " + ex.Message);
                 }
             }
+            // A list stored as pairs of text is rows from here on, from the settings file or from its own.
+            PairList.ToRows(settings, schema);
         }
 
         /// <summary>A transient setting is never written: it only exists while the window is open. Neither is a note,
-        /// nor a value kept in a global of Streamer.bot (<see cref="Globals"/>): every write of the settings file and
-        /// the export come through here, so a secret reaches neither, and one an older file holds goes with the write.</summary>
+        /// nor a value kept in a global of Streamer.bot (<see cref="Globals"/>), nor a list the project keeps itself
+        /// (<see cref="ProjectRows"/>): every write of the settings file and the export come through here, so a secret
+        /// reaches neither, and one an older file holds goes with the write.</summary>
         public static void DropTransient(JObject main, IEnumerable<Setting> schema)
         {
-            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient || s.Kind == "note" || s.Global != null))
+            foreach (var setting in (schema ?? Enumerable.Empty<Setting>()).Where(s => s.Transient || s.Kind == "note" || s.Global != null || ProjectRows.Applies(s)))
                 main.Remove(setting.Key);
         }
 
@@ -115,6 +118,9 @@ namespace UIFramework
                         value = ListMerge.Merge(was, mine, theirs, setting);
                         settings[setting.Key] = value.DeepClone();
                     }
+                    // A list stored as pairs goes into its file as the line of text.
+                    if (PairList.Applies(setting) && value is JArray pairs)
+                        value = PairList.Text(pairs, setting.Columns);
                     if (string.IsNullOrWhiteSpace(setting.Field))
                         root = value;
                     else
@@ -129,6 +135,7 @@ namespace UIFramework
                 SettingsStore.WriteAllTextAtomic(path, root.ToString(Formatting.Indented));
             }
             DropTransient(main, schema);
+            PairList.ToText(main, schema);
             return main;
         }
 

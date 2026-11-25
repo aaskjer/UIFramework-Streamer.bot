@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "general": "Général", "game": "Jeu", "automation": "Automatisation", "points": "Points et mises", "cooldowns": "Temps de recharge", "access": "Accès",
-    "messages": "Messages", "leaderboard": "Classement", "overlay": "Overlay", "log": "Journal", "help": "Aide", "about": "À propos",
+    "messages": "Messages", "leaderboard": "Classement", "overlay": "Overlay", "log": "Journal", "sblog": "Journal de Streamer.bot", "help": "Aide", "about": "À propos",
     "stats": "Statistiques", "channelPoints": "Points de chaîne"
   },
   "framework": {
@@ -389,6 +389,8 @@
     "list.fixed.hint": "Cliquez sur une cellule pour la modifier, sur une case pour activer ou désactiver une ligne. Ici, aucune ligne n'est ajoutée ni retirée ; rien n'est écrit avant l'enregistrement.",
     "list.fixed.hint.noSwitch": "Cliquez sur une cellule pour la modifier. Ici, aucune ligne n'est ajoutée ni retirée ; rien n'est écrit avant l'enregistrement.",
     "list.filter.none": "Aucune ligne ne correspond à la sélection actuelle. Les autres lignes sont conservées.",
+    "list.rows.saveFirst": "Enregistre d'abord tes modifications de « {0} », ou annule-les.",
+    "list.rows.unread": "« {0} » n'a pas pu être lu depuis le projet.",
     "list.addTo": "Ajouter une ligne à {0}",
     "list.restore": "Rétablir les valeurs par défaut",
     "list.restore.tip": "Remet les lignes d'origine de la liste à la place du contenu actuel. Rien n'est écrit avant l'enregistrement.",
@@ -465,6 +467,15 @@
     "log.line.tip": "La ligne complète de l'entrée sélectionnée ci-dessus.",
     "log.noMatch": "Aucune entrée ne correspond.",
     "log.nothingYet": "Le journal est encore vide.",
+    "sblog.level": "Niveau",
+    "sblog.source": "Origine",
+    "sblog.text": "Ligne",
+    "sblog.allLevels": "Tous les niveaux",
+    "sblog.allSources": "Toutes les origines",
+    "sblog.openFolder": "Ouvrir le dossier des journaux de Streamer.bot",
+    "sblog.noDay": "Streamer.bot n'a encore écrit aucun journal.",
+    "sblog.nothing": "Aucune ligne de ce projet ce jour-là.",
+    "sblog.capped": "Seules les {0} lignes les plus récentes de ce jour sont affichées.",
     "about.version": "Version {0}  ·  UIFramework {1}",
     "about.links": "Liens",
     "about.onGitHub": "{0} sur GitHub",

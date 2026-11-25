@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "general": "General", "game": "Juego", "automation": "Automatización", "points": "Puntos y apuestas", "cooldowns": "Tiempos de espera", "access": "Acceso",
-    "messages": "Mensajes", "leaderboard": "Clasificación", "overlay": "Overlay", "log": "Registro", "help": "Ayuda", "about": "Acerca de",
+    "messages": "Mensajes", "leaderboard": "Clasificación", "overlay": "Overlay", "log": "Registro", "sblog": "Registro de Streamer.bot", "help": "Ayuda", "about": "Acerca de",
     "stats": "Estadísticas", "channelPoints": "Puntos de canal"
   },
   "framework": {
@@ -389,6 +389,8 @@
     "list.fixed.hint": "Haz clic en una celda para cambiarla, o en una casilla para activar o desactivar una fila. Aquí no se añaden ni se quitan filas; no se escribe nada hasta que guardes.",
     "list.fixed.hint.noSwitch": "Haz clic en una celda para cambiarla. Aquí no se añaden ni se quitan filas; no se escribe nada hasta que guardes.",
     "list.filter.none": "Ninguna fila coincide con la selección actual. Las demás filas se conservan.",
+    "list.rows.saveFirst": "Guarda primero tus cambios en «{0}» o deshazlos.",
+    "list.rows.unread": "No se pudo leer «{0}» del proyecto.",
     "list.addTo": "Añadir fila a {0}",
     "list.restore": "Restaurar predeterminados",
     "list.restore.tip": "Repone las filas con las que venía la lista y sustituye lo que hay ahora. No se escribe nada hasta que guardes.",
@@ -465,6 +467,15 @@
     "log.line.tip": "La línea completa de la entrada seleccionada arriba.",
     "log.noMatch": "Ninguna entrada coincide.",
     "log.nothingYet": "Aún no hay nada registrado.",
+    "sblog.level": "Nivel",
+    "sblog.source": "Origen",
+    "sblog.text": "Línea",
+    "sblog.allLevels": "Todos los niveles",
+    "sblog.allSources": "Todos los orígenes",
+    "sblog.openFolder": "Abrir la carpeta de registros de Streamer.bot",
+    "sblog.noDay": "Streamer.bot aún no ha escrito ningún registro.",
+    "sblog.nothing": "Ese día no hay ninguna línea de este proyecto.",
+    "sblog.capped": "Solo se muestran las {0} líneas más recientes de ese día.",
     "about.version": "Versión {0}  ·  UIFramework {1}",
     "about.links": "Enlaces",
     "about.onGitHub": "{0} en GitHub",

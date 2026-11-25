@@ -576,5 +576,7 @@ namespace UIFramework
         // ---- Log ------------------------------------------------------------------------------------------
 
         public static UIElement BuildLog(PageContext ctx) => LogPage.Build(ctx);
+
+        public static UIElement BuildStreamerBotLog(PageContext ctx) => StreamerBotLogPage.Build(ctx);
     }
 }

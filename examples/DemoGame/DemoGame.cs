@@ -74,6 +74,11 @@ public static class UiSchema
         public bool Masked;
         // Hint: grey text inside a one-line text field while it is empty ("not set", "optional"), masked or not.
         public string Hint;
+        // Format, on a list: "pairs" stores a list of two columns as one line of text, "a:b,c:d" (UiSettings.Pairs reads it).
+        public string Format;
+        // RowsFrom, on a list the project keeps itself (rows: and saveRows: in UiHost.Handle): the key of the field its
+        // rows depend on, "" for none.
+        public string RowsFrom;
         // ShowWhen: shown only while the condition holds ("questionSource=igdb", "mode=a|b", "x!=free && useBot").
         // Shows, on a dropdown: per option, the fields it shows, "igdb: igdbClientId, igdbClientSecret".
         public string ShowWhen; public string[] Shows;
@@ -97,7 +102,7 @@ public static class UiSchema
         string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
         bool readOnly = false, double? step = null, string group = null, bool ask = false,
         string global = null, string optionsFrom = null, int? every = null, bool saveFirst = false,
-        string rowKey = null, bool fixedRows = false, string filter = null, string hint = null)
+        string rowKey = null, bool fixedRows = false, string filter = null, string hint = null, string format = null, string rowsFrom = null)
     {
         return new Setting
         {
@@ -107,7 +112,7 @@ public static class UiSchema
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
             ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask,
             Global = global, OptionsFrom = optionsFrom, Every = every, SaveFirst = saveFirst,
-            RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint
+            RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint, Format = format, RowsFrom = rowsFrom
         };
     }
 
@@ -247,6 +252,8 @@ public static class UiSchema
         if (s.RowKey != null) item["rowKey"] = s.RowKey;
         if (s.FixedRows) item["fixedRows"] = true;
         if (s.Filter != null) item["filter"] = s.Filter;
+        if (s.Format != null) item["format"] = s.Format;
+        if (s.RowsFrom != null) item["rowsFrom"] = s.RowsFrom;
         if (s.Field != null) item["field"] = s.Field;
         if (s.Aliases != null) item["aliases"] = new Newtonsoft.Json.Linq.JArray(s.Aliases);
         if (s.AliasFactor.HasValue && s.Aliases != null && s.Aliases.Length > 0) item["aliasFactors"] = new Newtonsoft.Json.Linq.JObject { [s.Aliases[0]] = s.AliasFactor.Value };
@@ -381,7 +388,7 @@ public sealed class UiWindow
     public double? Width, Height;
     public readonly System.Collections.Generic.List<object> PageList = new System.Collections.Generic.List<object>();
     public readonly Newtonsoft.Json.Linq.JObject SampleMap = new Newtonsoft.Json.Linq.JObject(), AnswerMap = new Newtonsoft.Json.Linq.JObject();
-    public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap;
+    public Newtonsoft.Json.Linq.JObject SenderMap, LogMap, AboutMap, StreamerBotLogMap;
     /// <summary>What Updates(...) declared; null: the framework's defaults.</summary>
     public Newtonsoft.Json.Linq.JObject UpdateOptions;
     public readonly Newtonsoft.Json.Linq.JArray PillList = new Newtonsoft.Json.Linq.JArray(), CooldownList = new Newtonsoft.Json.Linq.JArray(), HelpList = new Newtonsoft.Json.Linq.JArray(), SectionList = new Newtonsoft.Json.Linq.JArray();
@@ -569,6 +576,20 @@ public sealed class UiWindow
         return map;
     }
 
+    /// <summary>Streamer.bot's own log as a page, for a project that logs with CPH.LogInfo and writes no file of its
+    /// own: the lines of a day that hold one of <paramref name="match"/> ("[My Project", "'My Action'"), whatever the
+    /// case; without one, every line. The page comes by itself, at the foot of the rail; naming "sblog" among the
+    /// pages gives it a title or an icon of its own.</summary>
+    public UiWindow StreamerBotLog(params string[] match)
+    {
+        var texts = new Newtonsoft.Json.Linq.JArray();
+        if (match != null)
+            foreach (var text in match)
+                if (!string.IsNullOrEmpty(text)) texts.Add(text);
+        StreamerBotLogMap = new Newtonsoft.Json.Linq.JObject { ["match"] = texts };
+        return this;
+    }
+
     /// <summary>Commands whose cooldowns follow settings (UiSchema.C): the settings action sets them after every save.</summary>
     public UiWindow Cooldowns(params string[][] cooldowns)
     {
@@ -732,6 +753,7 @@ public sealed class UiWindow
         if (CooldownList.Count > 0) root["cooldowns"] = CooldownList;
         if (UpdateOptions != null) root["updates"] = UpdateOptions;
         if (LogMap != null) root["log"] = LogMap;
+        if (StreamerBotLogMap != null) root["streamerBotLog"] = StreamerBotLogMap;
         if (HelpList.Count > 0) root["help"] = HelpList;
         if (AboutMap != null) root["about"] = AboutMap;
         if (TourList.Count > 0) root["tour"] = TourList;
@@ -815,11 +837,46 @@ public static class UiHost
     /// another program manages): shown with the reason, not edited. It gets the settings as the file has them.</param>
     /// <param name="options">The options of a dropdown declared with optionsFrom, by its key, with the values as they
     /// stand in the window: each "value" or "value|Label" (the regions of the country picked). Null: none.</param>
+    /// <param name="rows">The rows of a list the project keeps itself (rowsFrom on the list), by its key, with the
+    /// values as they stand in the window: a JSON array of objects, a property per column (others are kept and come
+    /// back). Asked when the window opens and again when the field named in rowsFrom changes.</param>
+    /// <param name="saveRows">Keeps such a list when the window saves: its key, the values being saved (the list's rows
+    /// under its key, UiSettings.Rows), and the rows the window was handed, as a JSON array, to tell what the user
+    /// changed from what changed here meanwhile. Answers the rows as they are kept now, a JSON array again. What it
+    /// throws is shown as the reason the list could not be saved, and the list stays unsaved in the window.</param>
     /// <returns>True when the action was called by the settings window and has answered; return true at once then.</returns>
+    // In front of a list's key in a test request: the window asks for the rows of a list the project keeps, or hands
+    // them back on Save (with the rows it was handed under "<key>@loaded").
+    internal const string RowsRequest = "uiframework.rows:";
+    internal const string SaveRowsRequest = "uiframework.saveRows:";
+
+    // { "rows": [ ... ] } as the handler names them, or { "error": "why" }: no handler, not an array, or what it threw.
+    private static string RowsAnswer(string key, UiSettings values, System.Func<string, UiSettings, string> rows, System.Func<string, UiSettings, string, string> saveRows)
+    {
+        var answer = new Newtonsoft.Json.Linq.JObject();
+        try
+        {
+            string named;
+            if (saveRows != null)
+            {
+                var loaded = values.Token(key + "@loaded") as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+                named = saveRows(key, values, loaded.ToString(Newtonsoft.Json.Formatting.None));
+            }
+            else if (rows != null) named = rows(key, values);
+            else { answer["error"] = "This project names no handler for the rows of '" + key + "' (rows: and saveRows: in UiHost.Handle)."; return answer.ToString(Newtonsoft.Json.Formatting.None); }
+            var array = string.IsNullOrWhiteSpace(named) ? new Newtonsoft.Json.Linq.JArray() : Newtonsoft.Json.Linq.JToken.Parse(named) as Newtonsoft.Json.Linq.JArray;
+            if (array == null) answer["error"] = "The rows of '" + key + "' are no JSON array.";
+            else answer["rows"] = array;
+        }
+        catch (System.Exception ex) { answer["error"] = ex.Message; }
+        return answer.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
     public static bool Handle(System.Collections.Generic.IDictionary<string, object> args, IInlineInvokeProxy CPH, string actionName, string host, string version, string settingsFile,
         System.Func<string, UiSettings, string> test = null, System.Func<UiSettings, string> validate = null, System.Action<UiSettings> saved = null,
         System.Func<string, string> table = null, System.Func<string> emotes = null, bool arguments = false, System.Func<UiSettings, string> locked = null,
-        System.Func<string, UiSettings, string[]> options = null)
+        System.Func<string, UiSettings, string[]> options = null,
+        System.Func<string, UiSettings, string> rows = null, System.Func<string, UiSettings, string, string> saveRows = null)
     {
         string request = Arg(args, "uiframework.request");
         if (request == null && args != null && args.ContainsKey("uiframework.describe")) request = "describe";
@@ -855,7 +912,13 @@ public static class UiHost
             switch (request)
             {
                 // The Fire button of a declared trigger on the Help page; everything else is the game's to answer.
-                case "test": answer = name.StartsWith(UiTriggers.FireRequest) ? UiTriggers.Fire(CPH, name.Substring(UiTriggers.FireRequest.Length)) : test?.Invoke(name, values); break;
+                // And the rows of a list the project keeps: asked for, or handed back to be kept.
+                case "test":
+                    if (name.StartsWith(UiTriggers.FireRequest)) answer = UiTriggers.Fire(CPH, name.Substring(UiTriggers.FireRequest.Length));
+                    else if (name.StartsWith(RowsRequest)) answer = RowsAnswer(name.Substring(RowsRequest.Length), values, rows, null);
+                    else if (name.StartsWith(SaveRowsRequest)) answer = RowsAnswer(name.Substring(SaveRowsRequest.Length), values, null, saveRows);
+                    else answer = test?.Invoke(name, values);
+                    break;
                 case "validate": answer = validate?.Invoke(values); break;
                 case "saved": saved?.Invoke(values); break;
                 case "table": answer = table?.Invoke(name); break;
@@ -1772,6 +1835,51 @@ public sealed class UiSettings
         if (t.Type == Newtonsoft.Json.Linq.JTokenType.Integer) return System.Convert.ToString(((Newtonsoft.Json.Linq.JValue)t).Value, System.Globalization.CultureInfo.InvariantCulture);
         if (t.Type == Newtonsoft.Json.Linq.JTokenType.Boolean) return (bool)t ? "true" : "false";
         return t.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    /// <summary>The pairs of a list stored as one line of text (format: "pairs"), "a:b,c:d": every key with its value,
+    /// in the order they stand in. Entries stand between commas, semicolons or lines, and the first colon or equals
+    /// sign parts a key from its value; a key alone has the value "". Rows in the file (an array of objects) are read
+    /// by their first two properties.</summary>
+    /// <summary>The rows of a list as the file or the window holds them: an array of objects, a property per column.
+    /// An empty array where there is none.</summary>
+    public Newtonsoft.Json.Linq.JArray Rows(string key)
+    {
+        return Token(key) as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    }
+
+    public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, string>> Pairs(string key)
+    {
+        var pairs = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, string>>();
+        var t = Token(key);
+        if (t is Newtonsoft.Json.Linq.JArray)
+        {
+            foreach (var row in (Newtonsoft.Json.Linq.JArray)t)
+            {
+                var cells = row as Newtonsoft.Json.Linq.JObject;
+                if (cells == null) continue;
+                string name = "", value = "";
+                int cellAt = 0;
+                foreach (var cell in cells.Properties())
+                {
+                    string text = cell.Value == null || cell.Value.Type == Newtonsoft.Json.Linq.JTokenType.Null ? ""
+                        : cell.Value.Type == Newtonsoft.Json.Linq.JTokenType.String ? (string)cell.Value : cell.Value.ToString(Newtonsoft.Json.Formatting.None);
+                    if (cellAt == 0) name = text.Trim(); else if (cellAt == 1) value = text.Trim();
+                    cellAt++;
+                }
+                if (name.Length > 0 || value.Length > 0) pairs.Add(new System.Collections.Generic.KeyValuePair<string, string>(name, value));
+            }
+            return pairs;
+        }
+        if (t is Newtonsoft.Json.Linq.JContainer) return pairs;
+        foreach (string entry in String(key).Split(new[] { ',', ';', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            string pair = entry.Trim();
+            if (pair.Length == 0) continue;
+            int at = pair.IndexOfAny(new[] { ':', '=' });
+            pairs.Add(new System.Collections.Generic.KeyValuePair<string, string>(at < 0 ? pair : pair.Substring(0, at).Trim(), at < 0 ? "" : pair.Substring(at + 1).Trim()));
+        }
+        return pairs;
     }
 
     /// <summary>The values of a setting that holds several, stored as text with commas between them: the ticked

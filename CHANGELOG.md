@@ -6,6 +6,34 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.3.0] - 2026-11-25
+
+Streamer.bot's own log as a page of the window, a list whose rows the project keeps itself, and a list that is
+stored as one line of text. All three come with the DLL; declaring them needs the host block of this release. The
+settings action stays 0.3.3.
+
+### Added
+
+- **Streamer.bot's log as a page: `.StreamerBotLog("[My Project", …)`.** For a project that logs with
+  `CPH.LogInfo` and writes no log file of its own. The page shows the lines of one day that hold one of the texts
+  it is given, newest first, with a search, a filter by level and by source, and the day to pick. A stack trace
+  goes with the entry it follows, and the box under the list shows the whole entry. The page follows the file
+  while Streamer.bot writes it. It comes by itself, at the foot of the rail; without a text, it shows every line.
+- **A list the project keeps itself: `rowsFrom` on a `list`, with `rows:` and `saveRows:` in `UiHost.Handle`.**
+  For rows the window must not write behind the project's back: notes in a file per category that chat commands
+  write under a lock of their own. The window asks the project for the rows, again when the field named in
+  `rowsFrom` changes (a dropdown that picks the category), shows them to edit and counts an edit as an unsaved
+  change. Save hands the project the rows as they are with the rows the window was given, so the project can tell
+  what the user changed from what changed on its own side meanwhile, and the project answers the rows as it keeps
+  them. Nothing of such a list is in the settings file, an export or a reset. While it has unsaved changes, the
+  field it depends on does not move on.
+- **A list stored as pairs of text: `format: "pairs"` on a `list` of two columns.** The file holds `a:b,c:d` where a
+  list is otherwise an array of rows, for a project that has always read its pairs so. The window shows rows to
+  edit as for any list. It reads commas, semicolons or lines between the entries and `:` or `=` between a key and
+  its value, and writes `key:value` between commas. The cells do not take what would part the pairs anew. The
+  project gets the text in every request, and `UiSettings.Pairs(key)` reads it (`Pairs(key, fallback)` in the
+  host reader).
+
 ## [2.2.2] - 2026-11-20
 
 ### Changed

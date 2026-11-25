@@ -112,6 +112,7 @@ Generated from the files by `tools/conventions-doc.ps1`; edit the JSON, not this
 | `stats` | Stats | `chart` | 75 |
 | `overlay` | Overlay | `monitor` | 80 |
 | `log` | Log | `list` | 90 |
+| `sblog` | Streamer.bot log | `list` | 92 |
 | `help` | Help | `book` | 95 |
 | `about` | About | `info` | 99 |
 
@@ -219,9 +220,9 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
-| `lang/en.json` | 82 | 14 | 16 | 0 | 326 |
-| `lang/es.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
-| `lang/fr.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
-| `lang/pt-BR.json` | 82 of 82 | 14 of 14 | 16 of 16 | 140 | 326 of 326 |
+| `lang/de.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
+| `lang/en.json` | 82 | 15 | 16 | 0 | 337 |
+| `lang/es.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
+| `lang/fr.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
+| `lang/pt-BR.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
 <!-- generated:end -->

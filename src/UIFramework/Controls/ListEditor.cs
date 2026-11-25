@@ -43,6 +43,12 @@ namespace UIFramework
 
         public event Action Changed;
 
+        private readonly IDictionary<string, string> _without;
+
+        /// <summary>The two columns of a list stored as pairs of text, so a value handed over as that text is read
+        /// (<see cref="LiveValues"/>); null for a list stored as rows.</summary>
+        public List<SettingColumn> PairColumns { get; set; }
+
         private sealed class Row
         {
             public Grid Element;
@@ -57,9 +63,12 @@ namespace UIFramework
         /// <param name="fixedRows">Rows are neither added nor removed here: no Add row, no remove, no Restore defaults.</param>
         /// <param name="asLoaded">The project fills the list as well: what the user did not change is written back as
         /// it was loaded. <paramref name="fixedRows"/> brings it along.</param>
+        /// <param name="without">Per column, the characters its cells do not take (a list stored as pairs: the ones
+        /// that part the pairs in the stored text).</param>
         public ListEditor(string key, string label, List<SettingColumn> columns, JArray value, JArray defaults, string help, IHostHooks hooks = null,
-            bool fixedRows = false, bool asLoaded = false)
+            bool fixedRows = false, bool asLoaded = false, IDictionary<string, string> without = null)
         {
+            _without = without;
             _label = label;
             _hooks = hooks;
             _fixedRows = fixedRows;
@@ -401,6 +410,8 @@ namespace UIFramework
                         };
                     }
                     AutomationProperties.SetName(box, column.Label ?? column.Key);
+                    if (_without != null && _without.TryGetValue(column.Key, out string forbidden) && !column.ReadOnly)
+                        Ui.Without(box, forbidden);
                     box.TextChanged += (sender, e) => Notify();
                     return box;
                 }

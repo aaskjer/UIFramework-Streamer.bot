@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "general": "Allgemein", "game": "Spiel", "automation": "Automatisierung", "points": "Punkte & Einsätze", "cooldowns": "Abklingzeiten", "access": "Zugriff",
-    "messages": "Nachrichten", "leaderboard": "Bestenliste", "overlay": "Overlay", "log": "Protokoll", "help": "Hilfe", "about": "Über",
+    "messages": "Nachrichten", "leaderboard": "Bestenliste", "overlay": "Overlay", "log": "Protokoll", "sblog": "Streamer.bot-Protokoll", "help": "Hilfe", "about": "Über",
     "stats": "Statistik", "channelPoints": "Kanalpunkte"
   },
   "framework": {
@@ -389,6 +389,8 @@
     "list.fixed.hint": "Klick in eine Zelle, um sie zu ändern, in ein Kästchen, um eine Zeile an- oder auszuschalten. Zeilen werden hier weder hinzugefügt noch entfernt; geschrieben wird erst beim Speichern.",
     "list.fixed.hint.noSwitch": "Klick in eine Zelle, um sie zu ändern. Zeilen werden hier weder hinzugefügt noch entfernt; geschrieben wird erst beim Speichern.",
     "list.filter.none": "Keine Zeile passt zur aktuellen Auswahl. Die übrigen Zeilen bleiben erhalten.",
+    "list.rows.saveFirst": "Speichere zuerst deine Änderungen an „{0}“, oder nimm sie zurück.",
+    "list.rows.unread": "„{0}“ konnte nicht vom Projekt gelesen werden.",
     "list.addTo": "Zeile zu {0} hinzufügen",
     "list.restore": "Standardwerte wiederherstellen",
     "list.restore.tip": "Stellt die mitgelieferten Zeilen der Liste wieder her und ersetzt, was jetzt hier steht. Geschrieben wird erst beim Speichern.",
@@ -465,6 +467,15 @@
     "log.line.tip": "Die ganze Zeile hinter dem oben gewählten Eintrag.",
     "log.noMatch": "Keine passenden Einträge.",
     "log.nothingYet": "Noch nichts protokolliert.",
+    "sblog.level": "Stufe",
+    "sblog.source": "Quelle",
+    "sblog.text": "Zeile",
+    "sblog.allLevels": "Alle Stufen",
+    "sblog.allSources": "Alle Quellen",
+    "sblog.openFolder": "Den Protokollordner von Streamer.bot öffnen",
+    "sblog.noDay": "Streamer.bot hat noch kein Protokoll geschrieben.",
+    "sblog.nothing": "An diesem Tag gibt es keine Zeile dieses Projekts.",
+    "sblog.capped": "Es werden nur die neuesten {0} Zeilen dieses Tages gezeigt.",
     "about.version": "Version {0}  ·  UIFramework {1}",
     "about.links": "Links",
     "about.onGitHub": "{0} auf GitHub",
