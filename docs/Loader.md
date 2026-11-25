@@ -181,4 +181,5 @@ new stub's version, so that projects on the old stub keep the old line. 2.0.0 re
 stub 0.3.2, and `MinHostStub` stays 0.1.0. 2.1.0 took out what no published project used (the CHANGELOG lists it)
 and stays in the v2 line: a project that still declares one of those things gets its window, with a line behind
 the red **i**, so no settings action has to be kept away from it. 2.2.0 only adds (the kind `country`, a header
-pill of several states, a hint in an empty field) and leaves the settings action at 0.3.3.
+pill of several states, a hint in an empty field) and leaves the settings action at 0.3.3. So does 2.3.0 (a list
+stored as pairs of text, a list the project keeps itself, Streamer.bot's log as a page).

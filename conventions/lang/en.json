@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "general": "General", "game": "Game", "automation": "Automation", "points": "Points & Bets", "cooldowns": "Cooldowns", "access": "Access",
-    "messages": "Messages", "leaderboard": "Leaderboard", "overlay": "Overlay", "log": "Log", "help": "Help", "about": "About",
+    "messages": "Messages", "leaderboard": "Leaderboard", "overlay": "Overlay", "log": "Log", "sblog": "Streamer.bot log", "help": "Help", "about": "About",
     "stats": "Stats", "channelPoints": "Channel points"
   },
   "framework": {
@@ -247,6 +247,8 @@
     "list.fixed.hint": "Click a cell to change it, a box to switch a row on or off. Rows are not added or removed here; nothing is written until you save.",
     "list.fixed.hint.noSwitch": "Click a cell to change it. Rows are not added or removed here; nothing is written until you save.",
     "list.filter.none": "No row fits the current selection. The other rows are kept.",
+    "list.rows.saveFirst": "Save or undo your changes to '{0}' first.",
+    "list.rows.unread": "'{0}' could not be read from the project.",
     "list.addTo": "Add row to {0}",
     "list.restore": "Restore defaults",
     "list.restore.tip": "Puts back the rows the list came with, replacing what is here now. Nothing is written until you save.",
@@ -323,6 +325,15 @@
     "log.line.tip": "The whole line behind the entry selected above.",
     "log.noMatch": "No entries match.",
     "log.nothingYet": "Nothing logged yet.",
+    "sblog.level": "Level",
+    "sblog.source": "Source",
+    "sblog.text": "Line",
+    "sblog.allLevels": "All levels",
+    "sblog.allSources": "All sources",
+    "sblog.openFolder": "Open Streamer.bot's log folder",
+    "sblog.noDay": "Streamer.bot has written no log yet.",
+    "sblog.nothing": "No line of this project on that day.",
+    "sblog.capped": "Only the newest {0} lines of this day are shown.",
     "about.version": "Version {0}  ·  UIFramework {1}",
     "about.links": "Links",
     "about.onGitHub": "{0} on GitHub",

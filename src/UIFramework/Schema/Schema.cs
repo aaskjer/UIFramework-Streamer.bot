@@ -136,6 +136,9 @@ namespace UIFramework
         /// window opens and whenever the field of this key changes. "groups" offers Streamer.bot's groups; an empty
         /// text asks once.</summary>
         public string OptionsFrom;
+        /// <summary>For a list the project keeps itself (<see cref="ProjectRows"/>): the key of the field its rows
+        /// depend on, or "" for rows that depend on none. Null for a list the window stores.</summary>
+        public string RowsFrom;
         /// <summary>For an <c>auto</c> action: asked again every so many seconds while its page shows.</summary>
         public int? Every;
         /// <summary>For an action: the window's changes are saved before the project is asked.</summary>
@@ -148,6 +151,9 @@ namespace UIFramework
         /// <summary>For a list: the rows shown, "region= || Global=true || Counties~{region}": conditions joined by
         /// <c>||</c>, <c>{key}</c> a field's value in the window, <c>~</c> contains. The others stay in the file.</summary>
         public string Filter;
+        /// <summary>For a list: how it is stored. <c>pairs</c> stores a list of two columns as one line of text,
+        /// <c>a:b,c:d</c> (<see cref="PairList"/>); without it, as an array of rows.</summary>
+        public string Format;
         public string Requires;
         /// <summary>Settings that name the same row, one after the other, share one line of the page, whatever
         /// their kind: a bet, a role and a Try button side by side.</summary>
@@ -262,11 +268,13 @@ namespace UIFramework
                 Field = (string)item["field"],
                 Global = (string)item["global"],
                 OptionsFrom = (string)item["optionsFrom"],
+                RowsFrom = item["rowsFrom"]?.Type == JTokenType.String ? (string)item["rowsFrom"] : null,
                 Every = item["every"]?.Type == JTokenType.Integer ? (int?)(int)item["every"] : null,
                 SaveFirst = item["saveFirst"]?.Type == JTokenType.Boolean && (bool)item["saveFirst"],
                 RowKey = (string)item["rowKey"],
                 FixedRows = item["fixedRows"]?.Type == JTokenType.Boolean && (bool)item["fixedRows"],
-                Filter = (string)item["filter"]
+                Filter = (string)item["filter"],
+                Format = item["format"]?.Type == JTokenType.String ? (string)item["format"] : null
             };
             // `ask` is the name for a field that asks the game whenever it changes; `live` on anything but a button
             // meant the same and is still read. `auto` (a button's answer without the button) always follows what is
@@ -333,11 +341,13 @@ namespace UIFramework
             if (Row != null) item["row"] = Row;
             if (Global != null) item["global"] = Global;
             if (OptionsFrom != null) item["optionsFrom"] = OptionsFrom;
+            if (RowsFrom != null) item["rowsFrom"] = RowsFrom;
             if (Every.HasValue) item["every"] = Every.Value;
             if (SaveFirst) item["saveFirst"] = true;
             if (RowKey != null) item["rowKey"] = RowKey;
             if (FixedRows) item["fixedRows"] = true;
             if (Filter != null) item["filter"] = Filter;
+            if (Format != null) item["format"] = Format;
             if (Confirm != null) item["confirm"] = Confirm;
             if (ReadOnly) item["readOnly"] = true;
             if (Hidden) item["hidden"] = true;

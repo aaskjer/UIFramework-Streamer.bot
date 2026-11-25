@@ -103,13 +103,19 @@ namespace UIFramework
                 masked = masked ?? (JObject)values.DeepClone();
                 masked[declared.Key] = FieldBinding.Invariant(masked[declared.Key]).Length > 0 ? Held : "";
             }
+            // A list stored as pairs reaches the project as it is stored, the line of text.
+            if (schema.Settings.Any(PairList.Applies))
+            {
+                masked = masked ?? (JObject)values.DeepClone();
+                PairList.ToText(masked, schema.Settings);
+            }
             return masked ?? values;
         }
 
         /// <summary>The host as the window talks to it once a setting is kept in a global: see <see cref="GlobalsGuard"/>.
         /// A window without such a setting keeps the host as it is.</summary>
         public static IHostHooks Guard(IHostHooks hooks, WindowSpec spec) =>
-            hooks != null && spec?.Schema != null && spec.Schema.Settings.Any(s => s.Global != null) ? new GlobalsGuard(hooks, spec.Schema) : hooks;
+            hooks != null && spec?.Schema != null && spec.Schema.Settings.Any(s => s.Global != null || PairList.Applies(s)) ? new GlobalsGuard(hooks, spec.Schema) : hooks;
     }
 
     /// <summary>The host of a window that keeps a setting in a global: every request that carries the window's values

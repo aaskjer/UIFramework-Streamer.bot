@@ -16,7 +16,7 @@ namespace UIFramework
     {
         // The group at the foot of the rail, in this order whatever order the game declares them in: how to play, what
         // happened, who made it.
-        private static readonly string[] TrailingPages = { "help", "log", "about" };
+        private static readonly string[] TrailingPages = { "help", "log", "sblog", "about" };
 
         public static void Apply(WindowSpec spec, Schema schema, Conventions conventions, LayoutFile layout = null)
         {
@@ -48,6 +48,15 @@ namespace UIFramework
                     spec.Problems.Add("'" + declared.Key + "' is a known key of the conventions (" + (Conventions.Default.Lang.Key(declared.Key).Label ?? declared.Key) +
                         ", " + knownKey.Kind + "), declared as '" + declared.Kind + "': it still takes the conventions' limits, old keys and translations. A key of the game's own fits another meaning.");
                 var setting = conventions.Complete(declared);
+                setting.Format = declared.Format;
+                setting.RowsFrom = declared.RowsFrom;
+                // The rows of a list the project keeps come from the project alone: the window starts it empty.
+                if (ProjectRows.Applies(setting))
+                    setting.Default = new JArray();
+                // A list stored as pairs of text: the window works on rows, so its default is rows from here on,
+                // whether it was declared as the text ("a:b,c:d") or as rows.
+                if (PairList.Applies(setting))
+                    setting.Default = PairList.Rows(setting.Default, setting.Columns);
                 // A value a Set Argument of the project's action sets, or one the project locks: shown, not edited.
                 // A button, a note and a table hold no value to lock.
                 if (setting.Kind != "action" && setting.Kind != "note" && setting.Kind != "table")
@@ -291,6 +300,15 @@ namespace UIFramework
                 pageOrder.Add(new SpecPage { Id = "help" });
             if (pageOrder.All(p => p.Id != "about"))
                 pageOrder.Add(new SpecPage { Id = "about", Bottom = true });
+            // Streamer.bot's log comes with its declaration (.StreamerBotLog(...)); naming "sblog" among the pages only
+            // gives it a title or an icon of its own. Named without the declaration, it has nothing to show.
+            if (spec.SbLog.Declared && pageOrder.All(p => p.Id != "sblog"))
+                pageOrder.Add(new SpecPage { Id = "sblog", Bottom = true });
+            else if (!spec.SbLog.Declared && pageOrder.Any(p => p.Id == "sblog"))
+            {
+                spec.Problems.Add("The window names the page 'sblog', but declares no Streamer.bot log: the page is left out. Add .StreamerBotLog(\"[My Project\") to the window.");
+                pageOrder.RemoveAll(p => p.Id == "sblog");
+            }
             // The Log page comes only where the window names it: a log declared with its folder and files (what the
             // settings action reads it by) but without the page has none, and its switch no field.
             if (!string.IsNullOrEmpty(spec.Log.Folder) && !string.IsNullOrEmpty(spec.Log.Files) && pageOrder.All(p => p.Id != "log"))
@@ -346,7 +364,7 @@ namespace UIFramework
                 if (page.Title == null && page.Icon == null && page.Fields.Count == 0 && fields.Count == 0 && !page.Custom
                     && explicitIds.Contains(page.Id) && page.Id != "messages" && Array.IndexOf(TrailingPages, page.Id) < 0
                     && !settings.Any(s => s.Page == page.Id))
-                    spec.Problems.Add("The window names the page '" + page.Id + "', which has no title and no setting on it; it shows empty. The standard pages are messages, log, help and about.");
+                    spec.Problems.Add("The window names the page '" + page.Id + "', which has no title and no setting on it; it shows empty. The standard pages are messages, log, sblog, help and about.");
 
                 Func<PageContext, System.Windows.UIElement> build;
                 if (page.Custom && !spec.HostBuildsPages)
@@ -358,6 +376,8 @@ namespace UIFramework
                     build = StandardPages.BuildMessages;
                 else if (page.Id == "log")
                     build = StandardPages.BuildLog;
+                else if (page.Id == "sblog")
+                    build = StandardPages.BuildStreamerBotLog;
                 else if (page.Id == "help")
                     build = StandardPages.BuildHelp;
                 else if (page.Id == "about")
@@ -369,7 +389,7 @@ namespace UIFramework
                     build = ctx => SchemaPage.Build(ctx, captured, pageId);
                 }
                 // Fields the spec put on a standard page sit above its own content.
-                if (build != null && fields.Count > 0 && (page.Id == "messages" || page.Id == "log" || page.Id == "help" || page.Id == "about"))
+                if (build != null && fields.Count > 0 && (page.Id == "messages" || page.Id == "log" || page.Id == "sblog" || page.Id == "help" || page.Id == "about"))
                 {
                     var inner = build;
                     var captured = fields;
@@ -713,6 +733,24 @@ namespace UIFramework
                 if (s.Kind == "list" && (s.Columns == null || s.Columns.Count == 0))
                     spec.Problems.Add("'" + s.Key + "' is a list without columns.");
                 CheckProjectList(spec, byKey, s);
+                CheckFormat(spec, s);
+                if (s.RowsFrom != null)
+                {
+                    string rowsFrom = s.RowsFrom.Trim();
+                    if (s.Kind != "list")
+                        spec.Problems.Add("'" + s.Key + "' has rowsFrom, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
+                    else
+                    {
+                        if (rowsFrom == s.Key)
+                            spec.Problems.Add("'" + s.Key + "' names itself in rowsFrom: its own rows do not change what the project hands it, so the project is asked once. Name the field the rows depend on, or \"\" to ask once.");
+                        else if (rowsFrom.Length > 0 && !keys.Contains(rowsFrom))
+                            spec.Problems.Add("'" + s.Key + "' takes its rows by '" + rowsFrom + "' (rowsFrom), which is not a setting: the project is asked for them once and never again. It is a setting's key, or \"\" to ask once.");
+                        if (!string.IsNullOrWhiteSpace(s.File))
+                            spec.Problems.Add("'" + s.Key + "' has rowsFrom and a file: the project keeps the rows of such a list, so the window reads and writes no file for it.");
+                        if (s.Transient)
+                            spec.Problems.Add("'" + s.Key + "' has rowsFrom and is transient: the rows of such a list count as a change and are handed to the project on Save, which transient would not do. Leave transient out.");
+                    }
+                }
                 if (!string.IsNullOrWhiteSpace(s.Requires))
                     CheckCondition(spec, byKey, "'" + s.Key + "'", "requires", s.Requires);
                 if (!string.IsNullOrWhiteSpace(s.ShowWhen))
@@ -753,7 +791,7 @@ namespace UIFramework
                     spec.Problems.Add("The log colours '" + style.Key + "' as '" + style.Value + "'; a style is one of " + string.Join(", ", LogPage.StyleNames) + ".");
             // The tour: a stop names a setting, a page or a part of the window; one naming nothing known is skipped.
             var pageIds = new HashSet<string>(spec.SpecPages.Select(p => p.Id).Concat(settings.Select(s => s.Page)).Where(id => id != null), StringComparer.Ordinal)
-                { "messages", "log", "help", "about" };
+                { "messages", "log", "sblog", "help", "about" };
             foreach (var stop in spec.Tour)
             {
                 if (stop.Target == null) continue;
@@ -923,6 +961,34 @@ namespace UIFramework
         /// <summary>A list the project fills as well: <c>rowKey</c>, <c>fixedRows</c> and <c>filter</c> belong to a list,
         /// a key column is one of its columns, no two default rows share a key, and a filter condition has an operator,
         /// a left side that is a column or a setting, and only settings as <c>{key}</c>.</summary>
+        /// <summary>A list's <c>format</c>: only a list has one, the only one is <c>pairs</c>, and that one is a list
+        /// of two columns of plain values (a key and its value) that keeps no file's rows apart by a key.</summary>
+        private static void CheckFormat(WindowSpec spec, Setting s)
+        {
+            if (s.Format == null) return;
+            if (s.Kind != "list")
+            {
+                spec.Problems.Add("'" + s.Key + "' has a format, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
+                return;
+            }
+            if (!PairList.Named(s.Format))
+            {
+                spec.Problems.Add("'" + s.Key + "' has the format '" + s.Format + "'; the only one is " + PairList.Format + " (a list of two columns stored as \"a:b,c:d\"). The list is stored as rows.");
+                return;
+            }
+            var columns = s.Columns ?? new List<SettingColumn>();
+            if (columns.Count != 2)
+                spec.Problems.Add("'" + s.Key + "' is stored as pairs, which takes two columns, a key and its value; it has " + columns.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) + ". The list is stored as rows.");
+            else
+            {
+                foreach (var column in columns.Where(c => c.Kind == "text" || c.Kind == "bool" || c.Kind == "emote"))
+                    spec.Problems.Add("The column '" + column.Key + "' of '" + s.Key + "' is " + (column.Kind == "bool" ? "a switch" : column.Kind == "emote" ? "an emote" : "a text of several lines")
+                        + ", which a pair cannot hold: a list stored as pairs has columns of the kind string, int, long or double.");
+                if (!string.IsNullOrWhiteSpace(s.RowKey))
+                    spec.Problems.Add("'" + s.Key + "' is stored as pairs and has a rowKey: a line of text is written whole, so nothing is merged by a key.");
+            }
+        }
+
         private static void CheckProjectList(WindowSpec spec, Dictionary<string, Setting> byKey, Setting s)
         {
             var keys = ListMerge.KeyColumns(s.RowKey);

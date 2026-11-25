@@ -111,7 +111,7 @@ namespace UIFramework
             else
             {
                 var move = new MenuItem { Header = Text.T("cust.moveTo") };
-                foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "messages"))
+                foreach (var page in ctx.Spec.Pages.Where(p => p.Build != null && p.Id != "about" && p.Id != "help" && p.Id != "log" && p.Id != "sblog" && p.Id != "messages"))
                 {
                     string targetId = page.Id;
                     var entry = Item(page.Title, () => MoveToPage(ctx, setting, targetId));
@@ -644,7 +644,7 @@ namespace UIFramework
             Setting FieldFor(DragEventArgs e)
             {
                 string key = Dragged(ctx, e.Data, FieldFormat);
-                if (key == null || page.Build == null || fixedPage || page.Id == "help" || page.Id == "log" || page.Id == "messages") return null;
+                if (key == null || page.Build == null || fixedPage || page.Id == "help" || page.Id == "log" || page.Id == "sblog" || page.Id == "messages") return null;
                 var setting = ctx.Spec.ResolvedSettings.FirstOrDefault(x => x.Key == key);
                 if (setting == null || (setting.Kind == "template" && setting.Page == "messages") || setting.Page == page.Id) return null;
                 return setting;

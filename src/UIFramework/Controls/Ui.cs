@@ -162,6 +162,7 @@ namespace UIFramework
                 case PillStyle.Success: return (Theme.SuccessSoft, Theme.SuccessText);
                 case PillStyle.Warning: return (Theme.WarningSoft, Theme.WarningText);
                 case PillStyle.Accent: return (Theme.AccentSoft, Theme.AccentText);
+                case PillStyle.Danger: return (Theme.DangerSoft, Theme.DangerText);
                 case PillStyle.Muted: return (Theme.Surface, Theme.SubColor);
                 default: return (Colors.Transparent, Theme.SubColor);
             }
@@ -302,6 +303,24 @@ namespace UIFramework
             box.Height = 28;
             box.Padding = new Thickness(4, 0, 4, 0);
             box.VerticalContentAlignment = VerticalAlignment.Center;
+        }
+
+        /// <summary>A box that does not take certain characters, typed or pasted: they are taken out as they come,
+        /// and the cursor stays where it was.</summary>
+        public static void Without(TextBox box, string forbidden)
+        {
+            if (string.IsNullOrEmpty(forbidden)) return;
+            box.PreviewTextInput += (s, e) => { if (e.Text.IndexOfAny(forbidden.ToCharArray()) >= 0) e.Handled = true; };
+            box.TextChanged += (s, e) =>
+            {
+                string text = box.Text;
+                if (text.IndexOfAny(forbidden.ToCharArray()) < 0) return;
+                int caret = box.CaretIndex;
+                int before = text.Substring(0, Math.Min(caret, text.Length)).Count(c => forbidden.IndexOf(c) >= 0);
+                string clean = new string(text.Where(c => forbidden.IndexOf(c) < 0).ToArray());
+                box.Text = clean;
+                box.CaretIndex = Math.Max(0, Math.Min(clean.Length, caret - before));
+            };
         }
 
         public static void DigitsOnly(TextBox box)

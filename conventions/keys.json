@@ -15,6 +15,7 @@
     "stats":       { "order": 75, "icon": "chart" },
     "overlay":     { "order": 80, "icon": "monitor" },
     "log":         { "order": 90, "icon": "list" },
+    "sblog":       { "order": 92, "icon": "list" },
     "help":        { "order": 95, "icon": "book" },
     "about":       { "order": 99, "icon": "info" }
   },

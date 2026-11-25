@@ -220,6 +220,45 @@ public sealed class UiSettings
         return values.ToArray();
     }
 
+    /// <summary>The pairs of a list stored as one line of text (format: "pairs"), "a:b,c:d": every key with its value,
+    /// in the order they stand in. Entries stand between commas, semicolons or lines, and the first colon or equals
+    /// sign parts a key from its value; a key alone has the value "". Rows in the file (an array of objects) are read
+    /// by their first two properties. The fallback is such a text
+    /// too, as the host action's table has it for a default.</summary>
+    public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, string>> Pairs(string key, string fallback = "")
+    {
+        var pairs = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, string>>();
+        var t = Token(key);
+        if (t is Newtonsoft.Json.Linq.JArray)
+        {
+            foreach (var row in (Newtonsoft.Json.Linq.JArray)t)
+            {
+                var cells = row as Newtonsoft.Json.Linq.JObject;
+                if (cells == null) continue;
+                string name = "", value = "";
+                int cellAt = 0;
+                foreach (var cell in cells.Properties())
+                {
+                    string text = cell.Value == null || cell.Value.Type == Newtonsoft.Json.Linq.JTokenType.Null ? ""
+                        : cell.Value.Type == Newtonsoft.Json.Linq.JTokenType.String ? (string)cell.Value : cell.Value.ToString(Newtonsoft.Json.Formatting.None);
+                    if (cellAt == 0) name = text.Trim(); else if (cellAt == 1) value = text.Trim();
+                    cellAt++;
+                }
+                if (name.Length > 0 || value.Length > 0) pairs.Add(new System.Collections.Generic.KeyValuePair<string, string>(name, value));
+            }
+            return pairs;
+        }
+        if (t is Newtonsoft.Json.Linq.JContainer) return pairs;
+        foreach (string entry in (t == null ? fallback ?? "" : String(key)).Split(new[] { ',', ';', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            string pair = entry.Trim();
+            if (pair.Length == 0) continue;
+            int at = pair.IndexOfAny(new[] { ':', '=' });
+            pairs.Add(new System.Collections.Generic.KeyValuePair<string, string>(at < 0 ? pair : pair.Substring(0, at).Trim(), at < 0 ? "" : pair.Substring(at + 1).Trim()));
+        }
+        return pairs;
+    }
+
     public static int Clamp(int value, int min, int max) => value < min ? min : value > max ? max : value;
     public static long Clamp(long value, long min, long max) => value < min ? min : value > max ? max : value;
     public static double Clamp(double value, double min, double max) => value < min ? min : value > max ? max : value;

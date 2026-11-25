@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "general": "Geral", "game": "Jogo", "automation": "Automação", "points": "Pontos e apostas", "cooldowns": "Cooldowns", "access": "Acesso",
-    "messages": "Mensagens", "leaderboard": "Ranking", "overlay": "Overlay", "log": "Log", "help": "Ajuda", "about": "Sobre",
+    "messages": "Mensagens", "leaderboard": "Ranking", "overlay": "Overlay", "log": "Log", "sblog": "Log do Streamer.bot", "help": "Ajuda", "about": "Sobre",
     "stats": "Estatísticas", "channelPoints": "Pontos do canal"
   },
   "framework": {
@@ -389,6 +389,8 @@
     "list.fixed.hint": "Clique numa célula para alterá-la, ou numa caixa para ligar ou desligar uma linha. Aqui não se adicionam nem se removem linhas; nada é gravado até você salvar.",
     "list.fixed.hint.noSwitch": "Clique numa célula para alterá-la. Aqui não se adicionam nem se removem linhas; nada é gravado até você salvar.",
     "list.filter.none": "Nenhuma linha corresponde à seleção atual. As outras linhas são mantidas.",
+    "list.rows.saveFirst": "Salve primeiro suas alterações em “{0}” ou desfaça-as.",
+    "list.rows.unread": "Não foi possível ler “{0}” do projeto.",
     "list.addTo": "Adicionar linha a {0}",
     "list.restore": "Restaurar padrões",
     "list.restore.tip": "Traz de volta as linhas que vieram com a lista, substituindo o que está aqui agora. Nada é gravado até você salvar.",
@@ -465,6 +467,15 @@
     "log.line.tip": "A linha completa do log para a entrada selecionada acima.",
     "log.noMatch": "Nenhuma entrada encontrada.",
     "log.nothingYet": "Nada registrado ainda.",
+    "sblog.level": "Nível",
+    "sblog.source": "Origem",
+    "sblog.text": "Linha",
+    "sblog.allLevels": "Todos os níveis",
+    "sblog.allSources": "Todas as origens",
+    "sblog.openFolder": "Abrir a pasta de logs do Streamer.bot",
+    "sblog.noDay": "O Streamer.bot ainda não escreveu nenhum log.",
+    "sblog.nothing": "Nenhuma linha deste projeto nesse dia.",
+    "sblog.capped": "São mostradas apenas as {0} linhas mais recentes desse dia.",
     "about.version": "Versão {0}  ·  UIFramework {1}",
     "about.links": "Links",
     "about.onGitHub": "{0} no GitHub",

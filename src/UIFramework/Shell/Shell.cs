@@ -707,6 +707,12 @@ namespace UIFramework
                 FieldBinding.Save(live, pageHost, transientToo: true);
                 return live;
             };
+            // Rows the project handed over for a list it keeps are what is saved, not a change of the user's.
+            ctx.Rebase = editor =>
+            {
+                baseline[editor] = editor.Serialized;
+                ShowChanges();
+            };
             // The old version's values, over the baseline as well and as an answer's `set` arrives: unsaved, for the
             // user to look at and save. Not in the customise mode, whose values are frozen, and no more once a
             // settings file is there (saved, reset or imported).
@@ -1587,16 +1593,57 @@ namespace UIFramework
                     else target.Remove(setting.Key);
                     Failed("'" + (setting.Label ?? setting.Key) + "' could not be written to Streamer.bot's global '" + setting.Global + "'; it is still unsaved.");
                 }
+                // The lists the project keeps itself (rowsFrom) among what the user changed go to the project now, each
+                // with the rows the window was handed, so the project can tell the user's changes from its own since. It
+                // answers the rows as it keeps them. One it did not take stays an unsaved change.
+                var keptRows = new Dictionary<string, JArray>(StringComparer.Ordinal);
+                var notKept = new List<Setting>();
+                if (baseline != null)
+                    foreach (var list in _spec.ResolvedSettings.Where(s => ProjectRows.Applies(s) && changed.Contains(s.Key) && draft[s.Key] is JArray))
+                    {
+                        // With the values as they stand in the window, the ones that are never saved included: the
+                        // dropdown that picks whose rows these are is such a field. The rows are the draft's.
+                        var request = (JObject)draft.DeepClone();
+                        FieldBinding.Save(request, root, transientToo: true);
+                        request[list.Key] = draft[list.Key].DeepClone();
+                        request[list.Key + ProjectRows.LoadedSuffix] = (parts.Lists.TryGetValue(list.Key, out var handed) ? handed.LoadedRows : null)?.DeepClone() ?? new JArray();
+                        string answer = null, why = null;
+                        try { answer = Patient.Wait(() => _hooks.Test(ProjectRows.SaveRequest + list.Key, request), Busy); }
+                        catch (OperationCanceledException) { return false; }   // the window is gone
+                        catch (Exception ex) { why = ex.Message; }
+                        var rows = why == null ? ProjectRows.Rows(answer, out why) : null;
+                        if (rows != null)
+                            keptRows[list.Key] = rows;
+                        else
+                        {
+                            notKept.Add(list);
+                            Failed("'" + (list.Label ?? list.Key) + "' could not be saved: " + why + " It is still unsaved.");
+                        }
+                    }
                 // The window's copy is now what was written, so the next save and a rebuild start from there.
                 foreach (var property in target.Properties().ToList())
                     settings[property.Name] = property.Value.DeepClone();
                 if (baseline != null)
                 {
-                    var before = unwritten.Count == 0 ? null : new Dictionary<object, string>(baseline);
+                    var stillUnsaved = new HashSet<string>(unwritten.Select(setting => setting.Key).Concat(notKept.Select(setting => setting.Key)), StringComparer.Ordinal);
+                    var before = stillUnsaved.Count == 0 ? null : new Dictionary<object, string>(baseline);
                     baseline.Clear();
                     foreach (var field in drafted)
                         baseline[field.Key] = before != null && before.TryGetValue(field.Key, out string was) && field.Key is FrameworkElement control
-                            && unwritten.Any(setting => setting.Key == FieldTag.Of(control.Tag)?.Key) ? was : field.Value;
+                            && stillUnsaved.Contains(FieldTag.Of(control.Tag)?.Key ?? "") ? was : field.Value;
+                }
+                // A list the project took shows the rows it keeps (renumbered, with what its own side added), and those
+                // are what the window was handed from now on. One typed in while the project worked keeps its rows.
+                foreach (var pair in keptRows)
+                {
+                    if (!parts.Lists.TryGetValue(pair.Key, out var editor)) continue;
+                    if (!drafted.TryGetValue(editor, out string asDrafted) || editor.Serialized == asDrafted)
+                    {
+                        editor.Reload(pair.Value);
+                        if (baseline != null) baseline[editor] = editor.Serialized;
+                    }
+                    else
+                        editor.LoadedRows = (JArray)pair.Value.DeepClone();
                 }
                 // A merged list shows what was written, the project's rows among its own, and that is what the window
                 // loaded from now on. One typed in while the project checked keeps its rows, still unsaved: what it held

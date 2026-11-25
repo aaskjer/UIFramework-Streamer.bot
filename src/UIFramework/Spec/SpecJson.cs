@@ -148,6 +148,18 @@ namespace UIFramework
                 if (about["defaultLinks"]?.Type == JTokenType.Boolean) spec.About.ShowDefaultLinks = (bool)about["defaultLinks"];
             }
 
+            // Streamer.bot's log as a page: { "match": [ "[My Project" ] }, the texts alone as a list, or true for every line.
+            var sbLog = root["streamerBotLog"];
+            if (sbLog != null && sbLog.Type != JTokenType.Null && !(sbLog.Type == JTokenType.Boolean && !(bool)sbLog))
+            {
+                spec.SbLog.Declared = true;
+                var match = sbLog is JObject declaredLog ? declaredLog["match"] : sbLog;
+                if (match is JArray texts)
+                    spec.SbLog.Match.AddRange(texts.Where(t => t.Type == JTokenType.String).Select(t => (string)t).Where(t => !string.IsNullOrEmpty(t)));
+                else if (match != null && match.Type == JTokenType.String && ((string)match).Length > 0)
+                    spec.SbLog.Match.Add((string)match);
+            }
+
             if (root["log"] is JObject log)
             {
                 spec.Log.Folder = (string)log["folder"];

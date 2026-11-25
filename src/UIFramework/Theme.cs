@@ -68,6 +68,7 @@ namespace UIFramework
         public static Color WarningSoft => IsDark ? Color.FromRgb(113, 63, 18) : Color.FromRgb(254, 243, 199);
         public static Color WarningText => IsDark ? Color.FromRgb(253, 230, 138) : Color.FromRgb(146, 64, 14);
         public static Color UnsavedText => IsDark ? Color.FromRgb(251, 146, 60) : Color.FromRgb(194, 65, 12);
+        public static Color DangerSoft => IsDark ? Color.FromRgb(105, 26, 26) : Color.FromRgb(254, 226, 226);
         public static Color DangerText => IsDark ? Color.FromRgb(252, 165, 165) : Color.FromRgb(185, 28, 28);
         public static Color Danger => Color.FromRgb(220, 38, 38);
 

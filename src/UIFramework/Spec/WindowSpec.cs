@@ -93,6 +93,10 @@ namespace UIFramework
 
         public AboutSpec About = new AboutSpec();
         public LogSpec Log = new LogSpec();
+
+        /// <summary>Streamer.bot's own log as a page (<c>window.streamerBotLog</c>, <see cref="StreamerBotLogPage"/>),
+        /// for a project that logs there instead of writing a file of its own.</summary>
+        public readonly StreamerBotLogSpec SbLog = new StreamerBotLogSpec();
         public readonly List<HelpSection> Help = new List<HelpSection>();
         /// <summary>The game's custom triggers (schema: window.triggers): listed on the Help page, each with a button
         /// that has the game fire it with its sample values.</summary>
@@ -324,6 +328,18 @@ namespace UIFramework
         public Func<PageContext, IEnumerable<string>> Live;
     }
 
+    /// <summary>What the page of Streamer.bot's log shows: the lines that hold one of <see cref="Match"/> (all of
+    /// them when it names none), from the folder Streamer.bot writes its log into.</summary>
+    public sealed class StreamerBotLogSpec
+    {
+        /// <summary>The window declares the page.</summary>
+        public bool Declared;
+        public readonly List<string> Match = new List<string>();
+        /// <summary>Another folder than Streamer.bot's (a test, the preview); null for <c>logs</c> beside Streamer.bot.</summary>
+        public string Folder;
+        public string FullFolder => Folder ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+    }
+
     public sealed class LogSpec
     {
         /// <summary>Opened by the folder button, watched for new entries. Null hides the button. Relative to the
@@ -372,7 +388,7 @@ namespace UIFramework
         public LogColumn(string header, string field) { Header = header; Field = field; }
     }
 
-    public enum PillStyle { Success, Warning, Muted, Accent, None }
+    public enum PillStyle { Success, Warning, Muted, Accent, None, Danger }
 
     /// <summary>One line of the host's log. <see cref="LogEntry.Parse"/> reads the games' format:
     /// "[yyyy-MM-dd HH:mm:ss] RESULT | User: name | Platform: twitch | Bet: 100 | ...".</summary>

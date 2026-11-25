@@ -333,7 +333,7 @@ namespace UIFramework.Tests
         public void APageIdThatIsASlipOfThePenIsNamed()
         {
             var slip = Prepared(Head + @"{ ""key"": ""a"", ""default"": 1 } ], ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"", ""mesages"", ""about"" ] } }");
-            Assert.Single(slip.Problems, p => p.Contains("'mesages'") && p.Contains("messages, log, help and about"));
+            Assert.Single(slip.Problems, p => p.Contains("'mesages'") && p.Contains("messages, log, sblog, help and about"));
             var fine = Prepared(Head + @"{ ""key"": ""a"", ""default"": 1 }, { ""key"": ""b"", ""default"": 1, ""page"": ""extras"" } ],
                 ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"", ""extras"", ""help"", ""about"" ] } }");
             Assert.Empty(fine.Problems);

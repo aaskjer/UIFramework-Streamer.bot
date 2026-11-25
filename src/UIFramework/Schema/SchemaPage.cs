@@ -360,8 +360,15 @@ namespace UIFramework
                     // change as it was loaded. Its filter reads the fields once they are all built.
                     var columns = Translated(ctx, s.Columns);
                     var filter = ListFilter.Parse(s.Filter);
-                    var editor = new ListEditor(s.Key, label, columns, f.Token(s.Key) as JArray, ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks,
-                        s.FixedRows, ListMerge.Applies(s) || filter != null);
+                    // A list stored as pairs of text: its cells do not take what parts the pairs in that text.
+                    bool pairs = PairList.Applies(s);
+                    // A list the project keeps: empty until the project hands over its rows, with no defaults to restore.
+                    bool kept = ProjectRows.Applies(s);
+                    var editor = new ListEditor(s.Key, label, columns, kept ? new JArray() : f.Token(s.Key) as JArray, kept ? null : ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks,
+                        s.FixedRows, ListMerge.Applies(s) || filter != null || kept,
+                        pairs ? new Dictionary<string, string> { [s.Columns[0].Key] = PairList.KeyForbidden, [s.Columns[1].Key] = PairList.ValueForbidden } : null);
+                    if (pairs) editor.PairColumns = s.Columns;
+                    if (kept) AskForRows(ctx, s, label, editor);
                     ctx.Parts.Lists[s.Key] = editor;
                     if (filter != null)
                         ctx.AfterBuild.Add(() => filter.Wire(ctx.Fields, ctx.Parts, columns, editor));
@@ -675,6 +682,78 @@ namespace UIFramework
                 Ask();
             });
             return element;
+        }
+
+        /// <summary>A list the project keeps (<see cref="ProjectRows"/>): the project is asked for its rows once the
+        /// pages are built, and again shortly after the field named in <c>rowsFrom</c> changes. Rows that arrive are no
+        /// change of the user's. While the list holds unsaved changes that field does not move on: the rows belong
+        /// to what it named when they were handed over, so it goes back and the footer says to save or undo first.</summary>
+        private static void AskForRows(PageContext ctx, Setting s, string label, ListEditor editor)
+        {
+            string from = s.RowsFrom.Trim();
+            int asked = 0;
+            JToken askedFor = null;
+            bool reverting = false;
+            void Unread(string why)
+            {
+                ctx.Log?.Warn(ctx.Spec?.LogPrefix + " The rows of '" + s.Key + "' could not be read: " + why);
+                ctx.SetStatus?.Invoke(Text.T("list.rows.unread", label), Theme.DangerText, why);
+            }
+            void Ask()
+            {
+                if (ctx.Hooks == null) return;
+                JObject values;
+                try { values = (JObject)(ctx.LiveSettings != null ? ctx.LiveSettings() : ctx.Settings).DeepClone(); }
+                catch (Exception ex) { Unread(ex.Message); return; }
+                askedFor = from.Length > 0 ? Requirement.Live(ctx.Fields, ctx.Parts, from)?.DeepClone() : null;
+                string before = editor.Serialized;
+                int mine = ++asked;
+                Patient.Ask(() => ctx.Hooks.Test(ProjectRows.RowsRequest + s.Key, values), (answer, error) =>
+                {
+                    if (mine != asked) return;
+                    string why = error?.Message;
+                    var rows = why == null ? ProjectRows.Rows(answer, out why) : null;
+                    if (rows == null) { Unread(why); return; }
+                    // Rows changed meanwhile (a rebuild put the unsaved ones back) stay as they are, unsaved: only what
+                    // they are compared with on Save is new.
+                    if (editor.Serialized != before)
+                    {
+                        editor.LoadedRows = rows;
+                        return;
+                    }
+                    editor.Reload(rows);
+                    ctx.Rebase?.Invoke(editor);
+                });
+            }
+            bool Unsaved() => !JToken.DeepEquals(editor.LoadedRows ?? new JArray(), editor.Value);
+
+            ctx.AfterBuild.Add(() =>
+            {
+                if (from.Length > 0 && from != s.Key)
+                {
+                    var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Math.Max(1, OptionsFromDelayMs)) };
+                    timer.Tick += (sender, e) => { timer.Stop(); Ask(); };
+                    OnChange(ctx.Parts, from, () =>
+                    {
+                        if (reverting) return;
+                        var now = Requirement.Live(ctx.Fields, ctx.Parts, from);
+                        if (askedFor != null && !JToken.DeepEquals(now, askedFor) && Unsaved())
+                        {
+                            reverting = true;
+                            try { LiveValues.Set(ctx.Parts, from, askedFor); }
+                            finally { reverting = false; }
+                            // After the count of unsaved changes, which every change of a field writes into the footer.
+                            System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(
+                                new Action(() => ctx.SetStatus?.Invoke(Text.T("list.rows.saveFirst", label), Theme.UnsavedText, null)),
+                                System.Windows.Threading.DispatcherPriority.Background);
+                            return;
+                        }
+                        timer.Stop();
+                        timer.Start();
+                    });
+                }
+                Ask();
+            });
         }
 
         /// <summary>Calls <paramref name="changed"/> whenever the field of this key changes; never for a key no field
