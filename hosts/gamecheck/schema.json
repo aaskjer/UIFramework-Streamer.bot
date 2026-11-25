@@ -1,6 +1,6 @@
 {
   "host": "gamecheck",
-  "version": "v2.1.0",
+  "version": "v2.1.1",
   "settingsFile": "GameCheck\\GameCheck-Settings.json",
   "settings": [
     {
