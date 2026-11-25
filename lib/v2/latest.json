@@ -1,7 +1,7 @@
 {
-  "version": "2.3.0",
-  "url": "https://github.com/aaskjer/UIFramework-Streamer.bot/releases/download/v2.3.0/UIFramework.dll",
-  "sha256": "f173eb8240e88ed119889230d053706d74de85c79962e050bbd9190006c64dfe",
+  "version": "2.4.0",
+  "url": "https://github.com/aaskjer/UIFramework-Streamer.bot/releases/download/v2.4.0/UIFramework.dll",
+  "sha256": "8c611cf576982aa7fced09112a19020c5c00389a4677f285a30a9a4cdd3382e8",
   "minHostStub": "0.1.0",
   "note": "Read by the loader in every host's settings action. Written by .github/workflows/release.yml on a tag vX.Y.Z."
 }
