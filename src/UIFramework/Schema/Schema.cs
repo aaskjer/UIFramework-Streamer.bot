@@ -148,6 +148,9 @@ namespace UIFramework
         public string RowKey;
         /// <summary>For a list: rows are neither added nor removed, only edited.</summary>
         public bool FixedRows;
+        /// <summary>For a list shown as a table: false leaves out the first column, which counts the rows as they are
+        /// shown. For rows that carry a number of their own in a column.</summary>
+        public bool RowNumbers = true;
         /// <summary>For a list: the rows shown, "region= || Global=true || Counties~{region}": conditions joined by
         /// <c>||</c>, <c>{key}</c> a field's value in the window, <c>~</c> contains. The others stay in the file.</summary>
         public string Filter;
@@ -273,6 +276,7 @@ namespace UIFramework
                 SaveFirst = item["saveFirst"]?.Type == JTokenType.Boolean && (bool)item["saveFirst"],
                 RowKey = (string)item["rowKey"],
                 FixedRows = item["fixedRows"]?.Type == JTokenType.Boolean && (bool)item["fixedRows"],
+                RowNumbers = !(item["rowNumbers"]?.Type == JTokenType.Boolean && !(bool)item["rowNumbers"]),
                 Filter = (string)item["filter"],
                 Format = item["format"]?.Type == JTokenType.String ? (string)item["format"] : null
             };
@@ -346,6 +350,7 @@ namespace UIFramework
             if (SaveFirst) item["saveFirst"] = true;
             if (RowKey != null) item["rowKey"] = RowKey;
             if (FixedRows) item["fixedRows"] = true;
+            if (!RowNumbers) item["rowNumbers"] = false;
             if (Filter != null) item["filter"] = Filter;
             if (Format != null) item["format"] = Format;
             if (Confirm != null) item["confirm"] = Confirm;

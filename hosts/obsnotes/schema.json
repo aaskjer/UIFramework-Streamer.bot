@@ -1,0 +1,443 @@
+{
+  "host": "obsnotes",
+  "version": "v2.0.0",
+  "settingsFile": "OBS Notes/OBSNotes-Settings.json",
+  "settings": [
+    {
+      "key": "useBot",
+      "default": true
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "twitchOnly": true,
+      "aliases": [
+        "sendAsMe"
+      ]
+    },
+    {
+      "key": "language",
+      "default": "DE",
+      "kind": "options",
+      "page": "general",
+      "label": "Chat answers in",
+      "help": "The language OBS Notes answers in. This window's own language is picked in its footer.",
+      "options": [
+        {
+          "value": "DE",
+          "label": "Deutsch"
+        },
+        {
+          "value": "EN",
+          "label": "English"
+        }
+      ]
+    },
+    {
+      "key": "layout",
+      "default": "vertical",
+      "kind": "options",
+      "page": "overlay",
+      "section": "Post-its",
+      "label": "Layout",
+      "help": "How the post-its are arranged. The browser source in OBS takes the new size when you save.",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical: two side by side, three rows (600 x 800)"
+        },
+        {
+          "value": "horizontal",
+          "label": "Horizontal: three side by side, two rows (900 x 560)"
+        }
+      ]
+    },
+    {
+      "key": "hideAfterMinutes",
+      "default": 10.0,
+      "kind": "double",
+      "page": "overlay",
+      "section": "Post-its",
+      "label": "Fade out after",
+      "help": "Minutes without a command until the post-its fade out; the next command brings them back. 0 keeps them visible.",
+      "min": 0.0,
+      "max": 1440.0,
+      "unit": "min"
+    },
+    {
+      "key": "colorfulNotes",
+      "default": true,
+      "page": "overlay",
+      "section": "Post-its",
+      "label": "Colourful post-its",
+      "help": "Off: black text on white post-its."
+    },
+    {
+      "key": "showGameName",
+      "default": true,
+      "page": "overlay",
+      "section": "Post-its",
+      "label": "Show the game name",
+      "help": "The game's name on the first post-it, next to its number."
+    },
+    {
+      "key": "obsConnectionId",
+      "default": 0,
+      "section": "OBS"
+    },
+    {
+      "key": "addToObs",
+      "default": null,
+      "kind": "action",
+      "page": "overlay",
+      "section": "OBS",
+      "label": "Add the post-its to OBS",
+      "help": "Adds the browser source 'OBS Notes' to the scene OBS is showing right now, or refreshes it there. Unsaved changes are saved first. OBS has to be connected in Streamer.bot and run on this PC.",
+      "panel": true,
+      "row": "obs",
+      "saveFirst": true
+    },
+    {
+      "key": "obsNote",
+      "default": null,
+      "kind": "note",
+      "page": "overlay",
+      "section": "OBS",
+      "help": "The post-its follow every command within two seconds. Move and scale the source in OBS as you like."
+    },
+    {
+      "key": "notesNote",
+      "default": null,
+      "kind": "note",
+      "page": "notes",
+      "help": "The notes your chat wrote, one list per game. A save only does what you changed here: notes your chat adds or deletes while this window is open stay as they are. A row you add is a note under your name, and a note whose text you empty is deleted."
+    },
+    {
+      "key": "notesOf",
+      "default": "Test_Game",
+      "kind": "options",
+      "page": "notes",
+      "label": "Notes of",
+      "help": "Every game there are notes for. The game your stream is set to right now is picked when the window opens.",
+      "transient": true,
+      "optionsFrom": ""
+    },
+    {
+      "key": "notes",
+      "default": [],
+      "kind": "list",
+      "page": "notes",
+      "label": "Notes",
+      "columns": [
+        {
+          "key": "number",
+          "kind": "int",
+          "readOnly": true,
+          "label": "#"
+        },
+        {
+          "key": "text",
+          "kind": "text",
+          "label": "Note"
+        },
+        {
+          "key": "author",
+          "kind": "string",
+          "readOnly": true,
+          "label": "By"
+        },
+        {
+          "key": "written",
+          "kind": "string",
+          "readOnly": true,
+          "label": "Written"
+        }
+      ],
+      "rowNumbers": false,
+      "rowsFrom": "notesOf"
+    }
+  ],
+  "window": {
+    "title": "OBS Notes",
+    "releases": "aaskjer/OBSNotes",
+    "requires": "2.4.0",
+    "pages": [
+      {
+        "id": "general",
+        "title": "Chat",
+        "icon": "chat"
+      },
+      {
+        "id": "overlay"
+      },
+      {
+        "id": "notes",
+        "title": "Notes",
+        "icon": "📝"
+      },
+      {
+        "id": "sblog",
+        "title": "Log",
+        "icon": "list"
+      },
+      "help",
+      "about"
+    ],
+    "answers": {
+      "addToObs": {
+        "lines": [
+          {
+            "pill": "In OBS",
+            "tone": "ok",
+            "text": "Browser source 'OBS Notes' (600 x 800) added to scene 'Gameplay' on OBS connection #0."
+          }
+        ],
+        "status": "The post-its are in OBS."
+      },
+      "uiframework.rows:notes": {
+        "rows": [
+          {
+            "number": 1,
+            "text": "Safe code: 4 - 7 - 1",
+            "author": "alice",
+            "written": "2026-11-22 20:14",
+            "timestamp": "2026-11-22 19:14:03"
+          },
+          {
+            "number": 2,
+            "text": "Blue key is behind the waterfall",
+            "author": "bob",
+            "written": "2026-11-22 20:31",
+            "timestamp": "2026-11-22 19:31:40"
+          },
+          {
+            "number": 3,
+            "text": "Talk to the innkeeper again after the storm",
+            "author": "carol",
+            "written": "2026-11-22 21:02",
+            "timestamp": "2026-11-22 20:02:11"
+          },
+          {
+            "number": 4,
+            "text": "Lever order: left, right, middle",
+            "author": "alice",
+            "written": "2026-11-22 21:40",
+            "timestamp": "2026-11-22 20:40:27"
+          }
+        ]
+      }
+    },
+    "streamerBotLog": {
+      "match": [
+        "[OBS Notes"
+      ]
+    },
+    "help": [
+      {
+        "heading": "Commands",
+        "lines": [
+          {
+            "command": "!note <text>",
+            "what": "Saves a note and answers with its number. Also !notiz, !postit, !aufschreiben, !merken."
+          },
+          {
+            "command": "!zettel",
+            "what": "Posts the last five notes in chat; !zettel 3 posts note 3. Also !schmierzettel, !merkheft, !shownotes."
+          },
+          {
+            "command": "!radier <number>",
+            "what": "Moderators and VIPs: deletes one note; the ones after it move up. Also !delnote, !deletenote."
+          },
+          {
+            "command": "!clearnotes",
+            "what": "Moderators and VIPs: deletes every note of the current game. Also !allesradieren."
+          },
+          {
+            "note": "The four commands are imported switched off. Turn them on in Streamer.bot's Commands tab, group OBS Notes; each waits 5 seconds before it answers again."
+          }
+        ]
+      },
+      {
+        "heading": "One list per game",
+        "lines": [
+          {
+            "note": "The list follows the Twitch category. Without Twitch it follows the Kick category; without either, every note goes to one list."
+          },
+          {
+            "note": "The commands work on Twitch, Kick and YouTube, and the answer goes to the chat the command came from."
+          }
+        ]
+      },
+      {
+        "heading": "The post-its in OBS",
+        "lines": [
+          {
+            "note": "Connect OBS in Streamer.bot (Stream Apps > OBS), then press 'Add the post-its to OBS' on the Overlay page. OBS has to run on the same PC as Streamer.bot."
+          },
+          {
+            "link": "Setup guide",
+            "url": "https://github.com/aaskjer/OBSNotes/blob/main/Setup-Guide.md"
+          },
+          {
+            "link": "FAQ: the post-its do not show up",
+            "url": "https://github.com/aaskjer/OBSNotes/blob/main/FAQ.md"
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "Chat notes per game, read back in chat and shown as post-its in OBS.\nResponsible: aaskjer\nCredits: nate1280 / Streamer.bot and YOU ♡",
+      "sections": [
+        {
+          "heading": "Where things are kept",
+          "lines": [
+            {
+              "command": "OBSNotes-Settings.json",
+              "what": "everything on these pages, in the folder OBS Notes inside the Streamer.bot folder."
+            },
+            {
+              "command": "<Game>-Notes.json",
+              "what": "the notes of one game, next to it; the Notes page edits them."
+            },
+            {
+              "command": "<Game>-Notes.json.bak",
+              "what": "every note ever added to that game, one per line, in case one is deleted by mistake."
+            },
+            {
+              "command": "uiframework.layout.json",
+              "what": "your layout of this window: theme, language, renamed or hidden pages and fields."
+            },
+            {
+              "command": "Overlay\\notes_overlay.html",
+              "what": "the page OBS shows, with notes_state.json beside it."
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
+        }
+      ]
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "language"
+      },
+      {
+        "target": "addToObs",
+        "title": "The post-its in OBS",
+        "text": "With OBS connected in Streamer.bot, press this once: it puts the post-its into the scene OBS is showing."
+      },
+      {
+        "target": "page:notes",
+        "title": "What your chat wrote",
+        "text": "Every note, list by list. Change a text or delete a note here."
+      },
+      {
+        "target": "page:help"
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "tour"
+      },
+      {
+        "target": "end",
+        "title": "Almost there",
+        "text": "Turn on the four commands in Streamer.bot's Commands tab (group OBS Notes), then try !note in your chat."
+      }
+    ],
+    "adopt": [
+      {
+        "action": "d7bbb7f2-837d-4299-8829-9b7cb1934824"
+      }
+    ]
+  },
+  "lang": {
+    "de": {
+      "pages": {
+        "general": "Chat",
+        "notes": "Notizen",
+        "sblog": "Log"
+      },
+      "keys": {
+        "language": {
+          "label": "Chat-Antworten auf",
+          "help": "Die Sprache, in der OBS Notes im Chat antwortet. Die Sprache dieses Fensters wählst du in seiner Fußzeile."
+        },
+        "layout": {
+          "label": "Anordnung",
+          "help": "Wie die Post-its angeordnet sind. Die Browserquelle in OBS bekommt die neue Größe, sobald du speicherst."
+        },
+        "hideAfterMinutes": {
+          "label": "Ausblenden nach",
+          "help": "Minuten ohne Befehl, bis die Post-its ausgeblendet werden; der nächste Befehl holt sie zurück. 0 lässt sie immer sichtbar."
+        },
+        "colorfulNotes": {
+          "label": "Bunte Post-its",
+          "help": "Aus: schwarze Schrift auf weißen Post-its."
+        },
+        "showGameName": {
+          "label": "Spielnamen zeigen",
+          "help": "Der Name des Spiels auf dem ersten Post-it, neben seiner Nummer."
+        },
+        "addToObs": {
+          "label": "Post-its zu OBS hinzufügen",
+          "help": "Fügt die Browserquelle 'OBS Notes' der Szene hinzu, die OBS gerade zeigt, oder lädt sie dort neu. Ungespeicherte Änderungen werden vorher gespeichert. OBS muss in Streamer.bot verbunden sein und auf diesem PC laufen."
+        },
+        "notesOf": {
+          "label": "Notizen von",
+          "help": "Jedes Spiel, zu dem es Notizen gibt. Beim Öffnen ist das Spiel gewählt, auf das dein Stream gerade gestellt ist."
+        },
+        "notes": "Notizen"
+      },
+      "texts": {
+        "Vertical: two side by side, three rows (600 x 800)": "Hochkant: zwei nebeneinander, drei Reihen (600 x 800)",
+        "Horizontal: three side by side, two rows (900 x 560)": "Quer: drei nebeneinander, zwei Reihen (900 x 560)",
+        "The post-its follow every command within two seconds. Move and scale the source in OBS as you like.": "Die Post-its folgen jedem Befehl binnen zwei Sekunden. Verschiebe und skaliere die Quelle in OBS, wie du magst.",
+        "The notes your chat wrote, one list per game. A save only does what you changed here: notes your chat adds or deletes while this window is open stay as they are. A row you add is a note under your name, and a note whose text you empty is deleted.": "Die Notizen aus deinem Chat, eine Liste pro Spiel. Speichern tut nur, was du hier geändert hast: Was dein Chat anlegt oder löscht, während dieses Fenster offen ist, bleibt, wie es ist. Eine Zeile, die du hinzufügst, wird eine Notiz unter deinem Namen, und eine Notiz, deren Text du leerst, wird gelöscht.",
+        "Note": "Notiz",
+        "By": "Von",
+        "Written": "Geschrieben",
+        "The post-its in OBS": "Die Post-its in OBS",
+        "With OBS connected in Streamer.bot, press this once: it puts the post-its into the scene OBS is showing.": "Ist OBS in Streamer.bot verbunden, drück das einmal: Es setzt die Post-its in die Szene, die OBS gerade zeigt.",
+        "What your chat wrote": "Was dein Chat notiert hat",
+        "Every note, list by list. Change a text or delete a note here.": "Jede Notiz, Liste für Liste. Hier änderst du einen Text oder löschst eine Notiz.",
+        "Almost there": "Fast geschafft",
+        "Turn on the four commands in Streamer.bot's Commands tab (group OBS Notes), then try !note in your chat.": "Schalte die vier Befehle in Streamer.bot unter Commands ein (Gruppe OBS Notes) und probier dann !note in deinem Chat.",
+        "Commands": "Befehle",
+        "Saves a note and answers with its number. Also !notiz, !postit, !aufschreiben, !merken.": "Speichert eine Notiz und antwortet mit ihrer Nummer. Auch !notiz, !postit, !aufschreiben, !merken.",
+        "Posts the last five notes in chat; !zettel 3 posts note 3. Also !schmierzettel, !merkheft, !shownotes.": "Schreibt die letzten fünf Notizen in den Chat; !zettel 3 nur Notiz 3. Auch !schmierzettel, !merkheft, !shownotes.",
+        "Moderators and VIPs: deletes one note; the ones after it move up. Also !delnote, !deletenote.": "Moderatoren und VIPs: löscht eine Notiz; die danach rücken auf. Auch !delnote, !deletenote.",
+        "Moderators and VIPs: deletes every note of the current game. Also !allesradieren.": "Moderatoren und VIPs: löscht alle Notizen des laufenden Spiels. Auch !allesradieren.",
+        "The four commands are imported switched off. Turn them on in Streamer.bot's Commands tab, group OBS Notes; each waits 5 seconds before it answers again.": "Die vier Befehle sind nach dem Import ausgeschaltet. Schalte sie in Streamer.bot unter Commands ein, Gruppe OBS Notes; jeder wartet 5 Sekunden, bevor er wieder antwortet.",
+        "One list per game": "Eine Liste pro Spiel",
+        "The list follows the Twitch category. Without Twitch it follows the Kick category; without either, every note goes to one list.": "Die Liste folgt der Twitch-Kategorie. Ohne Twitch folgt sie der Kick-Kategorie; ohne beide landet jede Notiz in einer einzigen Liste.",
+        "The commands work on Twitch, Kick and YouTube, and the answer goes to the chat the command came from.": "Die Befehle funktionieren auf Twitch, Kick und YouTube, und die Antwort geht in den Chat, aus dem der Befehl kam.",
+        "Connect OBS in Streamer.bot (Stream Apps > OBS), then press 'Add the post-its to OBS' on the Overlay page. OBS has to run on the same PC as Streamer.bot.": "Verbinde OBS in Streamer.bot (Stream Apps > OBS) und drück dann auf der Seite Overlay 'Post-its zu OBS hinzufügen'. OBS muss auf demselben PC laufen wie Streamer.bot.",
+        "Setup guide": "Setup-Anleitung",
+        "FAQ: the post-its do not show up": "FAQ: Die Post-its erscheinen nicht",
+        "Where things are kept": "Wo was liegt",
+        "everything on these pages, in the folder OBS Notes inside the Streamer.bot folder.": "alles auf diesen Seiten, im Ordner OBS Notes im Streamer.bot-Ordner.",
+        "the notes of one game, next to it; the Notes page edits them.": "die Notizen eines Spiels, daneben; die Seite Notizen bearbeitet sie.",
+        "every note ever added to that game, one per line, in case one is deleted by mistake.": "jede Notiz, die es zu dem Spiel je gab, eine pro Zeile, falls eine aus Versehen gelöscht wird.",
+        "your layout of this window: theme, language, renamed or hidden pages and fields.": "dein Layout dieses Fensters: Design, Sprache, umbenannte oder ausgeblendete Seiten und Felder.",
+        "the page OBS shows, with notes_state.json beside it.": "die Seite, die OBS zeigt, mit notes_state.json daneben.",
+        "Chat notes per game, read back in chat and shown as post-its in OBS.": "Chat-Notizen pro Spiel, im Chat nachzulesen und als Post-its in OBS.",
+        "aaskjer on Twitch": "aaskjer auf Twitch"
+      }
+    }
+  }
+}

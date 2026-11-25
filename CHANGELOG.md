@@ -6,6 +6,26 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.4.0] - 2026-11-25
+
+A table can do without the column that counts its rows, and rows a project hands over late no longer replace what
+the footer says. Declaring `rowNumbers` needs the host block of this release; the settings action stays 0.3.3.
+
+### Added
+
+- **A table without row numbers: `rowNumbers: false` on a `list`.** A list shown as a table counts its rows in a
+  first column. Rows that carry a number of their own in a column (a note's number, a rank) showed two columns of
+  numbers side by side; `rowNumbers: false` leaves the counting one out. Nothing else changes, and a list that
+  does not say so keeps its numbers. An older UIFramework shows the column.
+
+### Fixed
+
+- **Rows a project hands over late no longer replace what the footer says.** A list the project keeps itself
+  (`rowsFrom`) gets its rows when the project answers, which can be after the window is built. The footer then said
+  "3 unsaved changes" where it had just said that three values were taken over from the version before. Rows that
+  are handed over are no change of the user's: the footer is written anew only where the count of unsaved changes
+  moved, or where it still said that the rows could not be read.
+
 ## [2.3.0] - 2026-11-25
 
 Streamer.bot's own log as a page of the window, a list whose rows the project keeps itself, and a list that is

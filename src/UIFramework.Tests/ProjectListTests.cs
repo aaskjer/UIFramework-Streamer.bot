@@ -366,6 +366,49 @@ namespace UIFramework.Tests
             Assert.False(ShowsText(empty, Text.T("list.empty")));
         });
 
+        /// <summary>A table counts its rows in a first column. Rows that carry a number of their own (a note's number)
+        /// would show two columns of numbers: rowNumbers false leaves the counting one out, and nothing else.</summary>
+        [Fact]
+        public void ATableCanDoWithoutTheColumnThatCountsItsRows() => Sta(() =>
+        {
+            var columns = With(HolidayColumns, new SettingColumn { Key = "Greeting", Label = "Greeting" });
+            DataGrid GridOf(ListEditor editor)
+            {
+                DataGrid grid = null;
+                FieldBinding.VisitTree(editor, node => { if (node is DataGrid found) grid = found; });
+                return grid;
+            }
+
+            var counted = GridOf(new ListEditor("holidays", "Holidays", columns, Rows(Holidays), null, ""));
+            Assert.Equal(columns.Count + 1, counted.Columns.Count);
+            Assert.Equal("", (string)counted.Columns[0].Header);
+
+            var editor = new ListEditor("holidays", "Holidays", columns, Rows(Holidays), null, "", rowNumbers: false);
+            var plain = GridOf(editor);
+            Assert.Equal(columns.Select(c => c.Label ?? c.Key).ToArray(), plain.Columns.Select(c => (string)c.Header).ToArray());
+
+            // Either way the columns fill the table's width: the room the counting column took goes to the others.
+            double Filled(ListEditor shown, DataGrid grid)
+            {
+                var window = new Window { Width = 700, Height = 600, Content = shown, ShowInTaskbar = false, WindowStyle = WindowStyle.None, Left = -5000, Top = -5000 };
+                window.Show();
+                try
+                {
+                    window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    return grid.ActualWidth - grid.BorderThickness.Left - grid.BorderThickness.Right - grid.Columns.Sum(c => c.ActualWidth);
+                }
+                finally { window.Close(); }
+            }
+            Assert.InRange(Filled(editor, plain), 0, columns.Count);            // what the rounding leaves, a pixel per column at most
+
+            // The rows are edited and counted as before.
+            var row = plain.Items[1];
+            row.GetType().GetProperty("Item").SetValue(row, "Three kings", new object[] { "Greeting" });
+            Assert.Equal("Three kings", (string)editor.Value[1]["Greeting"]);
+            Assert.Equal(3, editor.Value.Count);
+            Assert.True(HasButton(editor, Text.T("list.add")));
+        });
+
         [Fact]
         public void FixedRowsHaveNoButtonThatAddsOrRemovesARowInTheTable() => Sta(() =>
         {
@@ -681,14 +724,15 @@ namespace UIFramework.Tests
         public void ADeclarationThatWorksNamesNoProblem()
         {
             var problems = Problems(Region + "{ 'key': 'officialHolidays', 'default': [ { 'Date': '01-01', 'Name': 'New Year' }, { 'Date': '01-06', 'Name': 'Epiphany' }, { 'Date': '', 'Name': '' }, { 'Date': '', 'Name': '' } ], "
-                + HolidayList + ", 'file': 'holidays.json', 'field': 'officialHolidays', 'rowKey': 'Date,Name', 'fixedRows': true, 'filter': 'region= || Global=true || Counties~{region}' }");
+                + HolidayList + ", 'file': 'holidays.json', 'field': 'officialHolidays', 'rowKey': 'Date,Name', 'fixedRows': true, 'rowNumbers': false, 'filter': 'region= || Global=true || Counties~{region}' }");
             Assert.DoesNotContain(problems, p => p.Contains("officialHolidays"));
         }
 
         [Fact]
         public void RowKeyFixedRowsAndFilterBelongToAList()
         {
-            var problems = Problems(Region + "{ 'key': 'luckyNumber', 'default': 5, 'rowKey': 'Date', 'fixedRows': true, 'filter': 'region=' }");
+            var problems = Problems(Region + "{ 'key': 'luckyNumber', 'default': 5, 'rowKey': 'Date', 'fixedRows': true, 'filter': 'region=', 'rowNumbers': false }");
+            Assert.Contains("'luckyNumber' has rowNumbers, which only a list has (kind list); it does nothing on an int field.", problems);
             Assert.Contains("'luckyNumber' has a rowKey, which only a list has (kind list); it does nothing on an int field.", problems);
             Assert.Contains("'luckyNumber' has fixedRows, which only a list has (kind list); it does nothing on an int field.", problems);
             Assert.Contains("'luckyNumber' has a filter, which only a list has (kind list); it does nothing on an int field.", problems);

@@ -104,7 +104,7 @@ namespace UIFramework
             public void Refresh() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(Binding.IndexerName));
         }
 
-        public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify, bool fixedRows = false)
+        public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify, bool fixedRows = false, bool rowNumbers = true)
         {
             _columns = columns;
             _defaults = defaults;
@@ -180,7 +180,9 @@ namespace UIFramework
             editing.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
             editing.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(3, 3, 3, 3)));
 
-            _grid.Columns.Add(new DataGridTextColumn { Header = "", Binding = new Binding("[#]") { Mode = BindingMode.OneWay }, Width = new DataGridLength(30), IsReadOnly = true, ElementStyle = muted });
+            // The rows as they are shown, counted in a first column; left out where the rows carry a number of their own.
+            if (rowNumbers)
+                _grid.Columns.Add(new DataGridTextColumn { Header = "", Binding = new Binding("[#]") { Mode = BindingMode.OneWay }, Width = new DataGridLength(30), IsReadOnly = true, ElementStyle = muted });
             var shares = new List<(DataGridColumn Column, double Share)>();
             foreach (var column in _columns)
             {
@@ -211,7 +213,7 @@ namespace UIFramework
             _grid.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((s, e) =>
             {
                 if (e.ViewportWidthChange == 0 || !(e.OriginalSource is ScrollViewer viewer) || viewer.TemplatedParent != _grid) return;
-                double room = Math.Floor(e.ViewportWidth) - 30;
+                double room = Math.Floor(e.ViewportWidth) - (rowNumbers ? 30 : 0);   // less the column that counts the rows
                 if (room <= 0) return;
                 double total = shares.Sum(x => x.Share);
                 var widths = shares.Select(x => Math.Max(30, Math.Floor(room * x.Share / total))).ToList();

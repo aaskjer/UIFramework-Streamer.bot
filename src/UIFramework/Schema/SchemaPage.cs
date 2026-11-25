@@ -366,7 +366,8 @@ namespace UIFramework
                     bool kept = ProjectRows.Applies(s);
                     var editor = new ListEditor(s.Key, label, columns, kept ? new JArray() : f.Token(s.Key) as JArray, kept ? null : ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks,
                         s.FixedRows, ListMerge.Applies(s) || filter != null || kept,
-                        pairs ? new Dictionary<string, string> { [s.Columns[0].Key] = PairList.KeyForbidden, [s.Columns[1].Key] = PairList.ValueForbidden } : null);
+                        pairs ? new Dictionary<string, string> { [s.Columns[0].Key] = PairList.KeyForbidden, [s.Columns[1].Key] = PairList.ValueForbidden } : null,
+                        s.RowNumbers);
                     if (pairs) editor.PairColumns = s.Columns;
                     if (kept) AskForRows(ctx, s, label, editor);
                     ctx.Parts.Lists[s.Key] = editor;
@@ -694,8 +695,10 @@ namespace UIFramework
             int asked = 0;
             JToken askedFor = null;
             bool reverting = false;
+            bool unread = false;   // the footer says so until rows arrive
             void Unread(string why)
             {
+                unread = true;
                 ctx.Log?.Warn(ctx.Spec?.LogPrefix + " The rows of '" + s.Key + "' could not be read: " + why);
                 ctx.SetStatus?.Invoke(Text.T("list.rows.unread", label), Theme.DangerText, why);
             }
@@ -721,8 +724,10 @@ namespace UIFramework
                         editor.LoadedRows = rows;
                         return;
                     }
-                    editor.Reload(rows);
-                    ctx.Rebase?.Invoke(editor);
+                    bool said = unread;
+                    unread = false;
+                    if (ctx.Rebase != null) ctx.Rebase(editor, rows, said);
+                    else editor.Reload(rows);
                 });
             }
             bool Unsaved() => !JToken.DeepEquals(editor.LoadedRows ?? new JArray(), editor.Value);

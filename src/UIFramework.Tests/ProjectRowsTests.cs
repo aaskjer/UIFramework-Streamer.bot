@@ -254,6 +254,25 @@ namespace UIFramework.Tests
             }
         }
 
+        /// <summary>A project that answers slowly hands its rows over after the window is built. What the footer said
+        /// by then stays: the note about values taken over from the version before is written once, when the window
+        /// opens, and rows that are no change of the user's must not replace it with the plain count.</summary>
+        [Fact]
+        public void RowsThatArriveLateLeaveWhatTheFooterSays()
+        {
+            using (var w = new Opened(WindowSchema, slowMs: Patient.QuickMs + 300))
+            {
+                Assert.Equal("", w.On(() => Texts(w.Editor.Value)));                 // built, and the rows are not there yet
+                w.On(() => w.Context.SetStatus("3 values taken over from the backup", Theme.UnsavedText, null));
+                w.Until(() => Texts(w.Editor.Value) == "sword,shield");
+                Assert.True(w.On(() => w.Shows("3 values taken over from the backup")));
+
+                // A change of the user's still writes the count, and rows that arrive after it leave that too.
+                w.On(() => w.Box("bet").Text = "20");
+                Assert.True(w.On(() => w.Shows(Text.T("status.unsaved.one"))));
+            }
+        }
+
         /// <summary>The window, opened as a project opens it, with this class playing the project that keeps the notes:
         /// a list per category, handed over when asked and taken back on a save.</summary>
         private sealed class Opened : NoHooks, IDisposable
@@ -268,14 +287,16 @@ namespace UIFramework.Tests
             public readonly List<JObject> Saved = new List<JObject>();
             public volatile string ChatAdds, Refuses;
 
+            private readonly int _slowMs;
             private readonly Thread _runner;
             private readonly ManualResetEventSlim _built = new ManualResetEventSlim();
             private volatile PageContext _context;
             private FrameworkElement _probe;
             private uint _thread;
 
-            public Opened(string schemaJson)
+            public Opened(string schemaJson, int slowMs = 0)
             {
+                _slowMs = slowMs;
                 Folder = Path.Combine(Path.GetTempPath(), "UIFramework.Tests", "rows-window-" + Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(Folder);
                 SettingsPath = Path.Combine(Folder, "settings.json");
@@ -295,6 +316,7 @@ namespace UIFramework.Tests
                 {
                     string category = (string)settings["category"];
                     lock (Asked) Asked.Add(category);
+                    if (_slowMs > 0) Thread.Sleep(_slowMs);
                     lock (Files) return new JObject { ["rows"] = Files[category].DeepClone() }.ToString(Formatting.None);
                 }
                 if (name == ProjectRows.SaveRequest + "notes")

@@ -42,8 +42,9 @@ public static class UiSchema
         // For a list the game writes to as well. RowKey: the columns that name a row ("date,name"): a save merges
         // with what the file holds then, the game's rows stay and the user's changes win. FixedRows: no adding, no
         // removing. Filter: the rows shown, "region= || Global=true || Counties~{region}" ({key} is a field's value,
-        // ~ is contains, || is or); the others stay in the file.
-        public string RowKey, Filter; public bool FixedRows;
+        // ~ is contains, || is or); the others stay in the file. RowNumbers false: the table does not count its rows in
+        // a first column (they carry a number of their own).
+        public string RowKey, Filter; public bool FixedRows, RowNumbers = true;
         // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
         // its answer under the button, Auto asks it on show and after every change without a button (and brings Live
         // and Panel with it). Ask, on any other field, asks the host whenever the field changes (a preset slider whose
@@ -84,7 +85,8 @@ public static class UiSchema
         string platform = null, bool twitchOnly = false, string row = null, bool masked = false, string showWhen = null, string[] shows = null,
         bool readOnly = false, double? step = null, string group = null, bool ask = false,
         string global = null, string optionsFrom = null, int? every = null, bool saveFirst = false,
-        string rowKey = null, bool fixedRows = false, string filter = null, string hint = null, string format = null, string rowsFrom = null)
+        string rowKey = null, bool fixedRows = false, string filter = null, string hint = null, string format = null, string rowsFrom = null,
+        bool rowNumbers = true)
     {
         return new Setting
         {
@@ -94,7 +96,7 @@ public static class UiSchema
             Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
             ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask,
             Global = global, OptionsFrom = optionsFrom, Every = every, SaveFirst = saveFirst,
-            RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint, Format = format, RowsFrom = rowsFrom
+            RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint, Format = format, RowsFrom = rowsFrom, RowNumbers = rowNumbers
         };
     }
 
@@ -233,6 +235,7 @@ public static class UiSchema
         if (s.SaveFirst) item["saveFirst"] = true;
         if (s.RowKey != null) item["rowKey"] = s.RowKey;
         if (s.FixedRows) item["fixedRows"] = true;
+        if (!s.RowNumbers) item["rowNumbers"] = false;
         if (s.Filter != null) item["filter"] = s.Filter;
         if (s.Format != null) item["format"] = s.Format;
         if (s.RowsFrom != null) item["rowsFrom"] = s.RowsFrom;
