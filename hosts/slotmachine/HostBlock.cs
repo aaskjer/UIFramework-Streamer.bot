@@ -40,6 +40,10 @@
             // ~ is contains, || is or); the others stay in the file. RowNumbers false: the table does not count its rows in
             // a first column (they carry a number of their own).
             public string RowKey, Filter; public bool FixedRows, RowNumbers = true;
+            // For a list shown as a table and for a table: true keeps the columns within the table's width (a text too
+            // long ends in an ellipsis), false lets them run past it under a horizontal scrollbar. Null: as the kind
+            // does by itself, a list within, a table past.
+            public bool? FitWidth;
             // Transient: shown, never saved. For an action: Live hands the host the window's current values, Panel shows
             // its answer under the button, Auto asks it on show and after every change without a button (and brings Live
             // and Panel with it). Ask, on any other field, asks the host whenever the field changes (a preset slider whose
@@ -81,7 +85,7 @@
             bool readOnly = false, double? step = null, string group = null, bool ask = false,
             string global = null, string optionsFrom = null, int? every = null, bool saveFirst = false,
             string rowKey = null, bool fixedRows = false, string filter = null, string hint = null, string format = null, string rowsFrom = null,
-            bool rowNumbers = true)
+            bool rowNumbers = true, bool? fitWidth = null)
         {
             return new Setting
             {
@@ -91,7 +95,8 @@
                 Transient = transient, Live = live, Panel = panel, Auto = auto, Platform = platform, TwitchOnly = twitchOnly, Row = row, Masked = masked,
                 ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask,
                 Global = global, OptionsFrom = optionsFrom, Every = every, SaveFirst = saveFirst,
-                RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint, Format = format, RowsFrom = rowsFrom, RowNumbers = rowNumbers
+                RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint, Format = format, RowsFrom = rowsFrom, RowNumbers = rowNumbers,
+                FitWidth = fitWidth
             };
         }
 
@@ -231,6 +236,7 @@
             if (s.RowKey != null) item["rowKey"] = s.RowKey;
             if (s.FixedRows) item["fixedRows"] = true;
             if (!s.RowNumbers) item["rowNumbers"] = false;
+            if (s.FitWidth.HasValue) item["fitWidth"] = s.FitWidth.Value;
             if (s.Filter != null) item["filter"] = s.Filter;
             if (s.Format != null) item["format"] = s.Format;
             if (s.RowsFrom != null) item["rowsFrom"] = s.RowsFrom;
@@ -683,11 +689,15 @@
         /// the bool setting behind "Write a log file per day"; the columns after Time and Result as "Header|field" or a
         /// field; the values of the Result filter. <paramref name="styles"/> colours results, "GAME-OVER|muted" or with *
         /// "WIN-*|success" (success, warning, muted, accent, none; the first that fits wins, the rest go by the words in
-        /// them); <paramref name="outcome"/> names what a result is filtered by, "DUEL WIN|WIN".</summary>
+        /// them); <paramref name="outcome"/> names what a result is filtered by, "DUEL WIN|WIN". <paramref name="fitWidth"/>
+        /// true keeps the columns within the table's width, a value too long ending in an ellipsis; without it they are
+        /// as wide as their contents, under a horizontal scrollbar.</summary>
         public UiWindow Log(string folder, string files, string writeLogKey = null, string writeLogHelp = null, string[] columns = null, string[] results = null,
-            string[] platforms = null, string emptyText = null, string writeLogLabel = null, string[] styles = null, string[] outcome = null)
+            string[] platforms = null, string emptyText = null, string writeLogLabel = null, string[] styles = null, string[] outcome = null,
+            bool? fitWidth = null)
         {
             LogMap = new Newtonsoft.Json.Linq.JObject { ["folder"] = folder, ["files"] = files };
+            if (fitWidth.HasValue) LogMap["fitWidth"] = fitWidth.Value;
             if (writeLogKey != null) LogMap["writeLogKey"] = writeLogKey;
             if (writeLogLabel != null) LogMap["writeLogLabel"] = writeLogLabel;
             if (writeLogHelp != null) LogMap["writeLogHelp"] = writeLogHelp;
@@ -732,6 +742,16 @@
                 foreach (var text in match)
                     if (!string.IsNullOrEmpty(text)) texts.Add(text);
             StreamerBotLogMap = new Newtonsoft.Json.Linq.JObject { ["match"] = texts };
+            return this;
+        }
+
+        /// <summary>The same, saying how the page's table meets its width. <paramref name="fitWidth"/> true keeps the
+        /// columns within it, as the page does by itself: a line too long ends in an ellipsis, and the box under the list
+        /// has all of it. False lets a line run on, under a horizontal scrollbar.</summary>
+        public UiWindow StreamerBotLog(bool fitWidth, params string[] match)
+        {
+            StreamerBotLog(match);
+            StreamerBotLogMap["fitWidth"] = fitWidth;
             return this;
         }
 

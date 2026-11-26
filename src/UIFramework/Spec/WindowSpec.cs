@@ -335,6 +335,9 @@ namespace UIFramework
         /// <summary>The window declares the page.</summary>
         public bool Declared;
         public readonly List<string> Match = new List<string>();
+        /// <summary>False: a line may run past the table's width, under a horizontal scrollbar. Otherwise the columns
+        /// stay within it, and a line too long ends in an ellipsis (the box under the list has all of it).</summary>
+        public bool? FitWidth;
         /// <summary>Another folder than Streamer.bot's (a test, the preview); null for <c>logs</c> beside Streamer.bot.</summary>
         public string Folder;
         public string FullFolder => Folder ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
@@ -369,6 +372,9 @@ namespace UIFramework
         public string WriteLogHelp;
         /// <summary>Null: the framework's own text, in its language.</summary>
         public string EmptyText;
+        /// <summary>True: the columns stay within the table's width, and a value too long ends in an ellipsis.
+        /// Otherwise they are as wide as their contents, under a horizontal scrollbar.</summary>
+        public bool? FitWidth;
         /// <summary>What a game declares for its results' colours (log.styles), in order: a result or a pattern with *
         /// ("WIN-*") and success, warning, muted, accent or none. The first that matches wins; a result none names is
         /// coloured by the words in it (<see cref="LogPage.DefaultStyle"/>).</summary>

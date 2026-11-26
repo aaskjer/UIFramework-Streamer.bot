@@ -67,8 +67,9 @@ namespace UIFramework
         /// that part the pairs in the stored text).</param>
         /// <param name="rowNumbers">False: the table leaves out the column that counts its rows (the rows carry a
         /// number of their own).</param>
+        /// <param name="fitWidth">False: the table's columns may run past its width, under a horizontal scrollbar.</param>
         public ListEditor(string key, string label, List<SettingColumn> columns, JArray value, JArray defaults, string help, IHostHooks hooks = null,
-            bool fixedRows = false, bool asLoaded = false, IDictionary<string, string> without = null, bool rowNumbers = true)
+            bool fixedRows = false, bool asLoaded = false, IDictionary<string, string> without = null, bool rowNumbers = true, bool fitWidth = true)
         {
             _without = without;
             _label = label;
@@ -84,7 +85,7 @@ namespace UIFramework
             // A list whose row would not fit one line (a question editor) is a table with an edit panel instead.
             if (ListTable.Suits(_columns))
             {
-                _table = new ListTable(label, _columns, _defaults, () => Changed?.Invoke(), _fixedRows, rowNumbers);
+                _table = new ListTable(label, _columns, _defaults, () => Changed?.Invoke(), _fixedRows, rowNumbers, fitWidth);
                 Child = _table.Element;
                 _table.Set(value);
                 LoadedRows = Value;

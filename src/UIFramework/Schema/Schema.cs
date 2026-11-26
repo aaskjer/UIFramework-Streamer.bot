@@ -151,6 +151,10 @@ namespace UIFramework
         /// <summary>For a list shown as a table: false leaves out the first column, which counts the rows as they are
         /// shown. For rows that carry a number of their own in a column.</summary>
         public bool RowNumbers = true;
+        /// <summary>For a list shown as a table and for a table: true keeps the columns within the table's width (a
+        /// text too long for its column ends in an ellipsis), false lets them run past it under a horizontal
+        /// scrollbar. Null: as the kind does by itself, a list within, a table past.</summary>
+        public bool? FitWidth;
         /// <summary>For a list: the rows shown, "region= || Global=true || Counties~{region}": conditions joined by
         /// <c>||</c>, <c>{key}</c> a field's value in the window, <c>~</c> contains. The others stay in the file.</summary>
         public string Filter;
@@ -277,6 +281,7 @@ namespace UIFramework
                 RowKey = (string)item["rowKey"],
                 FixedRows = item["fixedRows"]?.Type == JTokenType.Boolean && (bool)item["fixedRows"],
                 RowNumbers = !(item["rowNumbers"]?.Type == JTokenType.Boolean && !(bool)item["rowNumbers"]),
+                FitWidth = item["fitWidth"]?.Type == JTokenType.Boolean ? (bool?)(bool)item["fitWidth"] : null,
                 Filter = (string)item["filter"],
                 Format = item["format"]?.Type == JTokenType.String ? (string)item["format"] : null
             };
@@ -351,6 +356,7 @@ namespace UIFramework
             if (RowKey != null) item["rowKey"] = RowKey;
             if (FixedRows) item["fixedRows"] = true;
             if (!RowNumbers) item["rowNumbers"] = false;
+            if (FitWidth.HasValue) item["fitWidth"] = FitWidth.Value;
             if (Filter != null) item["filter"] = Filter;
             if (Format != null) item["format"] = Format;
             if (Confirm != null) item["confirm"] = Confirm;

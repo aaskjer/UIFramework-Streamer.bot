@@ -51,6 +51,7 @@ namespace UIFramework
                 setting.Format = declared.Format;
                 setting.RowsFrom = declared.RowsFrom;
                 setting.RowNumbers = declared.RowNumbers;
+                setting.FitWidth = declared.FitWidth;
                 // The rows of a list the project keeps come from the project alone: the window starts it empty.
                 if (ProjectRows.Applies(setting))
                     setting.Default = new JArray();
@@ -999,6 +1000,7 @@ namespace UIFramework
                 if (keys.Count > 0) spec.Problems.Add("'" + s.Key + "' has a rowKey, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
                 if (s.FixedRows) spec.Problems.Add("'" + s.Key + "' has fixedRows, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
                 if (!s.RowNumbers) spec.Problems.Add("'" + s.Key + "' has rowNumbers, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
+                if (s.FitWidth.HasValue && s.Kind != "table") spec.Problems.Add("'" + s.Key + "' has fitWidth, which only a list or a table has; it does nothing on " + Article(s.Kind) + ".");
                 if (filter != null) spec.Problems.Add("'" + s.Key + "' has a filter, which only a list has (kind list); it does nothing on " + Article(s.Kind) + ".");
                 return;
             }
