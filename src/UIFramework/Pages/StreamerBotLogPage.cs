@@ -240,11 +240,17 @@ namespace UIFramework
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
+            // Kept within the table's width unless the window says otherwise: a line too long ends in an ellipsis.
+            bool fit = spec.FitWidth != false;
+            if (fit) TableWidth.Trim(cellText);
             grid.Columns.Add(new DataGridTextColumn { Header = Text.T("log.time"), Binding = new Binding("Time") { Converter = new ClockText() }, Width = DataGridLength.Auto, MinWidth = 60, ElementStyle = cellText });
             grid.Columns.Add(LevelColumn());
             grid.Columns.Add(new DataGridTextColumn { Header = Text.T("sblog.source"), Binding = new Binding("Source"), Width = DataGridLength.Auto, MinWidth = 60, MaxWidth = 220, ElementStyle = cellText });
             // The first line of an entry; the box under the list has all of it.
-            grid.Columns.Add(new DataGridTextColumn { Header = Text.T("sblog.text"), Binding = new Binding("Text") { Converter = new FirstLine() }, Width = new DataGridLength(1, DataGridLengthUnitType.Star), MinWidth = 120, ElementStyle = cellText });
+            var line = new DataGridTextColumn { Header = Text.T("sblog.text"), Binding = new Binding("Text") { Converter = new FirstLine() }, Width = new DataGridLength(1, DataGridLengthUnitType.Star), MinWidth = 120, ElementStyle = cellText };
+            grid.Columns.Add(line);
+            if (fit) TableWidth.KeepWithin(grid);
+            else TableWidth.RunOn(grid, line, 120);
 
             var empty = new TextBlock
             {

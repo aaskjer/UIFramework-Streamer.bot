@@ -104,7 +104,7 @@ namespace UIFramework
             public void Refresh() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(Binding.IndexerName));
         }
 
-        public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify, bool fixedRows = false, bool rowNumbers = true)
+        public ListTable(string label, List<SettingColumn> columns, JArray defaults, Action notify, bool fixedRows = false, bool rowNumbers = true, bool fitWidth = true)
         {
             _columns = columns;
             _defaults = defaults;
@@ -156,6 +156,8 @@ namespace UIFramework
                 ColumnHeaderStyle = Ui.HeaderStyle(),
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
             };
+            // fitWidth false: the columns may run past the table's width, under a horizontal scrollbar.
+            if (!fitWidth) _grid.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             AutomationProperties.SetName(_grid, label);
             Ui.StyleSelection(_grid);
             // A click into a cell starts editing it at once, as in a spreadsheet; no double-click needed.
@@ -182,7 +184,7 @@ namespace UIFramework
 
             // The rows as they are shown, counted in a first column; left out where the rows carry a number of their own.
             if (rowNumbers)
-                _grid.Columns.Add(new DataGridTextColumn { Header = "", Binding = new Binding("[#]") { Mode = BindingMode.OneWay }, Width = new DataGridLength(30), IsReadOnly = true, ElementStyle = muted });
+                _grid.Columns.Add(new DataGridTextColumn { Header = "", Binding = new Binding("[#]") { Mode = BindingMode.OneWay }, Width = new DataGridLength(30), IsReadOnly = true, CanUserResize = false, ElementStyle = muted });
             var shares = new List<(DataGridColumn Column, double Share)>();
             foreach (var column in _columns)
             {
@@ -210,22 +212,63 @@ namespace UIFramework
             // and it follows the grid's size and the scrollbar coming and going as rows are added or removed. What the
             // whole pixels leave over goes to the widest column, so the last one ends at the grid's edge and no empty
             // filler column shows after it.
+            double viewport = 0;
+            List<double> Whole(double room, IList<double> parts)
+            {
+                double total = parts.Sum();
+                var widths = parts.Select(part => Math.Max(30, Math.Floor(room * part / total))).ToList();
+                double left = room - widths.Sum();
+                if (left > 0) widths[widths.IndexOf(widths.Max())] += left;
+                return widths;
+            }
             _grid.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((s, e) =>
             {
                 if (e.ViewportWidthChange == 0 || !(e.OriginalSource is ScrollViewer viewer) || viewer.TemplatedParent != _grid) return;
-                double room = Math.Floor(e.ViewportWidth) - (rowNumbers ? 30 : 0);   // less the column that counts the rows
-                if (room <= 0) return;
-                double total = shares.Sum(x => x.Share);
-                var widths = shares.Select(x => Math.Max(30, Math.Floor(room * x.Share / total))).ToList();
-                double left = room - widths.Sum();
-                if (left > 0)
-                {
-                    int widest = widths.IndexOf(widths.Max());
-                    widths[widest] += left;
-                }
+                viewport = Math.Floor(e.ViewportWidth);
+                double room = viewport - (rowNumbers ? 30 : 0);   // less the column that counts the rows
+                if (!fitWidth || room <= 0) return;
+                var widths = Whole(room, shares.Select(x => x.Share).ToList());
                 for (int i = 0; i < shares.Count; i++)
                     shares[i].Column.Width = new DataGridLength(widths[i]);
             }));
+            // Free to run past the table: every column as wide as its contents, the one with the largest share (the
+            // text) taking what is left, and a horizontal scrollbar where the contents need more than the table has.
+            if (!fitWidth)
+            {
+                foreach (var share in shares) share.Column.Width = DataGridLength.Auto;
+                TableWidth.RunOn(_grid, shares.OrderByDescending(x => x.Share).First().Column, 30);
+            }
+            // Kept within the table, a column the user drags stays there too: the columns to its right share what
+            // is left, in the proportions they had, and the shares follow, so a later change of the table's width
+            // keeps what the user set. The last column ends at the table's edge: dragged, it goes back.
+            Dictionary<DataGridColumn, double> held = null;
+            _grid.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((s, e) =>
+            {
+                if (fitWidth && TableWidth.IsColumnDrag(e.OriginalSource)) held = shares.ToDictionary(x => x.Column, x => x.Column.ActualWidth);
+            }), true);
+            _grid.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((s, e) =>
+            {
+                if (held == null) return;
+                var before = held;
+                held = null;
+                double room = viewport - (rowNumbers ? 30 : 0);
+                int at = shares.FindIndex(x => before.TryGetValue(x.Column, out double was) && Math.Abs(x.Column.ActualWidth - was) > 0.5);
+                if (at < 0 || room <= 0) return;
+                var widths = shares.Select(x => before[x.Column]).ToList();
+                int after = shares.Count - at - 1;
+                if (after > 0)
+                {
+                    double ahead = widths.Take(at).Sum();
+                    widths[at] = Math.Max(30, Math.Min(shares[at].Column.ActualWidth, room - ahead - 30 * after));
+                    var rest = Whole(room - ahead - widths[at], widths.Skip(at + 1).ToList());
+                    for (int i = 0; i < rest.Count; i++) widths[at + 1 + i] = rest[i];
+                }
+                for (int i = 0; i < shares.Count; i++)
+                {
+                    shares[i] = (shares[i].Column, widths[i]);
+                    shares[i].Column.Width = new DataGridLength(widths[i]);
+                }
+            }), true);
             _grid.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Delete && !IsEditing() && !_fixedRows)

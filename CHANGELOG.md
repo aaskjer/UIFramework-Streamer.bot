@@ -6,6 +6,27 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.5.0] - 2026-11-26
+
+A table says how it meets its width: kept within it, or free to run past it under a horizontal scrollbar. Declaring
+`fitWidth` needs the host block of this release; the settings action stays 0.3.3.
+
+### Added
+
+- **`fitWidth` for a table: on a `list`, a `table`, `Log(…)` and `StreamerBotLog(…)`.** `true` keeps the columns
+  within the table's width: no horizontal scrollbar, and a text too long for its column ends in an ellipsis.
+  `false` lets them run past it, each column as wide as its contents, under a horizontal scrollbar. Left out, every
+  table does what it did: a list and Streamer.bot's log are kept within, the Log page and a `table` run past.
+
+### Changed
+
+- **A column the user drags wider no longer pushes the others out of a table that is kept within its width.** The
+  columns to its right share what is left, and the table keeps what the user set when the window's width changes.
+  Before, they slid past the table's edge, with no scrollbar to reach them. The column that counts the rows is not
+  dragged at all.
+- **A line of Streamer.bot's log too long for the table ends in an ellipsis.** It was cut off at the table's edge.
+  The box under the list shows the whole entry, as before.
+
 ## [2.4.0] - 2026-11-25
 
 A table can do without the column that counts its rows, and rows a project hands over late no longer replace what

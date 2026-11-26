@@ -171,11 +171,20 @@ namespace UIFramework
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
             cellText.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
+            // fitWidth: the columns stay within the table, the last one taking what the others leave (the box under
+            // the list shows the whole line); without it they are as wide as their contents, under a scrollbar.
+            bool fit = spec.FitWidth == true;
+            if (fit) TableWidth.Trim(cellText);
             grid.Columns.Add(TextColumn(Text.T("log.time"), new Binding("Timestamp") { Converter = new TimeText() }, cellText));
             grid.Columns.Add(ResultColumn(r => StyleOf(spec, r)));
             var columns = spec.Columns.Count > 0 ? spec.Columns : new List<LogColumn> { new LogColumn(Text.T("log.user"), "User"), new LogColumn(Text.T("log.platform"), "Platform") };
             foreach (var column in columns)
                 grid.Columns.Add(TextColumn(Declared(ctx, column.Header), new Binding { Converter = new FieldReader(column.Field) }, cellText));
+            if (fit)
+            {
+                grid.Columns[grid.Columns.Count - 1].Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                TableWidth.KeepWithin(grid);
+            }
 
             var empty = new TextBlock
             {

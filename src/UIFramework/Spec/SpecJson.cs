@@ -158,6 +158,8 @@ namespace UIFramework
                     spec.SbLog.Match.AddRange(texts.Where(t => t.Type == JTokenType.String).Select(t => (string)t).Where(t => !string.IsNullOrEmpty(t)));
                 else if (match != null && match.Type == JTokenType.String && ((string)match).Length > 0)
                     spec.SbLog.Match.Add((string)match);
+                if (sbLog is JObject withWidth && withWidth["fitWidth"]?.Type == JTokenType.Boolean)
+                    spec.SbLog.FitWidth = (bool)withWidth["fitWidth"];
             }
 
             if (root["log"] is JObject log)
@@ -168,6 +170,7 @@ namespace UIFramework
                 if (log["writeLogLabel"] != null) spec.Log.WriteLogLabel = (string)log["writeLogLabel"];
                 spec.Log.WriteLogHelp = (string)log["writeLogHelp"];
                 if (log["emptyText"] != null) spec.Log.EmptyText = (string)log["emptyText"];
+                if (log["fitWidth"]?.Type == JTokenType.Boolean) spec.Log.FitWidth = (bool)log["fitWidth"];
                 if (log["columns"] is JArray columns)
                     foreach (var column in columns)
                     {

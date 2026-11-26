@@ -367,7 +367,7 @@ namespace UIFramework
                     var editor = new ListEditor(s.Key, label, columns, kept ? new JArray() : f.Token(s.Key) as JArray, kept ? null : ctx.Defaults?[s.Key] as JArray, help, ctx.Hooks,
                         s.FixedRows, ListMerge.Applies(s) || filter != null || kept,
                         pairs ? new Dictionary<string, string> { [s.Columns[0].Key] = PairList.KeyForbidden, [s.Columns[1].Key] = PairList.ValueForbidden } : null,
-                        s.RowNumbers);
+                        s.RowNumbers, s.FitWidth != false);
                     if (pairs) editor.PairColumns = s.Columns;
                     if (kept) AskForRows(ctx, s, label, editor);
                     ctx.Parts.Lists[s.Key] = editor;
@@ -1056,6 +1056,10 @@ namespace UIFramework
             };
             var cellText = new Style(typeof(TextBlock));
             cellText.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4)));
+            // fitWidth: the columns stay within the table, the last one taking what the others leave; without it
+            // they are as wide as their contents, under a horizontal scrollbar.
+            bool fit = s.FitWidth == true;
+            if (fit) TableWidth.Trim(cellText);
             foreach (var column in columns)
                 grid.Columns.Add(new DataGridTextColumn
                 {
@@ -1065,6 +1069,11 @@ namespace UIFramework
                     MinWidth = 50,
                     ElementStyle = cellText
                 });
+            if (fit && grid.Columns.Count > 0)
+            {
+                grid.Columns[grid.Columns.Count - 1].Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                TableWidth.KeepWithin(grid);
+            }
 
             var empty = Ui.Note(Text.T("table.empty"));
             empty.HorizontalAlignment = HorizontalAlignment.Center;

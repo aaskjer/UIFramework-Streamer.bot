@@ -154,13 +154,14 @@
         }
       ],
       "rowNumbers": false,
+      "fitWidth": true,
       "rowsFrom": "notesOf"
     }
   ],
   "window": {
     "title": "OBS Notes",
     "releases": "aaskjer/OBSNotes",
-    "requires": "2.4.0",
+    "requires": "2.5.0",
     "pages": [
       {
         "id": "general",
@@ -230,7 +231,8 @@
     "streamerBotLog": {
       "match": [
         "[OBS Notes"
-      ]
+      ],
+      "fitWidth": true
     },
     "help": [
       {
