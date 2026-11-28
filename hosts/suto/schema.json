@@ -1,6 +1,6 @@
 {
   "host": "suto",
-  "version": "v2.0.0",
+  "version": "v2.1.0",
   "settingsFile": "Suggestions To/SuTo-Settings.json",
   "settings": [
     {
@@ -138,6 +138,44 @@
       "label": "Or all into one thread, with the ID",
       "help": "Every suggestion goes into this thread or forum post. In Discord: right-click the thread > Copy Thread ID (needs Developer Mode). With a name and an ID, the ID wins.",
       "hint": "digits only"
+    },
+    {
+      "key": "discordIconNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Pictures (optional)",
+      "help": "A fixed picture instead of the viewer's avatar, for every suggestion from that platform. Empty: the viewer's own avatar."
+    },
+    {
+      "key": "discordIconTwitch",
+      "default": "",
+      "page": "discord",
+      "section": "Pictures (optional)",
+      "label": "From Twitch",
+      "help": "The web address of a picture.",
+      "requires": "discordShowFooter",
+      "hint": "https://…"
+    },
+    {
+      "key": "discordIconYouTube",
+      "default": "",
+      "page": "discord",
+      "section": "Pictures (optional)",
+      "label": "From YouTube",
+      "help": "The web address of a picture.",
+      "requires": "discordShowFooter",
+      "hint": "https://…"
+    },
+    {
+      "key": "discordIconKick",
+      "default": "",
+      "page": "discord",
+      "section": "Pictures (optional)",
+      "label": "From Kick",
+      "help": "The web address of a picture.",
+      "requires": "discordShowFooter",
+      "hint": "https://…"
     },
     {
       "key": "stoatEnabled",
@@ -382,6 +420,44 @@
       "help": "The bar beside a suggestion from Kick.",
       "requires": "!gameVoxRandomColour",
       "row": "gameVoxColours"
+    },
+    {
+      "key": "gameVoxIconNote",
+      "default": null,
+      "kind": "note",
+      "page": "gamevox",
+      "section": "Pictures (optional)",
+      "help": "A fixed picture instead of the viewer's avatar, for every suggestion from that platform. Empty: the viewer's own avatar."
+    },
+    {
+      "key": "gameVoxIconTwitch",
+      "default": "",
+      "page": "gamevox",
+      "section": "Pictures (optional)",
+      "label": "From Twitch",
+      "help": "The web address of a picture.",
+      "requires": "gameVoxShowFooter",
+      "hint": "https://…"
+    },
+    {
+      "key": "gameVoxIconYouTube",
+      "default": "",
+      "page": "gamevox",
+      "section": "Pictures (optional)",
+      "label": "From YouTube",
+      "help": "The web address of a picture.",
+      "requires": "gameVoxShowFooter",
+      "hint": "https://…"
+    },
+    {
+      "key": "gameVoxIconKick",
+      "default": "",
+      "page": "gamevox",
+      "section": "Pictures (optional)",
+      "label": "From Kick",
+      "help": "The web address of a picture.",
+      "requires": "gameVoxShowFooter",
+      "hint": "https://…"
     },
     {
       "key": "msgConfirmTwitch",
@@ -713,6 +789,9 @@
     "discordForumWebhookUrl": "",
     "discordThreadName": "",
     "discordThreadId": "",
+    "discordIconTwitch": "",
+    "discordIconYouTube": "",
+    "discordIconKick": "",
     "stoatEnabled": "The action '[SuTo] ... Stoat' is not in this Streamer.bot. Import SuTo again to post to Stoat.",
     "stoatWebhookUrl": "",
     "stoatSuggestionTemplate": "",
@@ -736,6 +815,9 @@
     "gameVoxRandomColour": "",
     "gameVoxColourTwitch": "",
     "gameVoxColourYouTube": "",
-    "gameVoxColourKick": ""
+    "gameVoxColourKick": "",
+    "gameVoxIconTwitch": "",
+    "gameVoxIconYouTube": "",
+    "gameVoxIconKick": ""
   }
 }
