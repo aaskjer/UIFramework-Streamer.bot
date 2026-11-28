@@ -278,6 +278,8 @@
     "field.masked.show": "Show what is typed here",
     "field.masked.hide": "Hide it again",
     "field.global.locked": "This value is kept in Streamer.bot's global variables, which this extension's settings action cannot read. Update the extension to set it here.",
+    "action.off": "The action '{0}' is disabled in Streamer.bot.",
+    "action.missing": "The action '{0}' is not in this Streamer.bot.",
     "import.why.global": "kept in Streamer.bot's global variables, in no file",
     "cust.hidden": "hidden",
     "cust.emptyPage": "No fields on this page. Drop one here from another page, or move one with its menu.",

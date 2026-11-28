@@ -272,6 +272,12 @@ namespace UIFramework
             // And the values kept in globals of Streamer.bot, asked of the host. What an older file holds under such a
             // key is not shown, and goes with the next save.
             Globals.Load(settings, _spec.ResolvedSettings, _hooks);
+            // The actions of Streamer.bot the window watches (window.actions): asked once now, so the first build shows
+            // what holds, and then about once a second until the window closes.
+            var watch = new ActionWatch(_spec.Actions, _hooks);
+            if (watch.Any) watch.Take(watch.Ask());
+            var watching = new CancellationTokenSource();
+            Action actionsChanged = null;
             // What the version before this window kept in its action (window.adopt), read once per open. Every build puts
             // it into the fields until a settings file is written.
             var adopted = neverSaved && _spec.Adopt.Count > 0 ? Adoption.Read(_spec, Adoption.Folder, _log) : null;
@@ -342,7 +348,7 @@ namespace UIFramework
             window.Title = _spec.Title + Text.T("title.settings");
             window.Background = new SolidColorBrush(Theme.ContentBg);
 
-            var parts = new WindowParts();
+            var parts = new WindowParts { Actions = watch };
             var defaults = _spec.Defaults;
             var ctx = new PageContext
             {
@@ -554,6 +560,10 @@ namespace UIFramework
                     Ui.SetPill(pill, text, colours.Background, colours.Foreground);
                 }
             }
+            // A watched action that is enabled, disabled, deleted or back: the fields that depend on it follow, and so
+            // do the pills.
+            parts.OnActions(DrawPills);
+            actionsChanged = parts.RaiseActions;
             void ShowUpdate(string latestTag)
             {
                 if (string.IsNullOrEmpty(latestTag))
@@ -1502,9 +1512,25 @@ namespace UIFramework
                     e.Cancel = true;
             };
 
+            if (watch.Any)
+                Task.Run(async () =>
+                {
+                    while (!watching.IsCancellationRequested)
+                    {
+                        try { await Task.Delay(ActionWatch.Interval, watching.Token); }
+                        catch (Exception) { break; }
+                        // The host answers on Streamer.bot's thread; the window takes the answer on its own.
+                        var told = watch.Ask();
+                        if (told == null || watching.IsCancellationRequested) continue;
+                        try { _ = window.Dispatcher.BeginInvoke(new Action(() => { if (watch.Take(told)) actionsChanged?.Invoke(); })); }
+                        catch (Exception) { break; }
+                    }
+                });
+
             window.Closed += (s, e) =>
             {
                 _window = null;
+                watching.Cancel();
                 rainbowTimer?.Stop();
                 Theme.IsRainbow = false;
 

@@ -420,6 +420,8 @@
     "field.masked.show": "Eingabe anzeigen",
     "field.masked.hide": "Wieder verbergen",
     "field.global.locked": "Dieser Wert liegt in den globalen Variablen von Streamer.bot, und die Einstellungs-Action dieser Erweiterung kann sie nicht lesen. Aktualisiere die Erweiterung, um ihn hier zu setzen.",
+    "action.off": "Die Aktion '{0}' ist in Streamer.bot deaktiviert.",
+    "action.missing": "Die Aktion '{0}' gibt es in diesem Streamer.bot nicht.",
     "import.why.global": "liegt in den globalen Variablen von Streamer.bot, in keiner Datei",
     "cust.hidden": "ausgeblendet",
     "cust.emptyPage": "Keine Felder auf dieser Seite. Zieh eines von einer anderen Seite hierher oder verschieb eines über sein Menü.",

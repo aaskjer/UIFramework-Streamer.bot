@@ -141,5 +141,7 @@ namespace UIFramework
         public bool HasGlobals => _host.HasGlobals;
         public string GetGlobal(string name) => _host.GetGlobal(name);
         public bool SetGlobal(string name, string value) => _host.SetGlobal(name, value);
+        public string ActionStates(string ids) => _host.ActionStates(ids);
+        public bool SetAction(string id, bool enabled) => _host.SetAction(id, enabled);
     }
 }

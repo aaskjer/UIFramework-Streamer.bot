@@ -23,6 +23,19 @@ namespace UIFramework
         /// <summary>Every setting's whole field as its page shows it (label, control, help), for the tour to point at.</summary>
         public readonly Dictionary<string, System.Windows.FrameworkElement> Elements = new Dictionary<string, System.Windows.FrameworkElement>(StringComparer.Ordinal);
 
+        /// <summary>The actions of Streamer.bot the window watches; null where nothing is watched (a page built alone).</summary>
+        public ActionWatch Actions;
+        private readonly List<Action> _actionListeners = new List<Action>();
+
+        /// <summary>Runs whenever a watched action is enabled, disabled, deleted or back.</summary>
+        public void OnActions(Action changed) => _actionListeners.Add(changed);
+
+        public void RaiseActions()
+        {
+            foreach (var changed in _actionListeners.ToArray())
+                changed();
+        }
+
         // Keyed by page id, so switching pages only redraws the one in front.
         private readonly Dictionary<string, List<Action>> _refreshers = new Dictionary<string, List<Action>>(StringComparer.Ordinal);
         private readonly List<Action> _nameCommits = new List<Action>();

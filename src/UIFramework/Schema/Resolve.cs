@@ -52,6 +52,10 @@ namespace UIFramework
                 setting.RowsFrom = declared.RowsFrom;
                 setting.RowNumbers = declared.RowNumbers;
                 setting.FitWidth = declared.FitWidth;
+                // A switch that sets an action holds no value of its own: it shows whether the action is enabled, and is
+                // never saved and never a change.
+                if (setting.Kind == "bool" && !string.IsNullOrWhiteSpace(setting.SetsAction))
+                    setting.Transient = true;
                 // The rows of a list the project keeps come from the project alone: the window starts it empty.
                 if (ProjectRows.Applies(setting))
                     setting.Default = new JArray();
@@ -560,6 +564,19 @@ namespace UIFramework
                     continue;
                 }
                 string key = part.Key.TrimStart('!').Trim();
+                // A gate on an action of Streamer.bot: the window has to watch it, and it is on, off or missing.
+                if (Requirement.ActionOf(key) is string watched)
+                {
+                    if (!spec.Actions.Any(a => string.Equals(a.Name, watched, StringComparison.Ordinal)))
+                        spec.Problems.Add(owner + " " + what + " '" + key + "', but the window watches no action named '" + watched + "' (UiWindow.Actions, or \"actions\" in the schema); the condition always holds.");
+                    else if (part.Op != null && part.Op != "=" && part.Op != "!=")
+                        spec.Problems.Add(owner + " " + what + " '" + key + part.Op + string.Join("|", part.Values) + "': an action is on, off or missing; write '" + key + "=off' or '" + key + "!=on'.");
+                    else
+                        foreach (var value in part.Values)
+                            if (value != ActionWatch.On && value != ActionWatch.Off && value != ActionWatch.Missing)
+                                spec.Problems.Add(owner + " " + what + " '" + key + part.Op + value + "', but an action is on, off or missing, never '" + value + "'.");
+                    continue;
+                }
                 if (!byKey.TryGetValue(key, out var gate))
                 {
                     spec.Problems.Add(owner + " " + what + " '" + key + "', which is not a setting.");
@@ -804,6 +821,30 @@ namespace UIFramework
                 }
                 else if (!keys.Contains(stop.Target) && Array.IndexOf(TourStop.Parts, stop.Target) < 0)
                     spec.Problems.Add("The tour points at '" + stop.Target + "', which is neither a setting nor a part of the window (" + string.Join(", ", TourStop.Parts) + "); that stop is skipped.");
+            }
+            // The actions the window watches: each a name of its own and the id Streamer.bot has it under. A switch bound
+            // to one names an action the window watches, and only a switch can be bound.
+            foreach (var action in spec.Actions)
+            {
+                if (action.Name.Length == 0)
+                    spec.Problems.Add("The window watches an action without a name (UiWindow.Actions, or \"actions\" in the schema); no condition and no switch can name it.");
+                else if (spec.Actions.Count(a => a.Name == action.Name) > 1 && spec.Actions.First(a => a.Name == action.Name) == action)
+                    spec.Problems.Add("The window watches two actions named '" + action.Name + "'; the first counts.");
+                if (!Guid.TryParse(action.Id, out _))
+                    spec.Problems.Add("The window watches the action '" + (action.Name.Length > 0 ? action.Name : action.Id) + "' by '" + action.Id + "', which is no action id: Streamer.bot's are GUIDs (36 characters with four dashes), and an action is not found by its name.");
+            }
+            foreach (var s in spec.ResolvedSettings)
+            {
+                if (s.FollowsAction != null && s.SetsAction != null)
+                    spec.Problems.Add("'" + s.Key + "' has followsAction and setsAction; a switch either follows an action or sets it, and setsAction counts.");
+                foreach (var bound in new[] { ("followsAction", s.FollowsAction), ("setsAction", s.SetsAction) })
+                {
+                    if (bound.Item2 == null) continue;
+                    if (s.Kind != "bool")
+                        spec.Problems.Add("'" + s.Key + "' has " + bound.Item1 + ", but only a switch can be bound to an action; it is ignored.");
+                    else if (!spec.Actions.Any(a => string.Equals(a.Name, bound.Item2.Trim(), StringComparison.Ordinal)))
+                        spec.Problems.Add("'" + s.Key + "' has " + bound.Item1 + " '" + bound.Item2 + "', but the window watches no action of that name (UiWindow.Actions, or \"actions\" in the schema); the switch is an ordinary one.");
+                }
             }
             // The old values the window takes over: an action is found by its id, and a mapping leads to a setting that
             // takes a value. An old argument the table does not know is no mistake; it is simply not taken.

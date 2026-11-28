@@ -53,6 +53,13 @@ namespace UIFramework.Tests
         /// <summary>The actions this Streamer.bot has, for a settings action that finds its game by id.</summary>
         public readonly List<Streamer.bot.Plugin.Interface.Model.ActionData> Actions = new List<Streamer.bot.Plugin.Interface.Model.ActionData>();
         public List<Streamer.bot.Plugin.Interface.Model.ActionData> GetActions() => Actions;
+        public void EnableActionById(string id) => Switch(id, true);
+        public void DisableActionById(string id) => Switch(id, false);
+        private void Switch(string id, bool enabled)
+        {
+            foreach (var action in Actions)
+                if (string.Equals(action.Id.ToString(), id, StringComparison.OrdinalIgnoreCase)) action.Enabled = enabled;
+        }
         public bool RunActionById(string id, bool runImmediately = true) { Ran.Add("id " + id); return Game(this); }
         /// <summary>How the game action was run, in order: "name &lt;name&gt;" or "id &lt;id&gt;".</summary>
         public readonly List<string> Ran = new List<string>();

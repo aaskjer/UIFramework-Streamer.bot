@@ -52,6 +52,12 @@ public static class UiSchema
         public bool Transient, Live, Panel, Auto, Ask;
         // TwitchOnly: a switch that only matters on Twitch carries a "Twitch only" pill.
         public bool TwitchOnly;
+        // FollowsAction: a switch that follows an action of Streamer.bot the window watches (UiWindow.Actions), by the
+        // name it is watched under: while that action is disabled or gone, the switch shows off, cannot be changed
+        // and says why. Its own value is kept.
+        // SetsAction: a switch that stands for such an action: it shows whether the action is enabled, and enables
+        // or disables it in Streamer.bot at once. It is never saved.
+        public string FollowsAction, SetsAction;
         // Masked: a text field shown as dots until its eye button reveals it (a token, a client secret).
         public bool Masked;
         // Hint: grey text inside a one-line text field while it is empty ("not set", "optional"), masked or not.
@@ -85,7 +91,7 @@ public static class UiSchema
         bool readOnly = false, double? step = null, string group = null, bool ask = false,
         string global = null, string optionsFrom = null, int? every = null, bool saveFirst = false,
         string rowKey = null, bool fixedRows = false, string filter = null, string hint = null, string format = null, string rowsFrom = null,
-        bool rowNumbers = true, bool? fitWidth = null)
+        bool rowNumbers = true, bool? fitWidth = null, string followsAction = null, string setsAction = null)
     {
         return new Setting
         {
@@ -96,7 +102,7 @@ public static class UiSchema
             ShowWhen = showWhen, Shows = shows, ReadOnly = readOnly, Step = step, Group = group, Ask = ask,
             Global = global, OptionsFrom = optionsFrom, Every = every, SaveFirst = saveFirst,
             RowKey = rowKey, FixedRows = fixedRows, Filter = filter, Hint = hint, Format = format, RowsFrom = rowsFrom, RowNumbers = rowNumbers,
-            FitWidth = fitWidth
+            FitWidth = fitWidth, FollowsAction = followsAction, SetsAction = setsAction
         };
     }
 
@@ -209,6 +215,8 @@ public static class UiSchema
         if (s.Panel) item["panel"] = true;
         if (s.Auto) item["auto"] = true;
         if (s.TwitchOnly) item["twitchOnly"] = true;
+        if (s.FollowsAction != null) item["followsAction"] = s.FollowsAction;
+        if (s.SetsAction != null) item["setsAction"] = s.SetsAction;
         if (s.Masked) item["masked"] = true;
         if (s.Hint != null) item["hint"] = s.Hint;
         if (s.ReadOnly) item["readOnly"] = true;
@@ -267,6 +275,10 @@ public static class UiSchema
         if (args != null) parts.AddRange(args);
         return parts.ToArray();
     }
+    /// <summary>An action of Streamer.bot the window watches, for UiWindow.Actions: the name conditions and switches
+    /// call it by, its id in Streamer.bot (a GUID; an import keeps it), and what to call it in a text while
+    /// Streamer.bot does not have it.</summary>
+    public static string[] Act(string name, string actionId, string title = null) => new[] { name, actionId, title };
     /// <summary>An action an older version kept its settings in, as Set Argument sub-actions, for UiWindow.Adopt: its
     /// id in Streamer.bot, then what the table cannot tell by itself. An argument named like a setting's key or one
     /// of its aliases needs nothing; "old>new" takes the argument "old" into the setting "new", and
@@ -503,6 +515,26 @@ public sealed class UiWindow
     public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JArray TriggerList = new Newtonsoft.Json.Linq.JArray(), MethodList = new Newtonsoft.Json.Linq.JArray();
     public readonly Newtonsoft.Json.Linq.JArray AdoptList = new Newtonsoft.Json.Linq.JArray(), AdoptExceptList = new Newtonsoft.Json.Linq.JArray();
+    public readonly Newtonsoft.Json.Linq.JArray ActionList = new Newtonsoft.Json.Linq.JArray();
+
+    /// <summary>The actions of Streamer.bot the window watches, each as UiSchema.Act(name, id, title). While the
+    /// window is open it follows whether each is there and enabled: a condition names one as "action:name" (requires,
+    /// showWhen, a pill's when; "action:name" holds while it is enabled, "action:name=off" and "action:name=missing"
+    /// tell the rest apart), and a switch is bound to one with followsAction or setsAction. Needs the settings
+    /// action of this release (stub 0.3.5) and its UIFramework.dll; with an older one every action counts as
+    /// enabled.</summary>
+    public UiWindow Actions(params string[][] actions)
+    {
+        if (actions == null) return this;
+        foreach (var a in actions)
+        {
+            if (a == null || a.Length < 2) continue;
+            var entry = new Newtonsoft.Json.Linq.JObject { ["name"] = a[0], ["id"] = a[1] };
+            if (a.Length > 2 && a[2] != null) entry["title"] = a[2];
+            ActionList.Add(entry);
+        }
+        return this;
+    }
 
     /// <summary>Takes over the values of a version that kept its settings as Set Argument sub-actions, each old action
     /// as UiSchema.Old(actionId, ...). It happens once, while there is no settings file yet: the window looks for the
@@ -894,6 +926,7 @@ public sealed class UiWindow
         if (MethodList.Count > 0) root["methods"] = MethodList;
         if (AdoptList.Count > 0) root["adopt"] = AdoptList;
         if (AdoptExceptList.Count > 0) root["adoptExcept"] = AdoptExceptList;
+        if (ActionList.Count > 0) root["actions"] = ActionList;
         return root;
     }
 }
@@ -1186,7 +1219,7 @@ public static class UiUpdateNotice
 
     // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
     // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-    internal const string StubVersion = "0.3.4";
+    internal const string StubVersion = "0.3.5";
 
     /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
     /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>

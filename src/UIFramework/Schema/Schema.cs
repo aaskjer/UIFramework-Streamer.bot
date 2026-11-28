@@ -180,6 +180,13 @@ namespace UIFramework
         public bool Transient;
         /// <summary>For a bool: the switch carries a "Twitch only" pill.</summary>
         public bool TwitchOnly;
+        /// <summary>For a bool: the watched action (by its name in <c>window.actions</c>) the switch follows. While
+        /// that action is disabled or gone the switch shows off, cannot be changed and says why; its own value is
+        /// kept and shows again once the action is back.</summary>
+        public string FollowsAction;
+        /// <summary>For a bool: the watched action the switch stands for. It shows whether the action is enabled and
+        /// enables or disables it in Streamer.bot at once; it holds no value of its own and is never saved.</summary>
+        public string SetsAction;
         /// <summary>A text field whose value is shown as dots until its eye button reveals it (a token, a secret).</summary>
         public bool Masked;
         /// <summary>Grey text inside a one-line text field while it is empty ("not set", "optional"), masked or not.</summary>
@@ -265,6 +272,8 @@ namespace UIFramework
                 Hidden = item["hidden"]?.Type == JTokenType.Boolean && (bool)item["hidden"],
                 Transient = item["transient"]?.Type == JTokenType.Boolean && (bool)item["transient"],
                 TwitchOnly = item["twitchOnly"]?.Type == JTokenType.Boolean && (bool)item["twitchOnly"],
+                FollowsAction = item["followsAction"]?.Type == JTokenType.String ? (string)item["followsAction"] : null,
+                SetsAction = item["setsAction"]?.Type == JTokenType.String ? (string)item["setsAction"] : null,
                 Masked = item["masked"]?.Type == JTokenType.Boolean && (bool)item["masked"],
                 Hint = item["hint"]?.Type == JTokenType.String ? (string)item["hint"] : null,
                 ShowWhen = (string)item["showWhen"],
@@ -364,6 +373,8 @@ namespace UIFramework
             if (Hidden) item["hidden"] = true;
             if (Transient) item["transient"] = true;
             if (TwitchOnly) item["twitchOnly"] = true;
+            if (FollowsAction != null) item["followsAction"] = FollowsAction;
+            if (SetsAction != null) item["setsAction"] = SetsAction;
             if (Masked) item["masked"] = true;
             if (Hint != null) item["hint"] = Hint;
             if (ShowWhen != null) item["showWhen"] = ShowWhen;

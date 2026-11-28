@@ -15,7 +15,9 @@ namespace UIFramework
     /// none of them (<c>"questionSource=opentdb|wikidata"</c>). On a <c>multi</c> field <c>=</c> asks whether a value is
     /// ticked (<c>"platforms=steam"</c>), and <c>!platforms</c> holds while nothing is. Conditions joined by <c>&amp;&amp;</c> must all hold.
     /// The field follows its gates live; a gate the window does not show is read from the saved value, and one the
-    /// settings do not know at all counts as holding.
+    /// settings do not know at all counts as holding. <c>action:name</c> asks about an action of Streamer.bot the
+    /// window watches: <c>"action:poster"</c> holds while it is there and enabled, <c>"!action:poster"</c> while it is
+    /// not, <c>"action:poster=off"</c> and <c>"action:poster=missing"</c> tell the two apart.
     /// </summary>
     public static class Requirement
     {
@@ -67,6 +69,13 @@ namespace UIFramework
             return parts;
         }
 
+        /// <summary>The name of the watched action a gate asks about (<c>action:name</c>); null for a setting's key.</summary>
+        public static string ActionOf(string key)
+        {
+            string text = (key ?? "").Trim();
+            return text.StartsWith("action:", StringComparison.OrdinalIgnoreCase) ? text.Substring(7).Trim() : null;
+        }
+
         /// <summary>Calls <paramref name="apply"/> with whether the condition holds, now and whenever a gate changes.</summary>
         public static void Wire(Fields f, WindowParts parts, string condition, Action<bool> apply)
         {
@@ -83,6 +92,11 @@ namespace UIFramework
         /// window has no field for never does.</summary>
         public static void Listen(WindowParts parts, string key, Action changed)
         {
+            if (ActionOf(key) != null)
+            {
+                parts.OnActions(changed);
+                return;
+            }
             if (parts.Switches.TryGetValue(key, out var toggle))
             {
                 toggle.Checked += (sender, e) => changed();
@@ -103,6 +117,7 @@ namespace UIFramework
         /// A setting the window has no field for gives its saved value; null when the settings do not know the key.</summary>
         public static JToken Live(Fields f, WindowParts parts, string key)
         {
+            if (ActionOf(key) is string watched) return parts.Actions?.State(watched) ?? ActionWatch.On;
             if (parts.Switches.ContainsKey(key)) return f.LiveSwitch(key);
             if (parts.Boxes.TryGetValue(key, out var box))
                 return FieldTag.Of(box.Tag) is FieldTag tag ? FieldBinding.StoredText(tag, box.Text) : box.Text;
@@ -118,6 +133,13 @@ namespace UIFramework
         /// An empty list counts as empty.</summary>
         public static bool Holds(Fields f, WindowParts parts, Part c)
         {
+            if (ActionOf(c.Key) is string watched)
+            {
+                string state = parts.Actions?.State(watched) ?? ActionWatch.On;
+                if (c.Op == null) return c.Not ? state != ActionWatch.On : state == ActionWatch.On;
+                bool one = c.Values.Any(v => string.Equals(v, state, StringComparison.OrdinalIgnoreCase));
+                return c.Op == "=" ? one : c.Op == "!=" && !one;
+            }
             bool present = parts.Switches.ContainsKey(c.Key) || parts.Combos.ContainsKey(c.Key) || parts.Boxes.ContainsKey(c.Key) || parts.Sliders.ContainsKey(c.Key);
             // A list on the window counts by the rows it shows now, read without ending an edit in it.
             var saved = present ? null : parts.Lists.TryGetValue(c.Key, out var shown) ? shown.Peek : f.Token(c.Key);

@@ -23,6 +23,8 @@ namespace UIFramework
     ///   string Options(string key, string settingsJson) // a dropdown's options from the project (stub 0.3.3 and on)
     ///   string GetGlobal(string name)                // a persisted global of Streamer.bot (stub 0.3.3 and on)
     ///   void   SetGlobal(string name, string value)  // writes it; "" clears it
+    ///   string ActionStates(string ids)              // the watched actions: there, enabled? (stub 0.3.5 and on)
+    ///   void   SetAction(string id, bool enabled)    // enables or disables one
     ///   IEnumerable&lt;string&gt; ReadLogLines()          // or string[] / List&lt;string&gt;; null = no Log page
     ///   string WindowLogPrefix()                     // the prefix of the window's log lines, where it declares none
     /// </code>
@@ -30,7 +32,7 @@ namespace UIFramework
     public sealed class ReflectionHost : IHostLog, IHostHooks
     {
         private readonly object _host;
-        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources, _validate, _groups, _options, _getGlobal, _setGlobal;
+        private readonly MethodInfo _log, _onSaved, _test, _readTable, _readLog, _emoteSources, _validate, _groups, _options, _getGlobal, _setGlobal, _actionStates, _setAction;
 
         public ReflectionHost(object host)
         {
@@ -47,6 +49,8 @@ namespace UIFramework
             _options = Find(type, "Options", typeof(string), typeof(string));
             _getGlobal = Find(type, "GetGlobal", typeof(string));
             _setGlobal = Find(type, "SetGlobal", typeof(string), typeof(string));
+            _actionStates = Find(type, "ActionStates", typeof(string));
+            _setAction = Find(type, "SetAction", typeof(string), typeof(bool));
         }
 
         private static MethodInfo Find(Type type, string name, params Type[] parameters) =>
@@ -137,6 +141,19 @@ namespace UIFramework
         {
             if (_setGlobal == null) return false;
             try { _setGlobal.Invoke(_host, new object[] { name, value ?? "" }); return true; } catch (Exception) { return false; }
+        }
+
+        // A settings action before stub 0.3.5 knows neither: every watched action then counts as enabled.
+        public string ActionStates(string ids)
+        {
+            if (_actionStates == null) return null;
+            try { return _actionStates.Invoke(_host, new object[] { ids ?? "" }) as string; } catch (Exception) { return null; }
+        }
+
+        public bool SetAction(string id, bool enabled)
+        {
+            if (_setAction == null) return false;
+            try { _setAction.Invoke(_host, new object[] { id, enabled }); return true; } catch (Exception) { return false; }
         }
     }
 }
