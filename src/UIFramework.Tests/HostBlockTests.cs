@@ -550,6 +550,11 @@ namespace UIFramework.Tests
             Assert.Equal(other, (string)json["adopt"][1]["action"]);
             Assert.Null(json["adopt"][1]["map"]);                                    // nothing to rename: the id alone
             Assert.Null(new UiWindow("Demo Game").ToJson()["adopt"]);                // nothing declared, nothing in the schema
+            Assert.Null(json["adoptExcept"]);
+
+            // What the old version shipped in place of a value goes along, as declared.
+            var except = new UiWindow("Demo Game").Adopt(UiSchema.Old(old)).AdoptExcept("<< YOUR_* >>", null).AdoptExcept("changeme").ToJson();
+            Assert.Equal(new[] { "<< YOUR_* >>", "changeme" }, except["adoptExcept"].Select(e => (string)e).ToArray());
 
             // As text through the describe answer, as the settings action hands it to the DLL.
             var schema = Schema.Parse(SchemaWith(json).ToString(Formatting.None));

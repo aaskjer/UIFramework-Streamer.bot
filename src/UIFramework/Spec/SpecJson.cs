@@ -219,6 +219,11 @@ namespace UIFramework
                         continue;
                     spec.Adopt.Add(source);
                 }
+            // What the old version shipped in place of a value: a list of texts, or one.
+            if (root["adoptExcept"] is JArray excepts)
+                spec.AdoptExcept.AddRange(excepts.OfType<JValue>().Where(e => e.Type != JTokenType.Null).Select(e => e.ToString()));
+            else if (root["adoptExcept"] is JValue except && except.Type != JTokenType.Null)
+                spec.AdoptExcept.Add(except.ToString());
 
             if (root["tour"] is JArray tour)
                 foreach (var stop in tour)

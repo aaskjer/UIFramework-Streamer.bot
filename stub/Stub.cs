@@ -26,6 +26,9 @@ public class CPHInline
     private const string GameActionName = "Demo Game";
     // Its id in Streamer.bot, where the game ships as an import: an import keeps an action's id, so the settings
     // open also after someone renamed the action. Empty, or an id no action has: it is found by its name.
+    // Several ids, with commas between them, where more than one action of the project answers the window (each
+    // carries the host block): the first that is there and switched on is asked, so the settings still open
+    // after one of them was deleted or disabled.
     private const string GameActionId = "";
 
     // Known once the game has described itself: the log prefix the window asked for, the settings file, the
@@ -445,39 +448,46 @@ public class CPHInline
     private string GameName { get { return _gameName ?? GameActionName; } }
 
     /// <summary>Finds the game action: by GameActionId where an action has that id, else by GameActionName. An id
-    /// survives a rename and an import of a newer version; a name is all there is for an action made by hand.</summary>
+    /// survives a rename and an import of a newer version; a name is all there is for an action made by hand. Of
+    /// several ids the first whose action is there and switched on counts; where none is switched on, the first
+    /// that is there (the run then says that it is off).</summary>
     private void FindGame()
     {
         if (_gameName != null) return;
         string wanted = (_wantedId ?? "").Trim();
-        if (wanted.Length > 0)
+        var ids = new List<Guid>();
+        foreach (string part in wanted.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
         {
             Guid id;
-            if (!Guid.TryParse(wanted, out id))
-                WarnOnce("GameActionId '" + wanted + "' in the settings action is no action id (Streamer.bot's are GUIDs); the action is looked for by its name, '" + GameActionName + "'.");
-            else
-            {
-                var actions = CPH.GetActions();
-                if (actions != null)
-                    foreach (var action in actions)
-                        if (action != null && action.Id == id)
-                        {
-                            _gameId = id.ToString();
-                            _gameName = string.IsNullOrEmpty(action.Name) ? GameActionName : action.Name;
-                            return;
-                        }
-            }
+            if (Guid.TryParse(part.Trim(), out id)) { if (!ids.Contains(id)) ids.Add(id); }
+            else if (part.Trim().Length > 0)
+                WarnOnce("GameActionId '" + part.Trim() + "' in the settings action is no action id (Streamer.bot's are GUIDs); the action is looked for by " + (wanted.Trim() == part.Trim() ? "its name, '" + GameActionName + "'." : "the other ids, then by its name."));
         }
+        if (ids.Count > 0)
+        {
+            var actions = CPH.GetActions();
+            if (actions != null)
+                foreach (bool switchedOn in new[] { true, false })
+                    foreach (var id in ids)
+                        foreach (var action in actions)
+                            if (action != null && action.Id == id && (action.Enabled || !switchedOn))
+                            {
+                                _gameId = id.ToString();
+                                _gameName = string.IsNullOrEmpty(action.Name) ? GameActionName : action.Name;
+                                return;
+                            }
+        }
+        string which = ids.Count > 1 ? "one of the ids " + wanted : "the id " + wanted;
         if (CPH.ActionExists(GameActionName))
         {
             // An action made by hand has an id of its own: said once, since a rename would then lose it.
-            if (wanted.Length > 0)
-                WarnOnce("No action has the id " + wanted + " (GameActionId in the settings action); the game action was found by its name, '" + GameActionName + "'. It is found so only as long as it keeps that name.");
+            if (ids.Count > 0)
+                WarnOnce("No action has " + which + " (GameActionId in the settings action); the game action was found by its name, '" + GameActionName + "'. It is found so only as long as it keeps that name.");
             _gameName = GameActionName;
             return;
         }
-        throw new InvalidOperationException(wanted.Length > 0
-            ? "There is no action with the id " + wanted + " in this Streamer.bot, and none named '" + GameActionName + "'. The settings action finds the game action by GameActionId (the id the import gave it) or by GameActionName (its exact name)."
+        throw new InvalidOperationException(ids.Count > 0
+            ? "There is no action with " + which + " in this Streamer.bot, and none named '" + GameActionName + "'. The settings action finds the game action by GameActionId (the id the import gave it) or by GameActionName (its exact name)."
             : "There is no action named '" + GameActionName + "' in this Streamer.bot. GameActionName in the settings action must be the game action's exact name.");
     }
 
@@ -550,7 +560,7 @@ public class CPHInline
     private const string FrameworkName = "UIFramework for streamer.bot";
     // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
     // and is not offered to this one, and an installed DLL that asks for a newer one is passed over (0.2.1 and on).
-    private const string StubVersion = "0.3.3";
+    private const string StubVersion = "0.3.4";
     // The major line this stub is made for: it reads lib/<line>/latest.json and so is never offered a release of
     // another line. A new major version of the framework changes this one word.
     private const string FrameworkLine = "v2";

@@ -524,7 +524,7 @@
         public readonly Newtonsoft.Json.Linq.JObject LangMap = new Newtonsoft.Json.Linq.JObject();
         public readonly Newtonsoft.Json.Linq.JArray TourList = new Newtonsoft.Json.Linq.JArray();
         public readonly Newtonsoft.Json.Linq.JArray TriggerList = new Newtonsoft.Json.Linq.JArray(), MethodList = new Newtonsoft.Json.Linq.JArray();
-        public readonly Newtonsoft.Json.Linq.JArray AdoptList = new Newtonsoft.Json.Linq.JArray();
+        public readonly Newtonsoft.Json.Linq.JArray AdoptList = new Newtonsoft.Json.Linq.JArray(), AdoptExceptList = new Newtonsoft.Json.Linq.JArray();
 
         /// <summary>Takes over the values of a version that kept its settings as Set Argument sub-actions, each old action
         /// as UiSchema.Old(actionId, ...). It happens once, while there is no settings file yet: the window looks for the
@@ -546,6 +546,18 @@
                 }
                 AdoptList.Add(entry);
             }
+            return this;
+        }
+
+        /// <summary>What the old version shipped where the user was to put a value of their own, as in
+        /// AdoptExcept("&lt;&lt; YOUR_* &gt;&gt;"): Adopt leaves out a value that still reads so, and the field keeps
+        /// its default. * stands for any text; neither capitals nor the spaces around the value count. A
+        /// UIFramework.dll before 2.6.0 does not know this and takes such a value over.</summary>
+        public UiWindow AdoptExcept(params string[] values)
+        {
+            if (values != null)
+                foreach (var value in values)
+                    if (value != null) AdoptExceptList.Add(value);
             return this;
         }
 
@@ -903,6 +915,7 @@
             if (TriggerList.Count > 0) root["triggers"] = TriggerList;
             if (MethodList.Count > 0) root["methods"] = MethodList;
             if (AdoptList.Count > 0) root["adopt"] = AdoptList;
+            if (AdoptExceptList.Count > 0) root["adoptExcept"] = AdoptExceptList;
             return root;
         }
     }
@@ -1195,7 +1208,7 @@
 
         // The settings action released with this block (StubVersion in stub/Stub.cs, kept equal). One UIFramework runs per
         // Streamer.bot: a DLL loaded here that needs a newer one would keep this game's settings window from opening.
-        internal const string StubVersion = "0.3.3";
+        internal const string StubVersion = "0.3.4";
 
         /// <summary>UIFramework's UpdateNotices: from the UIFramework loaded already, else from the newest DLL installed that
         /// this game's settings action fits. One that is damaged or will not load leaves it to the next older one.</summary>

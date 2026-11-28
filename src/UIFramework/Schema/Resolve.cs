@@ -830,10 +830,18 @@ namespace UIFramework
                         spec.Problems.Add(owner + what + ", which is not a setting; that value is not taken over.");
                     else if (!Adoption.TakesValue(target))
                         spec.Problems.Add(owner + what + ", " + Article(target.Kind) + ", which takes no value from an old action; that value is not taken over.");
-                    else if (target.Transient || target.ReadOnly)
+                    // One the project locks now, or a Set Argument sets, is declared right: it only takes no value this time.
+                    else if (target.Transient || (target.ReadOnly && target.LockReason == null && target.Argument == null))
                         spec.Problems.Add(owner + what + ", which the window never saves (" + (target.ReadOnly ? "readOnly" : "transient") + "); that value is not taken over.");
                 }
             }
+            // What is left out of them: a text that names no value, or every value, leaves out none.
+            foreach (var except in spec.AdoptExcept)
+                if (except.Trim().Trim('*').Length == 0)
+                    spec.Problems.Add("The window leaves out old values that read like '" + except + "' (UiWindow.AdoptExcept, or \"adoptExcept\" in the schema), which names "
+                        + (except.Trim().Length == 0 ? "none" : "every one") + "; it is ignored.");
+            if (spec.AdoptExcept.Count > 0 && spec.Adopt.Count == 0)
+                spec.Problems.Add("The window leaves out old values (UiWindow.AdoptExcept, or \"adoptExcept\" in the schema) but takes over none: there is no UiWindow.Adopt, or \"adopt\" in the schema.");
         }
 
         /// <summary>A multi field stores its ticked values as one text, separated by commas, in the options' own spelling:

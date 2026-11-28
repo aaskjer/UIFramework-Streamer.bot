@@ -436,6 +436,70 @@ namespace UIFramework.Tests
         }
 
         [Fact]
+        public void OfSeveralIdsTheFirstActionThatIsThereAndSwitchedOnIsAsked()
+        {
+            // A project whose three actions all answer the window: the settings action names them all.
+            const string first = "aaaaaaaa-1111-4111-8111-111111111111", second = "bbbbbbbb-2222-4222-8222-222222222222", third = "cccccccc-3333-4333-8333-333333333333";
+            Func<string, string, bool, Streamer.bot.Plugin.Interface.Model.ActionData> action = (id, name, on) =>
+                new Streamer.bot.Plugin.Interface.Model.ActionData { Id = Guid.Parse(id), Name = name, Enabled = on };
+            Func<StubUnderTest> stubWith = () =>
+            {
+                var made = new StubUnderTest();
+                made.CPH.Exists = false;
+                made.CPH.Game = cph => { cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "answered", false); return true; };
+                return made;
+            };
+            Set("_wantedId", first + ", " + second.ToUpperInvariant() + " ; " + third);
+            try
+            {
+                // The first was deleted, the second is switched off: the third answers.
+                var stub = stubWith();
+                stub.CPH.Actions.Add(action(third, "Third", true));
+                stub.CPH.Actions.Add(action(second, "Second", false));
+                Assert.Equal("answered", Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Equal(new[] { "id " + third }, stub.CPH.Ran.ToArray());
+
+                // All three there and on: the one named first.
+                stub = stubWith();
+                foreach (var each in new[] { action(third, "Third", true), action(second, "Second", true), action(first, "First", true) }) stub.CPH.Actions.Add(each);
+                Assert.Equal("answered", Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Equal(new[] { "id " + first }, stub.CPH.Ran.ToArray());
+
+                // None is switched on: the first that is there is run, and the message names it.
+                stub = stubWith();
+                stub.CPH.Actions.Add(action(third, "Third", false));
+                stub.CPH.Actions.Add(action(second, "Second", false));
+                stub.CPH.Game = cph => false;
+                var off = Assert.Throws<InvalidOperationException>(() => Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Contains("'Second' did not run. Is it enabled?", off.Message);
+
+                // An action that stopped running is looked for again with the next request: another one may answer.
+                stub.CPH.Actions.Clear();
+                stub.CPH.Actions.Add(action(third, "Third", true));
+                stub.CPH.Ran.Clear();
+                stub.CPH.Game = cph => { cph.SetGlobalVar((string)cph.Arguments["uiframework.var"], "answered", false); return true; };
+                Assert.Equal("answered", Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Equal(new[] { "id " + third }, stub.CPH.Ran.ToArray());
+
+                // None of them is there, and nobody has the name: the message names the ids.
+                var gone = stubWith();
+                var ex = Assert.Throws<InvalidOperationException>(() => Call(gone, "AskGameNow", "test", "x", "{}"));
+                Assert.Contains("one of the ids " + first, ex.Message);
+                Assert.Empty(gone.CPH.Ran);
+
+                // What is no id among them is said once and passed over.
+                Set("_wantedId", "not-an-id, " + second);
+                var heard = Hearing();
+                stub = stubWith();
+                stub.CPH.Actions.Add(action(second, "Second", true));
+                Assert.Equal("answered", Call(stub, "AskGameNow", "test", "x", "{}"));
+                Assert.Equal(new[] { "id " + second }, stub.CPH.Ran.ToArray());
+                Assert.Contains(heard, line => line.Contains("'not-an-id'") && line.Contains("the other ids"));
+            }
+            finally { Set("_wantedId", ""); }
+        }
+
+        [Fact]
         public void DescribeNamesTheArgumentsTheSettingsActionItselfRunsWith()
         {
             // The game's action inherits them all; by this list it tells them from the Set Arguments of its own.
