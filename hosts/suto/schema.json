@@ -1,6 +1,6 @@
 {
   "host": "suto",
-  "version": "v2.1.0",
+  "version": "v2.2.0",
   "settingsFile": "Suggestions To/SuTo-Settings.json",
   "settings": [
     {
@@ -8,7 +8,8 @@
       "default": false,
       "page": "discord",
       "label": "Post suggestions to Discord",
-      "help": "Off: !suggestion does nothing for Discord, and everything below stays as it is."
+      "help": "Off: !suggestion does nothing for Discord, and everything below stays as it is.",
+      "followsAction": "discord"
     },
     {
       "key": "discordWebhookUrl",
@@ -16,6 +17,7 @@
       "page": "discord",
       "label": "Webhook URL",
       "help": "In Discord: channel settings > Integrations > Webhooks > New Webhook > Copy Webhook URL. Several URLs, separated by commas, each get the suggestion. Anyone who has the URL can post to the channel.",
+      "requires": "action:discord",
       "masked": true,
       "hint": "https://discord.com/api/webhooks/…"
     },
@@ -26,6 +28,7 @@
       "page": "discord",
       "label": "Send a test suggestion",
       "help": "Posts a test under your name and says here whether it arrived. Unsaved changes are saved first.",
+      "requires": "action:discord",
       "panel": true,
       "saveFirst": true
     },
@@ -35,7 +38,8 @@
       "page": "discord",
       "section": "The post",
       "label": "Text",
-      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. Discord's Markdown works: **bold**, __underline__, *italic*."
+      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. Discord's Markdown works: **bold**, __underline__, *italic*.",
+      "requires": "action:discord"
     },
     {
       "key": "discordShowFooter",
@@ -43,7 +47,8 @@
       "page": "discord",
       "section": "The post",
       "label": "Avatar and name under the post",
-      "help": "The viewer's avatar and name in the post's footer."
+      "help": "The viewer's avatar and name in the post's footer.",
+      "requires": "action:discord"
     },
     {
       "key": "discordShowPlatformTag",
@@ -52,7 +57,7 @@
       "section": "The post",
       "label": "Platform after the name",
       "help": "(TWITCH), (YOUTUBE) or (KICK) after the name.",
-      "requires": "discordShowFooter"
+      "requires": "action:discord && discordShowFooter"
     },
     {
       "key": "discordShowTimestamp",
@@ -60,7 +65,8 @@
       "page": "discord",
       "section": "The post",
       "label": "Date and time",
-      "help": "Discord shows them beside the name, in each reader's own time zone and language."
+      "help": "Discord shows them beside the name, in each reader's own time zone and language.",
+      "requires": "action:discord"
     },
     {
       "key": "discordRandomColour",
@@ -68,7 +74,8 @@
       "page": "discord",
       "section": "Colour",
       "label": "A random colour for every post",
-      "help": "On: the three colours below are not used."
+      "help": "On: the three colours below are not used.",
+      "requires": "action:discord"
     },
     {
       "key": "discordColourTwitch",
@@ -78,7 +85,7 @@
       "section": "Colour",
       "label": "Twitch",
       "help": "The bar beside a suggestion from Twitch.",
-      "requires": "!discordRandomColour",
+      "requires": "action:discord && !discordRandomColour",
       "row": "discordColours"
     },
     {
@@ -89,7 +96,7 @@
       "section": "Colour",
       "label": "YouTube",
       "help": "The bar beside a suggestion from YouTube.",
-      "requires": "!discordRandomColour",
+      "requires": "action:discord && !discordRandomColour",
       "row": "discordColours"
     },
     {
@@ -100,7 +107,7 @@
       "section": "Colour",
       "label": "Kick",
       "help": "The bar beside a suggestion from Kick.",
-      "requires": "!discordRandomColour",
+      "requires": "action:discord && !discordRandomColour",
       "row": "discordColours"
     },
     {
@@ -118,6 +125,7 @@
       "section": "Forum or thread (optional)",
       "label": "Forum webhook URL",
       "help": "A webhook of the forum channel. While it is set, it is used instead of the webhook URL above.",
+      "requires": "action:discord",
       "masked": true,
       "hint": "optional"
     },
@@ -128,6 +136,7 @@
       "section": "Forum or thread (optional)",
       "label": "A new thread per suggestion, named",
       "help": "Every suggestion opens a new forum post with this title; %user% is the viewer's name. Longer than 100 characters is cut.",
+      "requires": "action:discord",
       "hint": "Suggested by %user%"
     },
     {
@@ -137,6 +146,7 @@
       "section": "Forum or thread (optional)",
       "label": "Or all into one thread, with the ID",
       "help": "Every suggestion goes into this thread or forum post. In Discord: right-click the thread > Copy Thread ID (needs Developer Mode). With a name and an ID, the ID wins.",
+      "requires": "action:discord",
       "hint": "digits only"
     },
     {
@@ -154,7 +164,7 @@
       "section": "Pictures (optional)",
       "label": "From Twitch",
       "help": "The web address of a picture.",
-      "requires": "discordShowFooter",
+      "requires": "action:discord && discordShowFooter",
       "hint": "https://…"
     },
     {
@@ -164,7 +174,7 @@
       "section": "Pictures (optional)",
       "label": "From YouTube",
       "help": "The web address of a picture.",
-      "requires": "discordShowFooter",
+      "requires": "action:discord && discordShowFooter",
       "hint": "https://…"
     },
     {
@@ -174,7 +184,7 @@
       "section": "Pictures (optional)",
       "label": "From Kick",
       "help": "The web address of a picture.",
-      "requires": "discordShowFooter",
+      "requires": "action:discord && discordShowFooter",
       "hint": "https://…"
     },
     {
@@ -182,7 +192,8 @@
       "default": false,
       "page": "stoat",
       "label": "Post suggestions to Stoat",
-      "help": "Off: !suggestion does nothing for Stoat, and everything below stays as it is."
+      "help": "Off: !suggestion does nothing for Stoat, and everything below stays as it is.",
+      "followsAction": "stoat"
     },
     {
       "key": "stoatWebhookUrl",
@@ -190,6 +201,7 @@
       "page": "stoat",
       "label": "Webhook URL",
       "help": "From the channel's webhook settings in Stoat. Several URLs, separated by commas, each get the suggestion. Anyone who has the URL can post to the channel.",
+      "requires": "action:stoat",
       "masked": true,
       "hint": "https://api.stoat.chat/webhooks/…"
     },
@@ -200,6 +212,7 @@
       "page": "stoat",
       "label": "Send a test suggestion",
       "help": "Posts a test under your name and says here whether it arrived. Unsaved changes are saved first.",
+      "requires": "action:stoat",
       "panel": true,
       "saveFirst": true
     },
@@ -209,7 +222,8 @@
       "page": "stoat",
       "section": "The post",
       "label": "Text",
-      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. Markdown works."
+      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. Markdown works.",
+      "requires": "action:stoat"
     },
     {
       "key": "stoatFooterTemplate",
@@ -217,7 +231,8 @@
       "page": "stoat",
       "section": "The post",
       "label": "Line under the text",
-      "help": "%user% and %platform% work here too. The viewer's avatar stands in front of it (Twitch and Kick)."
+      "help": "%user% and %platform% work here too. The viewer's avatar stands in front of it (Twitch and Kick).",
+      "requires": "action:stoat"
     },
     {
       "key": "stoatShowTimestamp",
@@ -225,7 +240,8 @@
       "page": "stoat",
       "section": "The post",
       "label": "Date and time",
-      "help": "Your PC's time, after the line under the text."
+      "help": "Your PC's time, after the line under the text.",
+      "requires": "action:stoat"
     },
     {
       "key": "stoatTimestampFormat",
@@ -234,7 +250,7 @@
       "section": "The post",
       "label": "Time format",
       "help": "A .NET date format: yyyy-MM-dd HH:mm shows 2026-10-25 20:21, dd.MM.yyyy HH:mm shows 25.10.2026 20:21, HH:mm shows 20:21.",
-      "requires": "stoatShowTimestamp"
+      "requires": "action:stoat && stoatShowTimestamp"
     },
     {
       "key": "stoatRandomColour",
@@ -242,7 +258,8 @@
       "page": "stoat",
       "section": "Colour",
       "label": "A random colour for every post",
-      "help": "On: the three colours below are not used."
+      "help": "On: the three colours below are not used.",
+      "requires": "action:stoat"
     },
     {
       "key": "stoatColourTwitch",
@@ -252,7 +269,7 @@
       "section": "Colour",
       "label": "Twitch",
       "help": "The bar beside a suggestion from Twitch.",
-      "requires": "!stoatRandomColour",
+      "requires": "action:stoat && !stoatRandomColour",
       "row": "stoatColours"
     },
     {
@@ -263,7 +280,7 @@
       "section": "Colour",
       "label": "YouTube",
       "help": "The bar beside a suggestion from YouTube.",
-      "requires": "!stoatRandomColour",
+      "requires": "action:stoat && !stoatRandomColour",
       "row": "stoatColours"
     },
     {
@@ -274,7 +291,7 @@
       "section": "Colour",
       "label": "Kick",
       "help": "The bar beside a suggestion from Kick.",
-      "requires": "!stoatRandomColour",
+      "requires": "action:stoat && !stoatRandomColour",
       "row": "stoatColours"
     },
     {
@@ -292,6 +309,7 @@
       "section": "Pictures (optional)",
       "label": "From Twitch",
       "help": "The web address of a picture.",
+      "requires": "action:stoat",
       "hint": "https://…"
     },
     {
@@ -301,6 +319,7 @@
       "section": "Pictures (optional)",
       "label": "From YouTube",
       "help": "The web address of a picture.",
+      "requires": "action:stoat",
       "hint": "https://…"
     },
     {
@@ -310,6 +329,7 @@
       "section": "Pictures (optional)",
       "label": "From Kick",
       "help": "The web address of a picture.",
+      "requires": "action:stoat",
       "hint": "https://…"
     },
     {
@@ -317,7 +337,8 @@
       "default": false,
       "page": "gamevox",
       "label": "Post suggestions to GameVox",
-      "help": "Off: !suggestion does nothing for GameVox, and everything below stays as it is."
+      "help": "Off: !suggestion does nothing for GameVox, and everything below stays as it is.",
+      "followsAction": "gameVox"
     },
     {
       "key": "gameVoxWebhookUrl",
@@ -325,6 +346,7 @@
       "page": "gamevox",
       "label": "Webhook URL",
       "help": "The execute URL of an app webhook: GameVox Developer Portal > your application > Webhooks > New Webhook. GameVox shows it only once, and webhooks only reach cloud-hosted servers. Several URLs, separated by commas, each get the suggestion. Anyone who has the URL can post to the channel.",
+      "requires": "action:gameVox",
       "masked": true,
       "hint": "https://…"
     },
@@ -335,6 +357,7 @@
       "page": "gamevox",
       "label": "Send a test suggestion",
       "help": "Posts a test under your name and says here whether it arrived. Unsaved changes are saved first.",
+      "requires": "action:gameVox",
       "panel": true,
       "saveFirst": true
     },
@@ -344,7 +367,8 @@
       "page": "gamevox",
       "section": "The post",
       "label": "Text",
-      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. GameVox shows no Markdown, so this is plain text."
+      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. GameVox shows no Markdown, so this is plain text.",
+      "requires": "action:gameVox"
     },
     {
       "key": "gameVoxShowFooter",
@@ -352,7 +376,8 @@
       "page": "gamevox",
       "section": "The post",
       "label": "Avatar and name under the post",
-      "help": "The viewer's avatar and name in the post's footer."
+      "help": "The viewer's avatar and name in the post's footer.",
+      "requires": "action:gameVox"
     },
     {
       "key": "gameVoxShowPlatformTag",
@@ -361,7 +386,7 @@
       "section": "The post",
       "label": "Platform after the name",
       "help": "(TWITCH), (YOUTUBE) or (KICK) after the name.",
-      "requires": "gameVoxShowFooter"
+      "requires": "action:gameVox && gameVoxShowFooter"
     },
     {
       "key": "gameVoxShowTimestamp",
@@ -369,7 +394,8 @@
       "page": "gamevox",
       "section": "The post",
       "label": "Date and time",
-      "help": "Your PC's time in the footer, also without avatar and name."
+      "help": "Your PC's time in the footer, also without avatar and name.",
+      "requires": "action:gameVox"
     },
     {
       "key": "gameVoxTimestampFormat",
@@ -378,7 +404,7 @@
       "section": "The post",
       "label": "Time format",
       "help": "A .NET date format: yyyy-MM-dd HH:mm shows 2026-10-25 20:21, dd.MM.yyyy HH:mm shows 25.10.2026 20:21, HH:mm shows 20:21.",
-      "requires": "gameVoxShowTimestamp"
+      "requires": "action:gameVox && gameVoxShowTimestamp"
     },
     {
       "key": "gameVoxRandomColour",
@@ -386,7 +412,8 @@
       "page": "gamevox",
       "section": "Colour",
       "label": "A random colour for every post",
-      "help": "On: the three colours below are not used."
+      "help": "On: the three colours below are not used.",
+      "requires": "action:gameVox"
     },
     {
       "key": "gameVoxColourTwitch",
@@ -396,7 +423,7 @@
       "section": "Colour",
       "label": "Twitch",
       "help": "The bar beside a suggestion from Twitch.",
-      "requires": "!gameVoxRandomColour",
+      "requires": "action:gameVox && !gameVoxRandomColour",
       "row": "gameVoxColours"
     },
     {
@@ -407,7 +434,7 @@
       "section": "Colour",
       "label": "YouTube",
       "help": "The bar beside a suggestion from YouTube.",
-      "requires": "!gameVoxRandomColour",
+      "requires": "action:gameVox && !gameVoxRandomColour",
       "row": "gameVoxColours"
     },
     {
@@ -418,7 +445,7 @@
       "section": "Colour",
       "label": "Kick",
       "help": "The bar beside a suggestion from Kick.",
-      "requires": "!gameVoxRandomColour",
+      "requires": "action:gameVox && !gameVoxRandomColour",
       "row": "gameVoxColours"
     },
     {
@@ -436,7 +463,7 @@
       "section": "Pictures (optional)",
       "label": "From Twitch",
       "help": "The web address of a picture.",
-      "requires": "gameVoxShowFooter",
+      "requires": "action:gameVox && gameVoxShowFooter",
       "hint": "https://…"
     },
     {
@@ -446,7 +473,7 @@
       "section": "Pictures (optional)",
       "label": "From YouTube",
       "help": "The web address of a picture.",
-      "requires": "gameVoxShowFooter",
+      "requires": "action:gameVox && gameVoxShowFooter",
       "hint": "https://…"
     },
     {
@@ -456,7 +483,7 @@
       "section": "Pictures (optional)",
       "label": "From Kick",
       "help": "The web address of a picture.",
-      "requires": "gameVoxShowFooter",
+      "requires": "action:gameVox && gameVoxShowFooter",
       "hint": "https://…"
     },
     {
@@ -516,7 +543,7 @@
     "releases": "aaskjer/SuTo",
     "logPrefix": "[SuTo/Settings]",
     "placeholderStyle": "percent",
-    "requires": "2.6.0",
+    "requires": "2.7.0",
     "pages": [
       {
         "id": "discord",
@@ -583,27 +610,81 @@
       {
         "states": [
           {
-            "text": "Discord: action missing",
+            "text": "Discord: action off",
+            "when": "action:discord=off",
             "tone": "warn",
-            "tooltip": "The action '[SuTo] ... Discord' is not in this Streamer.bot. Import SuTo again to post to Discord."
+            "tooltip": "The action '[SuTo] ... Discord' is disabled in Streamer.bot: nothing is posted to Discord."
+          },
+          {
+            "text": "Discord: action missing",
+            "when": "action:discord=missing",
+            "tone": "warn",
+            "tooltip": "The action '[SuTo] ... Discord' is not in this Streamer.bot: nothing is posted to Discord."
+          },
+          {
+            "text": "Discord",
+            "when": "discordEnabled",
+            "tone": "ok",
+            "tooltip": "Suggestions are posted to Discord."
+          },
+          {
+            "text": "Discord: off",
+            "tone": "muted",
+            "tooltip": "Discord is switched off on its page."
           }
         ]
       },
       {
         "states": [
+          {
+            "text": "Stoat: action off",
+            "when": "action:stoat=off",
+            "tone": "warn",
+            "tooltip": "The action '[SuTo] ... Stoat' is disabled in Streamer.bot: nothing is posted to Stoat."
+          },
           {
             "text": "Stoat: action missing",
+            "when": "action:stoat=missing",
             "tone": "warn",
-            "tooltip": "The action '[SuTo] ... Stoat' is not in this Streamer.bot. Import SuTo again to post to Stoat."
+            "tooltip": "The action '[SuTo] ... Stoat' is not in this Streamer.bot: nothing is posted to Stoat."
+          },
+          {
+            "text": "Stoat",
+            "when": "stoatEnabled",
+            "tone": "ok",
+            "tooltip": "Suggestions are posted to Stoat."
+          },
+          {
+            "text": "Stoat: off",
+            "tone": "muted",
+            "tooltip": "Stoat is switched off on its page."
           }
         ]
       },
       {
         "states": [
           {
-            "text": "GameVox: action missing",
+            "text": "GameVox: action off",
+            "when": "action:gameVox=off",
             "tone": "warn",
-            "tooltip": "The action '[SuTo] ... GameVox' is not in this Streamer.bot. Import SuTo again to post to GameVox."
+            "tooltip": "The action '[SuTo] ... GameVox' is disabled in Streamer.bot: nothing is posted to GameVox."
+          },
+          {
+            "text": "GameVox: action missing",
+            "when": "action:gameVox=missing",
+            "tone": "warn",
+            "tooltip": "The action '[SuTo] ... GameVox' is not in this Streamer.bot: nothing is posted to GameVox."
+          },
+          {
+            "text": "GameVox",
+            "when": "gameVoxEnabled",
+            "tone": "ok",
+            "tooltip": "Suggestions are posted to GameVox."
+          },
+          {
+            "text": "GameVox: off",
+            "tone": "muted",
+            "tooltip": "GameVox is switched off on its page."
           }
         ]
       }
@@ -773,51 +854,23 @@
     ],
     "adoptExcept": [
       "<< YOUR_* >>"
+    ],
+    "actions": [
+      {
+        "name": "discord",
+        "id": "f3685af6-c372-423d-9efe-867dada8ce7e",
+        "title": "[SuTo] ... Discord"
+      },
+      {
+        "name": "stoat",
+        "id": "16092733-c9ad-4cef-9b28-574b033cd79b",
+        "title": "[SuTo] ... Stoat"
+      },
+      {
+        "name": "gameVox",
+        "id": "969b3598-7759-4f75-b873-d78807daa3af",
+        "title": "[SuTo] ... GameVox"
+      }
     ]
-  },
-  "lockedFields": {
-    "discordEnabled": "The action '[SuTo] ... Discord' is not in this Streamer.bot. Import SuTo again to post to Discord.",
-    "discordWebhookUrl": "",
-    "discordSuggestionTemplate": "",
-    "discordShowFooter": "",
-    "discordShowPlatformTag": "",
-    "discordShowTimestamp": "",
-    "discordRandomColour": "",
-    "discordColourTwitch": "",
-    "discordColourYouTube": "",
-    "discordColourKick": "",
-    "discordForumWebhookUrl": "",
-    "discordThreadName": "",
-    "discordThreadId": "",
-    "discordIconTwitch": "",
-    "discordIconYouTube": "",
-    "discordIconKick": "",
-    "stoatEnabled": "The action '[SuTo] ... Stoat' is not in this Streamer.bot. Import SuTo again to post to Stoat.",
-    "stoatWebhookUrl": "",
-    "stoatSuggestionTemplate": "",
-    "stoatFooterTemplate": "",
-    "stoatShowTimestamp": "",
-    "stoatTimestampFormat": "",
-    "stoatRandomColour": "",
-    "stoatColourTwitch": "",
-    "stoatColourYouTube": "",
-    "stoatColourKick": "",
-    "stoatIconTwitch": "",
-    "stoatIconYouTube": "",
-    "stoatIconKick": "",
-    "gameVoxEnabled": "The action '[SuTo] ... GameVox' is not in this Streamer.bot. Import SuTo again to post to GameVox.",
-    "gameVoxWebhookUrl": "",
-    "gameVoxSuggestionTemplate": "",
-    "gameVoxShowFooter": "",
-    "gameVoxShowPlatformTag": "",
-    "gameVoxShowTimestamp": "",
-    "gameVoxTimestampFormat": "",
-    "gameVoxRandomColour": "",
-    "gameVoxColourTwitch": "",
-    "gameVoxColourYouTube": "",
-    "gameVoxColourKick": "",
-    "gameVoxIconTwitch": "",
-    "gameVoxIconYouTube": "",
-    "gameVoxIconKick": ""
   }
 }
