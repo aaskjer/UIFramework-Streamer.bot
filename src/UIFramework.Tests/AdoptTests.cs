@@ -298,6 +298,73 @@ namespace UIFramework.Tests
             Assert.Single(adopted.Values.Properties());
         }
 
+        // ---- What the old version shipped in place of a value --------------------------------------------------
+
+        [Fact]
+        public void AValueTheOldVersionShippedInItsPlaceIsLeftOut()
+        {
+            // The hook was never set: the action still has what it came with. So has the message.
+            Live(AnAction(OldAction, SetArg("hook", "<< YOUR_WEBHOOK >>"), SetArg("coinName", "  << your_coin >> "), SetArg("stake", "25"),
+                Say(10, WonMessage, "<< YOUR_MESSAGE >>")));
+            var adopted = Adoption.Read(Spec(Old(OldAction, "#" + WonMessage + ">msgWon"), "<< YOUR_* >>"), _root, null);
+            Assert.Equal(25, (int)adopted.Values["stake"]);
+            Assert.Single(adopted.Values.Properties());
+
+            // Undeclared, it comes over as any text does; and a value the user set is taken, whatever is declared.
+            Assert.Equal("<< YOUR_WEBHOOK >>", (string)Adoption.Read(Spec(Old(OldAction)), _root, null).Values["hook"]);
+            Live(AnAction(OldAction, SetArg("hook", Secret), SetArg("coinName", "YOUR_COIN")));
+            adopted = Adoption.Read(Spec(Old(OldAction), "<< YOUR_* >>", "changeme"), _root, null);
+            Assert.Equal(Secret, (string)adopted.Values["hook"]);
+            Assert.Equal("YOUR_COIN", (string)adopted.Values["coinName"]);
+
+            // An action that holds nothing else has no values: it is looked for further back, as one without Set Arguments.
+            Live(AnAction(OldAction, SetArg("hook", "ChangeMe")));
+            Backup("backup-20261101-09150012345-1.0.7.zip", AnAction(OldAction, SetArg("hook", Secret)));
+            adopted = Adoption.Read(Spec(Old(OldAction), "<< YOUR_* >>", "changeme"), _root, null);
+            Assert.Equal(Secret, (string)adopted.Values["hook"]);
+            Assert.True(adopted.From["hook"].Backup);
+        }
+
+        [Fact]
+        public void AStarStandsForAnyText()
+        {
+            Assert.True(Adoption.Reads("<< YOUR_WEBHOOK >>", "<< YOUR_* >>"));
+            Assert.True(Adoption.Reads("  << your_webhook >>  ", "<< YOUR_* >>"));     // capitals and the spaces around do not count
+            Assert.True(Adoption.Reads("<< YOUR_ >>", "<< YOUR_* >>"));                // any text, none too
+            Assert.True(Adoption.Reads("<< YOUR_A >> and >>", "<< YOUR_* >>"));
+            Assert.True(Adoption.Reads("https://example.test/your-webhook-here", "*your-webhook-here"));
+            Assert.True(Adoption.Reads("a*b", "a*b"));
+            Assert.True(Adoption.Reads("xaybzc", "*a*b*c"));
+            Assert.False(Adoption.Reads("<< YOUR_WEBHOOK >", "<< YOUR_* >>"));
+            Assert.False(Adoption.Reads("my << YOUR_WEBHOOK >>", "<< YOUR_* >>"));     // the whole value, not a part of it
+            Assert.False(Adoption.Reads("changeme!", "changeme"));
+            Assert.False(Adoption.Reads("", "changeme"));
+            Assert.False(Adoption.Reads(null, "changeme"));
+
+            // A text that names no value, or every value, leaves out none.
+            foreach (string none in new[] { null, "", "  ", "*", " ** " })
+            {
+                Assert.False(Adoption.Reads("anything", none));
+                Assert.False(Adoption.Reads("", none));
+            }
+        }
+
+        [Fact]
+        public void WhatIsLeftOutIsDeclaredAsAListOrAsOneText()
+        {
+            Assert.Equal(new[] { "<< YOUR_* >>", "changeme" }, Spec(Old(OldAction), "<< YOUR_* >>", "changeme").AdoptExcept.ToArray());
+            var one = Schema.Parse(SchemaJson(Old(OldAction)).Replace(@"""adopt"":", @"""adoptExcept"": ""changeme"", ""adopt"":"));
+            Assert.Equal(new[] { "changeme" }, Entry.SpecFor(one, Path.Combine(_root, "Demo", "settings.json")).AdoptExcept.ToArray());
+            Assert.Empty(Spec(Old(OldAction)).AdoptExcept);
+            Assert.Empty(Spec(Old(OldAction), "<< YOUR_* >>").Problems);
+
+            var problems = Spec(Old(OldAction), "", " * ", "fine").Problems;
+            Assert.Contains(problems, p => p.Contains("that read like ''") && p.Contains("which names none; it is ignored"));
+            Assert.Contains(problems, p => p.Contains("that read like ' * '") && p.Contains("which names every one; it is ignored"));
+            Assert.Equal(2, problems.Count);
+            Assert.Contains(Spec(null, "changeme").Problems, p => p.Contains("leaves out old values") && p.Contains("but takes over none"));
+        }
+
         // ---- The declaration -----------------------------------------------------------------------------------
 
         [Fact]
@@ -318,6 +385,16 @@ namespace UIFramework.Tests
             Assert.Contains(problems, p => p.Contains("into 'ghost', which is not a setting"));
             Assert.Equal(9, problems.Count);                                            // 'fine>stake' is fine
             Assert.Equal(problems.Count, spec.Problems.Count);
+
+            // A setting the project locks when the window opens is declared right: no problem, and no value for it.
+            var lockedNow = Schema.Parse(SchemaJson(Old(OldAction, "einsatz>stake")).Replace(@"""host"": ""demo"",", @"""host"": ""demo"", ""lockedFields"": { ""stake"": ""Set by the tournament."" },"));
+            var lockedSpec = Entry.SpecFor(lockedNow, Path.Combine(_root, "Demo", "settings.json"));
+            Entry.Prepare(lockedSpec, lockedNow);
+            Assert.Empty(lockedSpec.Problems);
+            Live(AnAction(OldAction, SetArg("einsatz", "25"), SetArg("coinName", "Zorkmids")));
+            var besideLocked = Adoption.Read(lockedSpec, _root, null);
+            Assert.Null(besideLocked.Values["stake"]);
+            Assert.Equal("Zorkmids", (string)besideLocked.Values["coinName"]);
 
             // A declaration without a mistake has no problem, however the id is written; an entry may be the id alone.
             Assert.Empty(Spec(Old("{" + OldAction.ToUpperInvariant() + "}", "einsatz>stake") + ", \"" + OtherAction + "\"").Problems);
@@ -511,7 +588,7 @@ namespace UIFramework.Tests
         private static string Old(string actionId, params string[] map) =>
             new JObject { ["action"] = actionId, ["map"] = new JArray(map.Cast<object>().ToArray()) }.ToString(Newtonsoft.Json.Formatting.None);
 
-        private static string SchemaJson(string adopt) => @"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [
+        private static string SchemaJson(string adopt, params string[] except) => @"{ ""host"": ""demo"", ""version"": ""v1"", ""settingsFile"": ""x"", ""settings"": [
             { ""key"": ""active"", ""default"": false, ""page"": ""game"", ""label"": ""Active"" },
             { ""key"": ""stake"", ""default"": 10, ""page"": ""game"", ""label"": ""Stake"", ""aliases"": [""OldStake""] },
             { ""key"": ""odds"", ""default"": 45.0, ""page"": ""game"", ""label"": ""Odds"", ""aliases"": [""OddsFraction""], ""aliasFactors"": { ""OddsFraction"": 100 } },
@@ -527,12 +604,13 @@ namespace UIFramework.Tests
             { ""key"": ""words"", ""default"": [ { ""word"": ""a"" } ], ""kind"": ""list"", ""page"": ""game"", ""label"": ""Words"", ""columns"": [ ""word"" ] },
             { ""key"": ""tryIt"", ""default"": """", ""kind"": ""action"", ""page"": ""game"", ""label"": ""Try"" } ],
             ""window"": { ""title"": ""Demo"", ""pages"": [ ""game"", { ""id"": ""probe"", ""title"": ""Probe"", ""custom"": true } ]"
-            + (adopt == null ? "" : @", ""adopt"": [ " + adopt + " ]") + " } }";
+            + (adopt == null ? "" : @", ""adopt"": [ " + adopt + " ]")
+            + (except.Length == 0 ? "" : @", ""adoptExcept"": " + new JArray(except.Cast<object>().ToArray()).ToString(Newtonsoft.Json.Formatting.None)) + " } }";
 
         /// <summary>The window resolved, as the shell has it when it looks for the old values.</summary>
-        private WindowSpec Spec(string adopt)
+        private WindowSpec Spec(string adopt, params string[] except)
         {
-            var schema = Schema.Parse(SchemaJson(adopt));
+            var schema = Schema.Parse(SchemaJson(adopt, except));
             var spec = Entry.SpecFor(schema, Path.Combine(_root, "Demo", "settings.json"));
             Entry.Prepare(spec, schema);
             return spec;

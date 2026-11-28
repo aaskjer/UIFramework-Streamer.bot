@@ -70,6 +70,9 @@ namespace UIFramework
         /// <summary>The actions a version before this window kept its settings in (<c>window.adopt</c>): while
         /// nothing has been saved yet, their values come into the window as unsaved changes (<see cref="Adoption"/>).</summary>
         public readonly List<AdoptSource> Adopt = new List<AdoptSource>();
+        /// <summary>What the version before shipped where the user was to put a value (<c>window.adoptExcept</c>,
+        /// "&lt;&lt; YOUR_* &gt;&gt;"): an old value that still reads so is left out. <c>*</c> stands for any text.</summary>
+        public readonly List<string> AdoptExcept = new List<string>();
 
         /// <summary>Sample answers for the preview: action key to what the host would answer (text or JSON).</summary>
         public readonly Dictionary<string, string> Answers = new Dictionary<string, string>(StringComparer.Ordinal);

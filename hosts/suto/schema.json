@@ -1,0 +1,741 @@
+{
+  "host": "suto",
+  "version": "v2.0.0",
+  "settingsFile": "Suggestions To/SuTo-Settings.json",
+  "settings": [
+    {
+      "key": "discordEnabled",
+      "default": false,
+      "page": "discord",
+      "label": "Post suggestions to Discord",
+      "help": "Off: !suggestion does nothing for Discord, and everything below stays as it is."
+    },
+    {
+      "key": "discordWebhookUrl",
+      "default": "",
+      "page": "discord",
+      "label": "Webhook URL",
+      "help": "In Discord: channel settings > Integrations > Webhooks > New Webhook > Copy Webhook URL. Several URLs, separated by commas, each get the suggestion. Anyone who has the URL can post to the channel.",
+      "masked": true,
+      "hint": "https://discord.com/api/webhooks/…"
+    },
+    {
+      "key": "discordTest",
+      "default": null,
+      "kind": "action",
+      "page": "discord",
+      "label": "Send a test suggestion",
+      "help": "Posts a test under your name and says here whether it arrived. Unsaved changes are saved first.",
+      "panel": true,
+      "saveFirst": true
+    },
+    {
+      "key": "discordSuggestionTemplate",
+      "default": "📝 **__Suggestion__**: %suggestion%",
+      "page": "discord",
+      "section": "The post",
+      "label": "Text",
+      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. Discord's Markdown works: **bold**, __underline__, *italic*."
+    },
+    {
+      "key": "discordShowFooter",
+      "default": true,
+      "page": "discord",
+      "section": "The post",
+      "label": "Avatar and name under the post",
+      "help": "The viewer's avatar and name in the post's footer."
+    },
+    {
+      "key": "discordShowPlatformTag",
+      "default": true,
+      "page": "discord",
+      "section": "The post",
+      "label": "Platform after the name",
+      "help": "(TWITCH), (YOUTUBE) or (KICK) after the name.",
+      "requires": "discordShowFooter"
+    },
+    {
+      "key": "discordShowTimestamp",
+      "default": true,
+      "page": "discord",
+      "section": "The post",
+      "label": "Date and time",
+      "help": "Discord shows them beside the name, in each reader's own time zone and language."
+    },
+    {
+      "key": "discordRandomColour",
+      "default": false,
+      "page": "discord",
+      "section": "Colour",
+      "label": "A random colour for every post",
+      "help": "On: the three colours below are not used."
+    },
+    {
+      "key": "discordColourTwitch",
+      "default": "#9146FF",
+      "kind": "colour",
+      "page": "discord",
+      "section": "Colour",
+      "label": "Twitch",
+      "help": "The bar beside a suggestion from Twitch.",
+      "requires": "!discordRandomColour",
+      "row": "discordColours"
+    },
+    {
+      "key": "discordColourYouTube",
+      "default": "#FF0000",
+      "kind": "colour",
+      "page": "discord",
+      "section": "Colour",
+      "label": "YouTube",
+      "help": "The bar beside a suggestion from YouTube.",
+      "requires": "!discordRandomColour",
+      "row": "discordColours"
+    },
+    {
+      "key": "discordColourKick",
+      "default": "#53FC18",
+      "kind": "colour",
+      "page": "discord",
+      "section": "Colour",
+      "label": "Kick",
+      "help": "The bar beside a suggestion from Kick.",
+      "requires": "!discordRandomColour",
+      "row": "discordColours"
+    },
+    {
+      "key": "discordForumNote",
+      "default": null,
+      "kind": "note",
+      "page": "discord",
+      "section": "Forum or thread (optional)",
+      "help": "Leave these empty to post into the channel of the webhook above. A forum channel needs a webhook of its own, and a thread name or a thread ID."
+    },
+    {
+      "key": "discordForumWebhookUrl",
+      "default": "",
+      "page": "discord",
+      "section": "Forum or thread (optional)",
+      "label": "Forum webhook URL",
+      "help": "A webhook of the forum channel. While it is set, it is used instead of the webhook URL above.",
+      "masked": true,
+      "hint": "optional"
+    },
+    {
+      "key": "discordThreadName",
+      "default": "",
+      "page": "discord",
+      "section": "Forum or thread (optional)",
+      "label": "A new thread per suggestion, named",
+      "help": "Every suggestion opens a new forum post with this title; %user% is the viewer's name. Longer than 100 characters is cut.",
+      "hint": "Suggested by %user%"
+    },
+    {
+      "key": "discordThreadId",
+      "default": "",
+      "page": "discord",
+      "section": "Forum or thread (optional)",
+      "label": "Or all into one thread, with the ID",
+      "help": "Every suggestion goes into this thread or forum post. In Discord: right-click the thread > Copy Thread ID (needs Developer Mode). With a name and an ID, the ID wins.",
+      "hint": "digits only"
+    },
+    {
+      "key": "stoatEnabled",
+      "default": false,
+      "page": "stoat",
+      "label": "Post suggestions to Stoat",
+      "help": "Off: !suggestion does nothing for Stoat, and everything below stays as it is."
+    },
+    {
+      "key": "stoatWebhookUrl",
+      "default": "",
+      "page": "stoat",
+      "label": "Webhook URL",
+      "help": "From the channel's webhook settings in Stoat. Several URLs, separated by commas, each get the suggestion. Anyone who has the URL can post to the channel.",
+      "masked": true,
+      "hint": "https://api.stoat.chat/webhooks/…"
+    },
+    {
+      "key": "stoatTest",
+      "default": null,
+      "kind": "action",
+      "page": "stoat",
+      "label": "Send a test suggestion",
+      "help": "Posts a test under your name and says here whether it arrived. Unsaved changes are saved first.",
+      "panel": true,
+      "saveFirst": true
+    },
+    {
+      "key": "stoatSuggestionTemplate",
+      "default": "📝 suggests: %suggestion%",
+      "page": "stoat",
+      "section": "The post",
+      "label": "Text",
+      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. Markdown works."
+    },
+    {
+      "key": "stoatFooterTemplate",
+      "default": "%user% (%platform%)",
+      "page": "stoat",
+      "section": "The post",
+      "label": "Line under the text",
+      "help": "%user% and %platform% work here too. The viewer's avatar stands in front of it (Twitch and Kick)."
+    },
+    {
+      "key": "stoatShowTimestamp",
+      "default": true,
+      "page": "stoat",
+      "section": "The post",
+      "label": "Date and time",
+      "help": "Your PC's time, after the line under the text."
+    },
+    {
+      "key": "stoatTimestampFormat",
+      "default": "yyyy-MM-dd HH:mm",
+      "page": "stoat",
+      "section": "The post",
+      "label": "Time format",
+      "help": "A .NET date format: yyyy-MM-dd HH:mm shows 2026-10-25 20:21, dd.MM.yyyy HH:mm shows 25.10.2026 20:21, HH:mm shows 20:21.",
+      "requires": "stoatShowTimestamp"
+    },
+    {
+      "key": "stoatRandomColour",
+      "default": false,
+      "page": "stoat",
+      "section": "Colour",
+      "label": "A random colour for every post",
+      "help": "On: the three colours below are not used."
+    },
+    {
+      "key": "stoatColourTwitch",
+      "default": "#9146FF",
+      "kind": "colour",
+      "page": "stoat",
+      "section": "Colour",
+      "label": "Twitch",
+      "help": "The bar beside a suggestion from Twitch.",
+      "requires": "!stoatRandomColour",
+      "row": "stoatColours"
+    },
+    {
+      "key": "stoatColourYouTube",
+      "default": "#FF0000",
+      "kind": "colour",
+      "page": "stoat",
+      "section": "Colour",
+      "label": "YouTube",
+      "help": "The bar beside a suggestion from YouTube.",
+      "requires": "!stoatRandomColour",
+      "row": "stoatColours"
+    },
+    {
+      "key": "stoatColourKick",
+      "default": "#53FC18",
+      "kind": "colour",
+      "page": "stoat",
+      "section": "Colour",
+      "label": "Kick",
+      "help": "The bar beside a suggestion from Kick.",
+      "requires": "!stoatRandomColour",
+      "row": "stoatColours"
+    },
+    {
+      "key": "stoatIconNote",
+      "default": null,
+      "kind": "note",
+      "page": "stoat",
+      "section": "Pictures (optional)",
+      "help": "A fixed picture instead of the viewer's avatar, for every suggestion from that platform. Empty: the viewer's own avatar."
+    },
+    {
+      "key": "stoatIconTwitch",
+      "default": "",
+      "page": "stoat",
+      "section": "Pictures (optional)",
+      "label": "From Twitch",
+      "help": "The web address of a picture.",
+      "hint": "https://…"
+    },
+    {
+      "key": "stoatIconYouTube",
+      "default": "",
+      "page": "stoat",
+      "section": "Pictures (optional)",
+      "label": "From YouTube",
+      "help": "The web address of a picture.",
+      "hint": "https://…"
+    },
+    {
+      "key": "stoatIconKick",
+      "default": "",
+      "page": "stoat",
+      "section": "Pictures (optional)",
+      "label": "From Kick",
+      "help": "The web address of a picture.",
+      "hint": "https://…"
+    },
+    {
+      "key": "gameVoxEnabled",
+      "default": false,
+      "page": "gamevox",
+      "label": "Post suggestions to GameVox",
+      "help": "Off: !suggestion does nothing for GameVox, and everything below stays as it is."
+    },
+    {
+      "key": "gameVoxWebhookUrl",
+      "default": "",
+      "page": "gamevox",
+      "label": "Webhook URL",
+      "help": "The execute URL of an app webhook: GameVox Developer Portal > your application > Webhooks > New Webhook. GameVox shows it only once, and webhooks only reach cloud-hosted servers. Several URLs, separated by commas, each get the suggestion. Anyone who has the URL can post to the channel.",
+      "masked": true,
+      "hint": "https://…"
+    },
+    {
+      "key": "gameVoxTest",
+      "default": null,
+      "kind": "action",
+      "page": "gamevox",
+      "label": "Send a test suggestion",
+      "help": "Posts a test under your name and says here whether it arrived. Unsaved changes are saved first.",
+      "panel": true,
+      "saveFirst": true
+    },
+    {
+      "key": "gameVoxSuggestionTemplate",
+      "default": "📝 Suggestion: %suggestion%",
+      "page": "gamevox",
+      "section": "The post",
+      "label": "Text",
+      "help": "%suggestion% is what the viewer wrote, %user% their name, %platform% TWITCH, YOUTUBE or KICK. GameVox shows no Markdown, so this is plain text."
+    },
+    {
+      "key": "gameVoxShowFooter",
+      "default": true,
+      "page": "gamevox",
+      "section": "The post",
+      "label": "Avatar and name under the post",
+      "help": "The viewer's avatar and name in the post's footer."
+    },
+    {
+      "key": "gameVoxShowPlatformTag",
+      "default": true,
+      "page": "gamevox",
+      "section": "The post",
+      "label": "Platform after the name",
+      "help": "(TWITCH), (YOUTUBE) or (KICK) after the name.",
+      "requires": "gameVoxShowFooter"
+    },
+    {
+      "key": "gameVoxShowTimestamp",
+      "default": true,
+      "page": "gamevox",
+      "section": "The post",
+      "label": "Date and time",
+      "help": "Your PC's time in the footer, also without avatar and name."
+    },
+    {
+      "key": "gameVoxTimestampFormat",
+      "default": "yyyy-MM-dd HH:mm",
+      "page": "gamevox",
+      "section": "The post",
+      "label": "Time format",
+      "help": "A .NET date format: yyyy-MM-dd HH:mm shows 2026-10-25 20:21, dd.MM.yyyy HH:mm shows 25.10.2026 20:21, HH:mm shows 20:21.",
+      "requires": "gameVoxShowTimestamp"
+    },
+    {
+      "key": "gameVoxRandomColour",
+      "default": false,
+      "page": "gamevox",
+      "section": "Colour",
+      "label": "A random colour for every post",
+      "help": "On: the three colours below are not used."
+    },
+    {
+      "key": "gameVoxColourTwitch",
+      "default": "#9146FF",
+      "kind": "colour",
+      "page": "gamevox",
+      "section": "Colour",
+      "label": "Twitch",
+      "help": "The bar beside a suggestion from Twitch.",
+      "requires": "!gameVoxRandomColour",
+      "row": "gameVoxColours"
+    },
+    {
+      "key": "gameVoxColourYouTube",
+      "default": "#FF0000",
+      "kind": "colour",
+      "page": "gamevox",
+      "section": "Colour",
+      "label": "YouTube",
+      "help": "The bar beside a suggestion from YouTube.",
+      "requires": "!gameVoxRandomColour",
+      "row": "gameVoxColours"
+    },
+    {
+      "key": "gameVoxColourKick",
+      "default": "#53FC18",
+      "kind": "colour",
+      "page": "gamevox",
+      "section": "Colour",
+      "label": "Kick",
+      "help": "The bar beside a suggestion from Kick.",
+      "requires": "!gameVoxRandomColour",
+      "row": "gameVoxColours"
+    },
+    {
+      "key": "msgConfirmTwitch",
+      "default": "@%user% has made a suggestion!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Confirmation",
+      "label": "On Twitch",
+      "help": "Goes into the Twitch chat once the post went through. Of several servers only the first confirms. Empty: no confirmation on Twitch.",
+      "placeholders": [
+        "user",
+        "platform",
+        "suggestion"
+      ]
+    },
+    {
+      "key": "msgConfirmYouTube",
+      "default": "@%user% has made a suggestion!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Confirmation",
+      "label": "On YouTube",
+      "help": "Goes into the YouTube chat once the post went through. Of several servers only the first confirms. Empty: no confirmation on YouTube.",
+      "placeholders": [
+        "user",
+        "platform",
+        "suggestion"
+      ]
+    },
+    {
+      "key": "msgConfirmKick",
+      "default": "@%user% has made a suggestion!",
+      "kind": "template",
+      "page": "messages",
+      "group": "Confirmation",
+      "label": "On Kick",
+      "help": "Goes into the Kick chat once the post went through. Of several servers only the first confirms. Empty: no confirmation on Kick.",
+      "placeholders": [
+        "user",
+        "platform",
+        "suggestion"
+      ]
+    },
+    {
+      "key": "useBot",
+      "default": true
+    },
+    {
+      "key": "sendAction",
+      "default": false,
+      "twitchOnly": true
+    }
+  ],
+  "window": {
+    "title": "Suggestions To",
+    "releases": "aaskjer/SuTo",
+    "logPrefix": "[SuTo/Settings]",
+    "placeholderStyle": "percent",
+    "requires": "2.6.0",
+    "pages": [
+      {
+        "id": "discord",
+        "title": "Discord",
+        "icon": "🎧"
+      },
+      {
+        "id": "stoat",
+        "title": "Stoat",
+        "icon": "🐾"
+      },
+      {
+        "id": "gamevox",
+        "title": "GameVox",
+        "icon": "🎮"
+      },
+      "messages",
+      {
+        "id": "sblog",
+        "title": "Log",
+        "icon": "list"
+      },
+      "help",
+      "about"
+    ],
+    "samples": {
+      "user": "alice",
+      "platform": "TWITCH",
+      "suggestion": "Play the new farming game on Sunday"
+    },
+    "answers": {
+      "discordTest": {
+        "lines": [
+          {
+            "pill": "Arrived",
+            "tone": "ok",
+            "text": "The test suggestion arrived."
+          }
+        ],
+        "status": "The test suggestion arrived."
+      },
+      "stoatTest": {
+        "lines": [
+          {
+            "pill": "Arrived",
+            "tone": "ok",
+            "text": "The test suggestion arrived."
+          }
+        ],
+        "status": "The test suggestion arrived."
+      },
+      "gameVoxTest": {
+        "lines": [
+          {
+            "pill": "Arrived",
+            "tone": "ok",
+            "text": "The test suggestion arrived."
+          }
+        ],
+        "status": "The test suggestion arrived."
+      }
+    },
+    "headerPills": [
+      {
+        "states": [
+          {
+            "text": "Discord: action missing",
+            "tone": "warn",
+            "tooltip": "The action '[SuTo] ... Discord' is not in this Streamer.bot. Import SuTo again to post to Discord."
+          }
+        ]
+      },
+      {
+        "states": [
+          {
+            "text": "Stoat: action missing",
+            "tone": "warn",
+            "tooltip": "The action '[SuTo] ... Stoat' is not in this Streamer.bot. Import SuTo again to post to Stoat."
+          }
+        ]
+      },
+      {
+        "states": [
+          {
+            "text": "GameVox: action missing",
+            "tone": "warn",
+            "tooltip": "The action '[SuTo] ... GameVox' is not in this Streamer.bot. Import SuTo again to post to GameVox."
+          }
+        ]
+      }
+    ],
+    "streamerBotLog": {
+      "match": [
+        "[SuTo"
+      ],
+      "fitWidth": true
+    },
+    "help": [
+      {
+        "heading": "In chat",
+        "lines": [
+          {
+            "command": "!suggestion <text>",
+            "what": "Posts the text to every server that is switched on. Also !vorschlag."
+          },
+          {
+            "note": "Works from Twitch, YouTube and Kick chat. The viewer gets one confirmation, in the chat the suggestion came from, and only when the post went through."
+          },
+          {
+            "note": "The three commands are in Streamer.bot's Commands tab, group [SuTo] Suggestions To. Streamer.bot switches them off with every import: right-click the ones you use > Enabled. Change the command words, cooldowns and permissions there, the same for all three."
+          }
+        ]
+      },
+      {
+        "heading": "Webhooks",
+        "lines": [
+          {
+            "note": "A webhook URL is a secret: anyone who has it can post to that channel. Do not show these pages on stream, and make a new webhook if one leaks."
+          },
+          {
+            "note": "Several URLs in one field, separated by commas, each get the suggestion."
+          },
+          {
+            "link": "Setup guide",
+            "url": "https://github.com/aaskjer/SuTo/blob/main/Setup-Guide.md"
+          },
+          {
+            "link": "When nothing arrives",
+            "url": "https://github.com/aaskjer/SuTo/blob/main/Setup-Guide.md#when-nothing-arrives"
+          }
+        ]
+      }
+    ],
+    "about": {
+      "credits": "Suggestions from your chat, straight into your server.\nResponsible: aaskjer\nCredits: nate1280 / Streamer.bot and YOU ♡",
+      "sections": [
+        {
+          "heading": "Where things are kept",
+          "lines": [
+            {
+              "command": "SuTo-Settings.json",
+              "what": "everything on these pages, in the folder Suggestions To inside the Streamer.bot folder. It holds your webhook URLs: do not share it."
+            },
+            {
+              "command": "uiframework.layout.json",
+              "what": "your layout of this window: theme, language, renamed or hidden pages and fields."
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "text": "aaskjer on Twitch",
+          "url": "https://twitch.tv/aaskjer"
+        }
+      ]
+    },
+    "tour": [
+      {
+        "target": "start"
+      },
+      {
+        "target": "rail"
+      },
+      {
+        "target": "discordEnabled",
+        "title": "Switch on where you post",
+        "text": "Every server has a page of its own. Switch on the ones you use; the others stay quiet."
+      },
+      {
+        "target": "discordWebhookUrl",
+        "title": "The webhook",
+        "text": "Paste the channel's webhook URL here. It is a secret, so the field shows dots."
+      },
+      {
+        "target": "discordTest",
+        "title": "Try it",
+        "text": "Sends a test suggestion to the channel and says whether it arrived."
+      },
+      {
+        "target": "page:messages",
+        "title": "The answer in chat",
+        "text": "What the viewer reads once the suggestion is in your server."
+      },
+      {
+        "target": "save"
+      },
+      {
+        "target": "customise"
+      },
+      {
+        "target": "tour"
+      },
+      {
+        "target": "end",
+        "title": "That is it",
+        "text": "Type !suggestion test in your chat."
+      }
+    ],
+    "adopt": [
+      {
+        "action": "f3685af6-c372-423d-9efe-867dada8ce7e",
+        "map": [
+          "suggestionTemplate>discordSuggestionTemplate",
+          "showTimestamp>discordShowTimestamp",
+          "randomColour>discordRandomColour",
+          "colourTwitch>discordColourTwitch",
+          "colourYouTube>discordColourYouTube",
+          "colourKick>discordColourKick",
+          "showFooter>discordShowFooter",
+          "showPlatformTag>discordShowPlatformTag",
+          "#14d5e104-d35c-493a-a5f1-4890d5abbf9c>msgConfirmTwitch",
+          "#367432bb-5696-43e0-83a1-891f30d833c1>msgConfirmYouTube",
+          "#b2c4f203-1aa7-4bb1-997d-03333c194759>msgConfirmKick"
+        ]
+      },
+      {
+        "action": "16092733-c9ad-4cef-9b28-574b033cd79b",
+        "map": [
+          "stoatSuggestionWebhook>stoatWebhookUrl",
+          "suggestionFooterTemplate>stoatFooterTemplate",
+          "timestampFormat>stoatTimestampFormat",
+          "iconTwitch>stoatIconTwitch",
+          "iconYouTube>stoatIconYouTube",
+          "iconKick>stoatIconKick",
+          "suggestionTemplate>stoatSuggestionTemplate",
+          "showTimestamp>stoatShowTimestamp",
+          "randomColour>stoatRandomColour",
+          "colourTwitch>stoatColourTwitch",
+          "colourYouTube>stoatColourYouTube",
+          "colourKick>stoatColourKick",
+          "#3b6b409a-c7f0-4ad0-b276-1cdec872c18a>msgConfirmTwitch",
+          "#fd6c10ab-0c97-401e-a2da-541c78e6e953>msgConfirmYouTube",
+          "#c4de8849-0fda-469c-8511-0589cae3f76c>msgConfirmKick"
+        ]
+      },
+      {
+        "action": "969b3598-7759-4f75-b873-d78807daa3af",
+        "map": [
+          "suggestionTemplate>gameVoxSuggestionTemplate",
+          "showTimestamp>gameVoxShowTimestamp",
+          "randomColour>gameVoxRandomColour",
+          "colourTwitch>gameVoxColourTwitch",
+          "colourYouTube>gameVoxColourYouTube",
+          "colourKick>gameVoxColourKick",
+          "showFooter>gameVoxShowFooter",
+          "showPlatformTag>gameVoxShowPlatformTag",
+          "timestampFormat>gameVoxTimestampFormat",
+          "#ed1b08cb-42d5-46a8-a2dd-b9aa400b9b69>msgConfirmTwitch",
+          "#100688a9-5ce4-48b3-b222-116096f18dbb>msgConfirmYouTube",
+          "#ec047052-b93a-4a5e-88ec-22a179d9ef7e>msgConfirmKick"
+        ]
+      }
+    ],
+    "adoptExcept": [
+      "<< YOUR_* >>"
+    ]
+  },
+  "lockedFields": {
+    "discordEnabled": "The action '[SuTo] ... Discord' is not in this Streamer.bot. Import SuTo again to post to Discord.",
+    "discordWebhookUrl": "",
+    "discordSuggestionTemplate": "",
+    "discordShowFooter": "",
+    "discordShowPlatformTag": "",
+    "discordShowTimestamp": "",
+    "discordRandomColour": "",
+    "discordColourTwitch": "",
+    "discordColourYouTube": "",
+    "discordColourKick": "",
+    "discordForumWebhookUrl": "",
+    "discordThreadName": "",
+    "discordThreadId": "",
+    "stoatEnabled": "The action '[SuTo] ... Stoat' is not in this Streamer.bot. Import SuTo again to post to Stoat.",
+    "stoatWebhookUrl": "",
+    "stoatSuggestionTemplate": "",
+    "stoatFooterTemplate": "",
+    "stoatShowTimestamp": "",
+    "stoatTimestampFormat": "",
+    "stoatRandomColour": "",
+    "stoatColourTwitch": "",
+    "stoatColourYouTube": "",
+    "stoatColourKick": "",
+    "stoatIconTwitch": "",
+    "stoatIconYouTube": "",
+    "stoatIconKick": "",
+    "gameVoxEnabled": "The action '[SuTo] ... GameVox' is not in this Streamer.bot. Import SuTo again to post to GameVox.",
+    "gameVoxWebhookUrl": "",
+    "gameVoxSuggestionTemplate": "",
+    "gameVoxShowFooter": "",
+    "gameVoxShowPlatformTag": "",
+    "gameVoxShowTimestamp": "",
+    "gameVoxTimestampFormat": "",
+    "gameVoxRandomColour": "",
+    "gameVoxColourTwitch": "",
+    "gameVoxColourYouTube": "",
+    "gameVoxColourKick": ""
+  }
+}

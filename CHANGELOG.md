@@ -6,6 +6,32 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.6.0] - 2026-11-28
+
+A window that takes over the values of the version before can leave out what that version shipped in place of a
+value, and the settings action can ask the first of several actions. Declaring `AdoptExcept` needs the host block
+of this release; several ids need its settings action, which is 0.3.4 now. `MinHostStub` stays 0.1.0: a project on
+an older settings action goes on as it is.
+
+### Added
+
+- **Several actions can answer the settings window: `GameActionId` takes their ids, with commas between them.** The
+  settings action asks the first that is there and switched on, and looks again when that one stops running. A
+  project whose actions stand side by side gives each the host block and names them all; the settings then still
+  open after one of them was deleted or disabled. Before, the settings action knew one action, and such a project
+  needed an action of its own that did nothing but answer the window.
+- **`AdoptExcept("<< YOUR_* >>")` on the window, `adoptExcept` in the schema.** A Set Argument or a Send Message text
+  of the old action that still reads like one of the named texts is not taken over, and the field keeps its
+  default. `*` stands for any text; neither capitals nor the spaces around the value count. Before, a webhook the
+  user never set came into its field as `<< YOUR_WEBHOOK >>`. A DLL before 2.6.0 takes such a value over, as it did.
+
+### Fixed
+
+- **A field the project locks no longer puts a line behind the red i of a window that takes over old values.** With
+  `locked:` in `UiHost.Handle` (or a Set Argument that sets the field) and an `Adopt` mapping to the same field, the
+  window said that the mapping leads to a field it never saves. The field takes no old value while it is locked, as
+  before; the declaration is not at fault.
+
 ## [2.5.0] - 2026-11-26
 
 A table says how it meets its width: kept within it, or free to run past it under a horizontal scrollbar. Declaring

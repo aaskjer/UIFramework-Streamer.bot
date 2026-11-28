@@ -60,7 +60,8 @@ namespace UIFramework
     /// of the new version replaces that action, and the values with it. The window declares the old action
     /// (<see cref="WindowSpec.Adopt"/>); while nothing has been saved yet, the shell reads the values here and puts
     /// them into its fields as unsaved changes. The action is looked for in Streamer.bot's actions, then in its
-    /// last backups, the newest first. A value never reaches the log: it may be a webhook or a token.
+    /// last backups, the newest first. A value the old version shipped in place of the user's own
+    /// (<see cref="WindowSpec.AdoptExcept"/>) is left out. A value never reaches the log: it may be a webhook or a token.
     /// </summary>
     public static class Adoption
     {
@@ -287,6 +288,8 @@ namespace UIFramework
             void Put(string key, JToken value, double factor, int by)
             {
                 if (!settings.TryGetValue(key, out var setting) || (rank.TryGetValue(key, out int have) && have >= by)) return;
+                // What the old version shipped where the user was to put a value (window.adoptExcept) is none.
+                if (value is JValue scalar && scalar.Type != JTokenType.Null && spec.AdoptExcept.Any(except => Reads(FieldBinding.Invariant(scalar), except))) return;
                 var converted = ToKind(setting, value, factor);
                 if (converted == null) return;
                 values[key] = converted;
@@ -311,6 +314,25 @@ namespace UIFramework
                 if (texts.TryGetValue(message.SubActionId, out string text))
                     Put(message.Key, text, 1.0, 3);
             return values;
+        }
+
+        /// <summary>Whether a value reads like one the window leaves out (<c>window.adoptExcept</c>): <c>*</c> stands
+        /// for any text, and neither capitals nor the spaces around the value count. A pattern that is empty or
+        /// nothing but <c>*</c> names no value.</summary>
+        public static bool Reads(string value, string except)
+        {
+            string text = (value ?? "").Trim(), pattern = (except ?? "").Trim();
+            if (pattern.Trim('*').Length == 0) return false;
+            int t = 0, p = 0, star = -1, mark = 0;
+            while (t < text.Length)
+            {
+                if (p < pattern.Length && pattern[p] == '*') { star = p++; mark = t; }
+                else if (p < pattern.Length && char.ToUpperInvariant(pattern[p]) == char.ToUpperInvariant(text[t])) { t++; p++; }
+                else if (star >= 0) { p = star + 1; t = ++mark; }
+                else return false;
+            }
+            while (p < pattern.Length && pattern[p] == '*') p++;
+            return p == pattern.Length;
         }
 
         private static void Walk(JArray subActions, Dictionary<string, JToken> args, Dictionary<string, string> texts, int depth)

@@ -247,6 +247,7 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Tour(Tip(target, title, text), …)` | a tour of the window that starts by itself on its first open; see *The tour* below |
 | `Group(id, title, pages…)` | a group of pages in the rail, for a window with many: a heading the user can fold, with the pages it names under it in that order. A group sits where the first of its pages comes in `Pages`; a page no group names stays where it is, and *How to play*, *Log*, *About* and a page with `bottom` stay at the foot, in no group. The title translates through `Tx`. The user folds groups, and in the customise mode moves pages between them and renames a heading ([Customize.md](Customize.md)). A UIFramework before this release shows the pages without the headings. In the schema `"groups": [ { "id", "title", "pages": [ … ] } ]` |
 | `Adopt(Old(actionId, mappings…), …)` | the action a version before this window kept its settings in, as Set Argument sub-actions: while nothing has been saved yet, their values come into the window as unsaved changes; see *Values from the version before* below |
+| `AdoptExcept(values…)` | what the old version shipped where the user was to put a value of their own (`"<< YOUR_* >>"`): `Adopt` leaves out a value that still reads so |
 
 ### The colours of the results
 
@@ -444,10 +445,21 @@ left out when it does not fit: a switch from `true`/`false`, `yes`/`no`, `on`/`o
 whole number from digits, a decimal with a point or a comma, a dropdown's value as one of its options. A list, a
 button, a `readOnly` and a `transient` setting take none, and neither does a setting the window has no field for.
 
+An old version often ships a Set Argument with a text that says what goes there. `AdoptExcept` names such texts:
+
+```csharp
+    .AdoptExcept("<< YOUR_* >>")
+```
+
+A value that still reads so is left out, and the field keeps its default. `*` stands for any text; neither
+capitals nor the spaces around the value count. It holds for every old action, and for the text of a Send Message
+too.
+
 No value reaches the log, since it may be a webhook or a token: the log names counts, the action's id and the
 file. The red **i** names an id that is no GUID, a mapping of neither form, and one that leads to a key that is no
 setting or takes no value. In the schema: `"adopt": [ { "action": "<id>", "map": [ "old>new", "#<subActionId>>key" ] } ]`
-in the window; a DLL that does not know it opens the window without the values.
+and `"adoptExcept": [ "<< YOUR_* >>" ]` in the window; a DLL that does not know `adopt` opens the window without
+the values, and one before 2.6.0 takes over what `adoptExcept` names.
 
 ## The game's side
 

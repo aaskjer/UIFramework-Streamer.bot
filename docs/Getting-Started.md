@@ -114,7 +114,7 @@ The demo becomes your own project in `DemoGame.cs` (save it under your project's
    | Name | Where | What it is for |
    |------|-------|----------------|
    | `GameActionName` | the settings action (`Stub.cs`), its one line to fill in | the action the settings action runs to ask your project; it must be that action's exact name in Streamer.bot. Also the prefix of the settings' log lines, `[<name>/Settings]` |
-   | `GameActionId` | the settings action (`Stub.cs`), the line below it; optional | your action's id in Streamer.bot (a GUID; every run gets it as the argument `actionId`, and an export carries it). With it the settings action finds your action by the id and runs it by the id, so the settings still open after a streamer renamed the action; an import keeps the id. Left empty, or where no action has that id (an action made by hand), the action is found by `GameActionName`, and the log says so once (stub 0.3.3) |
+   | `GameActionId` | the settings action (`Stub.cs`), the line below it; optional | your action's id in Streamer.bot (a GUID; every run gets it as the argument `actionId`, and an export carries it). With it the settings action finds your action by the id and runs it by the id, so the settings still open after a streamer renamed the action; an import keeps the id. Left empty, or where no action has that id (an action made by hand), the action is found by `GameActionName`, and the log says so once (stub 0.3.3) Several ids, with commas between them, where more than one action answers the window: the first that is there and switched on is asked |
    | `ActionName` | your action, passed to `UiHost.Handle` and `UiUpdateNotice.Startup` | the prefix of your action's own log lines, `[<name>]`. `null` in `UiHost.Handle` takes the name Streamer.bot gives the run |
    | the host id (`"demo"`) | `UiHost.Handle`, `UiUpdateNotice.Startup` | a short name for the framework's files and the update notice; it never shows |
    | `SettingsFile` | your action | where the settings live, relative to the Streamer.bot folder; the layout file sits beside it |
@@ -268,6 +268,7 @@ public static readonly UiWindow Window = new UiWindow("My Project")
 ```
 
 An argument named like a setting needs no mapping; `"old>new"` leads one of another name to its setting.
+`.AdoptExcept("<< YOUR_* >>")` leaves out what the old version shipped where the user was to put a value.
 [Schema.md](Schema.md#values-from-the-version-before) has the rest: Send Message texts, where it looks, what it
 leaves out.
 
@@ -278,6 +279,11 @@ One action answers the window, the others only read the settings.
 - **The host action** carries the host block with the table and calls `UiHost.Handle`. Where the working actions
   run all the time, or may be deleted one by one, make it an action of its own that does nothing else
   (`My Project Settings Host`). The settings action names it in `GameActionName`.
+- **Or every working action is a host:** each carries the host block with the same table and window
+  (`tools\copy-host-block.ps1` keeps them equal), and the settings action names them all in `GameActionId`, with
+  commas between the ids. It asks the first that is there and switched on, so the settings still open after one
+  of them was deleted or disabled. No action reads the file with the reader then, and none is there only for the
+  window.
 - **Every other action** carries the host reader instead of the host block:
   [`stub/HostReader.cs`](../stub/HostReader.cs), from `// --- UIFramework host reader` to
   `// --- end UIFramework host reader ---`, right below its `using` lines. It knows no table, so each call names
