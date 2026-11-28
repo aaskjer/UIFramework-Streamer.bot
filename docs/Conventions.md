@@ -220,9 +220,9 @@ is read and written back under the key.
 
 | File | Keys | Pages | Placeholders | Texts | Window texts |
 |---|---|---|---|---|---|
-| `lang/de.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
-| `lang/en.json` | 82 | 15 | 16 | 0 | 337 |
-| `lang/es.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
-| `lang/fr.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
-| `lang/pt-BR.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 337 of 337 |
+| `lang/de.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 339 of 339 |
+| `lang/en.json` | 82 | 15 | 16 | 0 | 339 |
+| `lang/es.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 339 of 339 |
+| `lang/fr.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 339 of 339 |
+| `lang/pt-BR.json` | 82 of 82 | 15 of 15 | 16 of 16 | 140 | 339 of 339 |
 <!-- generated:end -->

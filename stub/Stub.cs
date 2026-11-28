@@ -168,6 +168,52 @@ public class CPHInline
             }, false);
         }
 
+        // The actions the window watches, by their ids with commas between them: whether Streamer.bot has each and
+        // whether it is enabled, and what it is called now. The window asks about once a second while it is open, so
+        // nothing is logged here: what fails once is asked again in a moment.
+        public string ActionStates(string ids)
+        {
+            var states = new JObject();
+            try
+            {
+                _owner.RunOnBot(() =>
+                {
+                    var actions = _owner.CPH.GetActions();
+                    foreach (string wanted in (ids ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        string key = wanted.Trim();
+                        var state = new JObject { ["state"] = "missing" };
+                        Guid id;
+                        if (Guid.TryParse(key, out id) && actions != null)
+                            foreach (var action in actions)
+                                if (action != null && action.Id == id)
+                                {
+                                    state["state"] = action.Enabled ? "on" : "off";
+                                    state["name"] = action.Name;
+                                    break;
+                                }
+                        states[key] = state;
+                    }
+                }, true);
+            }
+            catch (Exception) { return null; }
+            return states.ToString(Newtonsoft.Json.Formatting.None);
+        }
+
+        // Enables or disables an action, for a switch of the window that sets one.
+        public void SetAction(string id, bool enabled)
+        {
+            _owner.RunOnBot(() =>
+            {
+                try
+                {
+                    if (enabled) _owner.CPH.EnableActionById(id);
+                    else _owner.CPH.DisableActionById(id);
+                }
+                catch (Exception ex) { _owner.CPH.LogError(LogPrefix + " The action " + id + " could not be " + (enabled ? "enabled" : "disabled") + ": " + ex.Message); }
+            }, false);
+        }
+
         // The log as the window declares it: every file matching the pattern in the folder, oldest file first.
         public IEnumerable<string> ReadLogLines()
         {
@@ -560,7 +606,7 @@ public class CPHInline
     private const string FrameworkName = "UIFramework for streamer.bot";
     // This stub's own version: a release whose latest.json names a higher minHostStub needs a newer settings action
     // and is not offered to this one, and an installed DLL that asks for a newer one is passed over (0.2.1 and on).
-    private const string StubVersion = "0.3.4";
+    private const string StubVersion = "0.3.5";
     // The major line this stub is made for: it reads lib/<line>/latest.json and so is never offered a release of
     // another line. A new major version of the framework changes this one word.
     private const string FrameworkLine = "v2";

@@ -69,6 +69,8 @@ conventions cannot know.
 | `hint`         | no       | for a one-line text field, masked or not: grey text inside the field while it is empty (`not set`, `optional`). `Tx` translates it |
 | `global`       | no       | the name of a persisted global of Streamer.bot that holds this value instead of the settings file (a token another action reads from there). The settings action reads it when the window opens and writes it after a save; the value is never in the file, an export or the log, and a reset leaves it. Needs stub 0.3.3; see *A secret in a global* under *The game's side* |
 | `readOnly`     | no       | true: shown, not editable (a status the project writes); `readonly` is read too (host block: `readOnly:` on `S()`) |
+| `followsAction` | no      | on a switch: the name of an action of Streamer.bot the window watches (`Actions`, below). While that action is disabled or gone, the switch shows off, cannot be changed and says why in a line under it; its own value is kept, is what a save writes, and shows again once the action is back. See *Actions of Streamer.bot* below |
+| `setsAction`   | no       | on a switch: the name of a watched action the switch stands for. It shows whether the action is enabled and enables or disables it in Streamer.bot at once, with the click; it holds no value, is never saved and is no change. While the action is gone it cannot be used and says so |
 | `twitchOnly`   | no       | a switch carries a "Twitch only" pill; any other field with a label says "(Twitch only)" in it (a reward's id, a button)                                         |
 | `transient`    | no       | true: shown, never saved, never counted as a change; only a live snapshot for the project carries it (the inputs of a Try button) |
 | `live`         | no       | for `action`: the project gets the values as they stand in the window, unsaved and transient ones included |
@@ -247,6 +249,7 @@ public static readonly UiWindow Window = new UiWindow("Blackjack Game", releases
 | `Tour(Tip(target, title, text), …)` | a tour of the window that starts by itself on its first open; see *The tour* below |
 | `Group(id, title, pages…)` | a group of pages in the rail, for a window with many: a heading the user can fold, with the pages it names under it in that order. A group sits where the first of its pages comes in `Pages`; a page no group names stays where it is, and *How to play*, *Log*, *About* and a page with `bottom` stay at the foot, in no group. The title translates through `Tx`. The user folds groups, and in the customise mode moves pages between them and renames a heading ([Customize.md](Customize.md)). A UIFramework before this release shows the pages without the headings. In the schema `"groups": [ { "id", "title", "pages": [ … ] } ]` |
 | `Adopt(Old(actionId, mappings…), …)` | the action a version before this window kept its settings in, as Set Argument sub-actions: while nothing has been saved yet, their values come into the window as unsaved changes; see *Values from the version before* below |
+| `Actions(Act(name, id, title), …)` | the actions of Streamer.bot the window watches while it is open: a condition asks about one as `action:name`, and a switch is bound to one with `followsAction` or `setsAction`; see *Actions of Streamer.bot* below |
 | `AdoptExcept(values…)` | what the old version shipped where the user was to put a value of their own (`"<< YOUR_* >>"`): `Adopt` leaves out a value that still reads so |
 
 ### The colours of the results
@@ -502,6 +505,35 @@ fields that are locked when the window opens, one per line as `key|why`; it gets
 A locked field shows its value (a `masked` one as dots), a *Locked* pill and the reason, and is not edited, reset or
 imported, like a `readOnly` one. In the schema: `"lockedFields": { "tournamentOdds": "Set by the tournament." }`. A
 message locked either way shows its text on the Messages page with the reason where its chips would be.
+
+**Actions of Streamer.bot.** A project whose actions the user may disable or delete one by one can show that in
+its window. The window names the actions it watches, each by a name of its own, its id in Streamer.bot (a GUID; an
+import keeps it) and what to call it in a text:
+
+```csharp
+    .Actions(Act("poster", "3f6c1a52-8b0e-4d47-9a61-c2e5d7f04b18", "My Project Poster"))
+```
+
+While the window is open, the settings action is asked about once a second whether each is there and enabled, so
+the window follows what the user does in Streamer.bot without being opened again.
+
+- **A condition** asks about an action as `action:name`, wherever a condition stands (`requires`, `showWhen`, a
+  section's `showWhen`, a pill's `when`), alone or joined with `&&`: `"action:poster"` holds while the action is
+  there and enabled, `"!action:poster"` while it is not, and `"action:poster=off"` and `"action:poster=missing"`
+  tell the two apart. `requires: "action:poster"` greys a field out and leaves it where it is; a note with
+  `showWhen: "action:poster=off"` says why.
+- **A switch that follows** (`followsAction: "poster"`) is for the project's own "use this" switch: while the action
+  is disabled or gone it shows off and cannot be changed, with the reason under it. The value it holds is not
+  touched, so nothing counts as changed and a save writes what the user set.
+- **A switch that sets** (`setsAction: "poster"`) is the action's own switch: it shows whether the action is enabled,
+  and a click enables or disables it in Streamer.bot at once. It is never saved.
+
+It needs the settings action of 2.7.0 (stub 0.3.5). With an older one, in the preview and in the pictures for the
+docs nobody tells the window, and every watched action counts as enabled: nothing is greyed out, and a switch that
+sets has nothing to set. The red **i** names a condition on an action the window does not watch, a state that is
+none of `on`, `off` and `missing`, and `followsAction` or `setsAction` on what is no switch. In the schema:
+`"actions": [ { "name": "poster", "id": "<guid>", "title": "My Project Poster" } ]` in the window, and
+`"followsAction": "poster"` or `"setsAction": "poster"` on the setting.
 
 **A secret in a global.** `S("botToken", "", masked: true, global: "MyProject_botToken")` keeps the value in a
 persisted global of Streamer.bot, where the project's other actions read it, and out of the settings file, so an

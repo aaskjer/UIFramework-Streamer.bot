@@ -258,7 +258,9 @@ namespace UIFramework
                 {
                     var toggle = f.Toggle(label, s.Key, tip);
                     if (s.TwitchOnly) Fields.TwitchOnly(toggle);
-                    element = toggle;
+                    string bound = !string.IsNullOrWhiteSpace(s.SetsAction) ? s.SetsAction : s.FollowsAction;
+                    bool watched = !string.IsNullOrWhiteSpace(bound) && (ctx.Spec?.Actions?.Any(a => a.Name == bound.Trim()) ?? false);
+                    element = watched && !ctx.Customizing ? ActionSwitch(ctx, s, toggle, label, bound.Trim()) : toggle;
                     break;
                 }
                 case "int":
@@ -514,6 +516,88 @@ namespace UIFramework
             wrapper.Children.Add(field);
             wrapper.Children.Add(line);
             return wrapper;
+        }
+
+        /// <summary>The Tag of the line under a switch bound to an action that says why it cannot be used, for tests.</summary>
+        public const string ActionLineTag = "uiframework.actionLine";
+
+        /// <summary>A switch bound to an action of Streamer.bot the window watches, which it follows live.
+        /// <c>followsAction</c>: while the action is disabled or gone, the switch shows off and cannot be changed, and a
+        /// line under it says why. A stand-in is shown for that time: the switch itself keeps its value, which is what
+        /// is saved, and shows again once the action is back. <c>setsAction</c>: the switch shows whether the action is
+        /// enabled, and a click enables or disables it in Streamer.bot at once; it is never saved and no change.</summary>
+        private static FrameworkElement ActionSwitch(PageContext ctx, Setting s, CheckBox toggle, string label, string action)
+        {
+            bool sets = !string.IsNullOrWhiteSpace(s.SetsAction);
+            var why = Ui.Note("");
+            why.Tag = ActionLineTag;
+            why.Visibility = Visibility.Collapsed;
+            var stack = new StackPanel();
+            stack.Children.Add(toggle);
+            CheckBox standIn = null;
+            if (sets)
+                FieldBinding.MarkTransient(toggle);
+            else
+            {
+                standIn = new CheckBox
+                {
+                    Content = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center },
+                    IsChecked = false,
+                    ToolTip = toggle.ToolTip,
+                    Margin = toggle.Margin,
+                    Template = Ui.SwitchTemplate(),
+                    Foreground = Theme.LabelFg,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Visibility = Visibility.Collapsed
+                };
+                System.Windows.Automation.AutomationProperties.SetName(standIn, label);
+                Grey(standIn, true);
+                stack.Children.Add(standIn);
+            }
+            stack.Children.Add(why);
+
+            bool telling = false;
+            void Apply()
+            {
+                var watch = ctx.Parts.Actions;
+                string state = watch?.State(action) ?? ActionWatch.On;
+                string title = watch?.Title(action) ?? action;
+                why.Text = state == ActionWatch.Off ? Text.T("action.off", title) : state == ActionWatch.Missing ? Text.T("action.missing", title) : "";
+                if (sets)
+                {
+                    telling = true;
+                    toggle.IsChecked = state == ActionWatch.On;
+                    telling = false;
+                    // Without a host that can tell (and set) there is nothing to switch.
+                    Grey(toggle, state == ActionWatch.Missing || watch == null || !watch.Known);
+                    why.Visibility = state == ActionWatch.Missing ? Visibility.Visible : Visibility.Collapsed;
+                }
+                else
+                {
+                    bool usable = state == ActionWatch.On;
+                    toggle.Visibility = usable ? Visibility.Visible : Visibility.Collapsed;
+                    standIn.Visibility = usable ? Visibility.Collapsed : Visibility.Visible;
+                    why.Visibility = usable ? Visibility.Collapsed : Visibility.Visible;
+                }
+            }
+            if (sets)
+            {
+                RoutedEventHandler flipped = (sender, e) =>
+                {
+                    if (telling) return;
+                    if (ctx.Parts.Actions != null && ctx.Parts.Actions.Set(action, toggle.IsChecked == true)) ctx.Parts.RaiseActions();
+                    else Apply();
+                };
+                toggle.Checked += flipped;
+                toggle.Unchecked += flipped;
+            }
+            ctx.AfterBuild.Add(() =>
+            {
+                Apply();
+                ctx.Parts.OnActions(Apply);
+            });
+            return stack;
         }
 
         /// <summary>The Tag of a help line under a field, for tests and the tour.</summary>

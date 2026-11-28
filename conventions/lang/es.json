@@ -420,6 +420,8 @@
     "field.masked.show": "Mostrar lo que hay escrito aquí",
     "field.masked.hide": "Ocultarlo de nuevo",
     "field.global.locked": "Este valor se guarda en las variables globales de Streamer.bot, y la acción de ajustes de esta extensión no puede leerlas. Actualiza la extensión para ajustarlo aquí.",
+    "action.off": "La acción '{0}' está desactivada en Streamer.bot.",
+    "action.missing": "La acción '{0}' no está en este Streamer.bot.",
     "import.why.global": "se guarda en las variables globales de Streamer.bot, en ningún archivo",
     "cust.hidden": "oculto",
     "cust.emptyPage": "No hay campos en esta página. Suelta aquí uno de otra página o mueve uno con su menú.",

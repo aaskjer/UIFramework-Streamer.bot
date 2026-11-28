@@ -6,6 +6,26 @@ only a round version (2.0.0, 3.0.0) is a stable release; every other one is publ
 `lib/v1/latest.json`, which the games' settings actions read, names the newest 1.x of either kind; 2.0.0 and what
 follows it go to `lib/v2/latest.json`.
 
+## [2.7.0] - 2026-11-28
+
+A window can watch actions of Streamer.bot and follow, while it is open, whether each is there and enabled. It
+needs the host block and the settings action of this release, which is 0.3.5 now; `MinHostStub` stays 0.1.0, and
+with an older settings action every watched action counts as enabled.
+
+### Added
+
+- **`Actions(Act(name, id, title), …)` on the window, `actions` in the schema.** The window asks the settings action
+  about these actions when it opens and about once a second after that. What the user enables, disables or deletes
+  in Streamer.bot shows in the window within a moment; it does not have to be opened again.
+- **A condition on an action: `action:name`.** In `requires`, `showWhen`, a section's `showWhen` and a pill's
+  `when`: `"action:poster"` holds while the action is there and enabled, `"!action:poster"` while it is not,
+  `"action:poster=off"` and `"action:poster=missing"` tell the two apart. With `requires` the fields of a page stay
+  where they are and are greyed out.
+- **`followsAction` on a switch.** While the action is disabled or gone, the switch shows off, cannot be changed and
+  says why under it. Its own value is kept: nothing counts as changed, and a save writes what the user set.
+- **`setsAction` on a switch.** The switch shows whether the action is enabled, and a click enables or disables it
+  in Streamer.bot at once. It holds no value and is never saved.
+
 ## [2.6.0] - 2026-11-28
 
 A window that takes over the values of the version before can leave out what that version shipped in place of a

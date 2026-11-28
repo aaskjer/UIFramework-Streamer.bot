@@ -70,6 +70,9 @@ namespace UIFramework
         /// <summary>The actions a version before this window kept its settings in (<c>window.adopt</c>): while
         /// nothing has been saved yet, their values come into the window as unsaved changes (<see cref="Adoption"/>).</summary>
         public readonly List<AdoptSource> Adopt = new List<AdoptSource>();
+        /// <summary>The actions of Streamer.bot the window watches (<c>window.actions</c>): conditions and switches
+        /// name them, and follow whether they are there and enabled (<see cref="ActionWatch"/>).</summary>
+        public readonly List<WatchedAction> Actions = new List<WatchedAction>();
         /// <summary>What the version before shipped where the user was to put a value (<c>window.adoptExcept</c>,
         /// "&lt;&lt; YOUR_* &gt;&gt;"): an old value that still reads so is left out. <c>*</c> stands for any text.</summary>
         public readonly List<string> AdoptExcept = new List<string>();

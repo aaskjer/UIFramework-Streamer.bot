@@ -219,6 +219,10 @@ namespace UIFramework
                         continue;
                     spec.Adopt.Add(source);
                 }
+            // The actions of Streamer.bot the window watches: a name to call each by, its id, and a title for the texts.
+            if (root["actions"] is JArray actions)
+                foreach (var item in actions.OfType<JObject>())
+                    spec.Actions.Add(new WatchedAction { Name = (Str(item["name"]) ?? "").Trim(), Id = (Str(item["id"]) ?? "").Trim(), Title = (Str(item["title"]) ?? "").Trim() });
             // What the old version shipped in place of a value: a list of texts, or one.
             if (root["adoptExcept"] is JArray excepts)
                 spec.AdoptExcept.AddRange(excepts.OfType<JValue>().Where(e => e.Type != JTokenType.Null).Select(e => e.ToString()));

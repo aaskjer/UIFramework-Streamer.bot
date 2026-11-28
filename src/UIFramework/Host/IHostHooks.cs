@@ -57,6 +57,17 @@ namespace UIFramework
 
         /// <summary>Writes a persisted global; an empty text clears it. False when it could not be handed over.</summary>
         bool SetGlobal(string name, string value);
+
+        /// <summary>The actions the window watches (<c>window.actions</c>), by their ids with commas between them: for
+        /// each whether Streamer.bot has it and whether it is enabled, as a JSON object of id to
+        /// <c>{ "state": "on" | "off" | "missing", "name": "what Streamer.bot calls it now" }</c>. Asked about once a
+        /// second while the window is open, off the window's thread. Null: the host cannot tell (a settings action
+        /// before stub 0.3.5, a preview), and every watched action counts as enabled.</summary>
+        string ActionStates(string ids);
+
+        /// <summary>Enables or disables an action of Streamer.bot, for a switch that sets one (<c>setsAction</c>).
+        /// False when it could not be handed over.</summary>
+        bool SetAction(string id, bool enabled);
     }
 
     /// <summary>A hooks implementation that does nothing, for previews and hosts without extras.</summary>
@@ -74,5 +85,7 @@ namespace UIFramework
         public virtual bool HasGlobals => false;
         public virtual string GetGlobal(string name) => null;
         public virtual bool SetGlobal(string name, string value) => false;
+        public virtual string ActionStates(string ids) => null;
+        public virtual bool SetAction(string id, bool enabled) => false;
     }
 }
